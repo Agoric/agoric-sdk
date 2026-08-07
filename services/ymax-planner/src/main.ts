@@ -43,6 +43,7 @@ import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
+import type { ChainGasState } from './gas-estimation.ts';
 import { calculateInstrumentBlocks } from './instrument-status.ts';
 import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
 import {
@@ -59,6 +60,7 @@ import { YdsNotifier } from './yds-notifier.ts';
 import {
   YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
   type YdsPortfolioSummary,
+  type RewardTokenRate,
 } from './yds-portfolio-balances.ts';
 import { getPoolTokenAddresses } from './evm-utils.ts';
 import { generateDiff } from './ses-utils.ts';
@@ -354,6 +356,14 @@ export const main = async (
     trace: () => {},
   });
 
+  const oneInchClient = config.oneInch.apiKey
+    ? ky.create({
+        fetch,
+        prefixUrl: config.oneInch.apiUrl,
+        headers: { Authorization: `Bearer ${config.oneInch.apiKey}` },
+      })
+    : undefined;
+
   const ydsApiKey = config.yds.apiKey;
   const ydsClient = config.yds.url
     ? ky.create({
@@ -367,6 +377,46 @@ export const main = async (
         retry: config.requestLimits.maxRetries,
       })
     : undefined;
+  const makeYdsCacheable = <T>(
+    name: string,
+    ttlMs: number,
+    fetcher: (
+      yds: Exclude<typeof ydsClient, undefined>,
+    ) => Promise<{ data: T } | undefined>,
+  ): (() => Promise<T | undefined>) | undefined => {
+    if (!ydsClient) return undefined;
+
+    let got: { timestamp: number; value: T | undefined } = {
+      timestamp: -Infinity,
+      value: undefined,
+    };
+    return async (): Promise<T | undefined> => {
+      const timestamp = now();
+      if (timestamp < got.timestamp + ttlMs) {
+        return got.value as T;
+      }
+      const resp = await withHealthLogging(
+        name,
+        fetcher(ydsClient),
+        config.requestLimits,
+      );
+      if (!resp) return undefined;
+
+      const value = resp.data;
+      got = { timestamp, value };
+      return value;
+    };
+  };
+
+  const getExchangeRates = makeYdsCacheable(
+    'exchange rates',
+    60_000,
+    async yds =>
+      yds.get('reward-token-rates').json<{ data: RewardTokenRate[] }>(),
+  );
+  const getGasCosts = makeYdsCacheable('gas costs', 60_000, async yds =>
+    yds.get('chains/gas').json<{ data: ChainGasState[] }>(),
+  );
 
   let lastInstrumentBlocksString = '';
   const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
@@ -515,6 +565,8 @@ export const main = async (
     evmTokenAddresses,
     spectrumBlockchain,
     network: PROD_NETWORK,
+    getExchangeRates,
+    getGasCosts,
     getInstrumentBlocks,
     getPortfolioSummaries,
     signingSmartWalletKit,
@@ -530,7 +582,9 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    oneInchClient,
     postYdsTransaction,
+    autoClaimConfig: config.autoClaim,
     autoRebalance: config.autoRebalance,
   };
 

@@ -121,6 +121,27 @@ export interface SolvedEdgeFlow {
 export type LpModel = IModel<string, string>;
 export type LpSolution = Solution<string>;
 
+/** Add 20% to a fee estimate as a buffer against short-term variability. */
+const padFeeEstimate = (estimate: bigint): bigint =>
+  estimate <= 0n ? estimate : (estimate * 120n - 1n) / 100n + 1n;
+
+/**
+ * Ensure minimum gas is sent for an Axelar GMP transaction, to hopefully
+ * prevent "not enough gas" errors.
+ * Note: This function returns a `feeBrand` Amount that is appropriate for
+ * Axelar GMP transaction fees but not for e.g. EVM gas (with is in ETH).
+ */
+export const makeGmpFeeAmount = (
+  feeBrand: NatAmount['brand'],
+  estimate: bigint,
+): NatAmount => {
+  const padded = padFeeEstimate(estimate);
+  // cf. https://github.com/Agoric/agoric-private/issues/548#issuecomment-3517683817
+  const MINIMUM_GAS = 5_000_000n;
+  return AmountMath.make(feeBrand, bigintMax(MINIMUM_GAS, padded));
+};
+harden(makeGmpFeeAmount);
+
 /**
  * Gas estimation interface:
  * - getFactoryContractEstimate: Estimate gas fees for executing the
@@ -136,6 +157,8 @@ export type GasEstimator = {
     chainName: AxelarChain,
     operationType?: EvmWalletOperationType,
     protocol?: YieldProtocol,
+    // TODO(AGO-625): Consider refactoring this signature.
+    gasLimit?: bigint,
   ) => Promise<bigint>;
   getFactoryContractEstimate: (chainName: AxelarChain) => Promise<bigint>;
   getReturnFeeEstimate: (chainName: AxelarChain) => Promise<bigint>;
@@ -656,23 +679,6 @@ export const rebalanceMinCostFlowSteps = async (
     initialSupplies,
   );
 
-  /** Add 20% to a fee estimate as a buffer against short-term variability. */
-  const padFeeEstimate = (estimate: bigint): bigint =>
-    estimate <= 0n ? estimate : (estimate * 120n - 1n) / 100n + 1n;
-
-  /**
-   * Ensure minimum gas is sent for an Axelar GMP transaction, to hopefully
-   * prevent "not enough gas" errors.
-   * Note: This function returns a `feeBrand` Amount that is appropriate for
-   * Axelar GMP transaction fees but not for e.g. EVM gas (with is in ETH).
-   */
-  const makeGmpFeeAmount = (estimate: bigint): NatAmount => {
-    const padded = padFeeEstimate(estimate);
-    // cf. https://github.com/Agoric/agoric-private/issues/548#issuecomment-3517683817
-    const MINIMUM_GAS = 5_000_000n;
-    return AmountMath.make(feeBrand, bigintMax(MINIMUM_GAS, padded));
-  };
-
   const steps = await Promise.all(
     prioritized.map(async ({ edge, flow }): Promise<MovementDesc> => {
       const { src, dest, variableFeeBps } = edge;
@@ -692,7 +698,7 @@ export const rebalanceMinCostFlowSteps = async (
           return {
             ...stepBase,
             detail: { evmGas: padFeeEstimate(returnFeeValue) },
-            fee: makeGmpFeeAmount(feeValue),
+            fee: makeGmpFeeAmount(feeBrand, feeValue),
           };
         }
         // XXX: revisit https://github.com/Agoric/agoric-sdk/pull/11953#discussion_r2383034184
@@ -703,7 +709,7 @@ export const rebalanceMinCostFlowSteps = async (
             EvmWalletOperationType.Withdraw,
             poolInfo?.protocol,
           );
-          return { ...stepBase, fee: makeGmpFeeAmount(feeValue) };
+          return { ...stepBase, fee: makeGmpFeeAmount(feeBrand, feeValue) };
         }
         case 'evmToPool': {
           const poolInfo = PoolPlaces[dest as PoolKey];
@@ -712,14 +718,14 @@ export const rebalanceMinCostFlowSteps = async (
             EvmWalletOperationType.Supply,
             poolInfo?.protocol,
           );
-          return { ...stepBase, fee: makeGmpFeeAmount(feeValue) };
+          return { ...stepBase, fee: makeGmpFeeAmount(feeBrand, feeValue) };
         }
         case 'evmToNoble': {
           const feeValue = await gasEstimator.getWalletEstimate(
             chainOf(src) as AxelarChain,
             EvmWalletOperationType.DepositForBurn,
           );
-          return { ...stepBase, fee: makeGmpFeeAmount(feeValue) };
+          return { ...stepBase, fee: makeGmpFeeAmount(feeBrand, feeValue) };
         }
         case 'toUSDN': {
           // NOTE USDN transfer incurs a fee on output amount in basis points
@@ -739,7 +745,7 @@ export const rebalanceMinCostFlowSteps = async (
           return {
             ...stepBase,
             detail: { cctpVersion: 2n },
-            fee: makeGmpFeeAmount(feeValue),
+            fee: makeGmpFeeAmount(feeBrand, feeValue),
           };
         }
         default:

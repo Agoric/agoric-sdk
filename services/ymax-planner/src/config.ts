@@ -8,7 +8,17 @@ import * as AgoricClientUtils from '@agoric/client-utils';
 import { objectMap } from '@agoric/internal';
 import type { ClusterName } from '@agoric/internal';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import type { AutoClaimConfig } from './auto.ts';
+import {
+  GAS_STATE_WINDOW_DURATIONS,
+  GAS_STATE_WINDOW_METRICS,
+} from './gas-estimation.ts';
+import { ONEINCH_API_BASE_URL } from './oneinch.ts';
 import { parseGraphqlEndpoints } from './utils.ts';
+
+export const DEFAULT_AUTO_CLAIM_MAX_GAS_COST_SPIKE = '1.5:P30D:p50';
+export const DEFAULT_AUTO_CLAIM_MAX_SLIPPAGE_BPS = 200;
+export const DEFAULT_AUTO_CLAIM_MIN_REWARD_PER_GAS = 2;
 
 export const DEFAULT_AUTO_REBALANCE_DRIFT_BPS = 100n;
 export const DEFAULT_AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC = 25_000_000n;
@@ -45,6 +55,10 @@ export interface YmaxPlannerConfig {
     readonly apiUrl: string;
     readonly chainIdMap: Record<AxelarChain, string>;
   };
+  readonly oneInch: {
+    readonly apiUrl: string;
+    readonly apiKey?: string;
+  };
   readonly sqlite: {
     readonly dbPath: string;
   };
@@ -52,6 +66,7 @@ export interface YmaxPlannerConfig {
     readonly url?: string;
     readonly apiKey?: string;
   };
+  readonly autoClaim: AutoClaimConfig;
   readonly autoRebalance: {
     // TODO: `driftBps` should probably be of type number rather than bigint.
     readonly driftBps: bigint;
@@ -81,6 +96,20 @@ const getMnemonicFromGCP = async (
 };
 
 // XXX: Similar to @endo/cli `parseNumber`, candidate for @agoric/internal.
+const nonnegativeNumberFromString = (
+  value: string,
+  fieldName: string,
+): number => {
+  const number = /[0-9]/.test(value)
+    ? Number(value.replace(/([0-9a-f])_([0-9a-f])(_(?=[0-9a-f]))?/gi, '$1$2'))
+    : NaN;
+  if (!(number >= 0)) {
+    throw Fail`${q(fieldName)} must be a non-negative number, got: ${value}`;
+  }
+  return number;
+};
+
+// XXX: Similar to @endo/cli `parseNumber`, candidate for @agoric/internal.
 const positiveIntegerFromString = (
   value: string,
   fieldName: string,
@@ -92,6 +121,17 @@ const positiveIntegerFromString = (
     throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
   }
   return number;
+};
+
+const parseNonnegativeNumber = (
+  env: Record<string, string | undefined>,
+  fieldName: string,
+  defaultValue: number,
+): number => {
+  const value = env[fieldName]?.trim();
+  return value === undefined
+    ? defaultValue
+    : nonnegativeNumberFromString(value, fieldName);
 };
 
 const parsePositiveInteger = (
@@ -199,9 +239,53 @@ export const loadConfig = async (
     Fail`GRAPHQL_ENDPOINTS configuration for api-spectrum-blockchain is required`;
   const sqliteDbPath = validateRequired(env, 'SQLITE_DB_PATH');
 
+  const oneInchApiUrl = validateUrl(
+    env,
+    'ONEINCH_API_URL',
+    ONEINCH_API_BASE_URL,
+  ) as string;
+  const oneInchApiKey = env.ONEINCH_API_KEY?.trim();
+
   const ydsUrl = validateUrl(env, 'YDS_URL', undefined);
   const ydsApiKey = env.YDS_API_KEY?.trim();
   !ydsUrl || ydsApiKey || Fail`YDS_API_KEY is required with YDS_URL`;
+  const gasCostSpikeThresholds =
+    env.AUTO_CLAIM_MAX_GAS_COST_SPIKE?.trim() ||
+    DEFAULT_AUTO_CLAIM_MAX_GAS_COST_SPIKE;
+  const autoClaim = harden({
+    maxGasCostSpike: (() => {
+      type GasSpikeCriterion = AutoClaimConfig['maxGasCostSpike'][number];
+      try {
+        const criteria = gasCostSpikeThresholds.split(',').map((fields, i) => {
+          const [factorStr, duration, metric, ...rest] = fields.split(':');
+          const factor = nonnegativeNumberFromString(
+            factorStr,
+            `AUTO_CLAIM_MAX_GAS_COST_SPIKE[${i}][0]`,
+          );
+          GAS_STATE_WINDOW_DURATIONS.includes(duration as any) ||
+            Fail`invalid duration`;
+          GAS_STATE_WINDOW_METRICS.includes(metric as any) ||
+            Fail`invalid metric`;
+          rest.length === 0 || Fail`extra fields`;
+          return [factor, duration, metric] as GasSpikeCriterion;
+        });
+        return harden(criteria);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_err) {
+        throw Fail`AUTO_CLAIM_MAX_GAS_COST_SPIKE must be a comma-separated list of "$factor:{PT15M,PT24H,P30D}:{min,mean,p50,p90,max}", got: ${gasCostSpikeThresholds}`;
+      }
+    })(),
+    maxSlippageBps: parseNonnegativeNumber(
+      env,
+      'AUTO_CLAIM_MAX_SLIPPAGE_BPS',
+      DEFAULT_AUTO_CLAIM_MAX_SLIPPAGE_BPS,
+    ),
+    minRewardPerGas: parseNonnegativeNumber(
+      env,
+      'AUTO_CLAIM_MIN_REWARD_PER_GAS',
+      DEFAULT_AUTO_CLAIM_MIN_REWARD_PER_GAS,
+    ),
+  });
   const autoRebalance = harden({
     driftBps: parsePositiveBigint(
       env,
@@ -232,6 +316,10 @@ export const loadConfig = async (
       apiUrl: axelarApiAddress,
       chainIdMap: axelarChainIdMap,
     },
+    oneInch: {
+      apiUrl: oneInchApiUrl,
+      apiKey: oneInchApiKey,
+    },
     sqlite: {
       dbPath: sqliteDbPath,
     },
@@ -239,6 +327,7 @@ export const loadConfig = async (
       url: ydsUrl,
       apiKey: ydsApiKey,
     },
+    autoClaim,
     autoRebalance,
   });
 

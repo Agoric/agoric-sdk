@@ -46,6 +46,8 @@ harden(YieldProtocol);
  * Supply: user is supplying assets to a yield protocol on the target chain.
  * Withdraw: user is withdrawing assets from a yield protocol on the target chain.
  * DepositForBurn: user is transferring assets off the target chain via CCTP.
+ * Claim: user is claiming rewards from a yield protocol.
+ * Swap: user is swapping one token for another (e.g., a reward token to USDC).
  *
  * @typedef {(typeof EvmWalletOperationType)[keyof typeof EvmWalletOperationType]} EvmWalletOperationType
  */
@@ -53,6 +55,8 @@ export const EvmWalletOperationType = /** @type {const} */ ({
   Supply: 'supply',
   Withdraw: 'withdraw',
   DepositForBurn: 'depositforburn',
+  Claim: 'claim',
+  Swap: 'swap',
 });
 harden(EvmWalletOperationType);
 

@@ -14,6 +14,19 @@ import type { UsdcNumber } from './support.ts';
 export const YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS = 60 * 60 * 1000;
 const USDC_DECIMALS = 6;
 
+/** cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/routes/reward-token-rates.ts: RewardTokenRateSchema */
+export type RewardTokenRate = {
+  evmChainId: number;
+  priceProvider: string;
+  sourceToken: EvmAddress;
+  sourceDenom: string;
+  sourceAmount: `${bigint}`;
+  targetToken: EvmAddress;
+  targetDenom: string;
+  targetAmount: `${bigint}`;
+  takenAtSec: number;
+};
+
 /** cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/api-schemas.ts: PortfolioSummary */
 export type YdsPortfolioSummary = {
   portfolioId: PortfolioKey;
@@ -26,6 +39,14 @@ export type YdsPortfolioSummary = {
       accounts: Partial<Record<SupportedChain, null | UsdcNumber>>;
     };
     totalValueUsdc: UsdcNumber;
+    tokenBalances: {
+      chainName: SupportedChain;
+      caipChainId: CaipChainId;
+      instrumentName: null | PoolKey;
+      symbol: string;
+      tokenId: string;
+      amount: `${bigint}`;
+    }[];
   };
   reserved: UsdcNumber;
   atBlockHeight: number;
@@ -47,6 +68,9 @@ export type YdsPortfolioSummary = {
   >;
   vstorage: { structure: Record<string, unknown>; slots: string[] };
 };
+export type YdsTokenBalance = NonNullable<
+  YdsPortfolioSummary['latestSnapshot']
+>['tokenBalances'][number];
 
 // TODO: Use something less open-coded, e.g. Zod or @endo/patterns.
 const assertRecord = (
