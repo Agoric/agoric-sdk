@@ -407,6 +407,41 @@ export const contractsMock = {
   },
 } as const satisfies EVMContractAddressesMap;
 
+export const poolMetadataMock = harden({
+  Aave_Avalanche: {
+    rewardTokenById: {
+      '0x0000000000000000000000000000000000000abc': {
+        caipChainId: 'eip155:43114',
+        chainName: 'Avalanche',
+        tokenId: '0x0000000000000000000000000000000000000abc',
+        symbol: 'RWD',
+        decimals: 18,
+      },
+    },
+  },
+});
+
+export const chainMetadataMock = harden({
+  Avalanche: {
+    stableTokenById: {
+      [contractsMock.Avalanche.usdc]: {
+        caipChainId: 'eip155:43114',
+        chainName: 'Avalanche',
+        tokenId: contractsMock.Avalanche.usdc,
+        symbol: 'USDC',
+        decimals: 6,
+      },
+      '0x0000000000000000000000000000000000000cab': {
+        caipChainId: 'eip155:43114',
+        chainName: 'Avalanche',
+        tokenId: '0x0000000000000000000000000000000000000cab',
+        symbol: 'DAI',
+        decimals: 18,
+      },
+    },
+  },
+});
+
 export const axelarIdsMock: AxelarId = {
   Avalanche: 'Avalanche',
   Optimism: 'optimism',

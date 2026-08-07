@@ -36,7 +36,9 @@ import {
 } from '@agoric/orchestration';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
+  ChainMetadata,
   FlowConfig,
+  PoolMetadata,
   PortfolioAgentGrantee,
   PortfolioAgentKey,
   PortfolioPermissionsExt,
@@ -50,6 +52,10 @@ import {
   PortfolioPlannerAgent,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import {
+  ChainMetadataShape,
+  PoolMetadataShape,
+} from '@agoric/portfolio-api/src/type-guards.js';
 import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type {
   PermitDetails,
@@ -81,6 +87,7 @@ import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   BeefyPoolPlaces,
   ERC4626PoolPlaces,
+  PoolPlaces,
   makeProposalShapes,
   type EVMContractAddressesMap,
   type OfferArgsFor,
@@ -303,6 +310,46 @@ const GmpAddressesShape: TypedPattern<GmpAddresses> = M.splitRecord({
   AXELAR_GAS: M.string(),
 });
 
+const mergePoolMetadata = (poolMetadata: PoolMetadata): PoolMetadata =>
+  harden(
+    fromEntries(
+      keys(PoolPlaces).map(poolKey => {
+        const base = PoolPlaces[poolKey];
+        const override = poolMetadata[poolKey] || {};
+        const baseRewardTokenById =
+          'rewardTokenById' in base ? base.rewardTokenById || {} : {};
+        return [
+          poolKey,
+          harden({
+            ...base,
+            ...override,
+            rewardTokenById: harden({
+              ...baseRewardTokenById,
+              ...(override.rewardTokenById || {}),
+            }),
+          }),
+        ];
+      }),
+    ),
+  );
+harden(mergePoolMetadata);
+
+const mergeChainMetadata = (chainMetadata: ChainMetadata): ChainMetadata =>
+  harden(
+    fromEntries(
+      Object.entries(chainMetadata).map(([chainName, metadata]) => [
+        chainName,
+        harden({
+          ...metadata,
+          stableTokenById: harden({
+            ...(metadata?.stableTokenById || {}),
+          }),
+        }),
+      ]),
+    ),
+  );
+harden(mergeChainMetadata);
+
 export type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
@@ -313,6 +360,8 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
+  poolMetadata?: PoolMetadata;
+  chainMetadata?: ChainMetadata;
   defaultFlowConfig?: FlowConfig | null;
   // Keep new private args optional: seemingly small breaking changes in
   // startup configuration often turn out to be expensive across upgrade,
@@ -341,6 +390,8 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
       gmpAddresses: GmpAddressesShape,
     },
     {
+      poolMetadata: PoolMetadataShape,
+      chainMetadata: ChainMetadataShape,
       defaultFlowConfig: M.or(FlowConfigShape, M.null()),
       postalService: M.remotable('PostalService'),
       postalServiceInstance: M.remotable('PostalServiceInstance'),
@@ -413,6 +464,8 @@ export const contract = async (
     walletBytecode,
     storageNode,
     gmpAddresses,
+    poolMetadata = {},
+    chainMetadata = {},
     timerService,
     defaultFlowConfig = DEFAULT_FLOW_CONFIG,
     postalService,
@@ -515,6 +568,8 @@ export const contract = async (
     },
     axelarIds,
     contracts,
+    poolMetadata: mergePoolMetadata(poolMetadata),
+    chainMetadata: mergeChainMetadata(chainMetadata),
     walletBytecode,
     gmpAddresses,
     resolverClient,

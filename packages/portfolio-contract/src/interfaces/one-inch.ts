@@ -58,7 +58,7 @@ harden(oneInchRouterABI);
  * arbitrary address or token. By building the call ourselves we make the
  * fund-safety fields correct by construction rather than checked after decode:
  * - `srcToken` is the reward token we are approving,
- * - `dstToken` is USDC,
+ * - `dstToken` is the configured stable token,
  * - `dstReceiver` is this portfolio's own remote account,
  * - `amount` equals the approved `amountIn`, and
  * - `minReturnAmount` is the contract-controlled USDC floor, taken from the
@@ -75,15 +75,15 @@ harden(oneInchRouterABI);
  */
 export const getOneInchSwapArgs = (
   swap: OneInchSwapDesc,
-  controlled: { usdc: Hex; receiver: Hex; minReturnAmount: bigint },
+  controlled: { tokenOut: Hex; receiver: Hex; minReturnAmount: bigint },
 ): AbiContractArgs<typeof oneInchRouterABI, 'swap'> => {
   const { tokenIn, amountIn, flags, executor, srcReceiver, data } = swap;
-  const { usdc, receiver, minReturnAmount } = controlled;
+  const { tokenOut, receiver, minReturnAmount } = controlled;
   return [
     executor,
     {
       srcToken: tokenIn,
-      dstToken: usdc,
+      dstToken: tokenOut,
       srcReceiver,
       dstReceiver: receiver,
       amount: amountIn,

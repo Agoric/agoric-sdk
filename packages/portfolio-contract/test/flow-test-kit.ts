@@ -61,7 +61,13 @@ import {
 } from '../src/resolver/types.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { axelarIdsMock, contractsMock, gmpAddresses } from './mocks.ts';
+import {
+  axelarIdsMock,
+  chainMetadataMock,
+  contractsMock,
+  gmpAddresses,
+  poolMetadataMock,
+} from './mocks.ts';
 import { axelarCCTPConfig, makeIncomingVTransferEvent } from './supports.ts';
 
 const theExit = harden(() => {});
@@ -527,6 +533,8 @@ export const mocks = (
   const ctx1: PortfolioInstanceContext = {
     axelarIds: axelarIdsMock,
     contracts: contractsMock,
+    poolMetadata: poolMetadataMock,
+    chainMetadata: chainMetadataMock,
     walletBytecode: '0x1234',
     gmpAddresses,
     usdc: { brand: USDC, denom },
