@@ -22,11 +22,11 @@ import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
  * @import {TestFn} from 'ava';
  */
 
-const ymax0ControlAddress = 'agoric15u29seyj3c9rdwg7gwkc97uttrk6j9fl4jkuyh';
+const ymax1ControlAddress = 'agoric1c0eq3m8sze9cj8lxr7h66fu3jgqtevqxv8svcm';
 const bundleIdPath =
   '/usr/src/agoric-sdk/packages/portfolio-deploy/dist/ymax0.bundleId';
 const privateArgsPath =
-  '/usr/src/agoric-sdk/packages/portfolio-deploy/test/privateArgs-ymax0.json';
+  '/usr/src/agoric-sdk/packages/portfolio-deploy/test/privateArgs-ymax1.json';
 const vsc = makeVstorageKit({ fetch }, LOCAL_CONFIG);
 const fromPublishedEntries = async path =>
   Object.fromEntries(await vsc.readPublished(path));
@@ -66,17 +66,17 @@ const makeContext = async () => {
   const { contracts } = JSON.parse(await readFile(privateArgsPath, 'utf8'));
 
   const controlSigner = makeSyntheticWalletKit({
-    address: ymax0ControlAddress,
+    address: ymax1ControlAddress,
     vstorageKit: vsc,
   });
   const control = makeYmaxControlKitForSynthetic(
     { setTimeout },
     { signer: controlSigner, makeNonce, log: () => {} },
   );
-  const { ymax0: instance } = await fromPublishedEntries(
+  const { ymax1: instance } = await fromPublishedEntries(
     'agoricNames.instance',
   );
-  const vats = (await getDetailsMatchingVats('ymax0')).filter(
+  const vats = (await getDetailsMatchingVats('ymax1')).filter(
     vat => !vat.terminated,
   );
   assert(vats.length > 0);
@@ -98,7 +98,7 @@ test.before(async t => {
   t.context = await makeContext();
 });
 
-test.serial('upgrade ymax0 and exercise the instrument oracle', async t => {
+test.serial('upgrade ymax1 and exercise the instrument oracle', async t => {
   const { bundleId, contracts, control, instance, vatDetails } = t.context;
   assert(vatDetails);
 
@@ -113,7 +113,7 @@ test.serial('upgrade ymax0 and exercise the instrument oracle', async t => {
     }),
   });
 
-  const { ymax0: upgradedInstance } = await fromPublishedEntries(
+  const { ymax1: upgradedInstance } = await fromPublishedEntries(
     'agoricNames.instance',
   );
   t.is(upgradedInstance.getBoardId(), instance.getBoardId());
@@ -136,7 +136,7 @@ test.serial('upgrade ymax0 and exercise the instrument oracle', async t => {
     ['keys', 'show', '-a', 'instrumentOracle', '--keyring-backend=test'],
     { encoding: 'utf8' },
   ).trim();
-  const { ymax0, postalService } = await fromPublishedEntries(
+  const { ymax1, postalService } = await fromPublishedEntries(
     'agoricNames.instance',
   );
 
@@ -147,7 +147,7 @@ test.serial('upgrade ymax0 and exercise the instrument oracle', async t => {
 
   const oracleStore = makeStore(oracleAddress);
   await oracleStore.saveOfferResult(
-    { instance: ymax0, description: 'instrumentOracle' },
+    { instance: ymax1, description: 'instrumentOracle' },
     'instrumentOracle',
   );
   /** @type {WalletStoreEntryProxy<InstrumentOracle>} */
@@ -161,7 +161,7 @@ test.serial('upgrade ymax0 and exercise the instrument oracle', async t => {
     asOf: 1_786_123_516,
   };
   t.deepEqual(
-    await eventuallyRead('ymax0.instruments.Aave_Base', expected),
+    await eventuallyRead('ymax1.instruments.Aave_Base', expected),
     expected,
   );
 

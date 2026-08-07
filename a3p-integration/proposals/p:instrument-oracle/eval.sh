@@ -12,7 +12,7 @@ yarn build:bundle
 yarn build:bundle-id
 
 # Install the candidate without starting or replacing a contract. The test
-# upgrades the existing ymax0 instance through its wallet-held ymaxControl.
+# upgrades the existing ymax1 instance through its wallet-held ymaxControl.
 # shellcheck disable=SC2086
 agd tx swingset install-bundle @dist/bundle-ymax0.json \
   $SIGN_BROADCAST_OPTS --from validator
