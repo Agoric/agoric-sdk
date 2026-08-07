@@ -9,6 +9,7 @@ import type {
   PortfolioDelegatedRebalanceParams,
 } from '@agoric/portfolio-api';
 import { isInstrumentId } from '@agoric/portfolio-api/src/type-guards.js';
+import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
@@ -172,3 +173,18 @@ export const preparePlanner = (
 };
 
 export type PortfolioPlanner = ReturnType<ReturnType<typeof preparePlanner>>;
+
+/** Prepare the contract-instance-global planner invitation maker. */
+export const preparePlannerInvitation = (
+  zone: Zone,
+  zcf: ZCF,
+  powers: Parameters<typeof preparePlanner>[1],
+) => {
+  const makePlanner = preparePlanner(zone, powers);
+  return () =>
+    zcf.makeInvitation((seat: ZCFSeat) => {
+      seat.exit();
+      return makePlanner();
+    }, 'planner');
+};
+harden(preparePlannerInvitation);
