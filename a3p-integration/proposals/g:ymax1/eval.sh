@@ -14,11 +14,11 @@ curl --fail --location --silent --show-error \
   https://github.com/Agoric/agoric-sdk/releases/download/ymax-v0.3.2605-beta1/bundle-ymax0.json
 curl --fail --location --silent --show-error \
   --output "$private_args_file" \
-  https://github.com/Agoric/agoric-sdk/releases/download/ymax-v0.3.2604-beta1/privateArgsOverrides.json
+  https://github.com/Agoric/agoric-sdk/releases/download/ymax-v0.3.2605-beta1/ymax1-main-privateArgsOverrides-ea14a159d1c6.json
 
 sha256sum --check <<EOF
 6eb97a6237622ffdc1b4bebb28c0b104ae8adba6b961b5189bd551b5002d5da6  $bundle_file
-1c9643ddc5d508fc1fa8298493f9767ceaffa685eca2685096f4583c03836e61  $private_args_file
+ea14a159d1c6cc23b8827146a054016ac72f1d7fce578b05ccf443dc10046f9f  $private_args_file
 EOF
 
 test "$(jq -r .endoZipBase64Sha512 "$bundle_file")" = \

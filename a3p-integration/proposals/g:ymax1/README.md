@@ -13,6 +13,7 @@ so the contract is live with a stable vatID by the end of this layer, for
 other proposals (e.g. `o:ymax1-multisig-control`, `n:upgrade-next`) to
 reference.
 
-The initial instance uses the `ymax-v0.3.2605-beta1` contract bundle and the
-compatible `ymax-v0.3.2604-beta1` private arguments, both checksum-pinned by
-`eval.sh`.
+The initial instance uses the `ymax-v0.3.2605-beta1` contract bundle and ymax1
+private arguments, both checksum-pinned by `eval.sh`. Synthetic-chain asset
+metadata is added because the release's upgrade overrides rely on an existing
+instance to retain it.
