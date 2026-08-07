@@ -1001,7 +1001,7 @@ __metadata:
     typescript: "npm:~6.0.3"
     typescript-eslint: "npm:^8.59.2"
   dependenciesMeta:
-    better-sqlite3@12.10.0:
+    better-sqlite3:
       built: true
     dprint@0.53.0:
       built: true
@@ -2373,7 +2373,7 @@ __metadata:
 
 "@endo/bundle-source@patch:@endo/bundle-source@npm%3A4.3.2#~/.yarn/patches/@endo-bundle-source-npm-4.3.2-fc66574e44.patch":
   version: 4.3.2
-  resolution: "@endo/bundle-source@patch:@endo/bundle-source@npm%3A4.3.2#~/.yarn/patches/@endo-bundle-source-npm-4.3.2-fc66574e44.patch::version=4.3.2&hash=656ba5"
+  resolution: "@endo/bundle-source@patch:@endo/bundle-source@npm%3A4.3.2#~/.yarn/patches/@endo-bundle-source-npm-4.3.2-fc66574e44.patch::version=4.3.2&hash=a6d3b2"
   dependencies:
     "@endo/base64": "npm:^1.1.1"
     "@endo/compartment-mapper": "npm:^2.3.0"
@@ -2385,7 +2385,7 @@ __metadata:
     amaro: "npm:^1.1.9"
   bin:
     bundle-source: src/tool.js
-  checksum: 10c0/a895c22b9f292f12530200d6fc3c09ca332adfa97ee04661ec4751f32b7f8a05c9a7c6f54d4c08702419a4241f002b001613ce6ed7b1d8d713798cb896317eb5
+  checksum: 10c0/93576f15271a3715ceec1e23f307aa88f01e04ba6ff47eb35d0f3b5810e785652b7f708b365172f520c37041f9c0a4833726559b26d19df76dc397daae23cb19
   languageName: node
   linkType: hard
 
@@ -2574,7 +2574,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/init@npm:^1.1.13":
+"@endo/init@npm:1.1.13":
   version: 1.1.13
   resolution: "@endo/init@npm:1.1.13"
   dependencies:
@@ -2584,6 +2584,19 @@ __metadata:
     "@endo/lockdown": "npm:^1.0.18"
     "@endo/promise-kit": "npm:^1.2.0"
   checksum: 10c0/26c3f026d89ae9b3269b2df068acdf4007372b0597116c9440e426aab117c1f46d4b5cf08bcb8ac8b50ec916b25cbc15c0c11f8be50f451fcd7dc269eef1f924
+  languageName: node
+  linkType: hard
+
+"@endo/init@patch:@endo/init@npm%3A1.1.13#~/.yarn/patches/@endo-init-npm-1.1.13-1e5953990d.patch":
+  version: 1.1.13
+  resolution: "@endo/init@patch:@endo/init@npm%3A1.1.13#~/.yarn/patches/@endo-init-npm-1.1.13-1e5953990d.patch::version=1.1.13&hash=b6f488"
+  dependencies:
+    "@endo/base64": "npm:^1.0.12"
+    "@endo/eventual-send": "npm:^1.4.0"
+    "@endo/harden": "npm:^1.1.0"
+    "@endo/lockdown": "npm:^1.0.18"
+    "@endo/promise-kit": "npm:^1.2.0"
+  checksum: 10c0/28c74797bdf90a51991ce9e197608ae9832adbc7dce2df7263decae779b96dccae9a6c86a38bf267e84bb6750a3575f2f7d0e6272f4a1acf5f8a17b3f94c2075
   languageName: node
   linkType: hard
 
@@ -8016,14 +8029,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"better-sqlite3@npm:^12.10.0":
-  version: 12.10.0
-  resolution: "better-sqlite3@npm:12.10.0"
+"better-sqlite3@npm:~12.10.0":
+  version: 12.10.1
+  resolution: "better-sqlite3@npm:12.10.1"
   dependencies:
     bindings: "npm:^1.5.0"
     node-gyp: "npm:latest"
     prebuild-install: "npm:^7.1.1"
-  checksum: 10c0/b269792c1e456201b16fb9abd1e3fa9284d7710929f991899cebbb61e56dc3703673be29dadcb2f4a2d02961c49145f53d7d7b13b7b47298c033ec9de524f34f
+  checksum: 10c0/38c0958ea252ba61e948358a143146aa59c8fb381b286a3064b9756ab4e2f91dfc9261cc5bb12c1afcc79519628543cfb6d62bc5a566eab2b9822403b0aad955
   languageName: node
   linkType: hard
 
@@ -16401,20 +16414,20 @@ __metadata:
 
 "resolve@patch:resolve@npm%3A^1.1.6#optional!builtin<compat/resolve>, resolve@patch:resolve@npm%3A^1.10.0#optional!builtin<compat/resolve>":
   version: 1.22.11
-  resolution: "resolve@patch:resolve@npm%3A1.22.11#optional!builtin<compat/resolve>::version=1.22.11&hash=c3c19d"
+  resolution: "resolve@patch:resolve@npm%3A1.22.11#optional!builtin<compat/resolve>::version=1.22.11&hash=9bd1a5"
   dependencies:
     is-core-module: "npm:^2.16.1"
     path-parse: "npm:^1.0.7"
     supports-preserve-symlinks-flag: "npm:^1.0.0"
   bin:
     resolve: bin/resolve
-  checksum: 10c0/ee5b182f2e37cb1165465e58c6abc797fec0a80b5ba3231607beb4677db0c9291ac010c47cf092b6daa2b7f518d69a0e21888e7e2b633f68d501a874212a8c63
+  checksum: 10c0/55f7a298977b1aacf6dbec6dcfc81100ba98675bced193b57d3ac58ced65acc40c3a38927853cea86b7f75edb3c20e1f099a09d48b0d8ceccc25d466993eec47
   languageName: node
   linkType: hard
 
 "resolve@patch:resolve@npm%3A^2.0.0-next.6#optional!builtin<compat/resolve>":
   version: 2.0.0-next.6
-  resolution: "resolve@patch:resolve@npm%3A2.0.0-next.6#optional!builtin<compat/resolve>::version=2.0.0-next.6&hash=c3c19d"
+  resolution: "resolve@patch:resolve@npm%3A2.0.0-next.6#optional!builtin<compat/resolve>::version=2.0.0-next.6&hash=9bd1a5"
   dependencies:
     es-errors: "npm:^1.3.0"
     is-core-module: "npm:^2.16.1"
@@ -16424,7 +16437,7 @@ __metadata:
     supports-preserve-symlinks-flag: "npm:^1.0.0"
   bin:
     resolve: bin/resolve
-  checksum: 10c0/dca533e38820b0d8d636f269824cef3b7435802ab7401211c6f10af03be0e2f7e216047234e1623046c0a6791577079767e0c04f0d36e42c7f567b1bff7b0742
+  checksum: 10c0/f59a0b355000ae2626fbf62c652c87312ccd213be7a81f4135fd23ecb7a22df48b7b42358fa42f1ad26b8380a71a53413a3a5b123d8fb255fedc25739416efda
   languageName: node
   linkType: hard
 
@@ -16828,12 +16841,12 @@ __metadata:
 
 "ses@patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch":
   version: 2.2.0
-  resolution: "ses@patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch::version=2.2.0&hash=7e521d"
+  resolution: "ses@patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch::version=2.2.0&hash=50b54e"
   dependencies:
     "@endo/cache-map": "npm:^1.1.0"
     "@endo/env-options": "npm:^1.1.11"
     "@endo/immutable-arraybuffer": "npm:^1.1.2"
-  checksum: 10c0/6ae3e0267f831fcc46a8d941c60ecc49b010a9356a6e461d7fe885c2c992bafbd3e163d2c6a3cea3ce251ac4cd739c4f13a54fae6f87cfe4f5296a6ffa8318ce
+  checksum: 10c0/6e3153ffbcf79bbb2205da2b150bd5465f829908a824e4099dce61612e737d9e8212ea0501b7458ef3c933539cb6bcafd9eaf607c6fd905742e539e7eb9d3c10
   languageName: node
   linkType: hard
 

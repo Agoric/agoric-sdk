@@ -1,5 +1,9 @@
 .yarn/*
-!.yarn/patches/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 # fetched chain info from running starship
 starship-chain-info.js
 # builder prefix for contract starters
