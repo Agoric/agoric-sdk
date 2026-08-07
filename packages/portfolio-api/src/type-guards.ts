@@ -1,6 +1,12 @@
 import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import type { BeefyInstrumentId, ERC4626InstrumentId } from './places.ts';
+import type {
+  BeefyInstrumentId,
+  ChainMetadata,
+  ERC4626InstrumentId,
+  PoolMetadata,
+  TokenMetadata,
+} from './places.ts';
 import type {
   DepositFromChainRef,
   LocalChainAccountRef,
@@ -10,6 +16,48 @@ import type {
 } from './types.js';
 
 export { isInstrumentId } from './places.ts';
+export type {
+  ChainMetadata,
+  ChainMetadataEntry,
+  PoolMetadata,
+  PoolMetadataEntry,
+  TokenMetadata,
+} from './places.ts';
+
+export const TokenMetadataShape: TypedPattern<TokenMetadata> = M.splitRecord({
+  caipChainId: M.string(),
+  chainName: M.string(),
+  tokenId: M.string(),
+  symbol: M.string(),
+  decimals: M.number(),
+});
+harden(TokenMetadataShape);
+
+export const PoolMetadataShape: TypedPattern<PoolMetadata> = M.recordOf(
+  M.string(),
+  M.splitRecord(
+    {
+      rewardTokenById: M.recordOf(M.string(), TokenMetadataShape),
+    },
+    {
+      protocol: M.string(),
+      chainName: M.string(),
+      vault: M.or(M.null(), M.number()),
+    },
+  ),
+);
+harden(PoolMetadataShape);
+
+export const ChainMetadataShape: TypedPattern<ChainMetadata> = M.recordOf(
+  M.string(),
+  M.splitRecord(
+    {
+      stableTokenById: M.recordOf(M.string(), TokenMetadataShape),
+    },
+    {},
+  ),
+);
+harden(ChainMetadataShape);
 
 /**
  * Without regard to supported chains, is the input plausibly a
