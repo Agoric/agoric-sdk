@@ -25,6 +25,8 @@ import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 const ymax0ControlAddress = 'agoric15u29seyj3c9rdwg7gwkc97uttrk6j9fl4jkuyh';
 const bundleIdPath =
   '/usr/src/agoric-sdk/packages/portfolio-deploy/dist/ymax0.bundleId';
+const privateArgsPath =
+  '/usr/src/agoric-sdk/packages/portfolio-deploy/test/privateArgs-ymax0.json';
 const vsc = makeVstorageKit({ fetch }, LOCAL_CONFIG);
 const fromPublishedEntries = async path =>
   Object.fromEntries(await vsc.readPublished(path));
@@ -61,6 +63,7 @@ const eventuallyRead = async (path, expected) => {
 const makeContext = async () => {
   const bundleId = (await readFile(bundleIdPath, 'utf8')).trim();
   assert(bundleId.startsWith('b1-'));
+  const { contracts } = JSON.parse(await readFile(privateArgsPath, 'utf8'));
 
   const controlSigner = makeSyntheticWalletKit({
     address: ymax0ControlAddress,
@@ -80,6 +83,7 @@ const makeContext = async () => {
 
   return {
     bundleId,
+    contracts: harden(contracts),
     control,
     instance,
     vatDetails: vats.at(-1),
@@ -95,10 +99,19 @@ test.before(async t => {
 });
 
 test.serial('upgrade ymax0 and exercise the instrument oracle', async t => {
-  const { bundleId, control, instance, vatDetails } = t.context;
+  const { bundleId, contracts, control, instance, vatDetails } = t.context;
   assert(vatDetails);
 
-  await control.ymaxControl.upgrade({ bundleId, privateArgsOverrides: {} });
+  const { postalService: postalServiceInstance } = await fromPublishedEntries(
+    'agoricNames.instance',
+  );
+  await control.ymaxControl.upgrade({
+    bundleId,
+    privateArgsOverrides: harden({
+      contracts,
+      postalServiceInstance,
+    }),
+  });
 
   const { ymax0: upgradedInstance } = await fromPublishedEntries(
     'agoricNames.instance',
