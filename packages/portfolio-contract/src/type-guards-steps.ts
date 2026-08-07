@@ -111,9 +111,22 @@ export const getKeywordOfPlaceRef = (
 };
 
 export type OfferArgsFor = {
-  deposit: { flow?: MovementDesc[] };
-  openPortfolio: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
-  rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
+  deposit: {
+    /** default to waiting for flow steps from planner */
+    flow?: MovementDesc[];
+  };
+  openPortfolio: {
+    /** default to waiting for flow steps from planner */
+    flow?: MovementDesc[];
+    /** initial target allocation */
+    targetAllocation?: TargetAllocation;
+  };
+  rebalance: {
+    /** default to waiting for flow steps from planner */
+    flow?: MovementDesc[];
+    /** change or re-state target allocation. */
+    targetAllocation?: TargetAllocation;
+  };
 };
 
 export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
