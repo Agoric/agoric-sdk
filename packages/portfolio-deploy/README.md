@@ -67,6 +67,12 @@ packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
 
 Pass private args overrides when needed: `export PRIVATE_ARGS_OVERRIDES='{"offerFilter":["foo"]}'`
 
+### Submit an instrument TVL update
+
+Run `src/submit-instrument-tvl.ts` through `scripts/wallet-admin.ts` after the
+operator has saved its invitation result as `instrumentOracle`. The script's
+usage message documents its arguments.
+
 ### multichain-testing/ymax-ops (obsolete)
 
 Some deployment tooling was developed in `multichain-testing/ymax-ops/`; it should be obsolete now, but it might not yet be deleted.

@@ -213,6 +213,10 @@ const status: StatusFor = {
       state: 'active',
     },
   },
+  instrument: {
+    tvlUsd: 12_345_679n,
+    asOf: 1_754_521_200,
+  },
   position: {
     protocol: yieldProtocol,
     accountId,

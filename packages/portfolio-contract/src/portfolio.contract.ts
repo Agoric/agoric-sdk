@@ -56,7 +56,7 @@ import type {
   YmaxOperationDetails,
 } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
-import type { ContractMeta, Invitation, ZCF, ZCFSeat } from '@agoric/zoe';
+import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
@@ -65,17 +65,18 @@ import { Fail, q } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
-import { M, objectMap } from '@endo/patterns';
+import { M } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
-import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
-import { preparePlanner } from './planner.exo.ts';
+import { prepareEVMWalletHandlerInvitation } from './evm-wallet-handler.exo.ts';
+import { prepareInstrumentOracleInvitationKit } from './instrument-oracle.exo.ts';
+import { preparePlannerInvitation } from './planner.exo.ts';
 import {
   makeValidateOpenMessageRepresentativeInfo,
   preparePortfolioKit,
   type PortfolioKit,
 } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
-import { prepareResolverKit } from './resolver/resolver.exo.js';
+import { prepareResolverKitSingleton } from './resolver/resolver.exo.js';
 import { PENDING_TXS_NODE_KEY } from './resolver/types.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
@@ -446,17 +447,14 @@ export const contract = async (
 
   const { cachingMarshaller } = tools;
 
-  const resolverZone = zone.subZone('Resolver');
-  const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
+  const {
+    resolverKit: { client: resolverClient, service: resolverService },
+    makeResolverInvitation,
+  } = prepareResolverKitSingleton(zone.subZone('Resolver'), zcf, {
     vowTools,
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
     marshaller: cachingMarshaller,
   });
-  const {
-    client: resolverClient,
-    service: resolverService,
-    invitationMakers: makeResolverInvitationMakers,
-  } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
   /**
    * Helper to conditionally include FlowConfig argument.
@@ -919,54 +917,38 @@ export const contract = async (
     Record<'openPortfolioFromEVM' | 'validateEVMMessageDomain', any> &
     ThisType<any>);
 
-  const prepareResultOnlyInvitation = <R>(
-    description: string,
-    makeResult: () => R,
-  ): (() => Promise<Invitation<R>>) => {
-    const makeResultOnlyInvitation = () => {
-      trace('makeResultOnlyInvitation', description);
-      return zcf.makeInvitation((seat: ZCFSeat) => {
-        seat.exit();
-        return makeResult();
-      }, description);
-    };
-    return makeResultOnlyInvitation;
-  };
-
-  const makeResolverInvitation = prepareResultOnlyInvitation('resolver', () =>
-    harden({ invitationMakers: makeResolverInvitationMakers }),
+  const makePlannerInvitation = preparePlannerInvitation(
+    zone.subZone('planner'),
+    zcf,
+    {
+      getPortfolioPlanner: id => getPortfolio(id).planner,
+      getPlannerDelegation,
+      shapes: offerArgsShapes,
+    },
   );
 
-  const makePlanner = preparePlanner(zone.subZone('planner'), {
-    getPortfolioPlanner: id => getPortfolio(id).planner,
-    getPlannerDelegation,
-    shapes: offerArgsShapes,
-  });
+  const { makeInstrumentOracleInvitation, revokeInstrumentOracle } =
+    prepareInstrumentOracleInvitationKit(
+      zone.subZone('instrumentOracle'),
+      zcf,
+      (poolKey, status) => {
+        const instrumentsNode = E(storageNode).makeChildNode('instruments');
+        publishStatus(E(instrumentsNode).makeChildNode(poolKey), status);
+      },
+    );
 
-  const makePlannerInvitation = prepareResultOnlyInvitation('planner', () =>
-    makePlanner(),
-  );
-
-  const permit2Addresses = objectMap(
-    eip155ChainIdToAxelarChain,
-    chainName => contracts[chainName].permit2,
-  );
-
-  const { makeEVMWalletMessageHandler } = prepareEVMWalletHandlerKit(
+  const makeEVMWalletHandlerInvitation = prepareEVMWalletHandlerInvitation(
     zone.subZone('evmWalletHandler'),
+    zcf,
     {
       storageNode: E(storageNode).makeChildNode('evmWallets'),
       vowTools,
       timerService,
       portfolioContractPublicFacet: publicFacet,
       publishStatus,
-      permit2Addresses,
+      eip155ChainIdToAxelarChain,
+      contracts,
     },
-  );
-
-  const makeEVMWalletHandlerInvitation = prepareResultOnlyInvitation(
-    'evmWalletHandler',
-    () => makeEVMWalletMessageHandler(),
   );
 
   const creatorFacet = zone.exo(
@@ -982,6 +964,12 @@ export const contract = async (
         M.string(),
         M.remotable('Instance'),
       ).returns(),
+      makeInstrumentOracleInvitation: M.callWhen().returns(InvitationShape),
+      deliverInstrumentOracleInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+      revokeInstrumentOracle: M.call().returns(M.boolean()),
       makeEVMWalletHandlerInvitation: M.callWhen().returns(InvitationShape),
       deliverEVMWalletHandlerInvitation: M.callWhen(
         M.string(),
@@ -1029,6 +1017,21 @@ export const contract = async (
         trace('made planner invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered planner invitation');
+      },
+      makeInstrumentOracleInvitation() {
+        return makeInstrumentOracleInvitation();
+      },
+      async deliverInstrumentOracleInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalService }>,
+      ) {
+        const zoe = zcf.getZoeService();
+        const postalServicePublicFacet = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makeInstrumentOracleInvitation();
+        await E(postalServicePublicFacet).deliverPayment(address, invitation);
+      },
+      revokeInstrumentOracle() {
+        return revokeInstrumentOracle();
       },
       makeEVMWalletHandlerInvitation() {
         return makeEVMWalletHandlerInvitation();

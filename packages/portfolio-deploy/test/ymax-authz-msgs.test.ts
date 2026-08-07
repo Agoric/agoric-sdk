@@ -28,6 +28,7 @@ import {
   encodeJsonPublicKey,
   makeAgdUnsignedTx,
   makeGrantEncodeObject,
+  makeInstrumentOracleInvitationEncodeObject,
   makeUpgradeEncodeObject,
   makeUpgradeExecEncodeObject,
   parseJsonPublicKey,
@@ -196,6 +197,34 @@ test('makeGrantEncodeObject grants MsgWalletSpendAction for 4 hours', t => {
   t.deepEqual(decoded.grant?.expiration, {
     seconds: BigInt(1782921600),
     nanos: 0,
+  });
+});
+
+test('makeInstrumentOracleInvitationEncodeObject invokes creatorFacet', async t => {
+  const { marshaller, action } = await getFixtureUpgradeArgs();
+  const controlAddress = tx1.controlAddress;
+  const oracleAddress = tx1.grantee;
+  const postalService = action.message.args[0].privateArgsOverrides
+    .postalServiceInstance as never;
+  const message = makeInstrumentOracleInvitationEncodeObject(
+    { oracleAddress, postalService },
+    {
+      controlAddress,
+      invocationId: 'invite-instrument-oracle-1',
+      marshaller,
+    },
+  );
+
+  const spend = MsgWalletSpendAction.fromPartial(message.value);
+  t.deepEqual(spend.owner, toAccAddress(controlAddress));
+  t.deepEqual(marshaller.fromCapData(JSON.parse(spend.spendAction)), {
+    method: 'invokeEntry',
+    message: {
+      id: 'invite-instrument-oracle-1',
+      targetName: 'creatorFacet',
+      method: 'deliverInstrumentOracleInvitation',
+      args: [oracleAddress, postalService],
+    },
   });
 });
 

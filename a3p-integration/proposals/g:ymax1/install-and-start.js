@@ -8,8 +8,13 @@ import '@endo/init/legacy.js'; // XXX axios
 
 import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
 import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
+import { readFile } from 'node:fs/promises';
 import { makeSyntheticWalletKit } from './synthetic-wallet-kit.js';
-import { bundleId, ymax1ControlAddr, ymaxDataArgs } from './consts.js';
+import {
+  syntheticAssetInfo,
+  ymax1BundleId,
+  ymax1ControlAddr,
+} from './consts.js';
 
 const { fromEntries } = Object;
 
@@ -31,11 +36,17 @@ const { BLD, USDC, PoC26 } = fromEntries(
   await vsc.readPublished('agoricNames.issuer'),
 );
 const issuers = harden({ USDC, Access: PoC26, BLD, Fee: BLD });
+const privateArgsOverrides = harden({
+  ...JSON.parse(
+    await readFile('./privateArgsOverrides-ymax1-base.json', 'utf8'),
+  ),
+  assetInfo: syntheticAssetInfo,
+});
 
 await ymaxControl.installAndStart({
-  bundleId,
+  bundleId: ymax1BundleId,
   issuers,
-  privateArgsOverrides: ymaxDataArgs,
+  privateArgsOverrides,
 });
 
 console.error('ymax1 installed and started');

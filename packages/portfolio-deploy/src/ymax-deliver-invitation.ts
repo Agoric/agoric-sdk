@@ -4,7 +4,11 @@ import { parseArgs } from 'node:util';
 import type { RunTools } from './wallet-admin-types.ts';
 import { getCreatorFacetKey, getYmaxControlKit } from './ymax-admin-helpers.ts';
 
-type InvitationKind = 'planner' | 'resolver' | 'ownerProxy';
+type InvitationKind =
+  | 'instrumentOracle'
+  | 'planner'
+  | 'resolver'
+  | 'ownerProxy';
 
 const options = {
   contract: { type: 'string', default: 'ymax0' },
@@ -16,6 +20,8 @@ const inviters: Record<
   InvitationKind,
   (cf: any, ps: Instance, addr: string) => Promise<void>
 > = {
+  instrumentOracle: (cf, ps, addr) =>
+    cf.deliverInstrumentOracleInvitation(addr, ps),
   planner: (cf, ps, addr) => cf.deliverPlannerInvitation(addr, ps),
   resolver: (cf, ps, addr) => cf.deliverResolverInvitation(addr, ps),
   ownerProxy: (cf, ps, addr) => cf.deliverEVMWalletHandlerInvitation(addr, ps),
