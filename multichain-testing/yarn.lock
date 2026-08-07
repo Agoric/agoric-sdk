@@ -52,6 +52,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/portfolio-contract@portal:../packages/portfolio-contract::locator=multichain-testing%40workspace%3A."
   dependencies:
+    "@agoric/base-zone": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
