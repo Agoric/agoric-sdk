@@ -1,3 +1,4 @@
+/* global globalThis */
 // import { AxelarConfigShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
@@ -11,6 +12,11 @@ import {
 import { toExternalConfig } from './config-marshal.js';
 import { name } from './portfolio.contract.permit.js';
 import { portfolioDeployConfigShape } from './portfolio-start.core.js';
+import {
+  getDefaultChainMetadata,
+  getDefaultPoolMetadata,
+  updateConfigFromYds,
+} from './token-meta.js';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = spec => readFile(nodeRequire.resolve(spec), 'utf8');
@@ -31,6 +37,7 @@ const parseBuilderArgs = args =>
       net: { type: 'string' },
       replace: { type: 'string' },
       'no-flow-config': { type: 'boolean', default: false },
+      yds: { type: 'string' },
     },
   });
 
@@ -57,39 +64,58 @@ const defaultProposalBuilder = async ({ publishRef, install }, config) => {
 /** @type {DeployScriptFunction} */ 0;
 const build = async (homeP, endowments) => {
   await null;
-  const { scriptArgs } = endowments;
+  const { scriptArgs, fetch = globalThis.fetch } = endowments;
   const { values: flags } = parseBuilderArgs(scriptArgs);
   const boardId = flags.replace;
   const defaultFlowConfig = flags['no-flow-config'] ? null : undefined;
+  const yds = flags.yds;
 
   const { bytecode: walletBytecode } = JSON.parse(
     await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
   );
 
-  /** @type {{ mainnet: PortfolioDeployConfig, testnet: PortfolioDeployConfig }} */
+  /**
+   * @type {Record<string, PortfolioDeployConfig>}
+   */
   const configs = harden({
     mainnet: {
+      cluster: 'mainnet',
       axelarConfig: { ...axelarMainnetConfig },
       gmpAddresses: {
         ...gmpAddresses.mainnet,
       },
       oldBoardId: boardId || '',
       walletBytecode,
+      poolMetadata: getDefaultPoolMetadata(),
+      chainMetadata: getDefaultChainMetadata('mainnet'),
       defaultFlowConfig,
     },
     testnet: {
+      cluster: 'testnet',
       axelarConfig: { ...axelarConfigTestnet },
       gmpAddresses: {
         ...gmpAddresses.testnet,
       },
       oldBoardId: boardId || '',
       walletBytecode,
+      poolMetadata: getDefaultPoolMetadata(),
+      chainMetadata: getDefaultChainMetadata('testnet'),
       defaultFlowConfig,
     },
   });
 
+  if (flags.net == null && yds != null) {
+    if (/^https:\/\/(main\d+\.)?ymax\.app\b([^.]|$)/.test(yds)) {
+      console.info(`Auto-selecting \`--net=mainnet\` due to \`--yds=${yds}\``);
+      flags.net = 'mainnet';
+    }
+  }
   const isMainnet = flags.net === 'mainnet';
-  const config = configs[isMainnet ? 'mainnet' : 'testnet'];
+  let config = configs[isMainnet ? 'mainnet' : 'testnet'];
+
+  if (yds !== undefined) {
+    config = await updateConfigFromYds({ config, yds, fetch });
+  }
 
   if (isMainnet) {
     for (const [chain, chainConfig] of Object.entries(config.axelarConfig)) {

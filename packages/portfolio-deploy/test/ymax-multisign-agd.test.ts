@@ -185,7 +185,7 @@ const writeJson = async (file: FileRW, specimen: unknown) => {
 };
 
 const normalizeCommandText = (text: string) =>
-  text.replace(/\/tmp\/ymax-authz-agd-[^/\s]*/g, '<tmp>');
+  text.replace(RegExp(`${tmpdir()}/ymax-authz-agd-[^/\\s]*`, 'g'), '<tmp>');
 
 const testModuleDir = path.dirname(fileURLToPath(import.meta.url));
 const agdBinDir = path.resolve(testModuleDir, '../../../bin');
