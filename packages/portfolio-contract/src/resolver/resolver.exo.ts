@@ -450,4 +450,21 @@ export type ResolverInvitationMakers = ResolverKit['invitationMakers'];
 
 export type ResolverKit = ReturnType<ReturnType<typeof prepareResolverKit>>;
 
+/** Prepare and provide the contract-instance-global resolver kit. */
+export const prepareResolverKitSingleton = (
+  zone: Zone,
+  zcf: ZCF,
+  powers: Parameters<typeof prepareResolverKit>[2],
+) => {
+  const makeResolverKit = prepareResolverKit(zone, zcf, powers);
+  const resolverKit = zone.makeOnce('resolverKit', () => makeResolverKit());
+  const makeResolverInvitation = () =>
+    zcf.makeInvitation((seat: ZCFSeat) => {
+      seat.exit();
+      return harden({ invitationMakers: resolverKit.invitationMakers });
+    }, 'resolver');
+  return harden({ resolverKit, makeResolverInvitation });
+};
+
 harden(prepareResolverKit);
+harden(prepareResolverKitSingleton);

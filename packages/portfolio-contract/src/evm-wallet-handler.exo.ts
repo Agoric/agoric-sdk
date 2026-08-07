@@ -22,6 +22,7 @@ import {
   validateTypedData,
 } from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
 import type { StatusFor } from '@agoric/portfolio-api';
+import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type {
   YmaxFullDomain,
   YmaxPermitWitnessTransferFromData,
@@ -36,16 +37,18 @@ import {
 import { provideLazy, type MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
+import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import { type Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { makePassableKit } from '@endo/marshal';
 import { passStyleOf, type Passable, type PureData } from '@endo/pass-style';
-import { M } from '@endo/patterns';
+import { M, objectMap } from '@endo/patterns';
 import type { Address } from 'abitype';
 import type { RecoverTypedDataAddressParameters } from 'viem';
 import type { PublishStatus } from './portfolio.contract.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
+import type { EVMContractAddressesMap } from './type-guards.ts';
 
 const trace = makeTracer('PEWH');
 
@@ -654,3 +657,33 @@ export const prepareEVMWalletHandlerKit = (
 export type EVMWalletMessageHandler = ReturnType<
   ReturnType<typeof prepareEVMWalletHandlerKit>['makeEVMWalletMessageHandler']
 >;
+
+/** Prepare the EMS-facing handler invitation maker. */
+export const prepareEVMWalletHandlerInvitation = (
+  zone: Zone,
+  zcf: ZCF,
+  powers: Omit<
+    Parameters<typeof prepareEVMWalletHandlerKit>[1],
+    'permit2Addresses'
+  > & {
+    eip155ChainIdToAxelarChain: Record<`${number}`, AxelarChain>;
+    contracts: EVMContractAddressesMap;
+  },
+) => {
+  const { eip155ChainIdToAxelarChain, contracts, ...handlerKitPowers } = powers;
+  const permit2Addresses = objectMap(
+    eip155ChainIdToAxelarChain,
+    chainName => contracts[chainName].permit2,
+  );
+  const { makeEVMWalletMessageHandler } = prepareEVMWalletHandlerKit(zone, {
+    ...handlerKitPowers,
+    permit2Addresses,
+  });
+
+  return () =>
+    zcf.makeInvitation((seat: ZCFSeat) => {
+      seat.exit();
+      return makeEVMWalletMessageHandler();
+    }, 'evmWalletHandler');
+};
+harden(prepareEVMWalletHandlerInvitation);
