@@ -12,3 +12,7 @@ then installs and starts ymax1 ([`install-and-start.js`](./install-and-start.js)
 so the contract is live with a stable vatID by the end of this layer, for
 other proposals (e.g. `o:ymax1-multisig-control`, `n:upgrade-next`) to
 reference.
+
+The initial instance uses the `ymax-v0.3.2605-beta1` contract bundle and the
+compatible `ymax-v0.3.2604-beta1` private arguments, both checksum-pinned by
+`eval.sh`.
