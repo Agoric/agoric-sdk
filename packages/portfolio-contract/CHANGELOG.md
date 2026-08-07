@@ -4,6 +4,147 @@ All notable changes to this project will be documented in this file.
 
 See [Conventional Commits](https://conventionalcommits.org/) for commit guidelines.
 
+## 70d307de7f (ymax-v0.3.2607-beta5) - 2026-07-27
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2607-beta5>
+
+### Major Features
+
+- Increment `policyVersion` on grants and auto-feature changes, and return settings-change records (#12820).
+- Add the Morpho Huma USDC Main vault on Ethereum (#12822).
+
+## e5ed322b93 (ymax-v0.3.2607-beta4) - 2026-07-23
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2607-beta4>
+
+### Major Features
+
+- Return and trace EVM portfolio-operation outcomes, including delegated agent keys and new auto-feature settings (#12815).
+- Add the Morpho RockawayX USDC Yield vault on Ethereum (#12821).
+
+## 5af4eb4c98 (ymax-v0.3.2607-beta3) - 2026-07-15
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2607-beta3>
+
+### Major Features
+
+- Open a portfolio and grant delegated control in one signed EIP-712 operation (#12805).
+- Add the claim-rewards flow step (#12718).
+
+## 53289febd4 (ymax-v0.3.2607-beta2) - 2026-07-08
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2607-beta2>
+
+### Major Fixes
+
+- Allow the delegated planner to add positions (#12532).
+- Support planner flow steps exceeding 1 million USDC (#12786).
+- Put reward-token swaps behind an experimental feature flag and remove the obsolete planner `submit` path (#12795, #12796).
+
+## 1c76ea7d31 (ymax-v0.3.2607-beta1) - 2026-07-01
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2607-beta1>
+
+### Major Features
+
+- Deploy the open-with-auto-features, delegation-parameter, and published-flow-detail changes tagged but not deployed in `ymax-v0.3.2606-beta3` (#12753, #12757, #12761).
+- Add three Morpho v2 vaults (#12767).
+
+### Major Fixes
+
+- Block deposits to Morpho Alpha USDC Core on Ethereum and reduce CCTP v2 link minimums to 1 USDC (#12764, #12768).
+
+## 9d518832d4 (ymax-v0.3.2606-beta3) - 2026-06-26
+
+_This release was tagged but never deployed._
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2606-beta3>
+
+### Major Features
+
+- Open a portfolio with auto-features in one operation (#12761).
+- Publish flow agent designations and update delegation client method signatures (#12753, #12757).
+
+## 776528eb7c (ymax-v0.3.2606-beta2) - 2026-06-16
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2606-beta2>
+
+### Major Features
+
+- Add auto-features and delegated, planner-driven auto-rebalancing (#12726).
+- Support swapping reward tokens to USDC through 1inch (#12706).
+
+## a1aec5d051 (ymax-v0.3.2606-beta1) - 2026-06-02
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2606-beta1>
+
+### Major Features
+
+- Add agent delegation with constrained portfolio permissions (#12688).
+- Export target-balance computation and the production network for YMax data-service consumers (#12679).
+- Restore direct CCTP v2 routes in the production network (#12684).
+
+## 20cc70c10e (ymax-v0.3.2605-beta1) - 2026-05-21
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2605-beta1>
+
+### Major Features
+
+- Support managed relaying for direct EVM-to-EVM CCTP v2 transfers and publish `destinationCaller` in transaction details (#12664).
+- Allow network instruments to suppress deposits or withdrawals (#12652).
+
+### Major Fixes
+
+- Exclude spurious planner flows and loosen solver tolerances for valid allocations (#12633, #12645, #12665).
+
+## f5ece76299 (ymax-v0.3.2604-beta2) - 2026-04-14
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2604-beta2>
+
+### Major Features
+
+- Accept externally verified EVM smart-account signers (#12611).
+- Support USDC allocations to a portfolio's Remote Account (#12599).
+
+## cffb93b58c (ymax-v0.3.2604-beta1) - 2026-04-02
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2604-beta1>
+
+### Major Features
+
+- Support router-based Remote Accounts alongside legacy deposit-factory accounts (#12430).
+- Enable vetted router upgrades for Remote Accounts (#12558).
+
+## 2b24004f87 (ymax-v0.3.2603-beta1) - 2026-03-09
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2603-beta1>
+
+### Major Features
+
+- Require chain ID and verifying-contract validation for signed EVM operations, and publish per-chain EVM account state in preparation for router-based accounts (#12533).
+
+### Major Fixes
+
+- Await EVM account creation before continuing a CCTP-from-EVM flow (#12505).
+
+## fb41e57239 (ymax-v0.3.2602-beta3) - 2026-02-20
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2602-beta3>
+
+### Major Fixes
+
+- Handle synchronous scheduler failures, avoid duplicate cascaded failures, and wait for running tasks before completion (#12487).
+- Release pending EVM accounts when a flow starts (#12497).
+
+## b5638874e8 (ymax-v0.3.2602-beta2) - 2026-02-18
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2602-beta2>
+
+### Major Fixes
+
+- Register CCTP-to-user transactions before advancing the asynchronous flow (#12465).
+- Recover failed EVM account provisioning and block dependent steps until recovery completes (#12464, #12473).
+
 ## e1bdc1802e (ymax-v0.3.2602-beta) - 2026-02-13
 
 - Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2602-beta>

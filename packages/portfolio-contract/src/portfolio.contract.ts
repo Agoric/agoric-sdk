@@ -68,6 +68,7 @@ import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import { prepareEVMWalletHandlerInvitation } from './evm-wallet-handler.exo.ts';
+import { prepareInstrumentOracleInvitationKit } from './instrument-oracle.exo.ts';
 import { preparePlannerInvitation } from './planner.exo.ts';
 import {
   makeValidateOpenMessageRepresentativeInfo,
@@ -926,6 +927,16 @@ export const contract = async (
     },
   );
 
+  const { makeInstrumentOracleInvitation, revokeInstrumentOracle } =
+    prepareInstrumentOracleInvitationKit(
+      zone.subZone('instrumentOracle'),
+      zcf,
+      (poolKey, status) => {
+        const instrumentsNode = E(storageNode).makeChildNode('instruments');
+        publishStatus(E(instrumentsNode).makeChildNode(poolKey), status);
+      },
+    );
+
   const makeEVMWalletHandlerInvitation = prepareEVMWalletHandlerInvitation(
     zone.subZone('evmWalletHandler'),
     zcf,
@@ -953,6 +964,12 @@ export const contract = async (
         M.string(),
         M.remotable('Instance'),
       ).returns(),
+      makeInstrumentOracleInvitation: M.callWhen().returns(InvitationShape),
+      deliverInstrumentOracleInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+      revokeInstrumentOracle: M.call().returns(M.boolean()),
       makeEVMWalletHandlerInvitation: M.callWhen().returns(InvitationShape),
       deliverEVMWalletHandlerInvitation: M.callWhen(
         M.string(),
@@ -1000,6 +1017,21 @@ export const contract = async (
         trace('made planner invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered planner invitation');
+      },
+      makeInstrumentOracleInvitation() {
+        return makeInstrumentOracleInvitation();
+      },
+      async deliverInstrumentOracleInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalService }>,
+      ) {
+        const zoe = zcf.getZoeService();
+        const postalServicePublicFacet = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makeInstrumentOracleInvitation();
+        await E(postalServicePublicFacet).deliverPayment(address, invitation);
+      },
+      revokeInstrumentOracle() {
+        return revokeInstrumentOracle();
       },
       makeEVMWalletHandlerInvitation() {
         return makeEVMWalletHandlerInvitation();
