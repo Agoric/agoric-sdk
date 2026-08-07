@@ -3,7 +3,6 @@
  * @see {@link contract}
  * @see {@link start}
  */
-import { prepareRevocableMakerKit } from '@agoric/base-zone/zone-helpers.js';
 import { AmountMath, type Payment } from '@agoric/ertp';
 import {
   fromTypedEntries,
@@ -69,10 +68,7 @@ import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import { prepareEVMWalletHandlerInvitation } from './evm-wallet-handler.exo.ts';
-import {
-  prepareInstrumentOracle,
-  type InstrumentOracle,
-} from './instrument-oracle.exo.ts';
+import { prepareInstrumentOracleInvitationKit } from './instrument-oracle.exo.ts';
 import { preparePlannerInvitation } from './planner.exo.ts';
 import {
   makeValidateOpenMessageRepresentativeInfo,
@@ -931,52 +927,15 @@ export const contract = async (
     },
   );
 
-  const makeInstrumentOracle = prepareInstrumentOracle(
-    zone.subZone('instrumentOracle'),
-    (poolKey, status) => {
-      const instrumentsNode = E(storageNode).makeChildNode('instruments');
-      publishStatus(E(instrumentsNode).makeChildNode(poolKey), status);
-    },
-  );
-  const instrumentOracle = zone.makeOnce('instrumentOracleSingleton', () =>
-    makeInstrumentOracle(),
-  );
-  const { makeRevocable, revoke } = prepareRevocableMakerKit(
-    zone.subZone('instrumentOracleRevocable'),
-    'InstrumentOracle',
-    ['submitTvlUpdate'],
-  );
-  const currentInstrumentOracle = zone.mapStore<string, InstrumentOracle>(
-    'currentInstrumentOracle',
-  );
-  const instrumentOracleGeneration = zone.mapStore<string, number>(
-    'instrumentOracleGeneration',
-  );
-  if (!instrumentOracleGeneration.has('current')) {
-    instrumentOracleGeneration.init('current', 0);
-  }
-  const advanceInstrumentOracleGeneration = () => {
-    const current = instrumentOracleGeneration.get('current');
-    instrumentOracleGeneration.set('current', current + 1);
-    if (!currentInstrumentOracle.has('current')) {
-      return false;
-    }
-    const revoked = revoke(currentInstrumentOracle.get('current'));
-    currentInstrumentOracle.delete('current');
-    return revoked;
-  };
-  const makeInstrumentOracleInvitation = () => {
-    advanceInstrumentOracleGeneration();
-    const generation = instrumentOracleGeneration.get('current');
-    return zcf.makeInvitation((seat: ZCFSeat) => {
-      generation === instrumentOracleGeneration.get('current') ||
-        Fail`instrument oracle invitation has been revoked`;
-      seat.exit();
-      const revocable = makeRevocable(instrumentOracle) as InstrumentOracle;
-      currentInstrumentOracle.init('current', revocable);
-      return revocable;
-    }, 'instrumentOracle');
-  };
+  const { makeInstrumentOracleInvitation, revokeInstrumentOracle } =
+    prepareInstrumentOracleInvitationKit(
+      zone.subZone('instrumentOracle'),
+      zcf,
+      (poolKey, status) => {
+        const instrumentsNode = E(storageNode).makeChildNode('instruments');
+        publishStatus(E(instrumentsNode).makeChildNode(poolKey), status);
+      },
+    );
 
   const makeEVMWalletHandlerInvitation = prepareEVMWalletHandlerInvitation(
     zone.subZone('evmWalletHandler'),
@@ -1072,7 +1031,7 @@ export const contract = async (
         await E(postalServicePublicFacet).deliverPayment(address, invitation);
       },
       revokeInstrumentOracle() {
-        return advanceInstrumentOracleGeneration();
+        return revokeInstrumentOracle();
       },
       makeEVMWalletHandlerInvitation() {
         return makeEVMWalletHandlerInvitation();
