@@ -203,7 +203,7 @@ const makeMaybeAutoPowers = (overrides: Partial<AutoPowers> = {}) => {
   const ydsTransactionCalls: unknown[] = [];
   const transactionHash = `0x${'b'.repeat(64)}`;
   const powers: AutoPowers = {
-    autoClaimConfig: autoClaimConfig,
+    autoClaimConfig,
     autoRebalance: autoRebalanceConfig,
     console: {
       error: (...args) => errors.push(args),
