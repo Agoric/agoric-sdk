@@ -13,7 +13,9 @@
     "@agoric/deploy-script-support",
     "@agoric/portfolio-api",
     "@aglocal/portfolio-contract",
-    "@aglocal/portfolio-deploy"
+    "@aglocal/portfolio-deploy",
+    "@endo/init",
+    "ses"
   ],
   "type": "module",
   "license": "Apache-2.0",
@@ -21,32 +23,41 @@
     "@aglocal/portfolio-deploy": "dev",
     "@agoric/client-utils": "dev",
     "@agoric/deploy-script-support": "dev",
-    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
+    "@agoric/portfolio-api": "portal:./local-packages/@agoric/portfolio-api",
     "@agoric/synthetic-chain": "^0.7.1",
-    "@endo/init": "^1.1.12",
+    "@endo/init": "portal:./local-packages/@endo/init",
     "@endo/promise-kit": "^1.2.1",
     "ava": "^6.4.1",
-    "execa": "^9.6.0"
+    "execa": "^9.6.0",
+    "ses": "^2.2.0"
   },
   "devDependencies": {
     "@cosmjs/proto-signing": "^0.36.0",
     "ts-blank-space": "^0.7.0"
   },
   "resolutions": {
-    "@agoric/client-utils": "portal:./local-packages/client-utils",
-    "@agoric/cosmic-proto": "portal:./local-packages/cosmic-proto",
-    "@agoric/deploy-script-support": "portal:./local-packages/deploy-script-support",
-    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
-    "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract",
-    "@aglocal/portfolio-deploy": "portal:./local-packages/portfolio-deploy",
+    "@agoric/client-utils": "portal:./local-packages/@agoric/client-utils",
+    "@agoric/cosmic-proto": "portal:./local-packages/@agoric/cosmic-proto",
+    "@agoric/deploy-script-support": "portal:./local-packages/@agoric/deploy-script-support",
+    "@agoric/portfolio-api": "portal:./local-packages/@agoric/portfolio-api",
+    "@aglocal/portfolio-contract": "portal:./local-packages/@aglocal/portfolio-contract",
+    "@aglocal/portfolio-deploy": "portal:./local-packages/@aglocal/portfolio-deploy",
     "@cosmjs/amino": "^0.36.0",
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
     "@cosmjs/stargate": "^0.36.0",
-    "@cosmjs/tendermint-rpc": "^0.36.0"
+    "@cosmjs/tendermint-rpc": "^0.36.0",
+    "@endo/init": "portal:./local-packages/@endo/init",
+    "better-sqlite3": "~12.10.0",
+    "ses": "portal:./local-packages/ses"
   },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
-  "packageManager": "yarn@4.12.0"
+  "packageManager": "yarn@4.17.1",
+  "dependenciesMeta": {
+    "better-sqlite3": {
+      "built": true
+    }
+  }
 }

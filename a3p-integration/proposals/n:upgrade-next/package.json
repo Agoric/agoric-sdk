@@ -7,7 +7,11 @@
     "upgradeInfo": {
       "coreProposals": [],
       "vatOptionUpdates": [
-        { "vatID": "v91", "critical": true, "label": "ymax1" }
+        {
+          "vatID": "v91",
+          "critical": true,
+          "label": "ymax1"
+        }
       ]
     },
     "type": "Software Upgrade Proposal",
@@ -19,18 +23,19 @@
     "@agoric/client-utils": "dev",
     "@agoric/ertp": "dev",
     "@agoric/internal": "dev",
-    "@agoric/synthetic-chain": "^0.7.1",
+    "@agoric/synthetic-chain": "^0.7.2",
     "@agoric/zoe": "dev",
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
     "@cosmjs/stargate": "^0.36.0",
     "@endo/bundle-source": "^4.1.2",
     "@endo/errors": "^1.2.13",
-    "@endo/init": "^1.1.12",
+    "@endo/init": "portal:./local-packages/@endo/init",
     "@endo/marshal": "^1.8.0",
     "agoric": "dev",
     "ava": "^6.4.1",
     "execa": "9.1.0",
+    "ses": "^2.2.0",
     "ts-blank-space": "^0.6.2"
   },
   "resolutions": {
@@ -68,15 +73,27 @@
     "@agoric/wallet-backend": "portal:../../agoric-sdk/packages/wallet/api",
     "@agoric/xsnap-lockdown": "portal:../../agoric-sdk/packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../../agoric-sdk/packages/zoe",
-    "@agoric/zone": "portal:../../agoric-sdk/packages/zone"
+    "@agoric/zone": "portal:../../agoric-sdk/packages/zone",
+    "@endo/init": "portal:./local-packages/@endo/init",
+    "better-sqlite3": "~12.10.0",
+    "ses": "portal:./local-packages/ses"
   },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@4.17.1",
   "devDependencies": {
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",
     "typescript": "~6.0.3"
+  },
+  "vendorPackages": [
+    "@endo/init",
+    "ses"
+  ],
+  "dependenciesMeta": {
+    "better-sqlite3": {
+      "built": true
+    }
   }
 }

@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./src/zoeService/zoe.js",
   "engines": {
-    "node": "^22.11"
+    "node": "^22.11 || ^24.14"
   },
   "scripts": {
     "prepack": "yarn run -T prepack-package",

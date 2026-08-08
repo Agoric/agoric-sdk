@@ -2,7 +2,7 @@
 # Manual changes might be lost - proceed with caution!
 
 __metadata:
-  version: 8
+  version: 10
   cacheKey: 10c0
 
 "@adraffy/ens-normalize@npm:^1.11.0":
@@ -12,9 +12,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aglocal/portfolio-contract@portal:./local-packages/portfolio-contract::locator=o%3Aymax1-multisig-control%40workspace%3A.":
+"@aglocal/portfolio-contract@portal:./local-packages/@aglocal/portfolio-contract::locator=o%3Aymax1-multisig-control%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@aglocal/portfolio-contract@portal:./local-packages/portfolio-contract::locator=o%3Aymax1-multisig-control%40workspace%3A."
+  resolution: "@aglocal/portfolio-contract@portal:./local-packages/@aglocal/portfolio-contract::locator=o%3Aymax1-multisig-control%40workspace%3A."
   dependencies:
     "@agoric/cosmic-proto": "npm:dev"
     "@agoric/ertp": "npm:dev"
@@ -41,9 +41,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@aglocal/portfolio-deploy@portal:./local-packages/portfolio-deploy::locator=o%3Aymax1-multisig-control%40workspace%3A.":
+"@aglocal/portfolio-deploy@portal:./local-packages/@aglocal/portfolio-deploy::locator=o%3Aymax1-multisig-control%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@aglocal/portfolio-deploy@portal:./local-packages/portfolio-deploy::locator=o%3Aymax1-multisig-control%40workspace%3A."
+  resolution: "@aglocal/portfolio-deploy@portal:./local-packages/@aglocal/portfolio-deploy::locator=o%3Aymax1-multisig-control%40workspace%3A."
   dependencies:
     "@aglocal/portfolio-contract": "npm:dev"
     "@agoric/client-utils": "npm:dev"
@@ -133,9 +133,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/client-utils@portal:./local-packages/client-utils::locator=o%3Aymax1-multisig-control%40workspace%3A.":
+"@agoric/client-utils@portal:./local-packages/@agoric/client-utils::locator=o%3Aymax1-multisig-control%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/client-utils@portal:./local-packages/client-utils::locator=o%3Aymax1-multisig-control%40workspace%3A."
+  resolution: "@agoric/client-utils@portal:./local-packages/@agoric/client-utils::locator=o%3Aymax1-multisig-control%40workspace%3A."
   dependencies:
     "@agoric/casting": "npm:dev"
     "@agoric/cosmic-proto": "npm:dev"
@@ -158,9 +158,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/cosmic-proto@portal:./local-packages/cosmic-proto::locator=o%3Aymax1-multisig-control%40workspace%3A.":
+"@agoric/cosmic-proto@portal:./local-packages/@agoric/cosmic-proto::locator=o%3Aymax1-multisig-control%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/cosmic-proto@portal:./local-packages/cosmic-proto::locator=o%3Aymax1-multisig-control%40workspace%3A."
+  resolution: "@agoric/cosmic-proto@portal:./local-packages/@agoric/cosmic-proto::locator=o%3Aymax1-multisig-control%40workspace%3A."
   dependencies:
     "@chain-registry/v2": "npm:^1.71.186"
     "@chain-registry/v2-types": "npm:^0.53.115"
@@ -173,9 +173,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/deploy-script-support@portal:./local-packages/deploy-script-support::locator=o%3Aymax1-multisig-control%40workspace%3A.":
+"@agoric/deploy-script-support@portal:./local-packages/@agoric/deploy-script-support::locator=o%3Aymax1-multisig-control%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/deploy-script-support@portal:./local-packages/deploy-script-support::locator=o%3Aymax1-multisig-control%40workspace%3A."
+  resolution: "@agoric/deploy-script-support@portal:./local-packages/@agoric/deploy-script-support::locator=o%3Aymax1-multisig-control%40workspace%3A."
   dependencies:
     "@agoric/client-utils": "npm:dev"
     "@agoric/ertp": "npm:dev"
@@ -367,9 +367,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/portfolio-api@portal:./local-packages/portfolio-api::locator=o%3Aymax1-multisig-control%40workspace%3A.":
+"@agoric/portfolio-api@portal:./local-packages/@agoric/portfolio-api::locator=o%3Aymax1-multisig-control%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/portfolio-api@portal:./local-packages/portfolio-api::locator=o%3Aymax1-multisig-control%40workspace%3A."
+  resolution: "@agoric/portfolio-api@portal:./local-packages/@agoric/portfolio-api::locator=o%3Aymax1-multisig-control%40workspace%3A."
   dependencies:
     "@agoric/internal": "npm:dev"
     "@agoric/orchestration": "npm:dev"
@@ -1120,18 +1120,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/init@npm:^1.1.12, @endo/init@npm:^1.1.13":
-  version: 1.1.13
-  resolution: "@endo/init@npm:1.1.13"
+"@endo/init@portal:./local-packages/@endo/init::locator=o%3Aymax1-multisig-control%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@endo/init@portal:./local-packages/@endo/init::locator=o%3Aymax1-multisig-control%40workspace%3A."
   dependencies:
     "@endo/base64": "npm:^1.0.12"
     "@endo/eventual-send": "npm:^1.4.0"
     "@endo/harden": "npm:^1.1.0"
     "@endo/lockdown": "npm:^1.0.18"
     "@endo/promise-kit": "npm:^1.2.0"
-  checksum: 10c0/26c3f026d89ae9b3269b2df068acdf4007372b0597116c9440e426aab117c1f46d4b5cf08bcb8ac8b50ec916b25cbc15c0c11f8be50f451fcd7dc269eef1f924
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@endo/lockdown@npm:^1.0.18, @endo/lockdown@npm:^1.0.19":
   version: 1.0.19
@@ -1982,14 +1981,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"better-sqlite3@npm:^12.10.0, better-sqlite3@npm:^12.6.2":
-  version: 12.11.1
-  resolution: "better-sqlite3@npm:12.11.1"
+"better-sqlite3@npm:~12.10.0":
+  version: 12.10.1
+  resolution: "better-sqlite3@npm:12.10.1"
   dependencies:
     bindings: "npm:^1.5.0"
     node-gyp: "npm:latest"
     prebuild-install: "npm:^7.1.1"
-  checksum: 10c0/162d3fa6c19a68191d09537bd113bd54a636c9fb38b0fc0796f4f270032770695ef35a1bca041a0a0fa9bfa47e20b9e17c94484a3899c31f38881af4d12b7fa5
+  checksum: 10c0/38c0958ea252ba61e948358a143146aa59c8fb381b286a3064b9756ab4e2f91dfc9261cc5bb12c1afcc79519628543cfb6d62bc5a566eab2b9822403b0aad955
   languageName: node
   linkType: hard
 
@@ -3408,14 +3407,18 @@ __metadata:
     "@aglocal/portfolio-deploy": "npm:dev"
     "@agoric/client-utils": "npm:dev"
     "@agoric/deploy-script-support": "npm:dev"
-    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api"
+    "@agoric/portfolio-api": "portal:./local-packages/@agoric/portfolio-api"
     "@agoric/synthetic-chain": "npm:^0.7.1"
     "@cosmjs/proto-signing": "npm:^0.36.0"
-    "@endo/init": "npm:^1.1.12"
+    "@endo/init": "portal:./local-packages/@endo/init"
     "@endo/promise-kit": "npm:^1.2.1"
     ava: "npm:^6.4.1"
     execa: "npm:^9.6.0"
+    ses: "npm:^2.2.0"
     ts-blank-space: "npm:^0.7.0"
+  dependenciesMeta:
+    better-sqlite3:
+      built: true
   languageName: unknown
   linkType: soft
 
@@ -3738,16 +3741,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ses@npm:^2.0.0, ses@npm:^2.2.0":
-  version: 2.2.0
-  resolution: "ses@npm:2.2.0"
+"ses@portal:./local-packages/ses::locator=o%3Aymax1-multisig-control%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "ses@portal:./local-packages/ses::locator=o%3Aymax1-multisig-control%40workspace%3A."
   dependencies:
     "@endo/cache-map": "npm:^1.1.0"
     "@endo/env-options": "npm:^1.1.11"
     "@endo/immutable-arraybuffer": "npm:^1.1.2"
-  checksum: 10c0/d412182c08d7bc0997c98d0e68ca926286130e9a6853c94dd08a8cd02df097e4c3b61d6f18ebd88bebe1f4af982608637caf89de44471701fc05ca8de74b6b8c
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "shebang-command@npm:^2.0.0":
   version: 2.0.0

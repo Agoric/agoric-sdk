@@ -55,15 +55,33 @@ echo "$vendorPackages" | while read -r pkgName; do
   # Convert @agoric/foo-bar to foo-bar
   pkgShortName=${pkgName##*/}
 
-  # Find package in workspace
+  # Find package in workspace, falling back to the already-installed root
+  # dependency tree so patched/portal dependencies can be vendored too.
   pkgPath="$sdkroot/packages/$pkgShortName"
+  targetPath="$localPkgDir/$pkgName"
+  copyPackage() {
+    cp "$pkgPath/package.json" "$targetPath/" 2>/dev/null || echo >&2 "    Warning: No package.json"
+    [ -d "$pkgPath/src" ] && cp -r "$pkgPath/src" "$targetPath/" || echo >&2 "    Warning: No src/ directory"
+    [ -d "$pkgPath/dist" ] && cp -r "$pkgPath/dist" "$targetPath/" 2>/dev/null || true
+    [ -f "$pkgPath/LICENSE" ] && cp "$pkgPath/LICENSE" "$targetPath/" 2>/dev/null || true
+    [ -f "$pkgPath/README.md" ] && cp "$pkgPath/README.md" "$targetPath/" 2>/dev/null || true
+  }
 
   if [ ! -d "$pkgPath" ]; then
-    echo >&2 "Warning: Package $pkgName not found at $pkgPath"
-    continue
+    pkgPath="$sdkroot/node_modules/$pkgName"
+    if [ ! -d "$pkgPath" ]; then
+      pkgPath="$sdkroot/a3p-integration/node_modules/$pkgName"
+    fi
+    targetPath="$localPkgDir/$pkgName"
+    if [ ! -d "$pkgPath" ]; then
+      echo >&2 "Warning: Package $pkgName not found in workspace, root node_modules, or a3p node_modules"
+      continue
+    fi
+    copyPackage() {
+      cp -R -L "$pkgPath"/. "$targetPath"/
+      rm -rf "$targetPath/node_modules"
+    }
   fi
-
-  targetPath="$localPkgDir/$pkgShortName"
 
   # Remove old copy if exists
   rm -rf "$targetPath"
@@ -73,11 +91,7 @@ echo "$vendorPackages" | while read -r pkgName; do
   mkdir -p "$targetPath"
 
   # Copy essential files and directories
-  cp "$pkgPath/package.json" "$targetPath/" 2>/dev/null || echo >&2 "    Warning: No package.json"
-  [ -d "$pkgPath/src" ] && cp -r "$pkgPath/src" "$targetPath/" || echo >&2 "    Warning: No src/ directory"
-  [ -d "$pkgPath/dist" ] && cp -r "$pkgPath/dist" "$targetPath/" 2>/dev/null || true
-  [ -f "$pkgPath/LICENSE" ] && cp "$pkgPath/LICENSE" "$targetPath/" 2>/dev/null || true
-  [ -f "$pkgPath/README.md" ] && cp "$pkgPath/README.md" "$targetPath/" 2>/dev/null || true
+  copyPackage
 
   # Replace workspace:* with dev so dependencies resolve from parent workspace
   if [ -f "$targetPath/package.json" ]; then

@@ -11,7 +11,7 @@
   },
   "main": "index.cjs",
   "engines": {
-    "node": "^22.11"
+    "node": "^22.11 || ^24.14"
   },
   "scripts": {
     "test": "exit 0",

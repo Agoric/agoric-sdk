@@ -85,13 +85,13 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/agoric/agoric-sdk"
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "typeCoverage": {
     "atLeast": 78.4
   },
   "engines": {
-    "node": "^22.11"
+    "node": "^22.11 || ^24.14"
   }
 }

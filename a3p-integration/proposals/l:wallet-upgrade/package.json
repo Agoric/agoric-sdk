@@ -11,20 +11,33 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/client-utils": "dev",
-    "@agoric/synthetic-chain": "^0.7.1",
-    "@endo/init": "^1.1.12",
+    "@agoric/synthetic-chain": "^0.7.2",
+    "@endo/init": "portal:./local-packages/@endo/init",
     "agoric": "dev",
-    "ava": "^5.3.1"
+    "ava": "^5.3.1",
+    "ses": "^2.2.0"
   },
   "resolutions": {
     "@cosmjs/amino": "^0.36.0",
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
     "@cosmjs/stargate": "^0.36.0",
-    "@cosmjs/tendermint-rpc": "^0.36.0"
+    "@cosmjs/tendermint-rpc": "^0.36.0",
+    "@endo/init": "portal:./local-packages/@endo/init",
+    "better-sqlite3": "~12.10.0",
+    "ses": "portal:./local-packages/ses"
   },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
-  "packageManager": "yarn@4.12.0"
+  "packageManager": "yarn@4.17.1",
+  "vendorPackages": [
+    "@endo/init",
+    "ses"
+  ],
+  "dependenciesMeta": {
+    "better-sqlite3": {
+      "built": true
+    }
+  }
 }
