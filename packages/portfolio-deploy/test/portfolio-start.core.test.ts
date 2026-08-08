@@ -158,6 +158,7 @@ const makeBootstrap = async t => {
 
 const ymaxOptions = toExternalConfig(
   harden({
+    cluster: 'testnet',
     axelarConfig,
     gmpAddresses,
     walletBytecode,

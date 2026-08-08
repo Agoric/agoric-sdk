@@ -159,6 +159,19 @@ test('offerArgs can carry 1inch swap params', t => {
     ],
   });
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+
+  const withTokenOut = harden({
+    flow: [
+      {
+        ...specimen.flow[0],
+        swap: {
+          ...specimen.flow[0].swap,
+          tokenOut: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+        },
+      },
+    ],
+  });
+  t.notThrows(() => mustMatch(withTokenOut, shapes.rebalance));
 });
 
 test('movementDescShape allows unknown additional properties', t => {

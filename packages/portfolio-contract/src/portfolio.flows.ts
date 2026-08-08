@@ -41,12 +41,14 @@ import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/p
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   TxType,
+  type ChainMetadata,
   type ClaimRewardsParams,
   type FlowConfig,
   type FlowErrors,
   type FlowFeatures,
   type FlowStep,
   type FundsFlowPlan,
+  type PoolMetadata,
   type TrafficReport,
   type TxId,
   type TxPhase,
@@ -78,7 +80,7 @@ import {
   provideEVMAccount,
   sendGMPContractCall,
   sendPermit2GMP,
-  swapRewardToUsdc,
+  swapRewardToStable,
   type EVMContext,
   type GMPAccountStatus,
 } from './pos-evm.flows.ts';
@@ -124,6 +126,8 @@ const SETUP_STEP = 0;
 export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  poolMetadata: PoolMetadata;
+  chainMetadata: ChainMetadata;
   walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
   usdc: { brand: Brand<'nat'>; denom: Denom };
@@ -745,7 +749,7 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
           const srcIsEVM = keys(AxelarChain).includes(srcName);
           const destIsEVM = keys(AxelarChain).includes(destName);
 
-          // In-place reward-token -> USDC swap via 1inch (e.g. @Arbitrum -> @Arbitrum)
+          // In-place reward-token -> stable-token swap via 1inch (e.g. @Arbitrum -> @Arbitrum)
           if (srcIsEVM && srcName === destName && moveDesc.swap) {
             return { how: 'swap', chain: srcName as AxelarChain };
           }
@@ -858,11 +862,14 @@ const stepFlow = async (
     ]);
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
-    const { axelarIds, gmpAddresses, contracts } = ctx;
+    const { axelarIds, gmpAddresses, contracts, poolMetadata, chainMetadata } =
+      ctx;
 
     const evmCtx: EVMContext = harden({
       addresses: contracts[chain],
       contracts,
+      poolMetadata,
+      chainMetadata,
       lca,
       gmpFee: fee,
       gmpChain: axelar,
@@ -1180,7 +1187,7 @@ const stepFlow = async (
               agoric.lca,
               ctx.transferChannels.noble.counterPartyChannelId,
             );
-            await swapRewardToUsdc(
+            await swapRewardToStable(
               evmCtx,
               gInfo,
               amount,

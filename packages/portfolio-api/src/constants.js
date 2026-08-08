@@ -70,7 +70,7 @@ harden(AxelarChain);
 
 /**
  * cf. https://chainlist.org/
- * XXX this probably belongs in @agoric/orchestration
+ * XXX this probably belongs in '@agoric/orchestration'
  * @type {Readonly<Record<ClusterName, Readonly<Partial<Record<AxelarChain, bigint>>>>>}
  */
 export const Eip155ChainIds = {
@@ -116,7 +116,7 @@ const caipChainIdFromEip155 = chainId => `eip155:${chainId}`;
  * cf. https://standards.chainagnostic.org/CAIPs/caip-2
  * Please keep in sync with ../../../services/ymax-planner/src/support.ts `spectrumChainIds`
  *
- * XXX this probably belongs in @agoric/orchestration
+ * XXX this probably belongs in '@agoric/orchestration'
  *
  * @type {Readonly<Record<ClusterName, Readonly<Partial<Record<SupportedChain, CaipChainId>>>>>}
  */
@@ -139,7 +139,7 @@ harden(CaipChainIds);
 
 /**
  * cf. https://developers.circle.com/stablecoins/usdc-contract-addresses
- * XXX this might belong in @agoric/orchestration
+ * XXX this might belong in '@agoric/orchestration'
  * @type {Readonly<Record<ClusterName, Readonly<Partial<Record<SupportedChain, string>>>>>}
  */
 export const UsdcTokenIds = {
@@ -151,7 +151,7 @@ export const UsdcTokenIds = {
     Optimism: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
     agoric:
       'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
-    noble: 'usdc',
+    noble: 'uusdc',
   },
   testnet: {
     Arbitrum: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', // Sepolia
@@ -161,7 +161,7 @@ export const UsdcTokenIds = {
     Optimism: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // Sepolia
     agoric:
       'ibc/75F84596DDE9EE93010620701FFED959F3FFA1D0979F6773DE994FFEEA7D32F3',
-    noble: 'usdc',
+    noble: 'uusdc',
   },
   local: {},
 };

@@ -9,7 +9,7 @@ import {
 } from '../src/interfaces/one-inch.ts';
 
 const TOKEN_IN = '0x0000000000000000000000000000000000000abc' as const;
-const USDC = '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf' as const;
+const TOKEN_OUT = '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf' as const;
 const RECEIVER = '0x1111111111111111111111111111111111111111' as const;
 const EXECUTOR = '0x2222222222222222222222222222222222222222' as const;
 const SRC_RECEIVER = '0x3333333333333333333333333333333333333333' as const;
@@ -28,7 +28,7 @@ const swap: SwapDesc = {
 };
 
 const controlled = {
-  usdc: USDC,
+  tokenOut: TOKEN_OUT,
   receiver: RECEIVER,
   minReturnAmount: MIN_RETURN,
 } as const;
@@ -49,7 +49,7 @@ test('fills the contract-controlled fund-safety fields', t => {
   t.is(innerData, swap.data);
   t.deepEqual(desc, {
     srcToken: TOKEN_IN,
-    dstToken: USDC,
+    dstToken: TOKEN_OUT,
     srcReceiver: SRC_RECEIVER,
     dstReceiver: RECEIVER,
     amount: AMOUNT_IN,
@@ -58,10 +58,9 @@ test('fills the contract-controlled fund-safety fields', t => {
   });
 });
 
-test('the planner cannot redirect dstToken or dstReceiver', t => {
-  // Even though SwapDesc carries no dstToken/dstReceiver, the built args
-  // always pin them to the contract-controlled values.
+test('the planner cannot redirect dstReceiver', t => {
+  // Even though SwapDesc carries no dstReceiver, the built args always pin it
+  // to the contract-controlled value.
   const [, desc] = getOneInchSwapArgs(swap, controlled);
-  t.is(desc.dstToken, USDC);
   t.is(desc.dstReceiver, RECEIVER);
 });

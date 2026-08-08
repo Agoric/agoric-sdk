@@ -8,6 +8,15 @@ import type {
 import type { InstrumentId } from './instruments.js';
 import type { AssetPlaceRef } from './types.js';
 
+export type TokenMetadata = {
+  caipChainId: string;
+  chainName: string;
+  instrumentId?: InstrumentId;
+  tokenId: string;
+  symbol: string;
+  decimals: number;
+};
+
 const isPrimitive = (value: unknown): boolean => Object(value) !== value;
 
 const deepFreeze = <T>(value: T): T => {
@@ -22,7 +31,11 @@ const deepFreeze = <T>(value: T): T => {
 
 export type PoolPlaceInfo =
   | { protocol: 'USDN'; vault: null | 1; chainName: 'noble' }
-  | { protocol: YieldProtocol; chainName: AxelarChain };
+  | {
+      protocol: YieldProtocol;
+      chainName: AxelarChain;
+      rewardTokenById?: Record<TokenMetadata['tokenId'], TokenMetadata>;
+    };
 
 // XXX special handling. What's the functional difference from other places?
 export const BeefyPoolPlaces = {
@@ -183,6 +196,14 @@ export const PoolPlaces = {
 deepFreeze(PoolPlaces);
 
 export type PoolKey = InstrumentId;
+export type PoolMetadataEntry = Partial<PoolPlaceInfo> & {
+  rewardTokenById: Record<TokenMetadata['tokenId'], TokenMetadata>;
+};
+export type ChainMetadataEntry = {
+  stableTokenById: Record<TokenMetadata['tokenId'], TokenMetadata>;
+};
+export type PoolMetadata = Partial<Record<PoolKey, PoolMetadataEntry>>;
+export type ChainMetadata = Record<string, ChainMetadataEntry>;
 
 /**
  * Without regard to supported chains, is the input plausibly an InstrumentId

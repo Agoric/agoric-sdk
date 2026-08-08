@@ -25,6 +25,10 @@ import {
   leftPadEthAddressTo32Bytes,
 } from '@agoric/orchestration/src/utils/address.js';
 import type { MovementDesc } from '@agoric/portfolio-api';
+import type {
+  ChainMetadata,
+  PoolMetadata,
+} from '@agoric/portfolio-api/src/places.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
@@ -54,7 +58,11 @@ import {
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
-import type { PoolKey, EVMContractAddressesMap } from './type-guards.ts';
+import {
+  PoolPlaces,
+  type PoolKey,
+  type EVMContractAddressesMap,
+} from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
 import {
   provideEVMAccount as provideEVMLegacyAccount,
@@ -77,6 +85,8 @@ export type EVMContext = {
   gmpChain: Chain<{ chainId: string }>;
   addresses: EVMContractAddresses;
   contracts: EVMContractAddressesMap;
+  poolMetadata: PoolMetadata;
+  chainMetadata: ChainMetadata;
   gmpAddresses: GmpAddresses;
   axelarIds: AxelarId;
   poolKey?: PoolKey;
@@ -131,6 +141,62 @@ const nobleDomain = 4;
 
 // XXX concession to test legibility
 const TEST_NOBLE_ADDRESS = 'noble1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqe6u37k';
+
+const assertSwapTokensConfigured = (
+  poolMetadata: PoolMetadata,
+  chainMetadata: ChainMetadata,
+  tokenIn: `0x${string}`,
+  tokenOut: `0x${string}`,
+  chainName: AxelarChain,
+  fallbackTokenOutId?: `0x${string}`,
+) => {
+  const { rewardTokenById } = getPoolTokenMetadataForChain(
+    poolMetadata,
+    chainName,
+  );
+  const { stableTokenById = {} } = chainMetadata[chainName] || {};
+  rewardTokenById[tokenIn] ||
+    Fail`swap tokenIn ${tokenIn} is not configured as a reward token on ${q(chainName)}`;
+  stableTokenById[tokenOut] ||
+    tokenOut === fallbackTokenOutId ||
+    Fail`swap tokenOut ${tokenOut} is not configured as a stable token on ${q(chainName)}`;
+};
+harden(assertSwapTokensConfigured);
+
+const getPoolTokenMetadataForChain = (
+  poolMetadata: PoolMetadata,
+  chainName: AxelarChain,
+) => {
+  const tokenMetadata = Object.entries(PoolPlaces).flatMap(
+    ([poolKey, place]) => {
+      if (place.chainName !== chainName) return [];
+      const metadata = poolMetadata[poolKey as PoolKey];
+      return metadata ? [metadata] : [];
+    },
+  );
+  return harden({
+    rewardTokenById: harden(
+      Object.assign(
+        {},
+        ...tokenMetadata.map(metadata => metadata.rewardTokenById),
+      ),
+    ),
+  });
+};
+harden(getPoolTokenMetadataForChain);
+
+const getDefaultStableTokenId = (
+  chainMetadata: ChainMetadata,
+  chainName: AxelarChain,
+  fallbackTokenId?: `0x${string}`,
+): `0x${string}` => {
+  const { stableTokenById = {} } = chainMetadata[chainName] || {};
+  const stableTokenIds = Object.keys(stableTokenById);
+  if (stableTokenIds.length === 1) return stableTokenIds[0] as `0x${string}`;
+  if (fallbackTokenId) return fallbackTokenId;
+  throw Fail`swap tokenOut must be specified when ${q(chainName)} has ${stableTokenIds.length} configured stable tokens`;
+};
+harden(getDefaultStableTokenId);
 
 const bech32ToBytes32 = (addr: Bech32Address) => {
   if (addr === 'noble1test') {
@@ -356,10 +422,10 @@ export const CCTPv2 = {
 harden(CCTPv2);
 
 /**
- * Swap a reward token to USDC on an EVM chain via 1inch
+ * Swap a reward token to a stable token on an EVM chain via 1inch
  * @see {@link https://business.1inch.com/portal/documentation/apis/swap/classic-swap/quick-start}
  */
-export const swapRewardToUsdc = async (
+export const swapRewardToStable = async (
   ctx: EVMContext,
   gInfo: Parameters<typeof sendGMPContractCall>[1],
   amount: MovementDesc['amount'],
@@ -369,9 +435,20 @@ export const swapRewardToUsdc = async (
   const { addresses: a } = ctx;
   assert(swap, 'swap params required for reward-token swap');
   const { provider, tokenIn, amountIn } = swap;
+  const tokenOut =
+    swap.tokenOut ||
+    getDefaultStableTokenId(ctx.chainMetadata, gInfo.chainName, a.usdc);
   // The calldata layout and router are provider-specific; only 1inch is
   // supported so far. Branch explicitly so a new provider must add its own
   provider === '1inch' || Fail`unsupported swap provider ${q(provider)}`;
+  assertSwapTokensConfigured(
+    ctx.poolMetadata,
+    ctx.chainMetadata,
+    tokenIn,
+    tokenOut,
+    gInfo.chainName,
+    a.usdc,
+  );
   const router =
     a.oneInchRouter ||
     Fail`oneInchRouter not configured for ${q(gInfo.chainId)}`;
@@ -382,7 +459,7 @@ export const swapRewardToUsdc = async (
   const oneInchRouter = session.makeContract(router, oneInchRouterABI);
   oneInchRouter.swap(
     ...getOneInchSwapArgs(swap, {
-      usdc: a.usdc,
+      tokenOut,
       receiver: gInfo.remoteAddress,
       minReturnAmount: amount.value,
     }),
@@ -394,7 +471,7 @@ export const swapRewardToUsdc = async (
 
   return sendGMPContractCall(ctx, gInfo, calls, ...optsArgs);
 };
-harden(swapRewardToUsdc);
+harden(swapRewardToStable);
 
 export const AaveProtocol = {
   protocol: 'Aave',
