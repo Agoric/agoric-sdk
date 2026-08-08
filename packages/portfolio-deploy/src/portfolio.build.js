@@ -4,6 +4,9 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import {
   axelarConfigTestnet,
   axelarConfig as axelarMainnetConfig,
@@ -30,10 +33,38 @@ const isValidAddr = addr => {
   return /^0x[a-fA-F0-9]{40}$/.test(addr);
 };
 
+const helpText = (progname) => `Usage: agoric run ${progname} [options]
+
+Build a ymax0 portfolio contract core-eval proposal.
+
+The script installs the portfolio contract bundle, prepares private args for
+the selected network, and writes the core-eval artifact used to start or
+replace the ymax0 portfolio contract. By default it targets testnet-style
+configuration. Pass --net=mainnet for mainnet addresses, or --yds with a
+main*.ymax.app URL to select mainnet automatically.
+
+Options:
+  -h, --help              Show this help text and exit.
+      --net <network>     Deployment network: "testnet" (default) or
+                          "mainnet".
+      --replace <boardId> Board ID of an existing ymax0 instance to replace.
+      --no-flow-config    Omit the default flow configuration from private
+                          args.
+      --yds <url>         Fetch YDS metadata from <url> and use it to configure
+                          reward tokens by pool and stable tokens by chain.
+
+Examples:
+  agoric run ${progname} --net testnet
+  agoric run ${progname} --net mainnet --replace BOARD_ID
+  agoric run ${progname} --yds https://main0.ymax.app
+`;
+harden(helpText);
+
 const parseBuilderArgs = args =>
   parseArgs({
     args,
     options: {
+      help: { type: 'boolean', short: 'h', default: false },
       net: { type: 'string' },
       replace: { type: 'string' },
       'no-flow-config': { type: 'boolean', default: false },
@@ -63,9 +94,20 @@ const defaultProposalBuilder = async ({ publishRef, install }, config) => {
 
 /** @type {DeployScriptFunction} */ 0;
 const build = async (homeP, endowments) => {
+  const filename = fileURLToPath(import.meta.url);
+  const progname = path.relative(process.cwd(), filename);
+
   await null;
-  const { scriptArgs, fetch = globalThis.fetch } = endowments;
+  const {
+    scriptArgs,
+    fetch = globalThis.fetch,
+    console: ioConsole = console,
+  } = endowments;
   const { values: flags } = parseBuilderArgs(scriptArgs);
+  if (flags.help) {
+    ioConsole.log(helpText(progname).trimEnd());
+    return;
+  }
   const boardId = flags.replace;
   const defaultFlowConfig = flags['no-flow-config'] ? null : undefined;
   const yds = flags.yds;
