@@ -1,6 +1,6 @@
 #! /bin/sh
 # shellcheck disable=SC2034
-NODEJS_VERSION=v22
+NODEJS_VERSION=v24
 GOLANG_VERSION=1.24.1
 GOLANG_DIR=golang/cosmos
 GOLANG_DAEMON=$GOLANG_DIR/build/agd
