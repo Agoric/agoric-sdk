@@ -231,3 +231,99 @@ test('Withdraw from an ERC4626 position', async t => {
   snapshotTimed(t, contents, 'vstorage');
   snapshotTimed(t, withdraw.payouts, 'refund payouts');
 });
+
+test('claim rewards on Morpho ERC4626 position successfully', async t => {
+  const { trader1, common, txResolver } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
+        {
+          src: '@Ethereum',
+          dest: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+          amount,
+          fee: feeCall,
+        },
+      ],
+    },
+  );
+
+  await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+  t.log('ackd send to Axelar to create account');
+
+  await simulateCCTPAck(common.utils).finally(() =>
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
+  );
+
+  const done = await actualP;
+
+  t.log('=== Portfolio completed');
+  const result = done.result as any;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const messagesBefore = common.utils.inspectLocalBridge();
+
+  const claimRewards = {
+    tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
+    minAmounts: [1_234_567n],
+    morpho: {
+      proofs: [
+        [
+          '0x1111111111111111111111111111111111111111111111111111111111111111',
+          '0x2222222222222222222222222222222222222222222222222222222222222222',
+        ],
+      ] as `0x${string}`[][],
+    },
+  };
+
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          // claiming rewards moves no funds; `amount` is nominal (>= 1n to
+          // satisfy the movement shape) and ignored by the claim handler.
+          src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+          dest: '@Ethereum',
+          amount: usdc.make(1n),
+          fee: feeCall,
+          claimRewards,
+        },
+      ],
+    },
+  );
+
+  // GMP transaction settlement for the claim
+  await txResolver.drainPending();
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  const rebalanceResult = await rebalanceP;
+  t.log('rebalance done', rebalanceResult);
+
+  const messagesAfter = common.utils.inspectLocalBridge();
+
+  t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
+
+  t.log(storagePath);
+  const { storage } = common.bootstrap;
+  const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+  snapshotTimed(t, contents, 'vstorage');
+  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
+
+  snapshotTimed(t, rebalanceResult.payouts, 'rebalance payouts');
+});
