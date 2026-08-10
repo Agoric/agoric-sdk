@@ -201,7 +201,6 @@ export type SwapProvider = SwapDesc['provider'];
  * `tokens` and `minAmounts` are common across protocols. Protocol-specific
  * inputs are nested under a per-protocol key (e.g. `morpho`).
  *
- * TODO(#12707, #12711): Refine this type
  */
 export type ClaimRewardsParams = {
   /** reward token addresses being claimed */
