@@ -84,9 +84,17 @@ A rebalance that violates the permission's key-set rule causes the offer to reje
 ### Changing the mandate
 
 The delegation does not give the agent authority to change its own mandate.
-To add or remove instruments, the agent proposes a normal portfolio edit by
-generating a link to the Ymax edit-portfolio page. The link encodes the proposed
-target allocation, including its complete instrument key set.
+The EVM portfolio owner changes quantitative limits with the standalone,
+owner-signed `ChangePermissions` operation. It names a stable `agentN` by its
+positive numeric suffix and replaces the complete permissions record. It is
+never a patch: an omitted former limit is cleared. `Revoke` irreversibly marks
+that record revoked and clears its live client, while retaining the record for
+audit. A later grant receives a new ID.
+
+To add or remove instruments from the portfolio itself, the agent instead
+proposes a normal portfolio edit by generating a link to the Ymax
+edit-portfolio page. The link encodes the proposed target allocation,
+including its complete instrument key set.
 
 The user opens the link, reviews the proposed allocation in Ymax, and signs the
 existing EVM `SetTargetAllocation` operation. That owner-authorized operation
@@ -136,25 +144,43 @@ The agent re-reads and retries.
 ### Permissions as a parameter
 
 The app-level permissions field in invitation details and the delegation
-registry is an extensible options bag. The currently implemented shape is:
+registry is an extensible options bag. Quantitative limits are per instrument:
 
 ```ts
 type PortfolioPermissions = {
-  allocation?: boolean;
+  allocation?:
+    | boolean
+    | {
+        instruments?: Record<
+          string,
+          {
+            maxWeightBps?: number;
+            minVaultTvlUsd?: bigint;
+            maxVaultShareBps?: number;
+          }
+        >;
+      };
   rebalance?: boolean;
 };
 ```
 
-The external EIP-712 `Grant` wire format intentionally contains only the
-required `allocation: boolean` field, and the external grant path requires it
-to be `true`. The `rebalance` permission is currently assigned internally to
-the planner delegation when auto-rebalance is enabled. This wire/app
-difference is explicit: clients must not infer that every app-level permission
-can be granted by the current EIP-712 message.
+The external EIP-712 representation keeps required `allocation: boolean` and
+uses optional instrument-keyed arrays for each quantitative field. This makes
+omission independent per instrument and preserves explicit zero without a
+sentinel. The `rebalance` permission remains app-only and is assigned
+internally to the planner delegation.
 
-TODO: more expressive permissions (e.g. min/max portion bands per
-instrument, max drift per rebalance, allowlist of instruments narrower
-than the allocated set). Supporting **multiple agents per portfolio**
+Delegated allocation acceptance reads the current durable record, checks each
+configured maximum weight, and reads current instrument-oracle TVL for each
+minimum-TVL or maximum-vault-share check before changing policy or starting a
+flow. Missing instrument data fails closed. Maximum vault share also requires
+a trustworthy current portfolio valuation; until that source is supplied, a
+record containing that constraint fails closed with
+`mandate.portfolioValue.missing:<instrument>`.
+
+TODO: more expressive permissions (e.g. min/max portion bands per instrument,
+max drift per rebalance, allowlist of instruments narrower than the allocated
+set). Supporting **multiple agents per portfolio**
 with **different permissions each** falls out of this — each delegation
 is its own exo with its own permissions record — but is only motivated
 once additional permission fields exist.
