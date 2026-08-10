@@ -428,6 +428,12 @@ export type StatusFor = {
     enabledAutoFeatures?: PortfolioAutoFeaturesExt;
   };
   portfolioAgents: Record<PortfolioAgentKey, PortfolioAgentStatus>;
+  instrument: {
+    /** USD-denominated TVL in whole dollars. */
+    tvlUsd: bigint;
+    /** Source observation time, represented as Unix epoch seconds. */
+    asOf: number;
+  };
   position: {
     protocol: YieldProtocol;
     accountId: AccountId;
@@ -461,8 +467,12 @@ export type PortfolioDelegatedSetTargetAllocationParams = {
 export type PortfolioPublishedPathTypes = {
   ymax0: StatusFor['contract'];
   ymax1: StatusFor['contract'];
+  'ymax0.instruments': never;
+  'ymax1.instruments': never;
   'ymax0.portfolios': StatusFor['portfolios'];
   'ymax1.portfolios': StatusFor['portfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.instruments.${InstrumentId}`]: StatusFor['instrument'];
 } & {
   [K in `ymax${'0' | '1'}.portfolios.portfolio${number}`]: StatusFor['portfolio'];
 } & {
