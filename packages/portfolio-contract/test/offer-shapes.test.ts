@@ -22,6 +22,7 @@ import {
   FlowDetailShape,
   FlowStatusShape,
   FlowStepsShape,
+  InstrumentStatusShape,
   makeProposalShapes,
   PoolKeyShapeExt,
   PortfolioAgentStatusShape,
@@ -37,6 +38,21 @@ const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
 const usdc = usdcKit.make;
 const { brand: USDC } = usdcKit;
 const bld = withAmountUtils(makeIssuerKit('BLD'));
+
+test('vstorage instrument status matches shape', t => {
+  t.true(
+    matches(
+      harden({ tvlUsd: 12_345_679n, asOf: 1_754_521_200 }),
+      InstrumentStatusShape,
+    ),
+  );
+  t.false(
+    matches(
+      harden({ tvlUsd: 12_345_679, asOf: 1_754_521_200 }),
+      InstrumentStatusShape,
+    ),
+  );
+});
 
 test('ProposalShapes', t => {
   const { brand: Poc26 } = makeIssuerKit('Poc26');

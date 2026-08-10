@@ -36,6 +36,7 @@
     "ts-blank-space": "^0.6.2"
   },
   "dependencies": {
+    "@agoric/base-zone": "workspace:*",
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/internal": "workspace:*",
