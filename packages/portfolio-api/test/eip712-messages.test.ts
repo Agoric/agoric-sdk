@@ -1,9 +1,11 @@
 import '@endo/init/debug.js';
 
 import test, { type ExecutionContext } from 'ava';
+import { hashTypedData } from '@agoric/orchestration/src/stubs/viem-typedData.ts';
 
 import {
   getYmaxStandaloneOperationData,
+  getYmaxOperationTypes,
   getYmaxWitness,
   validateYmaxDomain,
   validateYmaxOperationTypeName,
@@ -12,6 +14,111 @@ import {
   type TargetAllocation,
   type YmaxOperationType,
 } from '../src/evm-wallet/eip712-messages.ts';
+
+test('PortfolioPermissions EIP-712 fields are exact and ordered', t => {
+  t.deepEqual(getYmaxOperationTypes('Grant').PortfolioPermissions, [
+    { name: 'allocation', type: 'bool' },
+    {
+      name: 'allocationMaxWeights',
+      type: 'InstrumentMaxWeight[]',
+      optional: true,
+    },
+    {
+      name: 'allocationMinVaultTvls',
+      type: 'InstrumentMinVaultTvl[]',
+      optional: true,
+    },
+    {
+      name: 'allocationMaxVaultShares',
+      type: 'InstrumentMaxVaultShare[]',
+      optional: true,
+    },
+  ]);
+});
+
+test('ChangePermissions and Revoke use exact standalone fields', t => {
+  const changed = getYmaxStandaloneOperationData(
+    {
+      agentId: 2n,
+      permissions: {
+        allocation: true,
+        allocationMaxWeights: [
+          {
+            instrument: 'Aave_Base',
+            maxWeightBps: 1_500,
+          },
+        ],
+        allocationMinVaultTvls: [
+          { instrument: 'Aave_Base', minVaultTvlUsd: 10_000_000n },
+        ],
+        allocationMaxVaultShares: [
+          { instrument: 'Aave_Base', maxVaultShareBps: 1_000 },
+        ],
+      },
+      portfolio: 7n,
+      nonce: 3n,
+      deadline: 4n,
+    },
+    'ChangePermissions',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+  t.deepEqual(changed.types.ChangePermissions, [
+    { name: 'agentId', type: 'uint256' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+  const revoked = getYmaxStandaloneOperationData(
+    { agentId: 2n, portfolio: 7n, nonce: 3n, deadline: 4n },
+    'Revoke',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+  t.deepEqual(revoked.types.Revoke, [
+    { name: 'agentId', type: 'uint256' },
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+});
+
+test('signed permission hashes distinguish omission, zero, and changed limits', t => {
+  const makeGrant = (permissions: {
+    allocation: boolean;
+    allocationMaxWeights?: Array<{
+      instrument: string;
+      maxWeightBps: number;
+    }>;
+  }) =>
+    getYmaxStandaloneOperationData(
+      {
+        accountHolder: 'agoric1agent',
+        permissions,
+        portfolio: 7n,
+        nonce: 3n,
+        deadline: 4n,
+      },
+      'Grant',
+      42161n,
+      MOCK_CONTRACT_ADDRESS,
+    );
+  const absent = makeGrant({ allocation: true });
+  const zero = makeGrant({
+    allocation: true,
+    allocationMaxWeights: [{ instrument: 'Aave_Base', maxWeightBps: 0 }],
+  });
+  const changed = makeGrant({
+    allocation: true,
+    allocationMaxWeights: [{ instrument: 'Aave_Base', maxWeightBps: 1_500 }],
+  });
+
+  t.not(hashTypedData(absent), hashTypedData(zero));
+  t.not(hashTypedData(zero), hashTypedData(changed));
+  t.false('allocationMaxWeights' in absent.message.permissions);
+  t.is(zero.message.permissions.allocationMaxWeights?.[0].maxWeightBps, 0);
+});
 
 const MOCK_CONTRACT_ADDRESS =
   '0x1234567890123456789012345678901234567890' as const;
@@ -216,7 +323,7 @@ test('getYmaxWitness for OpenPortfolio with a grantee nests grantee fields, drop
   ];
   const grantee = {
     address: 'agoric1exampleagentaddress',
-    permissions: { allocation: true, rebalance: false },
+    permissions: { allocation: true },
   };
 
   const witness = getYmaxWitness('OpenPortfolio', { allocations, grantee });
@@ -265,7 +372,6 @@ test('getYmaxWitness for OpenPortfolioWithGrant nests grantee fields', t => {
 
   const witness = getYmaxWitness('OpenPortfolioWithGrant', {
     allocations,
-    // @ts-expect-error types for optional nested fields are not yet inferred
     grantee,
   });
 

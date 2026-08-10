@@ -42,7 +42,7 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra top-level fiel
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true, rebalance: false },
+      permissions: { allocation: true },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -74,7 +74,7 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra nested field (
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true, rebalance: false },
+      permissions: { allocation: true },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -102,11 +102,16 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra nested field (
   );
 });
 
-test('extractOperationDetailsFromDataWithAddress accepts a legitimate optional field (Grant with rebalance)', t => {
+test('extractOperationDetailsFromDataWithAddress accepts a legitimate optional permission constraint', t => {
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true, rebalance: true },
+      permissions: {
+        allocation: true,
+        allocationMaxWeights: [
+          { instrument: 'Aave_Base', maxWeightBps: 1_500 },
+        ],
+      },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -124,7 +129,7 @@ test('extractOperationDetailsFromDataWithAddress accepts a legitimate optional f
   t.is(details.operation, 'Grant');
   t.deepEqual((details.data as any).permissions, {
     allocation: true,
-    rebalance: true,
+    allocationMaxWeights: [{ instrument: 'Aave_Base', maxWeightBps: 1_500 }],
   });
 });
 
@@ -132,7 +137,7 @@ test('extractOperationDetailsFromDataWithAddress drops (does not reject) a field
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true, rebalance: false },
+      permissions: { allocation: true },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -164,7 +169,7 @@ test('extractOperationDetailsFromDataWithAddress drops (does not reject) a field
   t.is(details.operation, 'Grant');
   t.deepEqual(details.data, {
     accountHolder: 'agoric1exampleaccountholder',
-    permissions: { allocation: true, rebalance: false },
+    permissions: { allocation: true },
     portfolio: 0n,
   });
   t.false('memo' in (details.data as any));
@@ -175,7 +180,7 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra field nested i
     allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
     grantee: {
       address: 'agoric1exampleagentaddress',
-      permissions: { allocation: true, rebalance: false },
+      permissions: { allocation: true },
     },
   });
   const permitMessage = getPermitWitnessTransferFromData(

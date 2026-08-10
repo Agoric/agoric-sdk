@@ -133,6 +133,8 @@ export type FlowDetail =
       type: 'rebalance'; // aka simpleRebalance
       agent?: PortfolioAgentKey;
       agentMemo?: string;
+      /** Policy/mandate revision accepted for a delegated flow. */
+      policyVersion?: number;
     };
 
 /** linked list of concurrent failures, including dependencies */
@@ -326,6 +328,9 @@ export type PortfolioGrantResult = {
   policyVersion: number;
   agentId: number;
 };
+
+/** Result of an owner-signed external delegation lifecycle operation. */
+export type PortfolioDelegationLifecycleResult = PortfolioGrantResult;
 
 /** Result of a `SetAutoFeatures` operation, referencing the resulting policyVersion. */
 export type PortfolioSetAutoFeaturesResult = {
