@@ -310,7 +310,7 @@ test('open portfolio with target allocations', async t => {
   snapshotTimed(t, tree, 'baggage after open with target allocations');
 });
 
-test.skip('claim rewards on Aave position successfully', async t => {
+test('claim rewards on Aave position successfully', async t => {
   const { trader1, common, txResolver } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
@@ -360,7 +360,11 @@ test.skip('claim rewards on Aave position successfully', async t => {
           src: 'Aave_Arbitrum',
           amount: usdc.make(100n),
           fee: feeCall,
-          claimRewards: { tokens: [], minAmounts: [] },
+          // Aave claims without using these, but the shape is enforced.
+          claimRewards: {
+            tokens: ['0x0000000000000000000000000000000000000002'],
+            minAmounts: [1_234_567n],
+          },
         },
       ],
     },
