@@ -1,5 +1,6 @@
 /** @file build and decode Cosmos messages and tx bytes for ymax authz workflows */
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
+import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import {
   GenericAuthorization,
@@ -23,6 +24,8 @@ import {
   TxRaw,
 } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
+import type { Bech32Address } from '@agoric/orchestration';
+import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import { fromBech32, toBech32 } from '@cosmjs/encoding';
 import {
   Registry,
@@ -149,6 +152,42 @@ export const makeUpgradeEncodeObject = (
   typeUrl: MsgWalletSpendAction.typeUrl,
   value: makeUpgradeSpendAction(upgradeArgs, opts),
 });
+
+export const makeInstrumentOracleInvitationEncodeObject = (
+  {
+    oracleAddress,
+    postalService,
+  }: {
+    oracleAddress: Bech32Address;
+    postalService: Instance;
+  },
+  {
+    marshaller,
+    controlAddress,
+    invocationId,
+  }: {
+    marshaller: { toCapData: (specimen: unknown) => unknown };
+    controlAddress: string;
+    invocationId: string;
+  },
+): EncodeObject => {
+  type CreatorFacet = ZStarted<typeof YMaxStart>['creatorFacet'];
+  const builder = makeWalletActionBuilder<CreatorFacet>(
+    'creatorFacet',
+    invocationId,
+  );
+  const action = builder.deliverInstrumentOracleInvitation(
+    oracleAddress,
+    postalService,
+  );
+  return {
+    typeUrl: MsgWalletSpendAction.typeUrl,
+    value: MsgWalletSpendAction.fromPartial({
+      owner: toAccAddress(controlAddress),
+      spendAction: JSON.stringify(marshaller.toCapData(action)),
+    }),
+  };
+};
 
 export const makeUpgradeExecEncodeObject = (
   upgradeArgs: {
