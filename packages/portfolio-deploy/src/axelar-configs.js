@@ -313,6 +313,7 @@ const erc4626VaultAddresses = harden({
   morphoGauntletUsdcFrontier: {
     mainnet: {
       Ethereum: '0x9a1D6bd5b8642C41F25e0958129B85f8E1176F3e', // https://app.morpho.org/ethereum/vault/0x9a1D6bd5b8642C41F25e0958129B85f8E1176F3e/gauntlet-usdc-frontier
+      Base: '0x1deEfABEe758AAbdC29a542B24ca3b75aFD56765', // https://app.morpho.org/base/vault/0x1deEfABEe758AAbdC29a542B24ca3b75aFD56765/gauntlet-usdc-frontier
     },
     testnet: {},
   },
@@ -338,6 +339,7 @@ const erc4626VaultAddresses = harden({
   morphoSteakhousePrimeUsdc: {
     mainnet: {
       Base: '0xBEEFE94c8aD530842bfE7d8B397938fFc1cb83b2', // https://app.morpho.org/base/vault/0xBEEFE94c8aD530842bfE7d8B397938fFc1cb83b2/steakhouse-prime-usdc
+      Ethereum: '0xbeef088055857739C12CD3765F20b7679Def0f51', // https://app.morpho.org/ethereum/vault/0xbeef088055857739C12CD3765F20b7679Def0f51/steakhouse-prime-usdc
     },
     testnet: {},
   },
@@ -394,6 +396,42 @@ const erc4626VaultAddresses = harden({
   morphoHumaUsdcMain: {
     mainnet: {
       Ethereum: '0x8aC91877b93330f52b2979a31a4879506021475c', // https://app.morpho.org/ethereum/vault/0x8aC91877b93330f52b2979a31a4879506021475c/huma-usdc-main
+    },
+    testnet: {},
+  },
+  morphoSteakhouseHighYieldUsdcEdition: {
+    mainnet: {
+      Base: '0xbeeff2490FEffa212faC2f6553682C219E6a8845', // https://app.morpho.org/base/vault/0xbeeff2490FEffa212faC2f6553682C219E6a8845/steakhouse-high-yield-usdc-edition
+    },
+    testnet: {},
+  },
+  morphoSteakhouseConfidentialPrimeUsdc: {
+    mainnet: {
+      Ethereum: '0xbEEF00A59B577423653A1526c7009bdE103F542B', // https://app.morpho.org/ethereum/vault/0xbEEF00A59B577423653A1526c7009bdE103F542B/steakhouse-confidential-prime-usdc
+    },
+    testnet: {},
+  },
+  morphoGauntletUsdcPrimeV2: {
+    mainnet: {
+      Base: '0x050cE30b927Da55177A4914EC73480238BAD56f0', // https://app.morpho.org/base/vault/0x050cE30b927Da55177A4914EC73480238BAD56f0/gauntlet-usdc-prime
+    },
+    testnet: {},
+  },
+  morphoReEcosystemVault: {
+    mainnet: {
+      Ethereum: '0xD1E9242e075Db4bdd3f3c721D7d5fd4180A94A7e', // https://app.morpho.org/ethereum/vault/0xD1E9242e075Db4bdd3f3c721D7d5fd4180A94A7e/re-ecosystem-vault
+    },
+    testnet: {},
+  },
+  morphoApyxUsdc: {
+    mainnet: {
+      Ethereum: '0x069662D2588fcaC24B5c209456Db965D151556f0', // https://app.morpho.org/ethereum/vault/0x069662D2588fcaC24B5c209456Db965D151556f0/apyx-usdc
+    },
+    testnet: {},
+  },
+  morphoRockawayxToriEcosystem: {
+    mainnet: {
+      Ethereum: '0x3BD9AdAE6643dDcddD02746b8B60075E56DF9478', // https://app.morpho.org/ethereum/vault/0x3BD9AdAE6643dDcddD02746b8B60075E56DF9478/rockawayx-tori-ecosystem
     },
     testnet: {},
   },
@@ -677,6 +715,17 @@ const mainnetContracts = {
       erc4626VaultAddresses.morphoRockawayxUsdcYield.mainnet.Ethereum,
     ERC4626_morphoHumaUsdcMain_Ethereum:
       erc4626VaultAddresses.morphoHumaUsdcMain.mainnet.Ethereum,
+    ERC4626_morphoSteakhousePrimeUsdc_Ethereum:
+      erc4626VaultAddresses.morphoSteakhousePrimeUsdc.mainnet.Ethereum,
+    ERC4626_morphoSteakhouseConfidentialPrimeUsdc_Ethereum:
+      erc4626VaultAddresses.morphoSteakhouseConfidentialPrimeUsdc.mainnet
+        .Ethereum,
+    ERC4626_morphoReEcosystemVault_Ethereum:
+      erc4626VaultAddresses.morphoReEcosystemVault.mainnet.Ethereum,
+    ERC4626_morphoApyxUsdc_Ethereum:
+      erc4626VaultAddresses.morphoApyxUsdc.mainnet.Ethereum,
+    ERC4626_morphoRockawayxToriEcosystem_Ethereum:
+      erc4626VaultAddresses.morphoRockawayxToriEcosystem.mainnet.Ethereum,
     oneInchRouter,
     merkleDistributor: merkleDistributorAddresses.mainnet.Ethereum,
   },
@@ -770,6 +819,12 @@ const mainnetContracts = {
       erc4626VaultAddresses.morphoSeamlessUsdcVault.mainnet.Base,
     ERC4626_morphoEthenaSteakhouseUsdc_Base:
       erc4626VaultAddresses.morphoEthenaSteakhouseUsdc.mainnet.Base,
+    ERC4626_morphoSteakhouseHighYieldUsdcEdition_Base:
+      erc4626VaultAddresses.morphoSteakhouseHighYieldUsdcEdition.mainnet.Base,
+    ERC4626_morphoGauntletUsdcPrimeV2_Base:
+      erc4626VaultAddresses.morphoGauntletUsdcPrimeV2.mainnet.Base,
+    ERC4626_morphoGauntletUsdcFrontier_Base:
+      erc4626VaultAddresses.morphoGauntletUsdcFrontier.mainnet.Base,
     merkleDistributor: merkleDistributorAddresses.mainnet.Base,
   },
 };
