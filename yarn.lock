@@ -173,6 +173,7 @@ __metadata:
   dependencies:
     "@aglocal/boot": "workspace:*"
     "@agoric/async-flow": "workspace:*"
+    "@agoric/base-zone": "workspace:*"
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
