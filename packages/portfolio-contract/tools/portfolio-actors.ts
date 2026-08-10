@@ -40,19 +40,17 @@ import type {
   PortfolioContinuingInvitationMaker,
   AxelarChain,
   PortfolioPermissions,
+  ExternalPortfolioPermissions,
 } from '@agoric/portfolio-api';
 import {
   PortfolioAutoFeaturesEIP712Shape,
-  PortfolioPermissionsEIP712Shape,
+  portfolioPermissionsToEIP712,
 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
-import type {
-  PortfolioPermissionsEIP712,
-  TargetAllocation,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TimerService } from '@agoric/time';
 import { mustMatch, type ERemote } from '@agoric/internal';
 import { E } from '@endo/far';
@@ -428,31 +426,18 @@ export const makeEvmTrader = ({
             features?: Required<PortfolioAutoFeatures>;
             grantee?: {
               address: Bech32Address;
-              permissions: PortfolioPermissions;
+              permissions: ExternalPortfolioPermissions;
             };
           } = {},
         ) {
           assert(contractRepresentative, 'missing contract representative');
-          if (grantee) {
-            mustMatch(
-              harden({ ...grantee.permissions }),
-              PortfolioPermissionsEIP712Shape,
-            );
-          }
           const witness = getYmaxWitness('OpenPortfolio', {
             allocations,
             ...(features && { features }),
             ...(grantee && {
               grantee: {
                 address: grantee.address,
-                // validated against PortfolioPermissionsEIP712Shape just
-                // above. XXX: `rebalance` is `optional` at the EIP-712
-                // level, but TypedDataToPrimitiveTypes doesn't recursively
-                // apply that to nested fields, so the nested `permissions`
-                // field here still infers as fully required; cast around
-                // it.
-                permissions:
-                  grantee.permissions as unknown as Required<PortfolioPermissionsEIP712>,
+                permissions: portfolioPermissionsToEIP712(grantee.permissions),
               },
             }),
           });
@@ -574,25 +559,57 @@ export const makeEvmTrader = ({
          */
         async grant(
           granteeAddress: Bech32Address,
-          permissions: PortfolioPermissions,
+          permissions: ExternalPortfolioPermissions,
         ) {
           const deadline = await getDeadline();
-          mustMatch(permissions, PortfolioPermissionsEIP712Shape);
+          const wirePermissions = portfolioPermissionsToEIP712(permissions);
           const message = getYmaxStandaloneOperationData(
             {
               accountHolder: granteeAddress,
-              // XXX: `rebalance` is `optional` at the EIP-712 level, but
-              // TypedDataToPrimitiveTypes doesn't recursively apply that to
-              // nested fields (only top-level operation fields are patched
-              // via `WithOptionalFields`), so the nested `permissions` field
-              // here still infers as fully required; cast around it.
-              permissions:
-                permissions as unknown as Required<PortfolioPermissionsEIP712>,
+              permissions: wirePermissions,
               portfolio: BigInt(self.getPortfolioId()),
               nonce: (nonce += 1n),
               deadline,
             },
             'Grant',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
+        },
+        async changePermissions(
+          agentId: number,
+          permissions: ExternalPortfolioPermissions,
+        ) {
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              agentId: BigInt(agentId),
+              permissions: portfolioPermissionsToEIP712(permissions),
+              portfolio: BigInt(self.getPortfolioId()),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'ChangePermissions',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
+        },
+        async revoke(agentId: number) {
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              agentId: BigInt(agentId),
+              portfolio: BigInt(self.getPortfolioId()),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Revoke',
             chainId,
             standaloneVerifyingContract,
           );

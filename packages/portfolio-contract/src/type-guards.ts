@@ -207,7 +207,10 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
     { type: 'deposit', amount: AnyNatAmountShape },
     { fromChain: ChainNameExtShape },
   ),
-  M.splitRecord({ type: 'rebalance' }, { agent: PortfolioAgentKeyShape }),
+  M.splitRecord(
+    { type: 'rebalance' },
+    { agent: PortfolioAgentKeyShape, policyVersion: M.number() },
+  ),
 );
 
 export const FlowKeyShape: TypedPattern<`flow${number}`> =

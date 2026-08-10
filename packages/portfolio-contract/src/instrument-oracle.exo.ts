@@ -42,25 +42,39 @@ export const prepareInstrumentOracle = (
     submitTvlUpdate: M.call(PoolKeyShapeExt, M.nat(), M.number()).returns(),
   });
 
-  return zone.exoClass('InstrumentOracle', InstrumentOracleI, () => ({}), {
-    submitTvlUpdate(poolKey: string, tvlUsd: bigint, asOf: number) {
-      assertPoolKey(poolKey);
-      (Number.isSafeInteger(asOf) && asOf >= 0) ||
-        Fail`asOf must be a non-negative Unix timestamp in seconds`;
+  const makeInstrumentOracle = zone.exoClass(
+    'InstrumentOracle',
+    InstrumentOracleI,
+    () => ({}),
+    {
+      submitTvlUpdate(poolKey: string, tvlUsd: bigint, asOf: number) {
+        assertPoolKey(poolKey);
+        (Number.isSafeInteger(asOf) && asOf >= 0) ||
+          Fail`asOf must be a non-negative Unix timestamp in seconds`;
 
-      if (latestByPool.has(poolKey)) {
-        const previous = latestByPool.get(poolKey);
-        asOf > previous.asOf ||
-          Fail`asOf ${asOf} is not newer than ${previous.asOf}`;
-      }
+        if (latestByPool.has(poolKey)) {
+          const previous = latestByPool.get(poolKey);
+          asOf > previous.asOf ||
+            Fail`asOf ${asOf} is not newer than ${previous.asOf}`;
+        }
 
-      const status = harden({ tvlUsd, asOf });
-      latestByPool.has(poolKey)
-        ? latestByPool.set(poolKey, status)
-        : latestByPool.init(poolKey, status);
-      publishInstrument(poolKey, status);
+        const status = harden({ tvlUsd, asOf });
+        latestByPool.has(poolKey)
+          ? latestByPool.set(poolKey, status)
+          : latestByPool.init(poolKey, status);
+        publishInstrument(poolKey, status);
+      },
     },
-  });
+  );
+  const prepared = (...args: Parameters<typeof makeInstrumentOracle>) =>
+    makeInstrumentOracle(...args);
+  prepared.getLatest = (
+    poolKey: string,
+  ): StatusFor['instrument'] | undefined => {
+    assertPoolKey(poolKey);
+    return latestByPool.has(poolKey) ? latestByPool.get(poolKey) : undefined;
+  };
+  return harden(prepared);
 };
 harden(prepareInstrumentOracle);
 
@@ -121,6 +135,10 @@ export const prepareInstrumentOracleInvitationKit = (
     }, 'instrumentOracle');
   };
 
-  return harden({ makeInstrumentOracleInvitation, revokeInstrumentOracle });
+  return harden({
+    makeInstrumentOracleInvitation,
+    revokeInstrumentOracle,
+    getLatestInstrumentStatus: makeInstrumentOracle.getLatest,
+  });
 };
 harden(prepareInstrumentOracleInvitationKit);

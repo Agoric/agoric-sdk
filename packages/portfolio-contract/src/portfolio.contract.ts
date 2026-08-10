@@ -44,6 +44,7 @@ import type {
   PortfolioPublicInvitationMaker,
   TargetAllocation,
 } from '@agoric/portfolio-api';
+import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   DEFAULT_FLOW_CONFIG,
@@ -662,6 +663,19 @@ export const contract = async (
     await E(ps).deliverPayment(grantee, invitation);
   };
 
+  const {
+    makeInstrumentOracleInvitation,
+    revokeInstrumentOracle,
+    getLatestInstrumentStatus,
+  } = prepareInstrumentOracleInvitationKit(
+    zone.subZone('instrumentOracle'),
+    zcf,
+    (poolKey, status) => {
+      const instrumentsNode = E(storageNode).makeChildNode('instruments');
+      publishStatus(E(instrumentsNode).makeChildNode(poolKey), status);
+    },
+  );
+
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
@@ -678,6 +692,7 @@ export const contract = async (
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
+    getInstrumentStatus: getLatestInstrumentStatus,
   });
 
   /**
@@ -877,7 +892,7 @@ export const contract = async (
           // standalone Grant handler; the string is looked up in NamesByAddress.
           kit.evmHandler.grant(
             grantee.address as Bech32Address,
-            grantee.permissions,
+            portfolioPermissionsFromEIP712(grantee.permissions),
           ),
         );
       }
@@ -933,16 +948,6 @@ export const contract = async (
       shapes: offerArgsShapes,
     },
   );
-
-  const { makeInstrumentOracleInvitation, revokeInstrumentOracle } =
-    prepareInstrumentOracleInvitationKit(
-      zone.subZone('instrumentOracle'),
-      zcf,
-      (poolKey, status) => {
-        const instrumentsNode = E(storageNode).makeChildNode('instruments');
-        publishStatus(E(instrumentsNode).makeChildNode(poolKey), status);
-      },
-    );
 
   const makeEVMWalletHandlerInvitation = prepareEVMWalletHandlerInvitation(
     zone.subZone('evmWalletHandler'),

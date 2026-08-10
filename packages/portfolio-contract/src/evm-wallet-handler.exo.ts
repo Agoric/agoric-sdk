@@ -21,6 +21,7 @@ import {
   recoverTypedDataAddress,
 } from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
 import type { StatusFor } from '@agoric/portfolio-api';
+import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type {
   YmaxFullDomain,
@@ -52,6 +53,13 @@ import type { EVMContractAddressesMap } from './type-guards.ts';
 const trace = makeTracer('PEWH');
 
 const MAX_DEADLINE_OFFSET = 60n * 60n * 24n; // 1 day in seconds
+const MAX_SAFE_AGENT_ID = BigInt(Number.MAX_SAFE_INTEGER);
+
+const agentIdFromEIP712 = (agentId: bigint): number => {
+  (agentId > 0n && agentId <= MAX_SAFE_AGENT_ID) ||
+    Fail`invalid delegation agent id ${agentId}`;
+  return Number(agentId);
+};
 
 type EIP712Data = WithSignature<
   YmaxStandaloneOperationData | YmaxPermitWitnessTransferFromData
@@ -403,9 +411,26 @@ export const prepareEVMPortfolioOperationManager = (
               // we don't rely on it for correctness: the string will
               // be looked up in NamesByAddress.
               accountHolder as Bech32Address,
-              permissions,
+              portfolioPermissionsFromEIP712(permissions),
             );
 
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'ChangePermissions': {
+            const {
+              data: { agentId, permissions },
+            } = operationDetails;
+            const result = E(portfolio!).changePermissions(
+              agentIdFromEIP712(agentId),
+              portfolioPermissionsFromEIP712(permissions),
+            );
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'Revoke': {
+            const {
+              data: { agentId },
+            } = operationDetails;
+            const result = E(portfolio!).revoke(agentIdFromEIP712(agentId));
             return watch(result, BasicOutcomeWatcher);
           }
           case 'SetAutoFeatures': {

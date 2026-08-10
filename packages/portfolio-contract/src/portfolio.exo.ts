@@ -24,7 +24,7 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import {
-  PortfolioPermissionsShape,
+  assertPortfolioPermissions,
   PortfolioAutoFeaturesShape,
   type FlowConfig,
   type FlowKey,
@@ -41,6 +41,7 @@ import {
   type PortfolioDelegatedRebalanceParams,
   type PortfolioDelegatedSetTargetAllocationParams,
   type PortfolioGrantResult,
+  type PortfolioDelegationLifecycleResult,
   type PortfolioSetAutoFeaturesResult,
   PortfolioAutoFeaturesExtShape,
 } from '@agoric/portfolio-api';
@@ -71,6 +72,10 @@ import {
   type PortfolioDelegationClient,
 } from './delegation.exo.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
+import {
+  assertMandateForAllocation,
+  type InstrumentStatusReader,
+} from './mandate.ts';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -385,6 +390,7 @@ export const preparePortfolioKit = (
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
+    getInstrumentStatus,
   }: {
     rebalance: (
       seat: ZCFSeat,
@@ -434,6 +440,7 @@ export const preparePortfolioKit = (
       grantee: PortfolioAgentGrantee,
       permissions: PortfolioPermissionsExt,
     ) => Promise<void>;
+    getInstrumentStatus: InstrumentStatusReader;
   },
 ) => {
   // Ephemeral node cache
@@ -676,11 +683,18 @@ export const preparePortfolioKit = (
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
+          const permissions = this.state.delegations!.get(agentId).permissions;
+          assertMandateForAllocation(
+            permissions,
+            targetAllocation,
+            getInstrumentStatus,
+          );
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
           manager.setTargetAllocation(targetAllocation);
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
+            policyVersion,
             ...(agentMemo != null && { agentMemo }),
           };
           const startedFlow = manager.startFlow(flowDetail);
@@ -703,11 +717,23 @@ export const preparePortfolioKit = (
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
+          const permissions = this.state.delegations!.get(agentId).permissions;
+          if (typeof permissions.allocation === 'object') {
+            const targetAllocation =
+              reader.getTargetAllocation() ??
+              Fail`delegated rebalance requires target allocation`;
+            assertMandateForAllocation(
+              permissions,
+              targetAllocation,
+              getInstrumentStatus,
+            );
+          }
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
 
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
+            policyVersion,
             ...(agentMemo != null && { agentMemo }),
           };
           const startedFlow = manager.startFlow(flowDetail);
@@ -1133,6 +1159,67 @@ export const preparePortfolioKit = (
             agentId: nextAgentId,
             policyVersion: updatedAtPolicyVersion,
           };
+        },
+        changeExternalPermissions(
+          agentId: number,
+          permissions: PortfolioPermissionsExt,
+        ): PortfolioDelegationLifecycleResult {
+          assertPortfolioPermissions(permissions);
+          (Number.isSafeInteger(agentId) && agentId > 0) ||
+            Fail`invalid delegation agent id ${agentId}`;
+          const { delegations, plannerAgentId, portfolioId } = this.state;
+          delegations?.has(agentId) ||
+            Fail`no delegation found for agent ${agentId}`;
+          agentId !== plannerAgentId ||
+            Fail`planner delegation cannot be changed externally`;
+          const delegation = delegations!.get(agentId);
+          delegation.grantee !== PortfolioPlannerAgent ||
+            Fail`planner delegation cannot be changed externally`;
+          delegation.state === 'active' ||
+            Fail`delegation agent${agentId} is ${delegation.state}`;
+
+          const policyVersion = this.facets.manager.bumpPolicyVersion();
+          delegations!.set(
+            agentId,
+            harden({
+              ...delegation,
+              permissions,
+              updatedAtPolicyVersion: policyVersion,
+            }),
+          );
+          this.facets.reporter.publishStatus();
+          this.facets.reporter.publishAgents();
+          return harden({ portfolioId, policyVersion, agentId });
+        },
+        revokeExternalDelegation(
+          agentId: number,
+        ): PortfolioDelegationLifecycleResult {
+          (Number.isSafeInteger(agentId) && agentId > 0) ||
+            Fail`invalid delegation agent id ${agentId}`;
+          const { delegations, plannerAgentId, portfolioId } = this.state;
+          delegations?.has(agentId) ||
+            Fail`no delegation found for agent ${agentId}`;
+          agentId !== plannerAgentId ||
+            Fail`planner delegation cannot be revoked externally`;
+          const delegation = delegations!.get(agentId);
+          delegation.grantee !== PortfolioPlannerAgent ||
+            Fail`planner delegation cannot be revoked externally`;
+          delegation.state === 'active' ||
+            Fail`delegation agent${agentId} is ${delegation.state}`;
+
+          const policyVersion = this.facets.manager.bumpPolicyVersion();
+          delegations!.set(
+            agentId,
+            harden({
+              ...delegation,
+              state: 'revoked',
+              activeClient: undefined,
+              updatedAtPolicyVersion: policyVersion,
+            }),
+          );
+          this.facets.reporter.publishStatus();
+          this.facets.reporter.publishAgents();
+          return harden({ portfolioId, policyVersion, agentId });
         },
         revokeDelegation(agentId: number) {
           const { delegations } = this.state;
@@ -1582,12 +1669,12 @@ export const preparePortfolioKit = (
          */
         grant(grantee: Bech32Address, permissions: PortfolioPermissionsExt) {
           return vowTools.asVow(async () => {
-            mustMatch(permissions, PortfolioPermissionsShape);
+            assertPortfolioPermissions(permissions);
             const { portfolioId, sourceAccountId } = this.state;
             if (!sourceAccountId) {
               throw Fail`grant requires sourceAccountId to be set (portfolio must be opened from EVM)`;
             }
-            permissions.allocation === true ||
+            permissions.allocation ||
               Fail`grant requires allocation permission`;
             await null;
             // grantDelegation bumps policyVersion and publishes the agent
@@ -1611,6 +1698,27 @@ export const preparePortfolioKit = (
               policyVersion,
               agentId,
             }) satisfies PortfolioGrantResult;
+          });
+        },
+        changePermissions(
+          agentId: number,
+          permissions: PortfolioPermissionsExt,
+        ) {
+          return vowTools.asVow(() => {
+            const { sourceAccountId } = this.state;
+            sourceAccountId ||
+              Fail`changePermissions requires an EVM portfolio`;
+            return this.facets.manager.changeExternalPermissions(
+              agentId,
+              permissions,
+            );
+          });
+        },
+        revoke(agentId: number) {
+          return vowTools.asVow(() => {
+            const { sourceAccountId } = this.state;
+            sourceAccountId || Fail`revoke requires an EVM portfolio`;
+            return this.facets.manager.revokeExternalDelegation(agentId);
           });
         },
         /**
