@@ -34,10 +34,11 @@ import { config as opsConfig } from '../scripts/make-test-multisig.js';
  * @import {ContractControl} from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
  */
 
-// a3p proposal 106 (`ymax-alpha4`), adopted in agoric-sdk commit
-// ac0680c98384 (`chore(a3p): use ymax-alpha4`).
+// The ymax-v0.3.2605-beta1 release bundle installed by g:ymax1. Using the
+// fixture's bundle keeps its retained private args compatible with this
+// authority smoke test.
 export const bundleId =
-  'b1-078729b9683de5f81afe8b14bd163f0165b8dd803f587413df8dff76b557d56e5d0d67f8f654bc920b5bb3a734d7d7644791692efbbc08c08984e37c6e0e6c88';
+  'b1-03d5ff17d1f29f8d1993525d0a9e82e6cd74b117a64cff64d3ca7e246bc69428d8e7d6947b69ee6bf37c024d16920490e684f83f263d6fed0c6ba875d57bf621';
 
 const ymax1Control = {
   keyName: 'ymax1-ms',

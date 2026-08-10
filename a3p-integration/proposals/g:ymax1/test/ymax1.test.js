@@ -12,7 +12,10 @@ import anyTest from 'ava';
 import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 import { makeActionId, sendWalletAction } from '../wallet-util.js';
 import { redeemInvitation, submitYmaxControl } from '../ymax-util.js';
-import { bundleId, ymax1ControlAddr as ymaxControlAddr } from '../consts.js';
+import {
+  ymax1BundleId,
+  ymax1ControlAddr as ymaxControlAddr,
+} from '../consts.js';
 
 /**
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
@@ -106,7 +109,7 @@ test.serial('invoke ymaxControl to getCreatorFacet', async t => {
   t.truthy(result, 'Creator facet saved to wallet store');
 });
 
-test.serial('ymax told zoe that Access token is required', async t => {
+test.serial('ymax accepts an open offer without an Access token', async t => {
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
   );
@@ -123,20 +126,19 @@ test.serial('ymax told zoe that Access token is required', async t => {
         instance,
         publicInvitationMaker: 'makeOpenPortfolioInvitation',
       },
+      offerArgs: {},
       proposal: {},
     },
   };
 
   await sendWalletAction(vsc, ymaxControlAddr, redeemAction);
 
-  await t.throwsAsync(wup.offerResult(id), {
-    message: /missing properties \["Access"\]/,
-  });
+  t.is(await wup.offerResult(id), 'UNPUBLISHED');
 });
 
 test.serial('null upgrade existing instance with args override', async t => {
   const yc = ymaxControl;
-  await yc.upgrade({ bundleId, privateArgsOverrides });
+  await yc.upgrade({ bundleId: ymax1BundleId, privateArgsOverrides });
 
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
@@ -176,7 +178,7 @@ test.serial('get new contract control and upgrade', async t => {
   t.deepEqual(result, { name: 'ymaxControl', passStyle: 'remotable' });
 
   const yc = ymaxControl;
-  await yc.upgrade({ bundleId });
+  await yc.upgrade({ bundleId: ymax1BundleId });
 
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
