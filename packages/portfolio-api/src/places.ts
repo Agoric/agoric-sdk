@@ -160,6 +160,38 @@ export const ERC4626PoolPlaces = {
     protocol: 'ERC4626',
     chainName: 'Ethereum',
   },
+  ERC4626_morphoSteakhouseHighYieldUsdcEdition_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoSteakhousePrimeUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoSteakhouseConfidentialPrimeUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoGauntletUsdcPrimeV2_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoGauntletUsdcFrontier_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoReEcosystemVault_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoApyxUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoRockawayxToriEcosystem_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 deepFreeze(ERC4626PoolPlaces);
 

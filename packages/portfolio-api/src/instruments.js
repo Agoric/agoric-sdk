@@ -71,6 +71,21 @@ export const InstrumentId = /** @type {const} */ ({
   ERC4626_morphoRockawayxUsdcYield_Ethereum:
     'ERC4626_morphoRockawayxUsdcYield_Ethereum',
   ERC4626_morphoHumaUsdcMain_Ethereum: 'ERC4626_morphoHumaUsdcMain_Ethereum',
+  ERC4626_morphoSteakhouseHighYieldUsdcEdition_Base:
+    'ERC4626_morphoSteakhouseHighYieldUsdcEdition_Base',
+  ERC4626_morphoSteakhousePrimeUsdc_Ethereum:
+    'ERC4626_morphoSteakhousePrimeUsdc_Ethereum',
+  ERC4626_morphoSteakhouseConfidentialPrimeUsdc_Ethereum:
+    'ERC4626_morphoSteakhouseConfidentialPrimeUsdc_Ethereum',
+  ERC4626_morphoGauntletUsdcPrimeV2_Base:
+    'ERC4626_morphoGauntletUsdcPrimeV2_Base',
+  ERC4626_morphoGauntletUsdcFrontier_Base:
+    'ERC4626_morphoGauntletUsdcFrontier_Base',
+  ERC4626_morphoReEcosystemVault_Ethereum:
+    'ERC4626_morphoReEcosystemVault_Ethereum',
+  ERC4626_morphoApyxUsdc_Ethereum: 'ERC4626_morphoApyxUsdc_Ethereum',
+  ERC4626_morphoRockawayxToriEcosystem_Ethereum:
+    'ERC4626_morphoRockawayxToriEcosystem_Ethereum',
   USDN: 'USDN',
   USDNVault: 'USDNVault',
 });
