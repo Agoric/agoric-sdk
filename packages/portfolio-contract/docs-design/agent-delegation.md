@@ -174,9 +174,10 @@ Delegated allocation acceptance reads the current durable record, checks each
 configured maximum weight, and reads current instrument-oracle TVL for each
 minimum-TVL or maximum-vault-share check before changing policy or starting a
 flow. Missing instrument data fails closed. Maximum vault share also requires
-a trustworthy current portfolio valuation; until that source is supplied, a
-record containing that constraint fails closed with
-`mandate.portfolioValue.missing:<instrument>`.
+an estimated current portfolio valuation. For the pilot, the contract uses the
+sum of each position's cumulative USDC transfers in minus transfers out,
+rounded up to whole USD. This intentionally omits accrued yield, losses, and
+undeployed cash; a negative net is treated as zero.
 
 TODO: more expressive permissions (e.g. min/max portion bands per instrument,
 max drift per rebalance, allowlist of instruments narrower than the allocated

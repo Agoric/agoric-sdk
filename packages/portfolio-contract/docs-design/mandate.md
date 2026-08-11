@@ -21,9 +21,12 @@ At delegated `setTargetAllocation` or `rebalance` acceptance, the contract:
 4. only then changes policy or starts an attributed flow.
 
 Constraint errors use stable prefixes such as `mandate.maxWeight`,
-`mandate.minVaultTvl`, and `mandate.maxVaultShare`. Missing oracle data and
-missing portfolio valuation fail closed. Current position transfer history is
-not treated as portfolio valuation because it omits yield and undeployed cash.
+`mandate.minVaultTvl`, and `mandate.maxVaultShare`. Missing oracle data fails
+closed. For the pilot, the portfolio USD valuation used by maximum-vault-share
+checks is the sum of each position's cumulative USDC transfers in minus
+transfers out, rounded up to whole USD. This is intentionally an estimate: it
+does not include accrued yield, losses, or undeployed cash; a negative net is
+treated as zero.
 
 `ChangePermissions` is owner-signed full replacement. `Revoke` is irreversible
 for the named external record. Both advance `policyVersion` exactly once after
