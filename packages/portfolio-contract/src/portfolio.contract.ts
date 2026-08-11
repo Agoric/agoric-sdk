@@ -44,7 +44,6 @@ import type {
   PortfolioPublicInvitationMaker,
   TargetAllocation,
 } from '@agoric/portfolio-api';
-import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   DEFAULT_FLOW_CONFIG,
@@ -54,6 +53,7 @@ import {
 } from '@agoric/portfolio-api/src/constants.js';
 import { ChainTokenMetadataShape } from '@agoric/portfolio-api/src/type-guards.js';
 import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import type {
   PermitDetails,
   YmaxOperationDetails,
