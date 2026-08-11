@@ -364,6 +364,21 @@ const makeFlowsRunningRecord = (
   return harden(fromEntries(statusEntries));
 };
 
+const USDC_SCALE = 1_000_000n;
+
+/** Pilot portfolio valuation: net recorded position transfers, rounded up to USD. */
+const portfolioValueUsdFromTransferHistory = (
+  positions: Iterable<Position>,
+): bigint => {
+  let netTransfers = 0n;
+  for (const position of positions) {
+    const { totalIn, totalOut } = position.getTransferStatus();
+    netTransfers += totalIn.value - totalOut.value;
+  }
+  if (netTransfers <= 0n) return 0n;
+  return (netTransfers + USDC_SCALE - 1n) / USDC_SCALE;
+};
+
 export type PublishStatusFn = <K extends keyof StatusFor>(
   path: string[],
   status: StatusFor[K],
@@ -688,6 +703,7 @@ export const preparePortfolioKit = (
             permissions,
             targetAllocation,
             getInstrumentStatus,
+            portfolioValueUsdFromTransferHistory(this.state.positions.values()),
           );
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
           manager.setTargetAllocation(targetAllocation);
@@ -726,6 +742,9 @@ export const preparePortfolioKit = (
               permissions,
               targetAllocation,
               getInstrumentStatus,
+              portfolioValueUsdFromTransferHistory(
+                this.state.positions.values(),
+              ),
             );
           }
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();

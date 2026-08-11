@@ -19,6 +19,7 @@ const { add } = AmountMath;
 interface PositionRd {
   getPoolKey(): PoolKey;
   getYieldProtocol(): YieldProtocol;
+  getTransferStatus(): TransferStatus;
 }
 
 interface PositionPub extends PositionRd {
@@ -116,6 +117,10 @@ export const preparePosition = (
       getYieldProtocol() {
         const { protocol } = this.state;
         return protocol;
+      },
+      getTransferStatus() {
+        const { totalIn, totalOut } = this.state;
+        return harden({ totalIn, totalOut });
       },
       recordTransferIn(amount: Amount<'nat'>) {
         return recordTransferIn(amount, this.state, this.self);

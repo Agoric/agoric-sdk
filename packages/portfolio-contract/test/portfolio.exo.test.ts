@@ -3,7 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ThrowsExpectation } from 'ava';
 
-import { makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import {
   fromTypedEntries,
   typedEntries,
@@ -68,6 +68,7 @@ const makeSpies = <T extends Record<string, Callable>>(
 const makeTestSetup = (
   opts: {
     storage?: ReturnType<typeof makeFakeStorageKit>;
+    getInstrumentStatus?: PortfolioKitDeps['getInstrumentStatus'];
   } = {},
 ) => {
   const zone = makeHeapZone();
@@ -161,6 +162,7 @@ const makeTestSetup = (
     contracts: contractsMock,
     walletBytecode,
     transferChannels,
+    getInstrumentStatus: opts.getInstrumentStatus ?? (() => undefined),
     // rest are not used for this test
     ...({} as any),
   });
@@ -1148,6 +1150,68 @@ test('delegation rebalance creates flow and calls executePlan', async t => {
   t.like(await getPortfolioStatus!(20), {
     flowsRunning: { flow1: { type: 'rebalance' } },
   });
+});
+
+test('delegated maximum vault share uses recorded transfer history', async t => {
+  const { makePortfolioKit, getCallLog, vowTools } = makeTestSetup({
+    getInstrumentStatus: () =>
+      harden({ tvlUsd: 20_000_000n, asOf: 1_754_521_200 }),
+  });
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 24,
+    sourceAccountId: 'eip155:42161:0x1212121212121212121212121212121212121212',
+  });
+  const position = manager.providePosition(
+    'Aave_Arbitrum',
+    'Aave',
+    'eip155:42161:0x3434343434343434343434343434343434343434',
+  );
+  position.recordTransferIn(AmountMath.make(USDC, 10_000n * 1_000_000n));
+  position.recordTransferOut(AmountMath.make(USDC, 2_000n * 1_000_000n));
+  manager.setTargetAllocation({ Aave_Arbitrum: 100n });
+
+  const granted = await vowTools.when(
+    evmHandler.grant('agoric1delegate', {
+      allocation: {
+        instruments: { Aave_Arbitrum: { maxVaultShareBps: 4 } },
+      },
+    }),
+  );
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.is(
+    client.setTargetAllocation({
+      targetAllocation: { Aave_Arbitrum: 100n },
+      syncState: {
+        policyVersion: granted.policyVersion,
+        rebalanceCount: 0,
+      },
+    }),
+    'flow1',
+  );
+
+  const changed = await vowTools.when(
+    evmHandler.changePermissions(granted.agentId, {
+      allocation: {
+        instruments: { Aave_Arbitrum: { maxVaultShareBps: 3 } },
+      },
+    }),
+  );
+  t.throws(
+    () =>
+      client.setTargetAllocation({
+        targetAllocation: { Aave_Arbitrum: 100n },
+        syncState: {
+          policyVersion: changed.policyVersion,
+          rebalanceCount: 0,
+        },
+      }),
+    { message: /mandate\.maxVaultShare.*Aave_Arbitrum/ },
+  );
+  t.is(getCallLog().length, 2, 'rejection does not execute another plan');
 });
 
 test('allocation delegation cannot use rebalance', async t => {
