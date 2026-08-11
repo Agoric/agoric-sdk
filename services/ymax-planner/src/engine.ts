@@ -576,7 +576,7 @@ export const processPortfolioEvents = async (
 
     const claimFrom = pickAutoClaimSources(
       cachedBalanceData.tokenBalances,
-      { exchangeRates, gasCosts, gasEstimator, autoClaimConfig },
+      autoPowers,
       1,
     );
     return !!claimFrom;

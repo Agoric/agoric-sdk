@@ -144,15 +144,23 @@ const isGasAcceptable = (
 
 export const pickAutoClaimSources = (
   tokenBalances: YdsTokenBalance[],
-  globalState: Pick<
+  {
+    exchangeRates,
+    gasCosts,
+    autoClaimConfig,
+    usdcTokensByChain,
+  }: Pick<
     AutoPowers,
-    'exchangeRates' | 'gasCosts' | 'gasEstimator' | 'autoClaimConfig'
+    | 'autoClaimConfig'
+    | 'exchangeRates'
+    | 'gasCosts'
+    | 'gasEstimator'
+    | 'usdcTokensByChain'
   >,
   pickLimit = Infinity,
-): null | (YdsTokenBalance & { uusdcValue: bigint })[] => {
-  const { exchangeRates, gasCosts, autoClaimConfig } = globalState;
+): null | (YdsTokenBalance & { uusdcValue: bigint; usdcTokenId: string })[] => {
   if (!exchangeRates || !gasCosts) return null;
-  const picks: (YdsTokenBalance & { uusdcValue: bigint })[] = [];
+  const picks: Exclude<ReturnType<typeof pickAutoClaimSources>, null> = [];
 
   // Evaluate each reward token independently.
   const tokenLocations = Map.groupBy(
@@ -161,9 +169,11 @@ export const pickAutoClaimSources = (
   );
   const gasCostByChain = new Map<CaipChainId, number>();
   for (const [_caipTokenId, rewardBalances] of tokenLocations) {
-    const { caipChainId, tokenId } = rewardBalances[0];
+    const { chainName, caipChainId, tokenId } = rewardBalances[0];
 
     // Require USDC exchangability.
+    const usdcTokenId = getOwn(usdcTokensByChain, chainName);
+    if (!usdcTokenId) continue;
     const [, evmChainId] = caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
     const usdcFromTokenRates = exchangeRates.filter(
       rate =>
@@ -215,7 +225,11 @@ export const pickAutoClaimSources = (
     const claimedBalance = rewardBalances.find(b => b.instrumentName === null);
     let claimedUusdc = getUusdcValue(Number(claimedBalance?.amount));
     if (claimedUusdc > 0 && claimedUusdc / estimatedGasUnits >= threshold) {
-      picks.push({ ...claimedBalance!, uusdcValue: BigInt(claimedUusdc) });
+      picks.push({
+        ...claimedBalance!,
+        uusdcValue: BigInt(claimedUusdc),
+        usdcTokenId,
+      });
       if (picks.length >= pickLimit) return picks;
     }
 
@@ -237,7 +251,7 @@ export const pickAutoClaimSources = (
       estimatedGasUnits += gasUnits;
       claimedUusdc += uusdcValue;
       if (claimedUusdc / estimatedGasUnits >= threshold) {
-        picks.push({ ...balance, uusdcValue: BigInt(uusdcValue) });
+        picks.push({ ...balance, uusdcValue: BigInt(uusdcValue), usdcTokenId });
         if (picks.length >= pickLimit) return picks;
         continue;
       }
@@ -357,7 +371,6 @@ export const maybeAutoClaim = async (
     oneInchClient,
     portfoliosPathPrefix,
     postYdsTransaction,
-    usdcTokensByChain,
     walletStore,
   } = powers;
 
@@ -459,7 +472,7 @@ export const maybeAutoClaim = async (
           const swapInfo = await fetchOneInchSwapInfo(oneInchClient, {
             chainId: Number(evmChainId),
             src: tokenId as EvmAddress,
-            dst: usdcTokensByChain[source.chainName] as EvmAddress,
+            dst: source.usdcTokenId as EvmAddress,
             amount: `${rewardTokenCount}`,
             // TODO(AGO-625): Should `from` and `origin` be distinct?
             from: caip10.accountAddress as EvmAddress,
