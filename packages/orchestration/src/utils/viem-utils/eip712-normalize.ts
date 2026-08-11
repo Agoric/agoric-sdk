@@ -310,10 +310,13 @@ const visit = (
       ? actualLength
       : Math.min(actualLength, requiredLength ?? actualLength);
     result = keep ? value : new Array(length);
-    type = Array.from({ length }, () => ({
-      state: 'required' as const,
-      type: base,
-    })) as unknown as TypeFields;
+    // Do not use an Array as the field record. Under XSnap, Object.keys on a
+    // two-element array can return duplicate "0" keys, which would visit the
+    // first element twice and leave the second result as a hole.
+    type = Object.create(null) as TypeFields;
+    for (let index = 0; index < length; index += 1) {
+      type[index] = { state: 'required', type: base };
+    }
   } else {
     // Guaranteed defined (the `!isArray && !baseType` case already
     // returned above); this is just for TS's narrowing.
@@ -336,12 +339,14 @@ const visit = (
     }
   }
 
-  // `fieldName in obj`, not `hasOwnProperty`: matches how viem itself reads
-  // field values (plain property access resolves the prototype chain).
-  // `type` is null-prototype or a fresh array-literal record, so there's no
-  // inherited-property risk to guard against here.
-  // eslint-disable-next-line guard-for-in
-  for (const fieldName in type) {
+  // Snapshot the keys and use an indexed loop before recursing. `fieldName in
+  // obj`, rather than `hasOwnProperty`, matches how viem reads field values
+  // (plain property access resolves the prototype chain). `type` is a
+  // null-prototype record, so Object.keys includes exactly the fields to
+  // visit.
+  const fieldNames = Object.keys(type);
+  for (let fieldIndex = 0; fieldIndex < fieldNames.length; fieldIndex += 1) {
+    const fieldName = fieldNames[fieldIndex];
     const field = type[fieldName];
     const present = fieldName in value;
 
