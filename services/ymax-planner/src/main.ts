@@ -46,6 +46,7 @@ import { startEngine } from './engine.ts';
 import type { ChainGasState } from './gas-estimation.ts';
 import { calculateInstrumentBlocks } from './instrument-status.ts';
 import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
+import { GAS_UNITS_PER_CLAIM, GAS_UNITS_PER_SWAP } from './rewards.ts';
 import {
   createEVMContext,
   prepareAbortController,
@@ -586,6 +587,8 @@ export const main = async (
     postYdsTransaction,
     autoClaimConfig: config.autoClaim,
     autoRebalance: config.autoRebalance,
+    GAS_UNITS_PER_CLAIM,
+    GAS_UNITS_PER_SWAP,
   };
 
   await withDeferredCleanup(async addCleanup => {

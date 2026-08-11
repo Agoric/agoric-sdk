@@ -12,6 +12,7 @@ import {
   type AutoRebalanceConfig,
   type AutoPowers,
 } from '../src/auto.ts';
+import { GAS_UNITS_PER_CLAIM, GAS_UNITS_PER_SWAP } from '../src/rewards.ts';
 import { UserInputError } from '../src/support.ts';
 
 const brand = Far('mock USDC brand') as Brand<'nat'>;
@@ -245,6 +246,8 @@ const makeMaybeAutoPowers = (overrides: Partial<AutoPowers> = {}) => {
         throw new Error('unexpected call to walletStore.saveOfferResult');
       },
     },
+    GAS_UNITS_PER_CLAIM,
+    GAS_UNITS_PER_SWAP,
     ...overrides,
   };
   return {

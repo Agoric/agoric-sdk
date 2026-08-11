@@ -46,7 +46,6 @@ import {
 } from './gas-estimation.ts';
 import type { InstrumentBlocks } from './instrument-status.ts';
 import { fetchOneInchSwapInfo } from './oneinch.ts';
-import { GAS_UNITS_PER_CLAIM, GAS_UNITS_PER_SWAP } from './rewards.ts';
 import { UserInputError } from './support.ts';
 import { getOwn } from './utils.js';
 import type {
@@ -149,6 +148,8 @@ export const pickAutoClaimSources = (
     gasCosts,
     autoClaimConfig,
     usdcTokensByChain,
+    GAS_UNITS_PER_CLAIM,
+    GAS_UNITS_PER_SWAP,
   }: Pick<
     AutoPowers,
     | 'autoClaimConfig'
@@ -156,6 +157,8 @@ export const pickAutoClaimSources = (
     | 'gasCosts'
     | 'gasEstimator'
     | 'usdcTokensByChain'
+    | 'GAS_UNITS_PER_CLAIM'
+    | 'GAS_UNITS_PER_SWAP'
   >,
   pickLimit = Infinity,
 ): null | (YdsTokenBalance & { uusdcValue: bigint; usdcTokenId: string })[] => {
@@ -346,6 +349,8 @@ export type AutoPowers = {
   postYdsTransaction?: (txHash: string) => Promise<void>;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   walletStore: ReturnType<typeof reflectWalletStore>;
+  GAS_UNITS_PER_CLAIM: Record<string, bigint>;
+  GAS_UNITS_PER_SWAP: bigint;
 };
 
 export const maybeAutoClaim = async (
@@ -371,6 +376,7 @@ export const maybeAutoClaim = async (
     portfoliosPathPrefix,
     postYdsTransaction,
     walletStore,
+    GAS_UNITS_PER_SWAP,
   } = powers;
 
   if (!oneInchClient) return undefined;

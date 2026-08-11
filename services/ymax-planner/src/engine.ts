@@ -245,6 +245,8 @@ export type Powers = {
   postYdsTransaction?: (txHash: string) => Promise<void>;
   autoClaimConfig: AutoClaimConfig;
   autoRebalance: AutoRebalanceConfig;
+  GAS_UNITS_PER_CLAIM: Record<string, bigint>;
+  GAS_UNITS_PER_SWAP: bigint;
 };
 
 export type ProcessPortfolioPowers = Pick<
@@ -265,6 +267,8 @@ export type ProcessPortfolioPowers = Pick<
   | 'postYdsTransaction'
   | 'autoClaimConfig'
   | 'autoRebalance'
+  | 'GAS_UNITS_PER_CLAIM'
+  | 'GAS_UNITS_PER_SWAP'
 > & {
   console: Required<Powers>['console'];
   isDryRun?: boolean;
@@ -364,6 +368,8 @@ export const processPortfolioEvents = async (
     postYdsTransaction,
     autoClaimConfig,
     autoRebalance,
+    GAS_UNITS_PER_CLAIM,
+    GAS_UNITS_PER_SWAP,
   }: ProcessPortfolioPowers,
 ) => {
   const { deferrals, portfolioRecordForKey, balanceCache } = memory;
@@ -561,6 +567,8 @@ export const processPortfolioEvents = async (
     postYdsTransaction,
     usdcTokensByChain,
     walletStore,
+    GAS_UNITS_PER_CLAIM,
+    GAS_UNITS_PER_SWAP,
   };
   const shouldClaim = (
     portfolioKey: PortfolioKey,
