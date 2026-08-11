@@ -223,19 +223,20 @@ export const pickAutoClaimSources = (
     const threshold =
       (uusdPerGasUnit * autoClaimConfig.minRewardPerGas) /
       (1 - autoClaimConfig.maxSlippageBps / 10_000);
+    const holds: typeof picks = [];
 
     // First, check for already-claimed tokens.
     const claimedBalance = rewardBalances.find(b => b.instrumentName === null);
     let claimedUusdc = getUusdcValue(BigInt(claimedBalance?.amount || 0n));
-    if (
-      claimedUusdc > 0n &&
-      Number(claimedUusdc) / estimatedGasUnits >= threshold
-    ) {
-      picks.push({ ...claimedBalance!, uusdcValue: claimedUusdc, usdcTokenId });
-      if (picks.length >= pickLimit) return picks;
+    if (claimedUusdc > 0n) {
+      holds.push({ ...claimedBalance!, uusdcValue: claimedUusdc, usdcTokenId });
+      if (Number(claimedUusdc) / estimatedGasUnits >= threshold) {
+        picks.push(...holds.splice(0));
+        if (picks.length >= pickLimit) return picks.slice(0, pickLimit);
+      }
     }
 
-    // Next, sources by descending value-per-gas until the batch stops growing.
+    // Next, sources by descending value-per-gas.
     const bestRewardBalances = partialMap(rewardBalances, balance => {
       if (balance.instrumentName === null) return undefined;
       // TODO(AGO-625): Extend `GasEstimator`?
@@ -250,14 +251,13 @@ export const pickAutoClaimSources = (
       a > b ? -1 : a < b ? 1 : 0,
     );
     for (const { balance, uusdcValue, gasUnits } of bestRewardBalances) {
+      holds.push({ ...balance, uusdcValue, usdcTokenId });
       estimatedGasUnits += gasUnits;
       claimedUusdc += uusdcValue;
       if (Number(claimedUusdc) / estimatedGasUnits >= threshold) {
-        picks.push({ ...balance, uusdcValue, usdcTokenId });
-        if (picks.length >= pickLimit) return picks;
-        continue;
+        picks.push(...holds.splice(0));
+        if (picks.length >= pickLimit) return picks.slice(0, pickLimit);
       }
-      break;
     }
   }
   return picks.length > 0 ? picks : null;
