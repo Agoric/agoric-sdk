@@ -13,6 +13,35 @@ import { options } from './message-tools.js';
 
 const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 
+// Fixed upstream on 2024-09-17 by eac811dcd ("XS: Array.from fix"):
+// https://github.com/Moddable-OpenSource/moddable/commit/eac811dcd989bc6ecd56f4eb125e4a9ffd1a8860
+// Remove `.failing` when the embedded XS engine includes that fix.
+test.failing('Array.from result enumerates every element', async t => {
+  const opts = options(io);
+  const vat = await xsnap(opts);
+  await vat.evaluate(`
+    const array = Array.from({ length: 2 }, (_, index) => index);
+    const iteratedKeys = [];
+    for (const key in array) {
+      iteratedKeys.push(key);
+    }
+    const report = {
+      keys: Object.keys(array),
+      iteratedKeys,
+      propertyNames: Object.getOwnPropertyNames(array),
+    };
+    issueCommand(
+      new TextEncoder().encode(JSON.stringify(report)).buffer,
+    );
+  `);
+  await vat.close();
+  t.deepEqual(JSON.parse(opts.messages[0]), {
+    keys: ['0', '1'],
+    iteratedKeys: ['0', '1'],
+    propertyNames: ['0', '1', 'length'],
+  });
+});
+
 test('reject odd regex range', async t => {
   const opts = options(io);
   const vat = await xsnap(opts);
