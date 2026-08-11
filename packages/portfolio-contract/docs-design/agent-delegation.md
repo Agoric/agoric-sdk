@@ -179,6 +179,14 @@ sum of each position's cumulative USDC transfers in minus transfers out,
 rounded up to whole USD. This intentionally omits accrued yield, losses, and
 undeployed cash; a negative net is treated as zero.
 
+### Security Considerations
+
+The contract relies on the instrument oracle to supply sufficiently timely TVL
+updates and a suitable `asOf` time; it does not independently impose a
+freshness bound. In particular, a stale high TVL could incorrectly satisfy a
+minimum-TVL or maximum-vault-share constraint. Missing oracle data still fails
+closed, but present data is trusted according to the oracle's update policy.
+
 TODO: more expressive permissions (e.g. min/max portion bands per instrument,
 max drift per rebalance, allowlist of instruments narrower than the allocated
 set). Supporting **multiple agents per portfolio**
