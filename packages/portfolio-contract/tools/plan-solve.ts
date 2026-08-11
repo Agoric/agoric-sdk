@@ -129,7 +129,7 @@ const padFeeEstimate = (estimate: bigint): bigint =>
  * Ensure minimum gas is sent for an Axelar GMP transaction, to hopefully
  * prevent "not enough gas" errors.
  * Note: This function returns a `feeBrand` Amount that is appropriate for
- * Axelar GMP transaction fees but not for e.g. EVM gas (with is in ETH).
+ * Axelar GMP transaction fees but not for e.g. EVM gas (which is in ETH).
  */
 export const makeGmpFeeAmount = (
   feeBrand: NatAmount['brand'],
