@@ -286,6 +286,8 @@ export const loadConfig = async (
       DEFAULT_AUTO_CLAIM_MIN_REWARD_PER_GAS,
     ),
   });
+  autoClaim.maxSlippageBps <= 10_000 ||
+    Fail`AUTO_CLAIM_MAX_SLIPPAGE_BPS must not exceed 10_000`;
   const autoRebalance = harden({
     driftBps: parsePositiveBigint(
       env,

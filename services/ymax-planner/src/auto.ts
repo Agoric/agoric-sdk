@@ -182,8 +182,8 @@ export const pickAutoClaimSources = (
         rate.targetDenom === 'USDC',
     );
     if (!usdcFromTokenRates.length) continue;
-    const getUusdcValue = (rewardTokenCount: number): number => {
-      if (!rewardTokenCount) return 0;
+    const getUusdcValue = (rewardTokenCount: bigint): bigint => {
+      if (!rewardTokenCount) return 0n;
       // Per https://ymax.app/docs , rates are sorted by descending amount. Take
       // the first one whose amount is not too big, falling back on the lowest
       // amount (which is presumably the worst rate).
@@ -191,10 +191,10 @@ export const pickAutoClaimSources = (
         usdcFromTokenRates.find(
           rate => BigInt(rate.sourceAmount) <= rewardTokenCount,
         ) || usdcFromTokenRates.at(-1)!;
-      const uusdcValue =
-        (rewardTokenCount * Number(exchangeRate.targetAmount)) /
-        Number(exchangeRate.sourceAmount);
-      return Math.floor(uusdcValue);
+      return (
+        (rewardTokenCount * BigInt(exchangeRate.targetAmount)) /
+        BigInt(exchangeRate.sourceAmount)
+      );
     };
 
     // Require chain-scoped gas favorability.
@@ -223,13 +223,12 @@ export const pickAutoClaimSources = (
 
     // First, check for already-claimed tokens.
     const claimedBalance = rewardBalances.find(b => b.instrumentName === null);
-    let claimedUusdc = getUusdcValue(Number(claimedBalance?.amount));
-    if (claimedUusdc > 0 && claimedUusdc / estimatedGasUnits >= threshold) {
-      picks.push({
-        ...claimedBalance!,
-        uusdcValue: BigInt(claimedUusdc),
-        usdcTokenId,
-      });
+    let claimedUusdc = getUusdcValue(BigInt(claimedBalance?.amount || 0n));
+    if (
+      claimedUusdc > 0n &&
+      Number(claimedUusdc) / estimatedGasUnits >= threshold
+    ) {
+      picks.push({ ...claimedBalance!, uusdcValue: claimedUusdc, usdcTokenId });
       if (picks.length >= pickLimit) return picks;
     }
 
@@ -239,9 +238,9 @@ export const pickAutoClaimSources = (
       // TODO(AGO-625): Extend `GasEstimator`?
       const gasUnits = Number(getOwn(GAS_UNITS_PER_CLAIM, balance.tokenId));
       if (!gasUnits) return undefined;
-      const uusdcValue = getUusdcValue(Number(balance.amount));
-      const uusdcPerGasUnit = uusdcValue / gasUnits;
-      return uusdcValue > 0 && uusdcPerGasUnit >= threshold
+      const uusdcValue = getUusdcValue(BigInt(balance.amount));
+      const uusdcPerGasUnit = Number(uusdcValue) / gasUnits;
+      return uusdcValue > 0n && uusdcPerGasUnit >= threshold
         ? { balance, uusdcValue, gasUnits, uusdcPerGasUnit }
         : undefined;
     }).sort(({ uusdcPerGasUnit: a }, { uusdcPerGasUnit: b }) =>
@@ -250,8 +249,8 @@ export const pickAutoClaimSources = (
     for (const { balance, uusdcValue, gasUnits } of bestRewardBalances) {
       estimatedGasUnits += gasUnits;
       claimedUusdc += uusdcValue;
-      if (claimedUusdc / estimatedGasUnits >= threshold) {
-        picks.push({ ...balance, uusdcValue: BigInt(uusdcValue), usdcTokenId });
+      if (Number(claimedUusdc) / estimatedGasUnits >= threshold) {
+        picks.push({ ...balance, uusdcValue, usdcTokenId });
         if (picks.length >= pickLimit) return picks;
         continue;
       }
@@ -461,6 +460,11 @@ export const maybeAutoClaim = async (
             order.push([stepIndex, prerequisiteIndexes]);
             swapInputs.splice(0);
           }
+          // These values are sufficiently low to justify non-bigint arithmetic.
+          // Revisit if we start swapping into tokens with more than 6 decimals
+          // of precision (at which point we'll also need to consider
+          // constraining maxSlippageBps to be an integer).
+          // cf. https://github.com/Agoric/agoric-sdk/pull/12819#discussion_r3735468384
           const minReturnNum =
             Number(uusdcValue) * (1 - autoClaimConfig.maxSlippageBps / 10_000);
           const minReturn = BigInt(Math.ceil(minReturnNum));
