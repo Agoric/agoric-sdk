@@ -243,6 +243,7 @@ test.serial('Presley delegates, changes mandate, and revokes', async t => {
         Aave_Base: {
           maxWeightBps: 9_000,
           minVaultTvlUsd: 10_000_000n,
+          maxVaultShareBps: 100,
         },
       },
     },
@@ -339,6 +340,7 @@ test.serial('Presley delegates, changes mandate, and revokes', async t => {
         Aave_Base: {
           maxWeightBps: 7_000,
           minVaultTvlUsd: 10_000_000n,
+          maxVaultShareBps: 50,
         },
       },
     },
