@@ -207,9 +207,20 @@ export type ClaimRewardsParams = {
   tokens: EvmAddress[];
   /** minimum amount to claim constraint per corresponding entry in `tokens` */
   minAmounts: bigint[];
-  /** Morpho-specific claim inputs (e.g. for the Merkle rewards distributor) */
+  /**
+   * Morpho-specific claim inputs (e.g. for the Merkle rewards distributor).
+   *
+   * Morpho rewards are distributed on-chain via a Merkle Distributor
+   * Contract. The `tokens`, `minAmounts`, and `proofs` below are
+   * obtained off-chain following Morpho's claim-rewards tutorial
+   * ({@link https://docs.morpho.org/developers/rewards/tutorials/claim-rewards/}),
+   * which queries the Merkl rewards API for the claimer's EVM address:
+   * `GET https://api.merkl.xyz/v4/users/{address}/rewards?chainId={chainId}`.
+   * Each entry of that response supplies the reward token address, the
+   * cumulative claimable amount, and the corresponding Merkle proof.
+   */
   morpho?: {
-    /** Merkle proof per corresponding claim entry */
+    /** Merkle proof per corresponding claim entry, from the Merkl rewards API */
     proofs: `0x${string}`[][];
   };
 };
