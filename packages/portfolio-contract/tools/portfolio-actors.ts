@@ -39,7 +39,6 @@ import type {
   PortfolioPublicInvitationMaker,
   PortfolioContinuingInvitationMaker,
   AxelarChain,
-  PortfolioPermissions,
   ExternalPortfolioPermissions,
 } from '@agoric/portfolio-api';
 import {
