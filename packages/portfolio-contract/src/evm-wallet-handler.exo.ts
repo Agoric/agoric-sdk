@@ -21,7 +21,6 @@ import {
   recoverTypedDataAddress,
 } from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
 import type { StatusFor } from '@agoric/portfolio-api';
-import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type {
   YmaxFullDomain,
@@ -34,6 +33,7 @@ import {
   type PermitDetails,
   type YmaxOperationDetails,
 } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import { provideLazy, type MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
