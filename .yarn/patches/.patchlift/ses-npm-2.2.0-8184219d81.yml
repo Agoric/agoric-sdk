@@ -1,5 +1,5 @@
 schemaVersion: 1
-patchHash: sha256:99a0ba679eeac00e4bbaba09d7a1bf1db8bc9e104a9c563d3ffd0b82ca0c1597
+patchHash: sha256:400ba67a5fabb6af738077112aaba5b4bd939142fcd7d3f6366e9c0d8a302ee7
 package:
   name: ses
   version: 2.2.0
@@ -15,6 +15,7 @@ notes: "Defers endo#3153: SES 2.x removed Float{16,32,64}Array from
   otherwise throw 'Float64Array is not a constructor' at deploy. Adopting the
   side-channel mitigation is non-trivial (must re-endow across
   kernel/liveslots/supervisors/core-eval) and is logically separable from the
-  Endo sync; tracked separately."
+  Endo sync; tracked separately. Also works around Node.js v24+
+  `process.versions.undici` `fetch()` `Error.message` override."
 createdAt: 2026-06-16T19:39:58.288Z
-updatedAt: 2026-06-16T19:42:28.695Z
+updatedAt: 2026-08-06T04:31:59.179Z

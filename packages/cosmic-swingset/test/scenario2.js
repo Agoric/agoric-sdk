@@ -14,6 +14,8 @@ const noOutput = ['ignore', 'ignore', 'ignore'];
 // /* @type {StdioOptions} */
 // const noisyDebug = ['ignore', 'inherit', 'inherit'];
 
+export const DEFAULT_GENESIS_EXPORT_DIR = 't1/n0/genesis-export';
+
 /**
  *
  * @param {string} bin
@@ -48,9 +50,10 @@ export const pspawn = (bin, { spawn, cwd }) => {
         stderrP = text(child.stderr);
         child.stderr = null;
       }
-      child.addListener('exit', async code => {
+      child.addListener('exit', async (code, signal) => {
+        const exitReason = code === null ? signal : code;
         if (code !== 0) {
-          let msg = `exit ${code} from command: ${bin} ${args.join(' ')}`;
+          let msg = `exit ${exitReason} from command: ${bin} ${args.join(' ')}`;
           const errStr = await stderrP;
           if (errStr) {
             const errTail = errStr.split('\n').slice(-3);
@@ -129,11 +132,11 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log, stdio }) => {
         stdio: stdio || onlyStderr,
       });
     },
-    export: () =>
-      pspawnAgd(
-        ['export', '--home=t1/n0', '--export-dir=t1/n0/genesis-export'],
-        { stdio: stdio || onlyStderr },
-      ).exit,
+    /** @param {string} [exportDir] */
+    export: (exportDir = DEFAULT_GENESIS_EXPORT_DIR) =>
+      pspawnAgd(['export', '--home=t1/n0', `--export-dir=${exportDir}`], {
+        stdio: stdio || onlyStderr,
+      }).exit,
   });
 };
 
@@ -151,7 +154,7 @@ export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
    * @param {string[]} args
    * @param {{ stdio?: StdioOptions }} [opts]
    * @returns {Promise<any>} JSON.parse of stdout of `ag-chain-cosmos query <...args>`
-   * @throws if agd exits non-0 or gives empty output
+   * @throws {Error} if agd exits non-0 or gives empty output
    */
   const agd = async (args, opts = {}) => {
     const parts = [];

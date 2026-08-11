@@ -17,10 +17,6 @@ on:
     # We start a little earlier to give our build cache time to populate.
     - cron: '47 5 * * *'
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
@@ -37,6 +33,9 @@ defaults:
 jobs:
   build:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-build-${{ matrix.node-version }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -50,6 +49,9 @@ jobs:
   dependency-graph:
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-dependency-graph
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v5
       - name: Install graphviz
@@ -97,6 +99,9 @@ jobs:
     timeout-minutes: 45 # Since Node 22, it's sometimes longer than 20min
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-lint-primary
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
@@ -122,6 +127,9 @@ jobs:
   lint-rest:
     runs-on: ubuntu-latest
     needs: build
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-lint-rest
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
@@ -167,6 +175,9 @@ jobs:
   check-lockfiles:
     runs-on: ubuntu-latest
     needs: build
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-check-lockfiles
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
@@ -193,6 +204,9 @@ jobs:
     timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-quick-${{ matrix.engine }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -289,6 +303,9 @@ jobs:
   test-codegen:
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-codegen
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v5
 
@@ -310,6 +327,9 @@ jobs:
     timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-quick2-${{ matrix.engine }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -442,6 +462,9 @@ jobs:
     timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-fast-usdc-deploy-${{ matrix.engine }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -478,6 +501,9 @@ jobs:
     timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-governance-${{ matrix.engine }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -514,6 +540,9 @@ jobs:
     timeout-minutes: 40
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-portfolio-contract-${{ matrix.engine }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -550,6 +579,9 @@ jobs:
     timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-solo-${{ matrix.engine }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -586,6 +618,9 @@ jobs:
     timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-cosmic-swingset-${{ matrix.engine }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -626,6 +661,9 @@ jobs:
     timeout-minutes: 40
     needs: [build]
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-boot-${{ matrix.engine }}-${{ matrix.node_index }}-${{ matrix.total_nodes }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -739,6 +777,9 @@ jobs:
     timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-swingset-${{ matrix.engine }}-${{ matrix.node_index }}-${{ matrix.total_nodes }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -786,6 +827,9 @@ jobs:
     timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-zoe-unit-${{ matrix.engine }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -825,6 +869,9 @@ jobs:
     timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-zoe-swingset-${{ matrix.engine }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:

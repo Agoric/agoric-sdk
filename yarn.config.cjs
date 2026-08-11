@@ -4,6 +4,8 @@ const { defineConfig } = require('@yarnpkg/types');
 module.exports = defineConfig({
   async constraints({ Yarn }) {
     for (const workspace of Yarn.workspaces()) {
+      workspace.set('engines.node', '^22.11 || ^24.14');
+
       for (const version of workspace.pkg.dependencies.values()) {
         if (
           version.ident.startsWith('@aglocal/') ||
@@ -19,7 +21,6 @@ module.exports = defineConfig({
         }
       }
       if (workspace.cwd.startsWith('packages/')) {
-        workspace.set('engines.node', '^22.11');
         if (workspace.ident?.startsWith('@aglocal/')) {
           workspace.set('private', true);
         } else if (
