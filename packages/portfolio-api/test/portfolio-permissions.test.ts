@@ -55,8 +55,8 @@ const validCases = harden({
 
 test('PortfolioPermissions accepts legacy and constrained records', t => {
   for (const [name, specimen] of Object.entries(validCases)) {
-    t.notThrows(() => assertPortfolioPermissions(specimen), name);
-    t.true(matches(specimen, PortfolioPermissionsShape), name);
+    t.notThrows(() => assertPortfolioPermissions(specimen), `${name}`);
+    t.true(matches(specimen, PortfolioPermissionsShape), `${name}`);
   }
 });
 
@@ -111,7 +111,7 @@ test('PortfolioPermissions rejects invalid constraint values and fields', t => {
     topLevelExtra: { allocation: true, extra: true },
   } as const);
   for (const [name, specimen] of Object.entries(invalidCases)) {
-    t.throws(() => assertPortfolioPermissions(specimen), undefined, name);
+    t.throws(() => assertPortfolioPermissions(specimen), undefined, `${name}`);
   }
 });
 
