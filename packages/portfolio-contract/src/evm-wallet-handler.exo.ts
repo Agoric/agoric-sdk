@@ -418,7 +418,6 @@ export const prepareEVMPortfolioOperationManager = (
             return watch(result, BasicOutcomeWatcher);
           }
           default:
-            // @ts-expect-error exhaustiveness check
             Fail`Unsupported operation: ${q(operationDetails.operation)}`;
         }
       } catch (e) {
