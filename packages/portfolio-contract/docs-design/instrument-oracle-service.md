@@ -27,10 +27,11 @@ dckc): a lightweight, threshold-triggered on-chain oracle for per-instrument TVL
   YDS use binary numbers, while the contract uses an exact `Nat` in whole USD.
   The producer must apply the agreed rounding rule before
   submission; threshold detection should remain in one representation.
-- **`asOf` provides ordering, with a trusted operator clock.** The submitter is
-  the only clock source, and the contract requires each instrument's `asOf` to
-  increase. Later mandate enforcement may apply a maximum age to the reported
-  time, but does not need a second on-chain receipt timestamp.
+- **`asOf` provides ordering, with a trusted operator clock.** The oracle
+  supplies a suitable `asOf` time, and the contract requires each instrument's
+  `asOf` value to increase. Mandate enforcement relies on the oracle to provide
+  timely TVL updates; it does not apply a separate on-chain age bound or
+  receipt timestamp.
 - **Revocation changes operational state immediately.** Minting a replacement
   invitation revokes the active operator; explicit revocation also invalidates
   every previously minted, unredeemed invitation. Operations must therefore
@@ -189,7 +190,7 @@ invocation it:
   address.
 
 The 2% threshold decision itself is made off-chain (below); the contract does
-not re-derive it, only validates freshness and identity.
+not re-derive it, only validates `asOf` ordering and instrument identity.
 
 ```mermaid
 sequenceDiagram
