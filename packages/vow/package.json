@@ -2,6 +2,10 @@
   "name": "@agoric/vow",
   "version": "0.3.0-u23.1",
   "description": "Remote (shortening and disconnection-tolerant) Promise-likes",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "type": "module",
   "main": "src/index.js",
   "engines": {
