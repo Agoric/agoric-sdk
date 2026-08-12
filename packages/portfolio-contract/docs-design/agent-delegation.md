@@ -231,9 +231,9 @@ ids:
 - `delegations` map keyed internally by just `n`
 - the next id is derived from the size of this append-only map
 - each record stores at least the grantee identifier, permissions, and
-  lifecycle state (`active`, later maybe `revoked`, `expired`); the grantee is
-  either an external Agoric address or the reserved planner identifier
-  `&planner`
+  lifecycle state (`active` or `revoked`), plus the `policyVersion` at which it
+  was last updated; the grantee is either an external Agoric address or the
+  reserved planner identifier `&planner`
 
 Externally, the published id can stay simple: `agent4`. Since the
 portfolio path already scopes the registry and flow attribution, the
@@ -252,7 +252,7 @@ There are two closely related places to publish this information:
 - alongside each flow record, so historical attribution remains intact
   even if the delegation is later revoked
 
-So the portfolio status might grow something like:
+The published portfolio-agent status is shaped like:
 
 ```js
 // conceptual published view
@@ -261,11 +261,13 @@ portfolio17.agents = {
     grantee: 'agoric1claw1...',
     permissions: { allocation: true },
     state: 'active',
+    updatedAtPolicyVersion: 7,
   },
   agent5: {
     grantee: '&planner',
     permissions: { allocation: false, rebalance: true },
     state: 'active',
+    updatedAtPolicyVersion: 5,
   },
 };
 ```
@@ -329,16 +331,21 @@ untrusted metadata. This also avoids bloating the mutable
 The implementation divides responsibility across these structures:
 
 - `@agoric/portfolio-api` defines `FlowDetail.agent` as a
-  `PortfolioAgentKey` string and defines the published `portfolioAgents`
-  registry shape.
+  `PortfolioAgentKey` string, `FlowDetail.policyVersion` as the accepted
+  mandate revision, the published `portfolioAgents` registry shape, and the
+  EIP-712 `ChangePermissions` and `Revoke` operations.
 - `packages/portfolio-contract/src/type-guards.ts` accepts the embedded
-  agent key and the published agent registry.
+  agent key and policy revision and the published agent registry.
 - `packages/portfolio-contract/src/portfolio.exo.ts` stores and publishes
-  the registry; its narrowed delegation helper attaches the trusted agent
-  key to `FlowDetail` before starting a delegated flow. `setAutoFeatures`
+  the registry; implements full permission replacement and irreversible
+  external revocation; and attaches the trusted agent key and accepted policy
+  revision to `FlowDetail` before starting a delegated flow. `setAutoFeatures`
   creates or updates the planner's entry in this same registry.
 - `packages/portfolio-contract/src/delegation.exo.ts` carries the assigned
   numeric `agentId` and invokes only that narrowed helper.
+- `packages/portfolio-contract/src/evm-wallet-handler.exo.ts` authenticates and
+  routes owner-signed `ChangePermissions` and `Revoke` operations to the named
+  portfolio.
 - the delegation-grant path assigns the id and persists the registry entry. It
   delivers external grants by invitation and installs the `&planner` grant
   directly in the planner.
@@ -389,12 +396,13 @@ Without a registry:
 
 With a registry:
 
-- revocation and expiration become straightforward state transitions
+- revocation is a per-agent state transition; expiration could use the same
+  model later
 - audits can distinguish "active at the time" from "still active now"
 - future features like labels (`name: 'claw1-prod'`) can hang off the
   same record without changing flow attribution
 
-### Open design choices
+### Lifecycle decisions
 
 - **Id format**: internal key `4`, published id `agent4`.
 - **When the id is allocated**: on grant creation, not on first use.
@@ -404,22 +412,13 @@ With a registry:
   the `&planner` wrapper used by auto-features. Direct owner calls remain
   unattributed. The id records the delegated authority path, not whether the
   actor is external or human-operated.
-- **Historical retention**: the registry should probably retain revoked
-  delegations rather than deleting them, because old flows still refer to
-  them.
-- **Address changes**: if a human rotates to a new agent address, that
-  should probably be a new delegation id. Reusing ids across principals
-  makes audit trails harder to trust.
+- **Historical retention**: the registry retains revoked delegations because
+  old flows still refer to them.
+- **Address changes**: key rotation or a new grantee creates a new delegation
+  id. Revoked ids are never recycled or reactivated.
 
-## out of scope (test.todo)
+## Remaining out of scope
 
-- **Revocation**: Pete revokes claw1's delegation. Likely a product
-  requirement, not in this story. If we adopt durable `agentId`
-  attribution, the portfolio should durably track issued delegations;
-  revocation becomes a state change on that registry.
 - **Expiration**: Time-bounded delegations.
-- **Listing existing delegations**: Once we have an agent registry for
-  audit, this becomes much more natural, though still not required for
-  the first cut.
 - **Cost recovery**: Agents incur gas costs (relayer fees, IBC, etc.);
   some mechanism is needed to charge the delegating portfolio.
