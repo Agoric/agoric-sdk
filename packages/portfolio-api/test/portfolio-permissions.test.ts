@@ -199,6 +199,19 @@ test('permission wire conversion rejects contradictory or internal authority', t
   );
   t.throws(
     () =>
+      portfolioPermissionsFromEIP712(
+        harden({
+          allocation: true,
+          allocationMaxWeights: [
+            { instrument: 'Aave_Base', maxWeightBps: 1_500 },
+            { instrument: 'Aave_Base', maxWeightBps: 2_000 },
+          ],
+        }),
+      ),
+    { message: /duplicate "maxWeightBps" constraint for "Aave_Base"/ },
+  );
+  t.throws(
+    () =>
       portfolioPermissionsToEIP712(
         harden({
           allocation: true,

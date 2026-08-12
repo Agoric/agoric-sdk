@@ -317,13 +317,22 @@ test('getYmaxWitness for OpenPortfolio', t => {
   t.deepEqual(witness.witness, { allocations });
 });
 
-test('getYmaxWitness for OpenPortfolio with a grantee nests grantee fields, drops unused optional features', t => {
+test('getYmaxWitness for OpenPortfolio with constrained grantee permissions', t => {
   const allocations: TargetAllocation[] = [
     { instrument: 'Aave_Arbitrum', portion: 10000n },
   ];
   const grantee = {
     address: 'agoric1exampleagentaddress',
-    permissions: { allocation: true },
+    permissions: {
+      allocation: true,
+      allocationMaxWeights: [{ instrument: 'Aave_Base', maxWeightBps: 1_500 }],
+      allocationMinVaultTvls: [
+        { instrument: 'Aave_Base', minVaultTvlUsd: 10_000_000n },
+      ],
+      allocationMaxVaultShares: [
+        { instrument: 'Aave_Base', maxVaultShareBps: 1_000 },
+      ],
+    },
   };
 
   const witness = getYmaxWitness('OpenPortfolio', { allocations, grantee });
@@ -338,6 +347,18 @@ test('getYmaxWitness for OpenPortfolio with a grantee nests grantee fields, drop
     { name: 'address', type: 'string' },
     { name: 'permissions', type: 'PortfolioPermissions' },
   ]);
+  t.deepEqual(witness.witnessTypes.PortfolioPermissions, [
+    { name: 'allocation', type: 'bool' },
+    { name: 'allocationMaxWeights', type: 'InstrumentMaxWeight[]' },
+    { name: 'allocationMinVaultTvls', type: 'InstrumentMinVaultTvl[]' },
+    {
+      name: 'allocationMaxVaultShares',
+      type: 'InstrumentMaxVaultShare[]',
+    },
+  ]);
+  t.truthy(witness.witnessTypes.InstrumentMaxWeight);
+  t.truthy(witness.witnessTypes.InstrumentMinVaultTvl);
+  t.truthy(witness.witnessTypes.InstrumentMaxVaultShare);
   t.falsy(witness.witnessTypes.PortfolioAutoFeatures);
   t.deepEqual(witness.witness, { allocations, grantee });
 });
