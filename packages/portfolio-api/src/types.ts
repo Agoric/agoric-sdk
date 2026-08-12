@@ -158,20 +158,30 @@ export type FlowStatus =
   | ({ state: 'fail' } & FlowErrors);
 
 /**
- * Decomposed parameters for a same-chain, same-account reward-token -> USDC
+ * Decomposed parameters for a same-chain, same-account reward-token -> stable-token
  * swap (src === dest === `@{chain}`) routed through 1inch.
  *
  * Rather than forwarding an opaque calldata blob, the planner supplies the swap
  * as named fields and the contract reconstructs the call itself, filling the
- * fund-safety fields it controls (`dstToken` = USDC, `dstReceiver` = this
- * portfolio's own account, `minReturnAmount` = the movement `amount`) and
- * pinning the router/selector from `provider`. `executor`, `srcReceiver`, and
- * `data` are provider route internals
+ * fund-safety fields it controls (`dstToken` = configured stable token,
+ * `dstReceiver` = this portfolio's own account, `minReturnAmount` = the
+ * movement `amount`) and pinning the router/selector from `provider`.
+ * `executor`, `srcReceiver`, and `data` are provider route internals
  */
 export type OneInchSwapDesc = {
   provider: '1inch';
-  /** reward token; becomes `desc.srcToken` and the approved spend token */
+  /**
+   * Reward token; becomes `desc.srcToken` and the approved spend token.
+   * The contract accepts only tokens listed in configured chain metadata with
+   * `swapFrom` usage.
+   */
   tokenIn: `0x${string}`;
+  /**
+   * Optional stable token; becomes `desc.dstToken`. When omitted, the contract
+   * uses its configured stable token for the chain. The effective token must be
+   * listed in configured chain metadata with `swapTo` usage.
+   */
+  tokenOut?: `0x${string}`;
   /** becomes `desc.amount` and the approved amount */
   amountIn: bigint;
   /** provider routing flags (e.g. 1inch `_PARTIAL_FILL`) */
@@ -185,7 +195,7 @@ export type OneInchSwapDesc = {
 };
 
 /**
- * A reward-token -> USDC swap request. Currently only 1inch is supported;
+ * A reward-token -> stable-token swap request. Currently only 1inch is supported;
  * supporting another aggregator widens this to a union of per-provider descs.
  */
 export type SwapDesc = OneInchSwapDesc;
@@ -263,7 +273,7 @@ export type FlowStep = {
   /**
    * The swap request this step performs, carried through from the plan
    * `MovementDesc` so it is visible in published flow steps. Present only on
-   * reward-token -> USDC swap steps.
+   * reward-token -> stable-token swap steps.
    */
   swap?: SwapDesc;
   // XXX remaining plan parts (fee, detail, claim) could be surfaced the same way
