@@ -11,14 +11,13 @@
  * Some stylistic changes have also been made to conform to our code style.
  */
 
-import type { TypedDataToPrimitiveTypes } from 'abitype';
 import type {
   Address,
   TypedData,
   TypedDataDefinition,
   TypedDataDomain,
 } from 'viem';
-import type { TypedDataParameter } from '../abitype.ts';
+import type { TypedDataParameter, TypedDataToStructType } from '../abitype.ts';
 
 export const PERMIT2_DOMAIN_NAME = 'Permit2';
 
@@ -37,7 +36,7 @@ export interface Witness<
   TD extends TypedDataParameter<string, Extract<keyof T, string>> =
     TypedDataParameter<'witness', Extract<keyof T, string>>,
 > extends WitnessDefinition<T, TD> {
-  witness: TypedDataToPrimitiveTypes<T>[TD['type']];
+  witness: TypedDataToStructType<T, TD['type']>;
 }
 
 /**
@@ -49,7 +48,7 @@ export function makeWitness<
   T extends TypedData,
   TD extends TypedDataParameter<string, Extract<keyof T, string>>,
 >(
-  data: NoInfer<TypedDataToPrimitiveTypes<T>[TD['type']]>,
+  data: NoInfer<TypedDataToStructType<T, TD['type']>>,
   types: T,
   typeParam: TD,
 ): Witness<T, TD> {

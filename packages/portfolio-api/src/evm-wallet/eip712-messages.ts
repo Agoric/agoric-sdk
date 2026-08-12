@@ -10,16 +10,11 @@
  * name but with some effort this could be parametrizable
  */
 
-import type {
-  Address,
-  TypedData,
-  TypedDataDomain,
-  TypedDataToPrimitiveTypes,
-} from 'abitype';
+import type { Address, TypedData, TypedDataDomain } from 'abitype';
 import type { TypedDataDefinition } from 'viem';
 import type {
   TypedDataParameter,
-  WithOptionalFields,
+  TypedDataToStructType,
 } from '@agoric/orchestration/src/utils/abitype.js';
 import {
   type Witness,
@@ -187,9 +182,10 @@ const OperationSubTypes = {
  * - [{instrument: 'A', portion: 60}, {instrument: 'B', portion: 40}] => 60:40 ratio
  * - [{instrument: 'A', portion: 6}, {instrument: 'B', portion: 4}] => 6:4 ratio (same as 60:40)
  */
-export type TargetAllocation = TypedDataToPrimitiveTypes<
-  typeof OperationSubTypes
->['Allocation'];
+export type TargetAllocation = TypedDataToStructType<
+  typeof OperationSubTypes,
+  'Allocation'
+>;
 type YmaxOperationTypesWithSubTypes<
   T extends string,
   P extends readonly TypedDataParameter[],
@@ -197,14 +193,15 @@ type YmaxOperationTypesWithSubTypes<
   [K in T]: P;
 } & typeof OperationSubTypes;
 
-export type PortfolioPermissionsEIP712 = WithOptionalFields<
-  TypedDataToPrimitiveTypes<typeof OperationSubTypes>['PortfolioPermissions'],
-  (typeof OperationSubTypes)['PortfolioPermissions']
+export type PortfolioPermissionsEIP712 = TypedDataToStructType<
+  typeof OperationSubTypes,
+  'PortfolioPermissions'
 >;
 
-export type PortfolioAutoFeaturesEIP712 = TypedDataToPrimitiveTypes<
-  typeof OperationSubTypes
->['PortfolioAutoFeatures'];
+export type PortfolioAutoFeaturesEIP712 = TypedDataToStructType<
+  typeof OperationSubTypes,
+  'PortfolioAutoFeatures'
+>;
 
 /**
  * In the wrapped case, the domain is fixed by permit2, so we can't choose name/version there.
@@ -265,20 +262,15 @@ type YmaxStandaloneTypes<T extends OperationTypeNames = OperationTypeNames> =
     };
 
 export type YmaxOperationType<T extends OperationTypeNames> =
-  WithOptionalFields<
-    TypedDataToPrimitiveTypes<OperationTypes & typeof OperationSubTypes>[T],
-    OperationTypes[T]
-  >;
+  TypedDataToStructType<OperationTypes & typeof OperationSubTypes, T>;
 
-type YmaxWitnessData<T extends OperationTypeNames> = WithOptionalFields<
-  TypedDataToPrimitiveTypes<
-    YmaxWitnessTypes<T>
-  >[YmaxWitnessTypeParam<T>['type']],
-  OperationTypes[T]
+type YmaxWitnessData<T extends OperationTypeNames> = TypedDataToStructType<
+  YmaxWitnessTypes<T>,
+  YmaxWitnessTypeParam<T>['type']
 >;
-type YmaxStandaloneData<T extends OperationTypeNames> = WithOptionalFields<
-  TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T],
-  OperationTypes[T]
+type YmaxStandaloneData<T extends OperationTypeNames> = TypedDataToStructType<
+  YmaxStandaloneTypes<T>,
+  T
 >;
 
 const getYmaxOperationAndSubTypes = <
@@ -332,9 +324,7 @@ export const getYmaxWitness = <T extends OperationTypeNames>(
     primaryType: witnessTypeParam.type,
   });
   return makeWitness<YmaxWitnessTypes<T>, YmaxWitnessTypeParam<T>>(
-    // `message`'s optional-aware type doesn't match the stricter
-    // (all-required) type makeWitness infers from `YmaxWitnessTypes`
-    message as any,
+    message as YmaxWitnessData<T>,
     types as YmaxWitnessTypes<T>,
     witnessTypeParam,
   );
@@ -372,7 +362,7 @@ export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
     domain: getYmaxStandaloneDomain(chainId, verifyingContract),
     types,
     primaryType: operation,
-    message: message as TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T],
+    message: message as TypedDataToStructType<YmaxStandaloneTypes<T>, T>,
   } as TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
     domain: YmaxFullDomain;
   };

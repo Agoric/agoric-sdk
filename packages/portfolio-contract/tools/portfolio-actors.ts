@@ -49,10 +49,7 @@ import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
-import type {
-  PortfolioPermissionsEIP712,
-  TargetAllocation,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TimerService } from '@agoric/time';
 import { mustMatch, type ERemote } from '@agoric/internal';
 import { E } from '@endo/far';
@@ -433,28 +430,14 @@ export const makeEvmTrader = ({
           } = {},
         ) {
           assert(contractRepresentative, 'missing contract representative');
-          if (grantee) {
-            mustMatch(
-              harden({ ...grantee.permissions }),
-              PortfolioPermissionsEIP712Shape,
-            );
-          }
+          const toGranteePayload = (g: NonNullable<typeof grantee>) => {
+            mustMatch(g.permissions, PortfolioPermissionsEIP712Shape);
+            return { address: g.address, permissions: g.permissions };
+          };
           const witness = getYmaxWitness('OpenPortfolio', {
             allocations,
             ...(features && { features }),
-            ...(grantee && {
-              grantee: {
-                address: grantee.address,
-                // validated against PortfolioPermissionsEIP712Shape just
-                // above. XXX: `rebalance` is `optional` at the EIP-712
-                // level, but TypedDataToPrimitiveTypes doesn't recursively
-                // apply that to nested fields, so the nested `permissions`
-                // field here still infers as fully required; cast around
-                // it.
-                permissions:
-                  grantee.permissions as unknown as Required<PortfolioPermissionsEIP712>,
-              },
-            }),
+            ...(grantee && { grantee: toGranteePayload(grantee) }),
           });
           const deadline = await getDeadline();
           const permitMessage = getPermitWitnessTransferFromData(
@@ -581,13 +564,7 @@ export const makeEvmTrader = ({
           const message = getYmaxStandaloneOperationData(
             {
               accountHolder: granteeAddress,
-              // XXX: `rebalance` is `optional` at the EIP-712 level, but
-              // TypedDataToPrimitiveTypes doesn't recursively apply that to
-              // nested fields (only top-level operation fields are patched
-              // via `WithOptionalFields`), so the nested `permissions` field
-              // here still infers as fully required; cast around it.
-              permissions:
-                permissions as unknown as Required<PortfolioPermissionsEIP712>,
+              permissions,
               portfolio: BigInt(self.getPortfolioId()),
               nonce: (nonce += 1n),
               deadline,

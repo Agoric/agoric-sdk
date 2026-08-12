@@ -265,7 +265,6 @@ test('getYmaxWitness for OpenPortfolioWithGrant nests grantee fields', t => {
 
   const witness = getYmaxWitness('OpenPortfolioWithGrant', {
     allocations,
-    // @ts-expect-error types for optional nested fields are not yet inferred
     grantee,
   });
 
