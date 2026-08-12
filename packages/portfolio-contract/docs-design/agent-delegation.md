@@ -204,6 +204,7 @@ resolving the agent reference embedded in a delegated flow:
 const flow34 = {
   type: 'rebalance',
   agent: 'agent4',
+  policyVersion: 7,
   // ...mutable flow status
 };
 ```
@@ -215,6 +216,8 @@ The attribution semantics are:
 - the numeric key is stable for the lifetime of that delegation
 - every flow started through that delegation embeds the assigned
   `agentN` string reference in its flow record
+- every delegated flow also embeds the `policyVersion` accepted for that
+  action; later mandate changes do not rewrite this historical revision
 - "agent" means any registered delegation client, including the internal
   planner delegation used for auto-features as well as an external grantee
 - owner-initiated flows simply omit `agent`, rather than pretending the
@@ -274,17 +277,18 @@ portfolio17.flows.flow34 = {
   state: 'run',
   type: 'rebalance',
   agent: 'agent4',
+  policyVersion: 7,
   // ...other flow status
 };
 ```
 
-Do not denormalize permissions, grantee address, or other delegation
-metadata onto the flow. The flow only needs the small string reference.
-Everything else should be resolved through
-`portfolio17.agents.agent4`. That keeps vstorage writes
-smaller and avoids duplicating mutable metadata onto a record that is
-updated many times already. There is no separate
-`portfolio17.flows.flow34.agent` vstorage path.
+Do not denormalize permissions, grantee address, or other mutable delegation
+metadata onto the flow. The flow retains the small `agentN` reference and the
+accepted `policyVersion`; everything else should be resolved through
+`portfolio17.agents.agent4`. The revision is necessary audit data because the
+current agent record can change after the flow starts. This keeps vstorage
+writes smaller without losing the historical mandate boundary. There is no
+separate `portfolio17.flows.flow34.agent` vstorage path.
 
 ### How attribution is attached
 
@@ -302,10 +306,10 @@ Then:
 4. The wrapper performs the key-set check. The portfolio delegation helper
    validates the active client, permission, and version.
 5. The helper constructs the `FlowDetail` from trusted delegation state,
-   including `agent: 'agent4'` and any client-supplied `agentMemo`, and starts
-   the flow.
-6. The portfolio's normal flow publication retains that embedded reference
-   through subsequent status updates.
+   including `agent: 'agent4'`, the accepted `policyVersion`, and any
+   client-supplied `agentMemo`, and starts the flow.
+6. The portfolio's normal flow publication retains that embedded agent and
+   policy revision through subsequent status updates.
 
 The auto-feature path uses the same boundary. `setAutoFeatures` derives the
 planner's permissions from the enabled features and grants or reuses a
@@ -344,18 +348,19 @@ The implementation divides responsibility across these structures:
 At minimum, this design implies tests for:
 
 - published type / path coverage: `StatusFor`, published path typings,
-  and contract-side type guards accept the embedded `flow.agent` key and
-  `portfolioN.agents`
+  and contract-side type guards accept the embedded `flow.agent` and
+  `flow.policyVersion` fields and `portfolioN.agents`
 - lazy registry behavior: portfolios with no delegations publish no
   `agents` collection, and readers treat absence as equivalent to empty
 - grant-time id allocation: the first delegation for `portfolio17`
   becomes `agent1`, the next `agent2`, and ids are
   stable once assigned
 - delegated attribution: a delegated `setTargetAllocation` publishes a flow
-  containing `agent: 'agentM'` as soon as the flow is known
+  containing `agent: 'agentM'` and the accepted `policyVersion` as soon as the
+  flow is known
 - planner attribution: enabling auto-rebalance registers `&planner` as an
-  agent, and its delegated rebalance flows contain that delegation's
-  `agentN` reference
+  agent, and its delegated rebalance flows contain that delegation's `agentN`
+  reference and the accepted `policyVersion`
 - non-delegated flows: owner-initiated flows do not publish a spurious
   `agent` reference
 - registry / flow linkage: every published `flow.agent` resolves to a
