@@ -41,6 +41,14 @@ type CommandRecord = {
   actor: string;
   command: string;
 };
+const TMPDIR_PREFIX = 'ymax-authz-agd-';
+const escapeRegExp = (text: string) =>
+  // Use the native helper when available; keep the fallback for Node.js v22.
+  RegExp.escape?.(text) || text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+const TMPDIR_PATT = RegExp(
+  `(?:/[^/\\s]+)*/${escapeRegExp(TMPDIR_PREFIX)}[^/\\s]*`,
+  'g',
+);
 type MultiSigTool = {
   addPubKey: (name: string, pubkey: string) => Promise<void>;
   addKey: (name: string, source: FileRd) => Promise<void>;
@@ -145,7 +153,7 @@ const makeUnsignedAgdTx = async ({
 };
 
 const makeTestFiles = async (t: ExecutionContext, names: string[]) => {
-  const tmp = await fsp.mkdtemp(path.join(tmpdir(), 'ymax-authz-agd-'));
+  const tmp = await fsp.mkdtemp(path.join(tmpdir(), TMPDIR_PREFIX));
   t.teardown(async () => {
     await execFileP('chmod', ['-R', 'u+w', tmp]).catch(() => undefined);
     await fsp.rm(tmp, { recursive: true, force: true });
@@ -185,7 +193,7 @@ const writeJson = async (file: FileRW, specimen: unknown) => {
 };
 
 const normalizeCommandText = (text: string) =>
-  text.replace(/\/tmp\/ymax-authz-agd-[^/\s]*/g, '<tmp>');
+  text.replace(TMPDIR_PATT, '<tmp>');
 
 const testModuleDir = path.dirname(fileURLToPath(import.meta.url));
 const agdBinDir = path.resolve(testModuleDir, '../../../bin');

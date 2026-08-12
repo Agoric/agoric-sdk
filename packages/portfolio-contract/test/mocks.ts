@@ -31,7 +31,12 @@ import {
   buildTxResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import type { FundsFlowPlan } from '@agoric/portfolio-api';
+import type {
+  ChainTokenMetadata,
+  FundsFlowPlan,
+  TokenMetadata,
+} from '@agoric/portfolio-api';
+import { makeTokenIdKey } from '@agoric/portfolio-api/src/type-guards.js';
 import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
@@ -409,6 +414,45 @@ export const contractsMock = {
     oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
 } as const satisfies EVMContractAddressesMap;
+
+const avalancheRwd = {
+  caipChainId: 'eip155:43114',
+  chainName: 'Avalanche',
+  tokenId: '0x0000000000000000000000000000000000000abc',
+  symbol: 'RWD',
+  decimals: 18,
+  usage: ['swapFrom'],
+} as const satisfies TokenMetadata;
+
+const avalancheDai = {
+  caipChainId: 'eip155:43114',
+  chainName: 'Avalanche',
+  tokenId: '0x0000000000000000000000000000000000000cab',
+  symbol: 'DAI',
+  decimals: 18,
+  usage: ['swapFrom'],
+} as const satisfies TokenMetadata;
+
+const avalancheUsdc = {
+  caipChainId: 'eip155:43114',
+  chainName: 'Avalanche',
+  tokenId: contractsMock.Avalanche.usdc,
+  symbol: 'USDC',
+  decimals: 6,
+  usage: ['swapTo'],
+} as const satisfies TokenMetadata;
+
+export const chainMetadataMock = harden({
+  Avalanche: {
+    caipChainId: 'eip155:43114',
+    chainName: 'Avalanche',
+    tokenMetadataById: {
+      [makeTokenIdKey(avalancheRwd.tokenId)]: avalancheRwd,
+      [makeTokenIdKey(avalancheDai.tokenId)]: avalancheDai,
+      [makeTokenIdKey(avalancheUsdc.tokenId)]: avalancheUsdc,
+    },
+  },
+} as const satisfies ChainTokenMetadata);
 
 export const axelarIdsMock: AxelarId = {
   Avalanche: 'Avalanche',

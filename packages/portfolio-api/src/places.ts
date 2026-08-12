@@ -1,12 +1,31 @@
 import { Fail } from '@endo/errors';
 
-import type {
-  AxelarChain,
-  SupportedChain,
-  YieldProtocol,
-} from './constants.js';
+import type { TypeTag } from '@agoric/internal/src/tagged.js';
+import type { SupportedChain, YieldProtocol } from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { AssetPlaceRef } from './types.js';
+
+export type TokenUsage = 'swapFrom' | 'swapTo';
+
+export type TokenIdKey = TypeTag<string, 'TokenIdKey'>;
+
+export const makeTokenIdKey = (tokenId: string): TokenIdKey =>
+  (tokenId.startsWith('0x') ? tokenId.toLowerCase() : tokenId) as TokenIdKey;
+harden(makeTokenIdKey);
+
+/**
+ * cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/data/tokens.ts:
+ * TokenMetadata
+ */
+export type TokenMetadata = {
+  caipChainId: string;
+  chainName: string;
+  tokenId: string;
+  symbol: string;
+  /** Count of fractional decimal digits in the token's base unit. */
+  decimals: number;
+  usage?: readonly TokenUsage[];
+};
 
 const isPrimitive = (value: unknown): boolean => Object(value) !== value;
 
@@ -22,7 +41,10 @@ const deepFreeze = <T>(value: T): T => {
 
 export type PoolPlaceInfo =
   | { protocol: 'USDN'; vault: null | 1; chainName: 'noble' }
-  | { protocol: YieldProtocol; chainName: AxelarChain };
+  | {
+      protocol: YieldProtocol;
+      chainName: SupportedChain;
+    };
 
 // XXX special handling. What's the functional difference from other places?
 export const BeefyPoolPlaces = {
@@ -215,6 +237,13 @@ export const PoolPlaces = {
 deepFreeze(PoolPlaces);
 
 export type PoolKey = InstrumentId;
+export type ChainTokenMetadataEntry = {
+  caipChainId: string;
+  chainName: string;
+  // Look up metadata by tokenId, then examine its details as necessary.
+  tokenMetadataById: Record<TokenIdKey, TokenMetadata>;
+};
+export type ChainTokenMetadata = Record<string, ChainTokenMetadataEntry>;
 
 /**
  * Without regard to supported chains, is the input plausibly an InstrumentId

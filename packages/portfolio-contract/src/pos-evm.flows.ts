@@ -12,6 +12,7 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { makeTracer } from '@agoric/internal';
+import { partialMap } from '@agoric/internal/src/js-utils.js';
 import { encodeHex } from '@agoric/internal/src/hex.js';
 import type {
   AccountId,
@@ -26,6 +27,8 @@ import {
 } from '@agoric/orchestration/src/utils/address.js';
 import {
   isERC4626MorphoInstrumentId,
+  makeTokenIdKey,
+  type ChainTokenMetadata,
   type MovementDesc,
 } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
@@ -40,8 +43,8 @@ import {
 } from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
-import { getOneInchSwapArgs, oneInchRouterABI } from './interfaces/one-inch.ts';
 import { merkleDistributorABI } from './interfaces/merkle-distributor.ts';
+import { getOneInchSwapArgs, oneInchRouterABI } from './interfaces/one-inch.ts';
 import {
   tokenMessengerABI,
   tokenMessengerV2ABI,
@@ -84,6 +87,7 @@ export type EVMContext = {
   gmpChain: Chain<{ chainId: string }>;
   addresses: EVMContractAddresses;
   contracts: EVMContractAddressesMap;
+  chainMetadata: ChainTokenMetadata;
   gmpAddresses: GmpAddresses;
   axelarIds: AxelarId;
   poolKey?: PoolKey;
@@ -138,6 +142,46 @@ const nobleDomain = 4;
 
 // XXX concession to test legibility
 const TEST_NOBLE_ADDRESS = 'noble1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqe6u37k';
+
+const assertSwapTokensConfigured = (
+  chainMetadata: ChainTokenMetadata,
+  tokenIn: `0x${string}`,
+  tokenOut: `0x${string}`,
+  chainName: AxelarChain,
+) => {
+  const { tokenMetadataById = {} } = chainMetadata[chainName] || {};
+  const tokenInKey = makeTokenIdKey(tokenIn);
+  const tokenOutKey = makeTokenIdKey(tokenOut);
+  tokenMetadataById[tokenInKey]?.usage?.includes('swapFrom') ||
+    Fail`swap tokenIn ${tokenIn} is not configured as a source token on ${q(chainName)}`;
+  tokenInKey !== tokenOutKey ||
+    Fail`swap tokenIn ${tokenIn} cannot be the same as tokenOut`;
+  tokenMetadataById[tokenOutKey]?.usage?.includes('swapTo') ||
+    Fail`swap tokenOut ${tokenOut} is not configured as a destination token on ${q(chainName)}`;
+};
+harden(assertSwapTokensConfigured);
+
+const getDefaultSwapToTokenId = (
+  chainMetadata: ChainTokenMetadata,
+  chainName: AxelarChain,
+  fallbackTokenId?: `0x${string}`,
+): `0x${string}` => {
+  const { tokenMetadataById = {} } = chainMetadata[chainName] || {};
+  const swapTo = partialMap(
+    Object.entries(tokenMetadataById),
+    ([tokenId, metadata]) => metadata.usage?.includes('swapTo') && tokenId,
+  );
+  if (swapTo.length === 1) return swapTo[0] as `0x${string}`;
+  const fallbackTokenKey = fallbackTokenId && makeTokenIdKey(fallbackTokenId);
+  if (fallbackTokenKey) {
+    const fallbackTokenMetadata = tokenMetadataById[fallbackTokenKey];
+    if (fallbackTokenMetadata?.usage?.includes('swapTo')) {
+      return fallbackTokenKey as `0x${string}`;
+    }
+  }
+  throw Fail`swap tokenOut must be specified when ${q(chainName)} has ${swapTo.length} configured destination tokens`;
+};
+harden(getDefaultSwapToTokenId);
 
 const bech32ToBytes32 = (addr: Bech32Address) => {
   if (addr === 'noble1test') {
@@ -363,10 +407,10 @@ export const CCTPv2 = {
 harden(CCTPv2);
 
 /**
- * Swap a reward token to USDC on an EVM chain via 1inch
+ * Swap a reward token to a stable token on an EVM chain via 1inch
  * @see {@link https://business.1inch.com/portal/documentation/apis/swap/classic-swap/quick-start}
  */
-export const swapRewardToUsdc = async (
+export const swapRewardToStable = async (
   ctx: EVMContext,
   gInfo: Parameters<typeof sendGMPContractCall>[1],
   amount: MovementDesc['amount'],
@@ -376,9 +420,18 @@ export const swapRewardToUsdc = async (
   const { addresses: a } = ctx;
   assert(swap, 'swap params required for reward-token swap');
   const { provider, tokenIn, amountIn } = swap;
+  const tokenOut =
+    swap.tokenOut ||
+    getDefaultSwapToTokenId(ctx.chainMetadata, gInfo.chainName, a.usdc);
   // The calldata layout and router are provider-specific; only 1inch is
   // supported so far. Branch explicitly so a new provider must add its own
   provider === '1inch' || Fail`unsupported swap provider ${q(provider)}`;
+  assertSwapTokensConfigured(
+    ctx.chainMetadata,
+    tokenIn,
+    tokenOut,
+    gInfo.chainName,
+  );
   const router =
     a.oneInchRouter ||
     Fail`oneInchRouter not configured for ${q(gInfo.chainId)}`;
@@ -389,7 +442,7 @@ export const swapRewardToUsdc = async (
   const oneInchRouter = session.makeContract(router, oneInchRouterABI);
   oneInchRouter.swap(
     ...getOneInchSwapArgs(swap, {
-      usdc: a.usdc,
+      tokenOut,
       receiver: gInfo.remoteAddress,
       minReturnAmount: amount.value,
     }),
@@ -401,7 +454,7 @@ export const swapRewardToUsdc = async (
 
   return sendGMPContractCall(ctx, gInfo, calls, ...optsArgs);
 };
-harden(swapRewardToUsdc);
+harden(swapRewardToStable);
 
 export const AaveProtocol = {
   protocol: 'Aave',

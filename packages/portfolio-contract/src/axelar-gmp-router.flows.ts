@@ -430,6 +430,7 @@ export const provideEVMAccountWithPermit = (
     contractAccount: feeAccount,
     gmpAddresses,
     gmpFeeInfo,
+    chainMetadata,
     resolverClient,
   } = ctx;
 
@@ -446,6 +447,7 @@ export const provideEVMAccountWithPermit = (
     chainInfo,
     chainName,
     contracts,
+    chainMetadata,
     feeAccount,
     gmpAddresses,
     gmpChain: gmp.chain,
