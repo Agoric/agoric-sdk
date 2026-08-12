@@ -68,6 +68,11 @@ export const parseParams = params => {
   const {
     beans_per_unit: rawBeansPerUnit,
     fee_unit_price: rawFeeUnitPrice,
+    msg_type_beans_per_unit: rawMsgTypeBeansPerUnit = [],
+    bean_fee_burn_fraction: rawBeanFeeBurnFraction = [],
+    bean_fee_collector: beanFeeCollector = '',
+    min_gas_price: rawMinGasPrice = [],
+    fee_unit_price_alternatives: rawFeeUnitPriceAlternatives = [],
     queue_max: rawQueueMax,
     vat_cleanup_budget: rawVatCleanupBudget,
   } = params;
@@ -87,6 +92,34 @@ export const parseParams = params => {
     return { denom, amount: stringToNat(amount) };
   });
 
+  const parseCoins = rawCoins => {
+    Array.isArray(rawCoins) || Fail`coins ${rawCoins} must be an array`;
+    return rawCoins.map(({ denom, amount }) => {
+      typeof denom === 'string' || Fail`denom ${denom} must be a string`;
+      denom || Fail`denom ${denom} must be non-empty`;
+      return { denom, amount: stringToNat(amount) };
+    });
+  };
+
+  const msgTypeBeansPerUnit = rawMsgTypeBeansPerUnit.map(
+    ({ msg_type_url: msgTypeUrl, beans }) => {
+      typeof msgTypeUrl === 'string' ||
+        Fail`msg type URL ${msgTypeUrl} must be a string`;
+      return {
+        msgTypeUrl,
+        beans: recordFromEntries(
+          beans.map(({ key, beans: beanCount }) => [key, beanCount]),
+          stringToNat,
+        ),
+      };
+    },
+  );
+  const beanFeeBurnFraction = rawBeanFeeBurnFraction;
+  const minGasPrice = rawMinGasPrice;
+  const feeUnitPriceAlternatives = rawFeeUnitPriceAlternatives.map(
+    ({ price }) => parseCoins(price),
+  );
+
   Array.isArray(rawQueueMax) ||
     Fail`queueMax must be an array, not ${rawQueueMax}`;
   const queueMax = parseQueueSizes(rawQueueMax);
@@ -101,5 +134,15 @@ export const parseParams = params => {
     vatCleanupBudget.default !== undefined ||
     Fail`vatCleanupBudget.default must be provided when vatCleanupBudget is not empty`;
 
-  return { beansPerUnit, feeUnitPrice, queueMax, vatCleanupBudget };
+  return {
+    beansPerUnit,
+    feeUnitPrice,
+    msgTypeBeansPerUnit,
+    beanFeeBurnFraction,
+    beanFeeCollector,
+    minGasPrice,
+    feeUnitPriceAlternatives,
+    queueMax,
+    vatCleanupBudget,
+  };
 };
