@@ -93,15 +93,15 @@ export const makeEVMHandlerUtils = (viemUtils: {
     getTypesForEIP712Domain,
   } = viemUtils;
 
-  for (const util of [
+  for (const [utilName, util] of Object.entries({
     isHex,
     hashStruct,
     recoverTypedDataAddress,
     encodeType,
     getTypesForEIP712Domain,
-  ]) {
+  })) {
     if (typeof util !== 'function') {
-      throw new Error(`Expected viemUtils.${util} to be a function`);
+      throw new Error(`Expected viemUtils.${utilName} to be a function`);
     }
   }
 
