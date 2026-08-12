@@ -96,14 +96,23 @@ const blockManagerConsole = anylogger('block-manager');
 const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
   const { info: upgradeInfoJson = null } = upgradePlan || {};
 
-  const upgradePlanInfo =
-    upgradeInfoJson &&
-    parseLocatedJson(
-      upgradeInfoJson,
-      `${prefix && `${prefix} `}upgradePlan.info`,
-    );
+  try {
+    const upgradePlanInfo =
+      upgradeInfoJson &&
+      parseLocatedJson(
+        upgradeInfoJson,
+        `${prefix && `${prefix} `}upgradePlan.info`,
+      );
 
-  return harden(upgradePlanInfo || {});
+    return harden(upgradePlanInfo || {});
+  } catch (e) {
+    console.warn(
+      `🚨 WARNING: expected upgrade info JSON object:`,
+      e,
+      upgradeInfoJson,
+    );
+    return harden({});
+  }
 };
 
 /**
