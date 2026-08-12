@@ -1,5 +1,6 @@
 import { makeTracer } from '@agoric/internal';
 import { FlowConfigShape } from '@agoric/portfolio-api/src/constants.js';
+import { ChainTokenMetadataShape } from '@agoric/portfolio-api/src/type-guards.js';
 import { M, objectMap } from '@endo/patterns';
 import { E } from '@endo/far';
 import {
@@ -11,7 +12,7 @@ import { name, permit } from './portfolio.contract.permit.js';
 
 /**
  * @import { AxelarId, start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
- * @import { FlowConfig } from '@agoric/portfolio-api';
+ * @import { FlowConfig, ChainTokenMetadata } from '@agoric/portfolio-api';
  * @import { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
  * @import { CopyRecord } from '@endo/pass-style';
  * @import { LegibleCapData } from './config-marshal.js';
@@ -19,7 +20,7 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
  * @import {AxelarChainConfigMap} from './axelar-configs.js';
  * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
- * @import { TypedPattern, Remote } from '@agoric/internal';
+ * @import { ClusterName, TypedPattern, Remote } from '@agoric/internal';
  * @import { ChainInfoPowers } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
  * @import { Bech32Address } from '@agoric/orchestration';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
@@ -29,6 +30,7 @@ const trace = makeTracer(`YMX-Start`, true);
 
 /**
  * @typedef {{
+ *   cluster: ClusterName;
  *   axelarConfig: AxelarChainConfigMap;
  *   gmpAddresses: {
  *     AXELAR_GMP: Bech32Address;
@@ -36,6 +38,7 @@ const trace = makeTracer(`YMX-Start`, true);
  *   };
  *   oldBoardId?: string;
  *   walletBytecode: `0x${string}`;
+ *   chainMetadata?: ChainTokenMetadata;
  *   defaultFlowConfig?: FlowConfig | null;
  * } & CopyRecord} PortfolioDeployConfig
  */
@@ -53,6 +56,7 @@ export const portfolioDeployConfigShape = M.splitRecord(
   },
   {
     oldBoardId: M.string(),
+    chainMetadata: ChainTokenMetadataShape,
     defaultFlowConfig: M.or(FlowConfigShape, M.null()),
   },
 );
@@ -67,8 +71,13 @@ export const makePrivateArgs = async (
   marshaller,
   config,
 ) => {
-  const { axelarConfig, gmpAddresses, walletBytecode, defaultFlowConfig } =
-    config;
+  const {
+    axelarConfig,
+    gmpAddresses,
+    walletBytecode,
+    chainMetadata = {},
+    defaultFlowConfig,
+  } = config;
   const { agoricNames } = orchestrationPowers;
   const { chainInfo: cosmosChainInfo, assetInfo } = await lookupInterchainInfo(
     agoricNames,
@@ -114,6 +123,7 @@ export const makePrivateArgs = async (
     assetInfo,
     axelarIds,
     contracts,
+    chainMetadata,
     gmpAddresses,
     walletBytecode,
     defaultFlowConfig,
