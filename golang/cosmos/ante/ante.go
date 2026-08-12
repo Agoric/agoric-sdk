@@ -18,6 +18,8 @@ type HandlerOptions struct {
 	FeeCollectorName string
 	AdmissionData    interface{}
 	SwingsetKeeper   SwingsetKeeper
+	BeanAccountant   BeanAccountant
+	BeanDisposer     BeanDisposer
 }
 
 func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
@@ -36,6 +38,12 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	if opts.SwingsetKeeper == nil {
 		return nil, sdkioerrors.Wrap(sdkerrors.ErrLogic, "swingset keeper is required for AnteHandler")
 	}
+	if opts.BeanAccountant == nil {
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrLogic, "bean accountant is required for AnteHandler")
+	}
+	if opts.BeanDisposer == nil {
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrLogic, "bean disposer is required for AnteHandler")
+	}
 
 	var sigGasConsumer = opts.SigGasConsumer
 	if sigGasConsumer == nil {
@@ -50,7 +58,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewValidateMemoDecorator(opts.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
 		NewInboundDecorator(opts.SwingsetKeeper),
-		ante.NewDeductFeeDecoratorWithName(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, nil, opts.FeeCollectorName),
+		NewBeanFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, opts.FeeCollectorName, opts.BeanAccountant, opts.BeanDisposer),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(opts.AccountKeeper),
 		ante.NewValidateSigCountDecorator(opts.AccountKeeper),
