@@ -36,6 +36,7 @@ import {
 } from '@agoric/orchestration';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
+  ChainTokenMetadata,
   FlowConfig,
   PortfolioAgentGrantee,
   PortfolioAgentKey,
@@ -50,6 +51,7 @@ import {
   PortfolioPlannerAgent,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import { ChainTokenMetadataShape } from '@agoric/portfolio-api/src/type-guards.js';
 import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type {
   PermitDetails,
@@ -314,6 +316,7 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
+  chainMetadata?: ChainTokenMetadata;
   defaultFlowConfig?: FlowConfig | null;
   // Keep new private args optional: seemingly small breaking changes in
   // startup configuration often turn out to be expensive across upgrade,
@@ -342,6 +345,7 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
       gmpAddresses: GmpAddressesShape,
     },
     {
+      chainMetadata: ChainTokenMetadataShape,
       defaultFlowConfig: M.or(FlowConfigShape, M.null()),
       postalService: M.remotable('PostalService'),
       postalServiceInstance: M.remotable('PostalServiceInstance'),
@@ -414,6 +418,7 @@ export const contract = async (
     walletBytecode,
     storageNode,
     gmpAddresses,
+    chainMetadata = {},
     timerService,
     defaultFlowConfig = DEFAULT_FLOW_CONFIG,
     postalService,
@@ -516,6 +521,7 @@ export const contract = async (
     },
     axelarIds,
     contracts,
+    chainMetadata,
     walletBytecode,
     gmpAddresses,
     resolverClient,

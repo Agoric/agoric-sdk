@@ -33,6 +33,7 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import { makeTokenIdKey } from '@agoric/portfolio-api/src/type-guards.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import { passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -63,7 +64,7 @@ import {
   wayFromSrcToDest,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
-import { type EVMContext } from '../src/pos-evm.flows.ts';
+import { swapRewardToStable, type EVMContext } from '../src/pos-evm.flows.ts';
 import {
   agoricToNoble,
   makeSwapLockMessages,
@@ -95,6 +96,7 @@ import {
 } from './flow-test-kit.ts';
 import {
   axelarIdsMock,
+  chainMetadataMock,
   contractsMock,
   gmpAddresses,
   planUSDNDeposit,
@@ -2355,7 +2357,7 @@ test('withdraw from Beefy position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('swap reward token to USDC via 1inch', async t => {
+test('swap reward token to stable token via 1inch', async t => {
   const amount = AmountMath.make(USDC, 1_000_000n);
   const feeAcct = AmountMath.make(BLD, 50n);
   const feeCall = AmountMath.make(BLD, 100n);
@@ -2395,8 +2397,8 @@ test('swap reward token to USDC via 1inch', async t => {
   const receiver = parseAccountId(avalancheAccountId).accountAddress;
 
   // Phase 2: the planner supplies decomposed 1inch swap params; the contract
-  // reconstructs the swap() calldata, pinning dstToken=USDC and dstReceiver to
-  // our own account. Run the swap step and check the reconstructed call.
+  // reconstructs the swap() calldata, pinning dstReceiver to our own account.
+  // Run the swap step and check the reconstructed call.
   const tokenIn = '0x0000000000000000000000000000000000000abc' as const;
   const amountIn = 5_000_000n;
   const { oneInchRouter, usdc } = contractsMock.Avalanche;
@@ -2577,6 +2579,90 @@ test('swap fails when experimentalSwap feature is disabled', async t => {
     'seat.fail() should be called when experimentalSwap is disabled',
   );
   t.regex(`${failCall?.reason}`, /swap not supported/);
+});
+
+test('swap rejects unconfigured token values', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const baseCtx = {
+    addresses: contractsMock.Avalanche,
+    chainMetadata: chainMetadataMock,
+  } as unknown as EVMContext;
+  const gInfo = {
+    chainId: 'eip155:43114',
+    chainName: 'Avalanche',
+  } as unknown as Parameters<typeof swapRewardToStable>[1];
+  const baseSwap = {
+    provider: '1inch',
+    amountIn: 5_000_000n,
+    flags: 0n,
+    executor: '0x2222222222222222222222222222222222222222',
+    srcReceiver: '0x3333333333333333333333333333333333333333',
+    data: '0xdeadbeef',
+  } as const;
+
+  await t.throwsAsync(
+    () =>
+      swapRewardToStable(baseCtx, gInfo, amount, {
+        ...baseSwap,
+        tokenIn: '0x0000000000000000000000000000000000000def',
+      }),
+    { message: /not configured as a source token/ },
+  );
+  await t.throwsAsync(
+    () =>
+      swapRewardToStable(baseCtx, gInfo, amount, {
+        ...baseSwap,
+        tokenIn: '0x0000000000000000000000000000000000000abc',
+        tokenOut: '0x0000000000000000000000000000000000000fed',
+      }),
+    { message: /not configured as a destination token/ },
+  );
+  await t.throwsAsync(
+    () =>
+      swapRewardToStable(baseCtx, gInfo, amount, {
+        ...baseSwap,
+        tokenIn: '0x0000000000000000000000000000000000000abc',
+        tokenOut: '0x0000000000000000000000000000000000000abc',
+      }),
+    { message: /cannot be the same as tokenOut/ },
+  );
+
+  const extraSwapToToken = harden({
+    caipChainId: 'eip155:43114',
+    chainName: 'Avalanche',
+    tokenId: '0x0000000000000000000000000000000000000fed',
+    symbol: 'USDT',
+    decimals: 6,
+    usage: ['swapTo'],
+  });
+  const multiSwapToCtx = {
+    ...baseCtx,
+    addresses: {
+      ...contractsMock.Avalanche,
+      usdc: '0x0000000000000000000000000000000000000bad',
+    },
+    chainMetadata: harden({
+      ...chainMetadataMock,
+      Avalanche: {
+        ...chainMetadataMock.Avalanche,
+        tokenMetadataById: {
+          ...chainMetadataMock.Avalanche.tokenMetadataById,
+          [makeTokenIdKey(extraSwapToToken.tokenId)]: extraSwapToToken,
+        },
+      },
+    }),
+  } as unknown as EVMContext;
+  await t.throwsAsync(
+    () =>
+      swapRewardToStable(multiSwapToCtx, gInfo, amount, {
+        ...baseSwap,
+        tokenIn: '0x0000000000000000000000000000000000000abc',
+      }),
+    {
+      message:
+        /tokenOut must be specified when "Avalanche" has 2 configured destination tokens/,
+    },
+  );
 });
 
 // EVM wallet integration flow
