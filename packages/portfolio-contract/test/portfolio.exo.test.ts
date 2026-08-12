@@ -1118,6 +1118,51 @@ test('evmHandler grant returns the resulting agent id', async t => {
   t.like(result2, { portfolioId: 23, policyVersion: 2, agentId: 2 });
 });
 
+test('rejected external lifecycle changes do not advance policyVersion', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
+    storage,
+  });
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 25,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+
+  const granted = await vowTools.when(
+    evmHandler.grant('agoric1delegate', { allocation: true }),
+  );
+
+  const assertRejectedWithoutPolicyChange = async (
+    attempt: () => Promise<unknown>,
+    message: RegExp,
+  ) => {
+    const before = await getPortfolioStatus!(25);
+    await t.throwsAsync(attempt(), { message });
+    const after = await getPortfolioStatus!(25);
+    t.is(after.policyVersion, before.policyVersion);
+  };
+
+  await assertRejectedWithoutPolicyChange(
+    () => vowTools.when(evmHandler.changePermissions(99, { allocation: true })),
+    /no delegation found for agent 99/,
+  );
+
+  await manager.setAutoFeatures({ rebalance: true });
+  await assertRejectedWithoutPolicyChange(
+    () => vowTools.when(evmHandler.revoke(2)),
+    /planner delegation cannot be revoked externally/,
+  );
+
+  await vowTools.when(evmHandler.revoke(granted.agentId));
+  await assertRejectedWithoutPolicyChange(
+    () =>
+      vowTools.when(
+        evmHandler.changePermissions(granted.agentId, { allocation: true }),
+      ),
+    /delegation agent1 is .*revoked/,
+  );
+});
+
 test('delegation rebalance creates flow and calls executePlan', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
   const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
