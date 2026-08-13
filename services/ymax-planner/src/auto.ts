@@ -484,7 +484,6 @@ export const maybeAutoClaim = async (
             src: tokenId as EvmAddress,
             dst: source.usdcTokenId as EvmAddress,
             amount: `${rewardTokenCount}`,
-            // TODO(AGO-625): Should `from` and `origin` be distinct?
             from: caip10.accountAddress as EvmAddress,
             origin: caip10.accountAddress as EvmAddress,
             minReturn: `${minReturn}`,
