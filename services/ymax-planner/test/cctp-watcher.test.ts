@@ -86,6 +86,8 @@ test('handlePendingTx processes CCTP transaction successfully', async t => {
 
 test('handlePendingTx keeps tx pending on amount mismatch until timeout and then logs it', async t => {
   const opts = createMockPendingTxOpts();
+  opts.setTimeout = ((callback, _ms, ...args) =>
+    setTimeout(callback, 100, ...args)) as typeof setTimeout;
   const txId = 'tx2';
   opts.fetch = mockFetch({ txId });
   const chain = 'eip155:1'; // Ethereum
@@ -153,7 +155,7 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout and then
     };
 
     (provider as any).emit(filter, mockLog);
-  }, 3010);
+  }, 200);
 
   await t.notThrowsAsync(async () => {
     await handlePendingTx(cctpTx, {

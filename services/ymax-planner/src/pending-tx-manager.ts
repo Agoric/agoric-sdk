@@ -196,6 +196,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
       watchCctpTransfer({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
+        setTimeout: ctx.setTimeout,
         signal,
         kvStore: ctx.kvStore,
         txId,
