@@ -238,6 +238,7 @@ export type Powers = {
   /** Prefer monotonicity (e.g., `performance.now` rather than `Date.now`). */
   now: () => number;
   nowISO: () => string;
+  merklClient?: KyInstance;
   oneInchClient?: KyInstance;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
@@ -263,6 +264,7 @@ export type ProcessPortfolioPowers = Pick<
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
+  | 'merklClient'
   | 'oneInchClient'
   | 'postYdsTransaction'
   | 'autoClaimConfig'
@@ -364,6 +366,7 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     evmProviders,
     chainNameToChainIdMap,
+    merklClient,
     oneInchClient,
     postYdsTransaction,
     autoClaimConfig,
@@ -561,6 +564,7 @@ export const processPortfolioEvents = async (
     isDryRun,
     makeNonce,
     network,
+    merklClient,
     oneInchClient,
     planRebalanceToAllocations,
     portfoliosPathPrefix,

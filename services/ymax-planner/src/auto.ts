@@ -32,7 +32,9 @@ import {
   isInterChainAccountRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
 import type {
+  ClaimRewardsParams,
   FundsFlowPlan,
+  MovementDesc,
   PortfolioKey,
   SupportedChain,
   SwapDesc,
@@ -45,6 +47,7 @@ import {
   type GasStateWindowMetric,
 } from './gas-estimation.ts';
 import type { InstrumentBlocks } from './instrument-status.ts';
+import { fetchMerklRewardsInfo } from './merkl.ts';
 import { fetchOneInchSwapInfo } from './oneinch.ts';
 import { UserInputError } from './support.ts';
 import { getOwn } from './utils.js';
@@ -331,6 +334,7 @@ export type AutoPowers = {
   isDryRun?: boolean;
   makeNonce: () => string;
   network: NetworkSpec;
+  merklClient?: KyInstance;
   oneInchClient?: KyInstance;
   planRebalanceToAllocations: (details: {
     path: string;
@@ -372,6 +376,7 @@ export const maybeAutoClaim = async (
     inspectForStdout,
     isDryRun,
     makeNonce,
+    merklClient,
     oneInchClient,
     portfoliosPathPrefix,
     postYdsTransaction,
@@ -397,14 +402,7 @@ export const maybeAutoClaim = async (
 
   await null;
   try {
-    const sources = pickAutoClaimSources(tokenBalances, powers)?.filter(
-      source => {
-        // TODO(AGO-625): Morpho reward claims require advanced inputs; skip
-        // for now.
-        const { instrumentName } = source;
-        return !instrumentName || !isERC4626InstrumentId(instrumentName);
-      },
-    );
+    const sources = pickAutoClaimSources(tokenBalances, powers);
     if (!sources?.length) {
       console.log(logPrefix, 'skip', inspectForStdout(logContext));
       return;
@@ -424,32 +422,76 @@ export const maybeAutoClaim = async (
       return 0;
     });
 
+    // Morpho reward claims require proofs from Merkl:
+    // https://docs.morpho.org/developers/rewards/tutorials/claim-rewards/
+    const merklProofsByToken = new Map<AccountId, `0x${string}`[]>();
+    const merklChains = new Set(
+      partialMap(sources, source => {
+        const { chainName, caipChainId, instrumentName } = source;
+        const [, evmChainId] =
+          caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
+        if (!evmChainId) return;
+        if (instrumentName && !isERC4626InstrumentId(instrumentName)) return;
+        return JSON.stringify({ chainId: evmChainId, chainName });
+      }),
+    );
+    if (merklClient && merklChains.size > 0) {
+      await Promise.all(
+        [...merklChains].map(async chainJson => {
+          const { chainName, chainId } = JSON.parse(chainJson);
+          const infos = await fetchMerklRewardsInfo(merklClient, {
+            chainId,
+            address: portfolioStatus.accountIdByChain[chainName]!,
+          });
+          for (const { chain, rewards } of infos) {
+            for (const { token, amount, claimed, proofs } of rewards) {
+              const claimable = BigInt(amount) - BigInt(claimed);
+              if (!claimable) continue;
+              const tokenCaip10 =
+                `eip155:${chain.id}:${token.address}`.toLowerCase() as AccountId;
+              merklProofsByToken.set(tokenCaip10, proofs);
+            }
+          }
+        }),
+      );
+    }
+
     const dummyAmount = AmountMath.make(depositBrand, 0n);
     const swapInputs: { tokenCount: bigint; uusdcValue: bigint }[] = [];
     const order: FundsFlowPlan['order'] = [];
-    const flow: FundsFlowPlan['flow'] = await Promise.all(
+    const flow: (MovementDesc | null)[] = await Promise.all(
       sources.map(async (source, stepIndex) => {
-        const { chainName, instrumentName, tokenId, amount } = source;
+        const { chainName, caipChainId, instrumentName, tokenId, amount } =
+          source;
         const dest = `@${chainName}` as AssetPlaceRef;
         await null;
-        if (instrumentName) {
+        if (instrumentName !== null) {
+          const claimRewards: ClaimRewardsParams = {
+            tokens: [tokenId] as EvmAddress[],
+            minAmounts: [BigInt(amount)],
+          };
+          if (isERC4626InstrumentId(instrumentName)) {
+            const tokenCaip10 =
+              `${caipChainId}:${tokenId}`.toLowerCase() as AccountId;
+            const proofs = merklProofsByToken.get(tokenCaip10);
+            // Already claimed?
+            if (!proofs) return null;
+
+            merklProofsByToken.delete(tokenCaip10);
+            claimRewards.morpho = { proofs: [proofs] };
+          }
+
           swapInputs.push({
             tokenCount: BigInt(source.amount),
             uusdcValue: source.uusdcValue,
           });
 
-          const src = instrumentName;
-          const poolInfo = PoolPlaces[instrumentName];
-          const claimRewards = {
-            tokens: [tokenId] as EvmAddress[],
-            minAmounts: [BigInt(amount)],
-            // TODO(AGO-625): Morpho needs more fields.
-          };
           const feeValue = await gasEstimator.getWalletEstimate(
             chainName as AxelarChain,
             EvmWalletOperationType.Claim,
-            poolInfo?.protocol,
+            PoolPlaces[instrumentName]?.protocol,
           );
+          const src = instrumentName;
           const fee = makeGmpFeeAmount(feeBrand, feeValue);
           return { src, dest, amount: dummyAmount, fee, claimRewards };
         } else {
@@ -475,7 +517,7 @@ export const maybeAutoClaim = async (
             Number(uusdcValue) * (1 - autoClaimConfig.maxSlippageBps / 10_000);
           const minReturn = BigInt(Math.ceil(minReturnNum));
           const [, evmChainId] =
-            source.caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
+            caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
           const caip10 = parseAccountId(
             portfolioStatus.accountIdByChain[source.chainName]!,
           );
@@ -513,7 +555,7 @@ export const maybeAutoClaim = async (
         }
       }),
     );
-    const plan: FundsFlowPlan = { flow, order };
+    const plan: FundsFlowPlan = { flow: flow.filter(f => !!f), order };
 
     const txOpts = { sendOnly: true } as const;
     const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);

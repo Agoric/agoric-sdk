@@ -583,6 +583,7 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    merklClient: ky.create({ fetch, prefixUrl: 'https://api.merkl.xyz/' }),
     oneInchClient,
     postYdsTransaction,
     autoClaimConfig: config.autoClaim,
