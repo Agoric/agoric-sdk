@@ -5,31 +5,21 @@ import type {
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type {
   DeliverTxResponse,
+  GasPrice,
   SignerData,
   SigningStargateClient,
   StdFee,
 } from '@cosmjs/stargate';
+import { calculateFee } from '@cosmjs/stargate';
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import type { EReturn } from '@endo/far';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { TxRaw } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { makeStargateClientKit } from './signing-client.js';
+import { minGasPrices, type AgoricGasPrices } from './signing-fees.js';
 import type { SmartWalletKit } from './smart-wallet-kit.js';
 
-/**
- * A reasonable default fee for transactions consisting of a single
- * WalletSpendAction message.
- */
-const defaultFee: StdFee = {
-  // As of 2025-11, even a large isolated spend action transaction consumes
-  // less than 200_000 gas units, so 400_000 includes a fudge factor of over 2x.
-  gas: '400000',
-  // As of 2025-11, validators seem to still be using the Agoric
-  // `minimum-gas-prices` recommendation of 0.01ubld per gas unit:
-  // https://community.agoric.com/t/network-change-instituting-fees-on-the-agoric-chain-to-mitigate-spam-transactions/109/2
-  // So 10_000 ubld = 0.01 BLD includes a fudge factor of over 2x.
-  amount: [{ denom: 'ubld', amount: '10000' }],
-};
+export type BroadcastFee = StdFee | 'auto' | number;
 
 /**
  * Augment a read-only SmartWalletKit with signing ability
@@ -39,10 +29,14 @@ export const makeSigningSmartWalletKitFromClient = async ({
   smartWalletKit: walletUtils,
   address,
   client,
+  gasPrice,
+  gasAdjustment = 1.2,
 }: {
   smartWalletKit: SmartWalletKit;
   address: string;
   client: SigningStargateClient;
+  gasPrice?: GasPrice;
+  gasAdjustment?: number;
 }) => {
   type PollOfferWithoutAddressArgs = [
     id: Parameters<SmartWalletKit['pollOffer']>[1],
@@ -64,7 +58,7 @@ export const makeSigningSmartWalletKitFromClient = async ({
 
   const sendBridgeAction = async (
     action: BridgeAction,
-    fee: StdFee = defaultFee,
+    fee: BroadcastFee = 'auto',
     memo: string = '',
     signerData?: SignerData,
   ): Promise<DeliverTxResponse> => {
@@ -86,11 +80,34 @@ export const makeSigningSmartWalletKitFromClient = async ({
       return client.signAndBroadcast(address, messages, fee, memo);
     }
 
+    const needsAutoFee = fee === 'auto' || typeof fee === 'number';
+    if (needsAutoFee) {
+      if (!gasPrice) {
+        throw Error(
+          'manual signing with fee "auto" requires a resolved GasPrice',
+        );
+      }
+    }
+    const gas = await (needsAutoFee
+      ? client.simulate(address, messages, memo)
+      : Promise.resolve(undefined));
+
+    let signingFee: StdFee;
+    if (needsAutoFee) {
+      if (!gasPrice || gas === undefined) {
+        throw Error('manual signing fee simulation did not resolve');
+      }
+      const adjustment = fee === 'auto' ? gasAdjustment : fee;
+      signingFee = calculateFee(Math.ceil(gas * adjustment), gasPrice);
+    } else {
+      signingFee = fee;
+    }
+
     // Explicit signing data
     const signedTx = await client.sign(
       address,
       messages,
-      fee,
+      signingFee,
       memo,
       signerData,
     );
@@ -101,7 +118,7 @@ export const makeSigningSmartWalletKitFromClient = async ({
 
   const executeOffer = async (
     offer: OfferSpec,
-    fee?: StdFee,
+    fee?: BroadcastFee,
     memo?: string,
     signerData?: SignerData,
   ): Promise<OfferStatus> => {
@@ -140,21 +157,31 @@ export const makeSigningSmartWalletKit = async (
   {
     connectWithSigner,
     walletUtils,
+    gasPrices = minGasPrices,
+    feeDenom,
+    gasAdjustment,
   }: {
     connectWithSigner: typeof SigningStargateClient.connectWithSigner;
     walletUtils: SmartWalletKit;
+    gasPrices?: AgoricGasPrices;
+    feeDenom?: string;
+    gasAdjustment?: number;
   },
   MNEMONIC: string,
 ) => {
-  const { address, client } = await makeStargateClientKit(MNEMONIC, {
+  const { address, client, gasPrice } = await makeStargateClientKit(MNEMONIC, {
     connectWithSigner,
     // XXX always the first
     rpcAddr: walletUtils.networkConfig.rpcAddrs[0],
+    gasPrices,
+    feeDenom,
   });
   return makeSigningSmartWalletKitFromClient({
     smartWalletKit: walletUtils,
     address,
     client,
+    gasPrice,
+    gasAdjustment,
   });
 };
 harden(makeSigningSmartWalletKit);
