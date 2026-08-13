@@ -28,7 +28,7 @@ export type OneInchSwapAPI = {
     amount: `${bigint}`;
     /** The address that calls the 1inch contract. */
     from: EvmAddress;
-    /** An EOA address that initiates the transaction. */
+    /** An EOA or wallet contract address that initiates the transaction. */
     origin: EvmAddress;
     /** The address that will receive funds after the swap. Defaults to `from`. */
     receiver?: EvmAddress;

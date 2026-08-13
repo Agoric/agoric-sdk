@@ -287,7 +287,7 @@ export const loadConfig = async (
     ),
   });
   autoClaim.maxSlippageBps <= 10_000 ||
-    Fail`AUTO_CLAIM_MAX_SLIPPAGE_BPS must not exceed 10_000`;
+    Fail`AUTO_CLAIM_MAX_SLIPPAGE_BPS must not exceed 10_000; got ${autoClaim.maxSlippageBps}`;
   const autoRebalance = harden({
     driftBps: parsePositiveBigint(
       env,

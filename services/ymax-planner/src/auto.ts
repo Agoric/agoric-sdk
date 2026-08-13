@@ -17,7 +17,7 @@ import type { reflectWalletStore } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type { EvmAddress } from '@agoric/fast-usdc';
-import { partialMap, provideLazyMap } from '@agoric/internal';
+import { naiveCompare, partialMap, provideLazyMap } from '@agoric/internal';
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { EvmWalletOperationType } from '@agoric/portfolio-api/src/constants.js';
@@ -250,9 +250,7 @@ export const pickAutoClaimSources = (
       return uusdcValue > 0n && uusdcPerGasUnit >= threshold
         ? { balance, uusdcValue, gasUnits, uusdcPerGasUnit }
         : undefined;
-    }).sort(({ uusdcPerGasUnit: a }, { uusdcPerGasUnit: b }) =>
-      a > b ? -1 : a < b ? 1 : 0,
-    );
+    }).sort((a, b) => naiveCompare(b.uusdcPerGasUnit, a.uusdcPerGasUnit));
     for (const { balance, uusdcValue, gasUnits } of bestRewardBalances) {
       holds.push({ ...balance, uusdcValue, usdcTokenId });
       estimatedGasUnits += gasUnits;
