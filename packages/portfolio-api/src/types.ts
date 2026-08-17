@@ -454,6 +454,11 @@ export type PortfolioDelegatedRebalanceParams = {
   agentMemo?: string;
 };
 
+export type PortfolioDelegatedClaimRewardsParams = {
+  syncState: PortfolioSyncState;
+  agentMemo?: string;
+};
+
 export type PortfolioDelegatedSetTargetAllocationParams = {
   syncState: PortfolioSyncState;
   targetAllocation: TargetAllocation;

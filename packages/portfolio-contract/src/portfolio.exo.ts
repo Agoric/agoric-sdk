@@ -38,6 +38,7 @@ import {
   type PortfolioAutoFeatures,
   type PortfolioRemoteAccountState,
   type PortfolioAutoFeaturesExt,
+  type PortfolioDelegatedClaimRewardsParams,
   type PortfolioDelegatedRebalanceParams,
   type PortfolioDelegatedSetTargetAllocationParams,
   type PortfolioGrantResult,
@@ -707,6 +708,33 @@ export const preparePortfolioKit = (
 
           const flowDetail: FlowDetail = {
             type: 'rebalance',
+            agent: `agent${agentId}`,
+            ...(agentMemo != null && { agentMemo }),
+          };
+          const startedFlow = manager.startFlow(flowDetail);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
+
+          const { flowId } = startedFlow;
+          return `flow${flowId}`;
+        },
+        submitClaimRewards(
+          client: PortfolioDelegationClient,
+          agentId: number,
+          delegatedClaimRewardsParams: PortfolioDelegatedClaimRewardsParams,
+        ): FlowKey {
+          this.facets.delegationHelper.assertActive(client, agentId, {
+            claimRewards: true,
+          });
+          const { reader, manager } = this.facets;
+          const { syncState, agentMemo } = delegatedClaimRewardsParams;
+
+          const { policyVersion, rebalanceCount } = syncState;
+          reader.checkVersion(policyVersion, rebalanceCount);
+          const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
+
+          const flowDetail: FlowDetail = {
+            type: 'claimRewards',
             agent: `agent${agentId}`,
             ...(agentMemo != null && { agentMemo }),
           };

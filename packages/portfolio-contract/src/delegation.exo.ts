@@ -11,6 +11,7 @@ import {
   PortfolioAutoFeaturesExtShape,
   PortfolioFlowAgentMemoShape,
   type FlowKey,
+  type PortfolioDelegatedClaimRewardsParams,
   type PortfolioDelegatedRebalanceParams,
   type PortfolioDelegatedSetTargetAllocationParams,
   type PortfolioSyncState,
@@ -29,6 +30,13 @@ export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
   });
 
 export const PortfolioDelegatedRebalanceParamsShape: TypedPattern<PortfolioDelegatedRebalanceParams> =
+  M.splitRecord(
+    { syncState: PortfolioSyncStateShape },
+    { agentMemo: PortfolioFlowAgentMemoShape },
+    {},
+  );
+
+export const PortfolioDelegatedClaimRewardsParamsShape: TypedPattern<PortfolioDelegatedClaimRewardsParams> =
   M.splitRecord(
     { syncState: PortfolioSyncStateShape },
     { agentMemo: PortfolioFlowAgentMemoShape },
@@ -79,6 +87,9 @@ const DelegationReaderI = M.interface('PortfolioDelegationReader', {
 const DelegationClientI = M.interface('PortfolioDelegationClient', {
   getReader: M.call().returns(M.remotable('PortfolioDelegationReader')),
   rebalance: M.call(PortfolioDelegatedRebalanceParamsShape).returns(M.string()),
+  claimRewards: M.call(PortfolioDelegatedClaimRewardsParamsShape).returns(
+    M.string(),
+  ),
   setTargetAllocation: M.call(
     PortfolioDelegatedSetTargetAllocationParamsShape,
   ).returns(M.string()),
@@ -122,6 +133,14 @@ export const preparePortfolioDelegationKit = (
         rebalance(params: PortfolioDelegatedRebalanceParams): FlowKey {
           const { portfolioAccess, agentId } = this.state;
           return portfolioAccess.submitRebalance(
+            this.facets.client,
+            agentId,
+            params,
+          );
+        },
+        claimRewards(params: PortfolioDelegatedClaimRewardsParams): FlowKey {
+          const { portfolioAccess, agentId } = this.state;
+          return portfolioAccess.submitClaimRewards(
             this.facets.client,
             agentId,
             params,
