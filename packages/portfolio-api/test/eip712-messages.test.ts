@@ -194,6 +194,73 @@ test('getYmaxStandaloneOperationData for SetTargetAllocation', t => {
   ]);
 });
 
+test('getYmaxStandaloneOperationData for SetAutoFeatures with only claimRewards set, drops unused optional rebalance', t => {
+  const data = {
+    features: { claimRewards: true },
+    portfolio: 0n,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'SetAutoFeatures',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'SetAutoFeatures');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.PortfolioAutoFeatures, [
+    { name: 'claimRewards', type: 'bool' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for SetAutoFeatures with only rebalance set, drops unused optional claimRewards', t => {
+  const data = {
+    features: { rebalance: false },
+    portfolio: 0n,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'SetAutoFeatures',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'SetAutoFeatures');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.PortfolioAutoFeatures, [
+    { name: 'rebalance', type: 'bool' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for SetAutoFeatures with both features set', t => {
+  const data = {
+    features: { rebalance: true, claimRewards: false },
+    portfolio: 0n,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'SetAutoFeatures',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'SetAutoFeatures');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.PortfolioAutoFeatures, [
+    { name: 'rebalance', type: 'bool' },
+    { name: 'claimRewards', type: 'bool' },
+  ]);
+});
+
 test('getYmaxWitness for OpenPortfolio', t => {
   const allocations: TargetAllocation[] = [
     { instrument: 'Aave_Arbitrum', portion: 10000n },

@@ -1167,18 +1167,30 @@ export const preparePortfolioKit = (
          * Sets the pre-validated features settings on the portfolio and
          * delivers the delegation to the planner as needed.
          *
+         * A feature key absent from `features` leaves that feature's current
+         * setting unchanged (this is what lets an EIP-712 SetAutoFeatures
+         * message toggle just one feature); an explicit `true`/`false` always
+         * updates it.
+         *
          * Promptly resolves with the new auto-features settings.
          *
          * @param features
          */
         async setAutoFeatures(features: PortfolioAutoFeatures) {
-          const permissions: PortfolioPermissions = {
+          const mergedAutoFeatures: PortfolioAutoFeatures = harden({
+            ...this.state.enabledAutoFeatures,
+            ...features,
+          });
+          const permissions: PortfolioPermissions = harden({
             allocation: false,
-            rebalance: !!features.rebalance,
-          };
+            rebalance: !!mergedAutoFeatures.rebalance,
+            claimRewards: !!mergedAutoFeatures.claimRewards,
+          });
 
           const hasAnyPermission =
-            permissions.allocation || permissions.rebalance;
+            permissions.allocation ||
+            permissions.rebalance ||
+            permissions.claimRewards;
 
           let plannerAgentId = this.state.plannerAgentId;
           let updateDelegation = false;
@@ -1222,7 +1234,7 @@ export const preparePortfolioKit = (
               plannerAgentId = granted.agentId;
               policyVersion = granted.policyVersion;
               this.state.plannerAgentId = plannerAgentId;
-              this.state.enabledAutoFeatures = features;
+              this.state.enabledAutoFeatures = mergedAutoFeatures;
             } finally {
               this.facets.reporter.publishStatus();
             }
@@ -1239,12 +1251,12 @@ export const preparePortfolioKit = (
                 }),
               );
             }
-            this.state.enabledAutoFeatures = features;
+            this.state.enabledAutoFeatures = mergedAutoFeatures;
             this.facets.reporter.publishStatus();
             if (updateDelegation) this.facets.reporter.publishAgents();
           }
 
-          return { enabledAutoFeatures: features, policyVersion };
+          return { enabledAutoFeatures: mergedAutoFeatures, policyVersion };
         },
       },
       accountWatcher: {

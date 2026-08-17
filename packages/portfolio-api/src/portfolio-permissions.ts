@@ -17,6 +17,8 @@ export type PortfolioPermissions = {
   allocation?: boolean;
   /** whether the agent may trigger a rebalance using the current policy. */
   rebalance?: boolean;
+  /** whether the agent may trigger a claim of external protocol rewards. */
+  claimRewards?: boolean;
 };
 
 /**
@@ -31,10 +33,22 @@ export type PortfolioPermissionsExt = PortfolioPermissions & CopyRecord<any>;
  * grant paths may still require specific permissions before creating a grant.
  */
 export const PortfolioPermissionsShape: TypedPattern<PortfolioPermissions> =
-  M.splitRecord({}, { allocation: M.boolean(), rebalance: M.boolean() }, {});
+  M.splitRecord(
+    {},
+    {
+      allocation: M.boolean(),
+      rebalance: M.boolean(),
+      claimRewards: M.boolean(),
+    },
+    {},
+  );
 
 export const PortfolioPermissionsEIP712Shape: TypedPattern<PortfolioPermissionsEIP712> =
-  M.splitRecord({ allocation: M.boolean() }, { rebalance: M.boolean() }, {});
+  M.splitRecord(
+    { allocation: M.boolean() },
+    { rebalance: M.boolean(), claimRewards: M.boolean() },
+    {},
+  );
 
 /**
  * Extensible app-level shape for portfolio permissions.
@@ -48,6 +62,7 @@ export const PortfolioPermissionsExtShape: TypedPattern<PortfolioPermissionsExt>
 /** A set of auto-features that can be enabled for a portfolio. */
 export type PortfolioAutoFeatures = {
   rebalance?: boolean;
+  claimRewards?: boolean;
 };
 
 /**
@@ -55,10 +70,10 @@ export type PortfolioAutoFeatures = {
  * Changes to this shape should be backward compatible.
  */
 export const PortfolioAutoFeaturesShape: TypedPattern<PortfolioAutoFeatures> =
-  M.splitRecord({}, { rebalance: M.boolean() }, {});
+  M.splitRecord({}, { rebalance: M.boolean(), claimRewards: M.boolean() }, {});
 
 export const PortfolioAutoFeaturesEIP712Shape: TypedPattern<PortfolioAutoFeaturesEIP712> =
-  M.splitRecord({ rebalance: M.boolean() });
+  M.splitRecord({}, { rebalance: M.boolean(), claimRewards: M.boolean() }, {});
 
 /** Extensible type compatible with future auto-features definitions */
 export type PortfolioAutoFeaturesExt = PortfolioAutoFeatures & CopyRecord<any>;
