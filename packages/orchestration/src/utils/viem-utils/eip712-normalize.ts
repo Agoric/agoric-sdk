@@ -93,14 +93,58 @@ const HEX_REGEX = /^0x[0-9a-fA-F]*$/u;
 const MAX_DESCRIBED_LENGTH = 100;
 
 /**
+ * Slices `str` to at most `MAX_DESCRIBED_LENGTH` characters, appending
+ * `...` if it was cut. Bounds length only -- doesn't escape or annotate;
+ * `truncate` and `describeValue`'s string case each build on this
+ * differently (an appended `(N chars total)` annotation, or JSON escaping,
+ * respectively), so the raw slicing lives in one place.
+ */
+const truncateRaw = (str: string): string =>
+  str.length > MAX_DESCRIBED_LENGTH
+    ? `${str.slice(0, MAX_DESCRIBED_LENGTH)}...`
+    : str;
+
+/**
  * Bounds a string embedded in an error message -- `message` (and, in
  * 'throw' mode, `types`) can come from an untrusted source, so a field
  * name, value, or joined list of them could otherwise be arbitrarily large.
+ * Bounds length only, and doesn't escape the result -- see `quoteName` for
+ * a quoted-and-escaped identifier suitable for embedding directly in a
+ * message (manually wrapping this in literal quotes instead is unsafe: an
+ * embedded quote character in `str` would break out of them).
  */
 const truncate = (str: string): string =>
   str.length > MAX_DESCRIBED_LENGTH
-    ? `${str.slice(0, MAX_DESCRIBED_LENGTH)}...(${str.length} chars total)`
+    ? `${truncateRaw(str)}(${str.length} chars total)`
     : str;
+
+/**
+ * Quotes and escapes an identifier (a struct/field type or field name) for
+ * embedding in an error message. Escaping via `JSON.stringify` happens
+ * *after* truncating and covers the whole (possibly-annotated) result, so
+ * an embedded quote, backslash, or newline in the identifier can't break
+ * out of the message's own quoting, and the `(N chars total)` annotation
+ * can't itself get chopped off by a later truncation step (there isn't
+ * one).
+ */
+const quoteName = (str: string): string => JSON.stringify(truncate(str));
+
+const MAX_DESCRIBED_ITEMS = 10;
+
+/**
+ * Quotes and escapes each name in `names` (see `quoteName`) and joins them
+ * for an error message -- bounding not just each individual name's length
+ * but also, since attacker-controlled data can make the *list itself*
+ * arbitrarily long (e.g. very many extra fields on a struct), the number of
+ * items included. Cuts off whole items rather than slicing the joined
+ * string's raw characters, so the result can never end mid-quote the way
+ * `truncate`-ing an already-joined-and-quoted string could.
+ */
+const quoteNameList = (names: readonly string[]): string => {
+  const shown = names.slice(0, MAX_DESCRIBED_ITEMS).map(quoteName).join(', ');
+  const omitted = names.length - MAX_DESCRIBED_ITEMS;
+  return omitted > 0 ? `${shown}, and ${omitted} more` : shown;
+};
 
 /**
  * A short, bounded description of a value for error messages. Only
@@ -109,8 +153,20 @@ const truncate = (str: string): string =>
  */
 const describeValue = (value: unknown): string => {
   if (value === null) return 'null';
-  if (typeof value === 'string') return truncate(JSON.stringify(value));
-  if (typeof value === 'bigint') return truncate(`${value}n`);
+  if (typeof value === 'string') {
+    if (value.length > MAX_DESCRIBED_LENGTH) {
+      // The `(N chars total)` annotation goes *outside* the JSON-quoted,
+      // truncated value (unlike `quoteName`), so it reads as metadata about
+      // the value rather than part of it.
+      return `${JSON.stringify(truncateRaw(value))}(${value.length} chars total)`;
+    }
+    return JSON.stringify(value);
+  }
+  // Truncate the digits *before* appending the `n` suffix -- appending
+  // first and truncating the combined string risks slicing the `n` itself
+  // off a long enough value, leaving output that no longer looks like a
+  // bigint.
+  if (typeof value === 'bigint') return `${truncate(`${value}`)}n`;
   if (typeof value === 'number') return truncate(String(value));
   if (value instanceof Uint8Array)
     return `a Uint8Array with ${value.length} byte(s)`;
@@ -141,7 +197,7 @@ const describeValue = (value: unknown): string => {
  *   unconditionally.
  */
 const assertValidPrimitive = (fieldType: string, value: unknown): void => {
-  const type = truncate(fieldType);
+  const quotedType = quoteName(fieldType);
 
   if (fieldType === 'address') {
     if (typeof value !== 'string' || !ADDRESS_REGEX.test(value)) {
@@ -172,12 +228,12 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
   if (integerMatch) {
     if (typeof value !== 'number' && typeof value !== 'bigint') {
       throw new Error(
-        `Expected a number or bigint for EIP-712 type "${type}", got ${describeValue(value)}`,
+        `Expected a number or bigint for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
       );
     }
     if (typeof value === 'number' && !Number.isInteger(value)) {
       throw new Error(
-        `Expected an integer for EIP-712 type "${type}", got ${describeValue(value)}`,
+        `Expected an integer for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
       );
     }
     const signed = integerMatch[1] === 'int';
@@ -187,7 +243,7 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
     const min = signed ? -max - 1n : 0n;
     if (bigValue < min || bigValue > max) {
       throw new Error(
-        `Value ${describeValue(value)} is out of range for EIP-712 type "${type}" (expected ${min} to ${max})`,
+        `Value ${describeValue(value)} is out of range for EIP-712 type ${quotedType} (expected ${min} to ${max})`,
       );
     }
     return;
@@ -202,7 +258,7 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
     if (!bytesMatch[1] && value instanceof Uint8Array) return;
     if (typeof value !== 'string' || !HEX_REGEX.test(value)) {
       throw new Error(
-        `Expected a hex string for EIP-712 type "${type}", got ${describeValue(value)}`,
+        `Expected a hex string for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
       );
     }
     if (bytesMatch[1]) {
@@ -210,14 +266,14 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
       const actualSize = Math.ceil((value.length - 2) / 2);
       if (actualSize !== expectedSize) {
         throw new Error(
-          `Expected EIP-712 type "${type}" to be ${expectedSize} bytes, got ${actualSize}: ${describeValue(value)}`,
+          `Expected EIP-712 type ${quotedType} to be ${expectedSize} bytes, got ${actualSize}: ${describeValue(value)}`,
         );
       }
     }
     return;
   }
 
-  throw new Error(`Unrecognized EIP-712 type "${type}"`);
+  throw new Error(`Unrecognized EIP-712 type ${quotedType}`);
 };
 
 /**
@@ -227,8 +283,14 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
  */
 type FieldState = 'optional-unseen' | 'optional-seen' | 'required';
 
-/** A struct's fields, keyed by name, tracking each field's {@link FieldState}. */
-type TypeFields = Record<string | number, { state: FieldState; type: string }>;
+/**
+ * A struct's fields, keyed by name, tracking each field's {@link
+ * FieldState}. Also doubles as an array-typed field's per-element record
+ * (see `visit`'s `isArray` branch) -- but even then, the keys involved are
+ * always strings: `for...in`/`in` read array indices as strings, never as
+ * `number`.
+ */
+type TypeFields = Record<string, { state: FieldState; type: string }>;
 
 /** Looks up (and lazily builds) the {@link TypeFields} for a struct type name, or `undefined` for a primitive leaf. */
 type GetType = (typeName: string) => TypeFields | undefined;
@@ -275,11 +337,19 @@ const visit = (
     return value;
   }
 
-  // A declared struct or array needs an actual object/array value.
+  // A declared struct or array needs an actual object/array value. Split
+  // into two distinct messages (rather than interpolating `isArray` into
+  // one) so each is independently greppable.
   if (typeof value !== 'object' || value === null) {
-    throw new Error(
-      `Expected ${isArray ? 'an array' : 'an object'} for EIP-712 type "${truncate(fieldType)}", got ${describeValue(value)}`,
-    );
+    if (isArray) {
+      throw new Error(
+        `Expected an array for EIP-712 type ${quoteName(fieldType)}, got ${describeValue(value)}`,
+      );
+    } else {
+      throw new Error(
+        `Expected an object for EIP-712 type ${quoteName(fieldType)}, got ${describeValue(value)}`,
+      );
+    }
   }
 
   let type: TypeFields;
@@ -288,21 +358,21 @@ const visit = (
     const actualLength = value.length;
     if (typeof actualLength !== 'number' || Number.isNaN(actualLength)) {
       throw new Error(
-        `Expected an array-like value (with a numeric \`length\`) for EIP-712 type "${truncate(fieldType)}"`,
+        `Expected an array-like value (with a numeric \`length\`) for EIP-712 type ${quoteName(fieldType)}`,
       );
     }
     if (requiredLength !== undefined) {
       // Too few is missing data: rejected in every mode, 'keep' included.
       if (actualLength < requiredLength) {
         throw new Error(
-          `Array field "${truncate(fieldType)}" has ${actualLength} elements, expected at least ${requiredLength}`,
+          `Array field ${quoteName(fieldType)} has ${actualLength} elements, expected at least ${requiredLength}`,
         );
       }
       // Too many is excess data: only 'throw' rejects it ('drop' truncates
       // below, 'keep' leaves it alone).
       if (onExtraField === 'throw' && actualLength > requiredLength) {
         throw new Error(
-          `Array field "${truncate(fieldType)}" has ${actualLength} elements, expected at most ${requiredLength}`,
+          `Array field ${quoteName(fieldType)} has ${actualLength} elements, expected at most ${requiredLength}`,
         );
       }
     }
@@ -318,7 +388,7 @@ const visit = (
     // Guaranteed defined (the `!isArray && !baseType` case already
     // returned above); this is just for TS's narrowing.
     if (!baseType) {
-      throw new Error(`Unrecognized EIP-712 type "${truncate(fieldType)}"`);
+      throw new Error(`Unrecognized EIP-712 type ${quoteName(fieldType)}`);
     }
     // Plain object, not null-prototype: this ends up in the returned
     // `message`, which may need to be Endo-Passable (e.g. across a Zoe/exo
@@ -331,15 +401,21 @@ const visit = (
     const extraKeys = Object.keys(value).filter(key => !(key in type));
     if (extraKeys.length) {
       throw new Error(
-        `Unexpected field(s) on EIP-712 type "${truncate(fieldType)}": ${truncate(extraKeys.join(', '))}`,
+        `Unexpected field(s) on EIP-712 type ${quoteName(fieldType)}: ${quoteNameList(extraKeys)}`,
       );
     }
   }
 
   // `fieldName in obj`, not `hasOwnProperty`: matches how viem itself reads
   // field values (plain property access resolves the prototype chain).
-  // `type` is null-prototype or a fresh array-literal record, so there's no
-  // inherited-property risk to guard against here.
+  // `type` must be null-prototype or a fresh array-literal record (so
+  // there's no inherited-property risk to guard against here), but this
+  // check protects against future refactorings.
+  if (Object.getPrototypeOf(type) && !Array.isArray(type)) {
+    throw new Error(
+      `EIP-712 type ${quoteName(fieldType)} must be described by a null-prototype object or an array`,
+    );
+  }
   // eslint-disable-next-line guard-for-in
   for (const fieldName in type) {
     const field = type[fieldName];
@@ -348,13 +424,13 @@ const visit = (
     if (present) {
       if (field.state === 'optional-seen') {
         throw new Error(
-          `Field "${truncate(fieldName)}" of EIP-712 type "${truncate(fieldType)}" is present here but was missing on another instance of the same type -- it must be consistently present or consistently absent`,
+          `Field ${quoteName(fieldName)} of EIP-712 type ${quoteName(fieldType)} is present here but was missing on another instance of the same type -- it must be consistently present or consistently absent`,
         );
       }
       field.state = 'required';
     } else if (field.state === 'required') {
       throw new Error(
-        `Missing required field "${truncate(fieldName)}" for EIP-712 type "${truncate(fieldType)}"`,
+        `Missing required field ${quoteName(fieldName)} for EIP-712 type ${quoteName(fieldType)}`,
       );
     } else {
       field.state = 'optional-seen';
@@ -381,7 +457,7 @@ export const normalizeAndValidateEIP712Data = (
 
   if (!(primaryType in types)) {
     throw new Error(
-      `Unknown EIP-712 primary type "${truncate(primaryType)}" (expected one of ${truncate(Object.keys(types).join(', '))})`,
+      `Unknown EIP-712 primary type ${quoteName(primaryType)} (expected one of ${quoteNameList(Object.keys(types))})`,
     );
   }
 

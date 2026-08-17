@@ -65,7 +65,7 @@ test('throw mode lists every extra field when there is more than one', t => {
         { message, types, primaryType: 'Mail' },
         { onExtraField: 'throw' },
       ),
-    { message: /extra1, extra2/ },
+    { message: /"extra1", "extra2"/ },
   );
 });
 
