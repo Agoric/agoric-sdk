@@ -361,6 +361,281 @@ test('planner cannot start delegated rebalance with new positions', async t => {
   });
 });
 
+test('planner starts delegated claimRewards and resolves its plan', async t => {
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone);
+
+  let startedFlow: { stepsP: unknown; flowId: number } | undefined;
+  const mockExecutePlan = (_seat, _offerArgs, _kit, _flowDetail, flow) => {
+    startedFlow = flow;
+    return vt.asVow(() => undefined);
+  };
+  const mockZcf = {
+    makeEmptySeatKit: () => ({
+      zcfSeat: null as any,
+    }),
+  } as ZCF;
+
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  const marshaller = board.getReadonlyMarshaller();
+  const plannerDelegations = new Map<
+    PortfolioKit['planner'],
+    PortfolioDelegationClient
+  >();
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    executePlan: mockExecutePlan as any,
+    zcf: mockZcf,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
+    deliverDelegation(
+      client: PortfolioDelegationClient,
+      _portfolioId,
+      _agentId,
+      grantee,
+      permissions,
+    ) {
+      t.is(grantee, PortfolioPlannerAgent);
+      t.like(permissions, { claimRewards: true });
+      plannerDelegations.set(aPortfolio.planner, client);
+    },
+    ...({} as any),
+  });
+  const aPortfolio = makePortfolioKit({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
+
+  const makePlanner = preparePlanner(zone, {
+    getPortfolioPlanner: mockGetPortfolioPlanner,
+    getPlannerDelegation: portfolioPlanner =>
+      plannerDelegations.get(portfolioPlanner),
+    shapes: makeOfferArgsShapes(USDC),
+  });
+  const planner = makePlanner();
+
+  aPortfolio.manager.setTargetAllocation({ Aave_Arbitrum: 100n });
+  await aPortfolio.manager.setAutoFeatures({
+    claimRewards: true,
+  });
+
+  const amount = { brand: USDC, value: 100n };
+  const plan: MovementDesc[] = [
+    {
+      src: 'Aave_Arbitrum',
+      dest: '@Arbitrum',
+      amount,
+      claimRewards: { tokens: [], minAmounts: [] },
+    },
+  ];
+
+  const claimRewardsParams = {
+    syncState: {
+      // setAutoFeatures granted the planner delegation, bumping policyVersion
+      // past the setTargetAllocation call above.
+      policyVersion: 2,
+      rebalanceCount: 0,
+    },
+    agentMemo: '12345',
+  };
+
+  const flowKey = planner.claimRewards(1, claimRewardsParams, plan);
+
+  t.is(flowKey, 'flow1');
+  t.truthy(startedFlow);
+  t.deepEqual(await vt.when(startedFlow!.stepsP as any), plan);
+
+  const portfolioStatus = await getPortfolioStatus(1);
+  t.like(portfolioStatus, {
+    policyVersion: 2,
+    rebalanceCount: 1,
+    flowsRunning: {
+      flow1: { type: 'claimRewards', agent: 'agent1', agentMemo: '12345' },
+    },
+  });
+});
+
+test('planner cannot start delegated claimRewards with new positions', async t => {
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone);
+
+  const mockExecutePlan = () => {
+    return vt.asVow(() => undefined);
+  };
+  const mockZcf = {
+    makeEmptySeatKit: () => ({
+      zcfSeat: null as any,
+    }),
+  } as ZCF;
+
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const marshaller = board.getReadonlyMarshaller();
+  const plannerDelegations = new Map<
+    PortfolioKit['planner'],
+    PortfolioDelegationClient
+  >();
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    executePlan: mockExecutePlan as any,
+    zcf: mockZcf,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
+    deliverDelegation(
+      client: PortfolioDelegationClient,
+      _portfolioId,
+      _agentId,
+      _grantee,
+      _permissions,
+    ) {
+      plannerDelegations.set(aPortfolio.planner, client);
+    },
+    ...({} as any),
+  });
+  const aPortfolio = makePortfolioKit({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
+
+  const makePlanner = preparePlanner(zone, {
+    getPortfolioPlanner: mockGetPortfolioPlanner,
+    getPlannerDelegation: portfolioPlanner =>
+      plannerDelegations.get(portfolioPlanner),
+    shapes: makeOfferArgsShapes(USDC),
+  });
+  const planner = makePlanner();
+
+  aPortfolio.manager.setTargetAllocation({ Aave_Arbitrum: 100n });
+  await aPortfolio.manager.setAutoFeatures({
+    claimRewards: true,
+  });
+
+  const amount = { brand: USDC, value: 100n };
+  const newPositionPlan: MovementDesc[] = [
+    { src: 'Aave_Arbitrum', dest: 'Compound_Arbitrum', amount },
+  ];
+
+  const claimRewardsParams = {
+    syncState: {
+      // setAutoFeatures granted the planner delegation, bumping policyVersion
+      // past the setTargetAllocation call above.
+      policyVersion: 2,
+      rebalanceCount: 0,
+    },
+    agentMemo: '12345',
+  };
+
+  t.throws(() => planner.claimRewards(1, claimRewardsParams, newPositionPlan), {
+    message: /planner cannot add positions/i,
+  });
+});
+
+test('planner cannot start claimRewards without features enabled', async t => {
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone);
+
+  const mockExecutePlan = () => {
+    return vt.asVow(() => undefined);
+  };
+  const mockZcf = {
+    makeEmptySeatKit: () => ({
+      zcfSeat: null as any,
+    }),
+  } as ZCF;
+
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const marshaller = board.getReadonlyMarshaller();
+  const plannerDelegations = new Map<
+    PortfolioKit['planner'],
+    PortfolioDelegationClient
+  >();
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    executePlan: mockExecutePlan as any,
+    zcf: mockZcf,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
+    deliverDelegation(
+      client: PortfolioDelegationClient,
+      _portfolioId,
+      _agentId,
+      grantee,
+      permissions,
+    ) {
+      t.is(grantee, PortfolioPlannerAgent);
+      t.like(permissions, { claimRewards: true });
+      plannerDelegations.set(aPortfolio.planner, client);
+    },
+    ...({} as any),
+  });
+  const aPortfolio = makePortfolioKit({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
+
+  const makePlanner = preparePlanner(zone, {
+    getPortfolioPlanner: mockGetPortfolioPlanner,
+    getPlannerDelegation: portfolioPlanner =>
+      plannerDelegations.get(portfolioPlanner),
+    shapes: makeOfferArgsShapes(USDC),
+  });
+  const planner = makePlanner();
+
+  aPortfolio.manager.setTargetAllocation({ Aave_Arbitrum: 100n });
+
+  const amount = { brand: USDC, value: 100n };
+  const plan: MovementDesc[] = [
+    {
+      src: 'Aave_Arbitrum',
+      dest: '@Arbitrum',
+      amount,
+      claimRewards: { tokens: [], minAmounts: [] },
+    },
+  ];
+
+  const claimRewardsParams = {
+    syncState: {
+      policyVersion: 1,
+      rebalanceCount: 0,
+    },
+    agentMemo: '12345',
+  };
+
+  t.throws(() => planner.claimRewards(1, claimRewardsParams, plan), {
+    message: /planner delegation must be active/,
+  });
+
+  await aPortfolio.manager.setAutoFeatures({
+    claimRewards: true,
+  });
+
+  await aPortfolio.manager.setAutoFeatures({
+    claimRewards: false,
+  });
+
+  t.throws(() => planner.claimRewards(1, claimRewardsParams, plan), {
+    message: /auto-feature "claimRewards" must be enabled/,
+  });
+});
+
 test('planner allows EVM-based portfolio to withdraw to -Chain via @chain account', async t => {
   const zone = makeHeapZone();
   const vt = prepareVowTools(zone);
