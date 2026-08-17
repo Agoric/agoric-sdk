@@ -9,12 +9,14 @@
 import type { TypedPattern } from '@agoric/internal';
 import {
   PortfolioAutoFeaturesExtShape,
+  PortfolioDelegatedClaimRewardsParamsShape,
+  PortfolioDelegatedRebalanceParamsShape,
   PortfolioFlowAgentMemoShape,
+  PortfolioSyncStateShape,
   type FlowKey,
   type PortfolioDelegatedClaimRewardsParams,
   type PortfolioDelegatedRebalanceParams,
   type PortfolioDelegatedSetTargetAllocationParams,
-  type PortfolioSyncState,
 } from '@agoric/portfolio-api';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
@@ -23,26 +25,10 @@ import { M } from '@endo/patterns';
 import { TargetAllocationShape } from './type-guards.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 
-export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
-  M.splitRecord({
-    policyVersion: M.number(),
-    rebalanceCount: M.number(),
-  });
-
-export const PortfolioDelegatedRebalanceParamsShape: TypedPattern<PortfolioDelegatedRebalanceParams> =
-  M.splitRecord(
-    { syncState: PortfolioSyncStateShape },
-    { agentMemo: PortfolioFlowAgentMemoShape },
-    {},
-  );
-
-export const PortfolioDelegatedClaimRewardsParamsShape: TypedPattern<PortfolioDelegatedClaimRewardsParams> =
-  M.splitRecord(
-    { syncState: PortfolioSyncStateShape },
-    { agentMemo: PortfolioFlowAgentMemoShape },
-    {},
-  );
-
+// TODO(#12011): move to `@agoric/portfolio-api` alongside PortfolioSyncStateShape /
+// PortfolioDelegatedRebalanceParamsShape / PortfolioDelegatedClaimRewardsParamsShape
+// once TargetAllocationShape's dependency on contract-local pool/protocol
+// data (PoolPlaces et al.) is resolved.
 export const PortfolioDelegatedSetTargetAllocationParamsShape: TypedPattern<PortfolioDelegatedSetTargetAllocationParams> =
   M.splitRecord(
     {

@@ -11,6 +11,9 @@ import type {
   LocalChainAccountRef,
   PortfolioAgentKey,
   InterChainAccountRef,
+  PortfolioDelegatedClaimRewardsParams,
+  PortfolioDelegatedRebalanceParams,
+  PortfolioSyncState,
   WithdrawToChainRef,
 } from './types.js';
 
@@ -121,3 +124,23 @@ export const PortfolioAgentKeyShape: TypedPattern<PortfolioAgentKey> =
 export const PortfolioFlowAgentMemoShape: TypedPattern<string> = M.string({
   stringLengthLimit: 64,
 });
+
+export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
+  M.splitRecord({
+    policyVersion: M.number(),
+    rebalanceCount: M.number(),
+  });
+
+export const PortfolioDelegatedRebalanceParamsShape: TypedPattern<PortfolioDelegatedRebalanceParams> =
+  M.splitRecord(
+    { syncState: PortfolioSyncStateShape },
+    { agentMemo: PortfolioFlowAgentMemoShape },
+    {},
+  );
+
+export const PortfolioDelegatedClaimRewardsParamsShape: TypedPattern<PortfolioDelegatedClaimRewardsParams> =
+  M.splitRecord(
+    { syncState: PortfolioSyncStateShape },
+    { agentMemo: PortfolioFlowAgentMemoShape },
+    {},
+  );
