@@ -49,10 +49,7 @@ import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
-import type {
-  PortfolioPermissionsEIP712,
-  TargetAllocation,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TimerService } from '@agoric/time';
 import { mustMatch, type ERemote } from '@agoric/internal';
 import { E } from '@endo/far';
@@ -408,21 +405,40 @@ export const makeEvmTrader = ({
         verifyingContract ?? contractRepresentative;
       assert(standaloneVerifyingContract, 'missing verifying contract');
       return harden({
+        /**
+         * Open a portfolio, optionally in the same signed (permit2-wrapped)
+         * message enabling auto-features and/or granting control to an
+         * automation agent — the combined form of plain open, open +
+         * {@link makeTrader.grant}, and open + auto-features-enable,
+         * matching the contract's `OpenPortfolio` operation with its
+         * optional `features`/`grantee` fields. Like `grant`, a requested
+         * `grantee` permission bag is validated against the current wire
+         * shape before signing.
+         */
         async openPortfolio(
           allocations: TargetAllocation[],
           depositAmount: bigint,
-          features?: Required<PortfolioAutoFeatures>,
+          {
+            features,
+            grantee,
+          }: {
+            features?: Required<PortfolioAutoFeatures>;
+            grantee?: {
+              address: Bech32Address;
+              permissions: PortfolioPermissions;
+            };
+          } = {},
         ) {
           assert(contractRepresentative, 'missing contract representative');
-          const witness = features
-            ? (getYmaxWitness('OpenPortfolioWithAutoFeatures', {
-                allocations,
-                features,
-              }) as unknown as ReturnType<
-                // getPermitWitnessTransferFromData is not a fan of witness union types
-                typeof getYmaxWitness<'OpenPortfolio'>
-              >)
-            : getYmaxWitness('OpenPortfolio', { allocations });
+          const toGranteePayload = (g: NonNullable<typeof grantee>) => {
+            mustMatch(g.permissions, PortfolioPermissionsEIP712Shape);
+            return { address: g.address, permissions: g.permissions };
+          };
+          const witness = getYmaxWitness('OpenPortfolio', {
+            allocations,
+            ...(features && { features }),
+            ...(grantee && { grantee: toGranteePayload(grantee) }),
+          });
           const deadline = await getDeadline();
           const permitMessage = getPermitWitnessTransferFromData(
             {
@@ -439,63 +455,6 @@ export const makeEvmTrader = ({
             witness,
           );
 
-          const expectedNonce = nonce;
-          await submitMessage(permitMessage);
-          const result = (await getMessageResult(
-            expectedNonce,
-            deadline,
-          )) as string;
-          const parsedId = Number(result.replace(/^portfolio/, ''));
-          Number.isInteger(parsedId) ||
-            assert.fail('invalid portfolio id result');
-          const storagePath = await updatePortfolioPath(parsedId);
-          return harden({ storagePath, portfolioId: parsedId });
-        },
-        /**
-         * Open a portfolio AND grant control to an automation agent in a
-         * single signed (permit2-wrapped) message — the combined form of
-         * {@link openPortfolio} + {@link grant}, matching the contract's
-         * `OpenPortfolioWithGrant` operation. Like `grant`, the requested
-         * permission bag is validated against the current wire shape before
-         * signing.
-         */
-        async openPortfolioWithGrant(
-          allocations: TargetAllocation[],
-          depositAmount: bigint,
-          granteeAddress: Bech32Address,
-          permissions: PortfolioPermissions,
-        ) {
-          assert(contractRepresentative, 'missing contract representative');
-          mustMatch(
-            harden({ ...permissions }),
-            PortfolioPermissionsEIP712Shape,
-          );
-          const witness = getYmaxWitness('OpenPortfolioWithGrant', {
-            allocations,
-            grantee: {
-              address: granteeAddress,
-              // validated against PortfolioPermissionsEIP712Shape just above
-              permissions: permissions as PortfolioPermissionsEIP712,
-            },
-          }) as unknown as ReturnType<
-            // getPermitWitnessTransferFromData is not a fan of witness union types
-            typeof getYmaxWitness<'OpenPortfolio'>
-          >;
-          const deadline = await getDeadline();
-          const permitMessage = getPermitWitnessTransferFromData(
-            {
-              permitted: {
-                token: usdcToken,
-                amount: depositAmount,
-              },
-              spender: contractRepresentative,
-              nonce: (nonce += 1n),
-              deadline,
-            },
-            permit2Address,
-            chainId,
-            witness,
-          );
           const expectedNonce = nonce;
           await submitMessage(permitMessage);
           const result = (await getMessageResult(

@@ -210,6 +210,50 @@ test('getYmaxWitness for OpenPortfolio', t => {
   t.deepEqual(witness.witness, { allocations });
 });
 
+test('getYmaxWitness for OpenPortfolio with a grantee nests grantee fields, drops unused optional features', t => {
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 10000n },
+  ];
+  const grantee = {
+    address: 'agoric1exampleagentaddress',
+    permissions: { allocation: true, rebalance: false },
+  };
+
+  const witness = getYmaxWitness('OpenPortfolio', { allocations, grantee });
+
+  // `features` is optional and unused here, so it's dropped from the type,
+  // and `PortfolioAutoFeatures` is no longer reachable/included either.
+  t.deepEqual(witness.witnessTypes.YmaxV1OpenPortfolio, [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'grantee', type: 'DelegationGrantee' },
+  ]);
+  t.deepEqual(witness.witnessTypes.DelegationGrantee, [
+    { name: 'address', type: 'string' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+  ]);
+  t.falsy(witness.witnessTypes.PortfolioAutoFeatures);
+  t.deepEqual(witness.witness, { allocations, grantee });
+});
+
+test('getYmaxWitness for OpenPortfolio with auto-features, drops unused optional grantee', t => {
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 10000n },
+  ];
+  const features = { rebalance: true };
+
+  const witness = getYmaxWitness('OpenPortfolio', { allocations, features });
+
+  t.deepEqual(witness.witnessTypes.YmaxV1OpenPortfolio, [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'features', type: 'PortfolioAutoFeatures' },
+  ]);
+  t.deepEqual(witness.witnessTypes.PortfolioAutoFeatures, [
+    { name: 'rebalance', type: 'bool' },
+  ]);
+  t.falsy(witness.witnessTypes.DelegationGrantee);
+  t.deepEqual(witness.witness, { allocations, features });
+});
+
 test('getYmaxWitness for OpenPortfolioWithGrant nests grantee fields', t => {
   const allocations: TargetAllocation[] = [
     { instrument: 'Aave_Arbitrum', portion: 10000n },

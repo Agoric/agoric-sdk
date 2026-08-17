@@ -13,9 +13,9 @@ import type {
   isHex,
   recoverTypedDataAddress,
   RecoverTypedDataAddressParameters,
-  validateTypedData,
 } from 'viem/utils';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
+import { normalizeAndValidateEIP712Data } from '@agoric/orchestration/src/utils/viem-utils/eip712-normalize.ts';
 import type {
   encodeType,
   WithSignature,
@@ -82,7 +82,6 @@ export const makeEVMHandlerUtils = (viemUtils: {
   isHex: typeof isHex;
   hashStruct: typeof hashStruct;
   recoverTypedDataAddress: typeof recoverTypedDataAddress;
-  validateTypedData: typeof validateTypedData;
   encodeType: typeof encodeType;
   getTypesForEIP712Domain: typeof getTypesForEIP712Domain;
 }) => {
@@ -90,21 +89,19 @@ export const makeEVMHandlerUtils = (viemUtils: {
     isHex,
     hashStruct,
     recoverTypedDataAddress,
-    validateTypedData,
     encodeType,
     getTypesForEIP712Domain,
   } = viemUtils;
 
-  for (const util of [
+  for (const [utilName, util] of Object.entries({
     isHex,
     hashStruct,
     recoverTypedDataAddress,
-    validateTypedData,
     encodeType,
     getTypesForEIP712Domain,
-  ]) {
+  })) {
     if (typeof util !== 'function') {
-      throw new Error(`Expected viemUtils.${util} to be a function`);
+      throw new Error(`Expected viemUtils.${utilName} to be a function`);
     }
   }
 
@@ -114,10 +111,19 @@ export const makeEVMHandlerUtils = (viemUtils: {
 
   /**
    * Extract operation type name and data from an EIP-712 standalone Ymax typed data.
-   * Validates that the message data satisfies the expected types for the operation,
-   * but does not validate that the supplied data types exactly match the expected
-   * types. In particular the message data may be a superset of the expected types,
-   * and extra fields are included in the returned extracted details.
+   *
+   * By the time this is called, `data.message` has already been through the
+   * "reject anything unsigned" normalize pass (see
+   * `extractOperationDetailsFromDataWithAddress`), so any field here was
+   * actually part of what was signed. This function normalizes *and
+   * validates* it a second time against the types this (possibly older)
+   * version of the code expects for the operation: any field the signer's
+   * client signed but this version doesn't know about is dropped (not
+   * rejected -- it was signed, just not supported yet), and any `optional`
+   * field is resolved based on whether it's actually present in the
+   * message. The returned `data` is exactly the normalized/expected shape,
+   * never a superset of it, and is guaranteed to satisfy the expected types
+   * (required fields present, values of the right shape/range).
    *
    * Assumes the domain has the expected shape of a Ymax domain.
    *
@@ -145,24 +151,40 @@ export const makeEVMHandlerUtils = (viemUtils: {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { nonce, deadline, ..._operationData } =
       standaloneData.message as YmaxStandaloneOperationData['message'];
-    const operationData = _operationData as YmaxOperationType<T>;
+    const operationData = _operationData as unknown as YmaxOperationType<T>;
     const operation = standaloneData.primaryType;
-    // @ts-expect-error inference issue
-    validateTypedData({
-      types: getYmaxOperationTypes(operation),
-      message: operationData,
-      primaryType: operation,
-    });
-    return { operation, domain, data: operationData };
+    const { message: normalizedData } = normalizeAndValidateEIP712Data(
+      {
+        message: operationData as Record<string, unknown>,
+        types: getYmaxOperationTypes(operation),
+        primaryType: operation,
+      },
+      { onExtraField: 'drop' },
+    );
+    return {
+      operation,
+      domain,
+      data: normalizedData as YmaxOperationType<T>,
+    };
   };
 
   /**
    * Extract operation type name and data from an EIP-712 Permit2 witness typed data.
    * Validates that the supplied types exactly match types of a permit2 message.
-   * Validates that the witness data satisfies the expected types for the operation,
-   * but does not validate that the supplied data types exactly match the expected
-   * types. In particular the witness data may be a superset of the expected types,
-   * and extra fields are included in the returned witness data.
+   *
+   * By the time this is called, `data.message`/`data.types` have already been
+   * through the "reject anything unsigned" normalize pass (see
+   * `extractOperationDetailsFromDataWithAddress`), so any field in the
+   * witness data here was actually part of what was signed. This function
+   * normalizes *and validates* it a second time against the types this
+   * (possibly older) version of the code expects for the operation: any
+   * field the signer's client signed but this version doesn't know about is
+   * dropped (not rejected -- it was signed, just not supported yet), and
+   * any `optional` field is resolved based on whether it's actually present
+   * in the witness data. The returned `data` is exactly the
+   * normalized/expected shape, never a superset of it, and is guaranteed to
+   * satisfy the expected types (required fields present, values of the
+   * right shape/range).
    *
    * Assumes the message has already been validated against the types from the data.
    * Assumes the domain has the expected shape of a permit2 domain.
@@ -183,23 +205,24 @@ export const makeEVMHandlerUtils = (viemUtils: {
     const witnessField = extractWitnessFieldFromTypes(permitData.types);
     const witnessData = permitData.message[
       witnessField.name
-    ] as YmaxOperationType<T>;
+    ] as unknown as YmaxOperationType<T>;
     const { primaryType, domain } = splitWitnessFieldType(witnessField.type);
     const chainId = BigInt(data.domain.chainId);
     const operation = primaryType as T;
 
-    // Validates the witness data satisfies the expected types for the operation
-    // @ts-expect-error inference issue
-    validateTypedData({
-      types: getYmaxOperationTypes(operation),
-      message: witnessData,
-      primaryType: operation,
-    });
+    const { message: normalizedWitnessData } = normalizeAndValidateEIP712Data(
+      {
+        message: witnessData as Record<string, unknown>,
+        types: getYmaxOperationTypes(operation),
+        primaryType: operation,
+      },
+      { onExtraField: 'drop' },
+    );
     const spender = permitData.message.spender;
     return {
       operation,
       domain: { ...domain, chainId, verifyingContract: spender },
-      data: witnessData,
+      data: normalizedWitnessData as YmaxOperationType<T>,
     };
   };
 
@@ -306,6 +329,23 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * Validates the domain of the typed data, and optionally the verifying
    * contract and spender against the provided contract addresses.
    *
+   * Before anything else, the message is normalized *and validated* against
+   * its own (untrusted) wire-supplied `types`, rejecting any field not
+   * declared there: such a field was never part of the signed struct, so it
+   * never affected the EIP-712 hash and could have been added after signing
+   * without invalidating the signature. This is the AGO-874 defense. The
+   * same function also validates that the message actually satisfies those
+   * wire-supplied types (required fields present, values in range/shape),
+   * recursing correctly through arrays -- something real EIP-712 tooling
+   * (e.g. viem's `validateTypedData`) does not do. The domain is validated
+   * the same way, separately (its values live outside `message`).
+   * A *different*, later normalize pass (in
+   * `extractOperationDetailsFromStandaloneData` /
+   * `extractOperationDetailsFromPermit2WitnessData`) drops -- rather than
+   * rejects -- fields that were genuinely signed but aren't supported by
+   * this version's generated operation types; those are legitimate,
+   * merely unsupported (yet), not a security concern.
+   *
    * @param data The operation data with an `address` field of the signing owner.
    * @param contractAddresses Optionally, a set of valid contract addresses to validate against
    * @param contractAddresses.permit2 If provided, validates a permit2 based message's verifying contract
@@ -331,24 +371,42 @@ export const makeEVMHandlerUtils = (viemUtils: {
       | WithSignature<YmaxPermitWitnessTransferFromData>
       | YmaxStandaloneOperationData
     ) & { address: Address };
-    const { nonce, deadline } = otherData.message;
 
     if (!domain) {
       throw new Error(`Missing domain in typed data`);
     }
-    validateTypedData({
+
+    // Reject anything not part of the actual signed structure (see doc above).
+    const { message: signedMessage, types: signedTypes } =
+      normalizeAndValidateEIP712Data(
+        {
+          message: otherData.message as Record<string, unknown>,
+          types: otherData.types,
+          primaryType: otherData.primaryType,
+        },
+        { onExtraField: 'throw' },
+      );
+    const signedData = {
       ...otherData,
-      // @ts-expect-error inference issue
-      domain,
-      types: {
-        ...otherData.types,
-        // Do not trust the type definitions coming from the message for the domain
-        EIP712Domain: getTypesForEIP712Domain({ domain }),
-      },
+      message: signedMessage,
+      types: signedTypes,
+    };
+    const { nonce, deadline } =
+      signedMessage as YmaxStandaloneOperationData['message'];
+
+    // Do not trust type definitions coming from the message for the domain;
+    // derive them from `domain`'s own shape instead, then validate `domain`
+    // against that (e.g. `chainId` range, `verifyingContract` shape).
+    // Domain-specific checks (name/version/contract match) happen later, in
+    // `validateYmaxDomain`/`validatePermit2Domain`.
+    normalizeAndValidateEIP712Data({
+      message: domain as Record<string, unknown>,
+      types: { EIP712Domain: getTypesForEIP712Domain({ domain }) },
+      primaryType: 'EIP712Domain',
     });
 
     if (isPermit2MessageType(data.primaryType)) {
-      const { signature, ...permit2Data } = otherData as unknown as Omit<
+      const { signature, ...permit2Data } = signedData as unknown as Omit<
         WithSignature<YmaxPermitWitnessTransferFromData<T>>,
         'domain'
       >;
@@ -383,7 +441,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
         deadline,
       };
     } else {
-      const standaloneData = otherData as unknown as Omit<
+      const standaloneData = signedData as unknown as Omit<
         YmaxStandaloneOperationData<T>,
         'domain'
       >;
