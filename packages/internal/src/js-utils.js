@@ -54,6 +54,25 @@ Object.freeze(logLevels);
 /** @typedef {Pick<Console, LogLevel>} LimitedConsole */
 
 /**
+ * Compare two same-type values using built-in operators.
+ * All zeros are placed in an equivalence class that ignores their sign, all
+ * NaNs are placed in an equivalence class after all other numbers, and strings
+ * are compared lexicographically by UTF-16 code unit.
+ *
+ * @type {((a: bigint, b: bigint) => -1 | 0 | 1) &
+ *   ((a: number, b: number) => -1 | 0 | 1) &
+ *   ((a: string, b: string) => -1 | 0 | 1)
+ * }
+ */
+export const naiveCompare = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return /** @type {-1 | 0 | 1} */ (
+    (Number.isNaN(a) ? 1 : 0) - (Number.isNaN(b) ? 1 : 0)
+  );
+};
+
+/**
  * Deep-copy a value by round-tripping it through JSON (which drops
  * function/symbol/undefined values and properties that are non-enumerable
  * and/or symbol-keyed, and rejects bigint values).
