@@ -861,6 +861,7 @@ __metadata:
     "@agoric/vat-data": "workspace:*"
     "@agoric/vats": "workspace:*"
     "@agoric/vow": "workspace:*"
+    "@agoric/xsnap": "workspace:*"
     "@agoric/zoe": "workspace:*"
     "@agoric/zone": "workspace:*"
     "@chain-registry/client": "npm:^1.53.194"
@@ -886,6 +887,7 @@ __metadata:
     c8: "npm:^10.1.3"
     esbuild: "npm:^0.25.2"
     prettier: "npm:^3.7.4"
+    tmp: "npm:^0.2.1"
     ts-blank-space: "npm:^0.6.2"
     tsup: "npm:^8.5.0"
     viem: "npm:^2.31.0"
@@ -1448,7 +1450,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/xsnap@workspace:packages/xsnap":
+"@agoric/xsnap@workspace:*, @agoric/xsnap@workspace:packages/xsnap":
   version: 0.0.0-use.local
   resolution: "@agoric/xsnap@workspace:packages/xsnap"
   dependencies:
