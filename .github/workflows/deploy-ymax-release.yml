@@ -19,7 +19,7 @@ on:
         description: Release tag to create or use
         required: true
         type: string
-        default: v0.3.YYMM-betaN
+        default: ymax-v0.3.YYMM-betaN
       branch:
         description: Branch to build for ymax0-devnet
         required: false
