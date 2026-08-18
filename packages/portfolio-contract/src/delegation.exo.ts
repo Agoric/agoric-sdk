@@ -9,11 +9,14 @@
 import type { TypedPattern } from '@agoric/internal';
 import {
   PortfolioAutoFeaturesExtShape,
+  PortfolioDelegatedClaimRewardsParamsShape,
+  PortfolioDelegatedRebalanceParamsShape,
   PortfolioFlowAgentMemoShape,
+  PortfolioSyncStateShape,
   type FlowKey,
+  type PortfolioDelegatedClaimRewardsParams,
   type PortfolioDelegatedRebalanceParams,
   type PortfolioDelegatedSetTargetAllocationParams,
-  type PortfolioSyncState,
 } from '@agoric/portfolio-api';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
@@ -22,19 +25,10 @@ import { M } from '@endo/patterns';
 import { TargetAllocationShape } from './type-guards.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 
-export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
-  M.splitRecord({
-    policyVersion: M.number(),
-    rebalanceCount: M.number(),
-  });
-
-export const PortfolioDelegatedRebalanceParamsShape: TypedPattern<PortfolioDelegatedRebalanceParams> =
-  M.splitRecord(
-    { syncState: PortfolioSyncStateShape },
-    { agentMemo: PortfolioFlowAgentMemoShape },
-    {},
-  );
-
+// TODO(#12011): move to `@agoric/portfolio-api` alongside PortfolioSyncStateShape /
+// PortfolioDelegatedRebalanceParamsShape / PortfolioDelegatedClaimRewardsParamsShape
+// once TargetAllocationShape's dependency on contract-local pool/protocol
+// data (PoolPlaces et al.) is resolved.
 export const PortfolioDelegatedSetTargetAllocationParamsShape: TypedPattern<PortfolioDelegatedSetTargetAllocationParams> =
   M.splitRecord(
     {
@@ -79,6 +73,9 @@ const DelegationReaderI = M.interface('PortfolioDelegationReader', {
 const DelegationClientI = M.interface('PortfolioDelegationClient', {
   getReader: M.call().returns(M.remotable('PortfolioDelegationReader')),
   rebalance: M.call(PortfolioDelegatedRebalanceParamsShape).returns(M.string()),
+  claimRewards: M.call(PortfolioDelegatedClaimRewardsParamsShape).returns(
+    M.string(),
+  ),
   setTargetAllocation: M.call(
     PortfolioDelegatedSetTargetAllocationParamsShape,
   ).returns(M.string()),
@@ -122,6 +119,14 @@ export const preparePortfolioDelegationKit = (
         rebalance(params: PortfolioDelegatedRebalanceParams): FlowKey {
           const { portfolioAccess, agentId } = this.state;
           return portfolioAccess.submitRebalance(
+            this.facets.client,
+            agentId,
+            params,
+          );
+        },
+        claimRewards(params: PortfolioDelegatedClaimRewardsParams): FlowKey {
+          const { portfolioAccess, agentId } = this.state;
+          return portfolioAccess.submitClaimRewards(
             this.facets.client,
             agentId,
             params,

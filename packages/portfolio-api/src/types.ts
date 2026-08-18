@@ -133,6 +133,11 @@ export type FlowDetail =
       type: 'rebalance'; // aka simpleRebalance
       agent?: PortfolioAgentKey;
       agentMemo?: string;
+    }
+  | {
+      type: 'claimRewards';
+      agent?: PortfolioAgentKey;
+      agentMemo?: string;
     };
 
 /** linked list of concurrent failures, including dependencies */
@@ -445,6 +450,11 @@ export type PortfolioSyncState = Pick<
 >;
 
 export type PortfolioDelegatedRebalanceParams = {
+  syncState: PortfolioSyncState;
+  agentMemo?: string;
+};
+
+export type PortfolioDelegatedClaimRewardsParams = {
   syncState: PortfolioSyncState;
   agentMemo?: string;
 };

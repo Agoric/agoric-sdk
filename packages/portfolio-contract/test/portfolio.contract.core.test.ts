@@ -350,6 +350,9 @@ test('claim rewards on Aave position successfully', async t => {
   const { storagePath } = result.publicSubscribers.portfolio;
   const messagesBefore = common.utils.inspectLocalBridge();
 
+  // TODO(AGO-740): once contract-level test infra exists for the delegated
+  // claimRewards planner method, drive this claim through planner.claimRewards
+  // instead of embedding it in a user rebalance offer.
   const rebalanceP = trader1.rebalance(
     t,
     { give: { Deposit: amount }, want: {} },

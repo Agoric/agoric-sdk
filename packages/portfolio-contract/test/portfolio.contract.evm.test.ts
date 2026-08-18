@@ -417,6 +417,7 @@ test('open portfolio with auto-features', async t => {
     allocations: [{ instrument: 'Compound_Arbitrum', portion: 10000n }],
     features: {
       rebalance: true,
+      claimRewards: false,
     },
   };
 

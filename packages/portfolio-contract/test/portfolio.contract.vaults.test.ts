@@ -290,6 +290,9 @@ test('claim rewards on Morpho ERC4626 position successfully', async t => {
     },
   };
 
+  // TODO(AGO-740): once contract-level test infra exists for the delegated
+  // claimRewards planner method, drive this claim through planner.claimRewards
+  // instead of embedding it in a user rebalance offer.
   const rebalanceP = trader1.rebalance(
     t,
     { give: {}, want: {} },

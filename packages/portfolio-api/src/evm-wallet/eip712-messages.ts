@@ -164,13 +164,22 @@ const OperationSubTypes = {
   PortfolioPermissions: [
     { name: 'allocation', type: 'bool' },
     { name: 'rebalance', type: 'bool', optional: true },
+    { name: 'claimRewards', type: 'bool', optional: true },
   ],
   DelegationGrantee: [
     { name: 'address', type: 'string' },
     { name: 'permissions', type: 'PortfolioPermissions' },
   ],
-  /** @see {@link PortfolioAutoFeatures} */
-  PortfolioAutoFeatures: [{ name: 'rebalance', type: 'bool' }],
+  /**
+   * @see {@link PortfolioAutoFeatures}
+   *
+   * Both fields are `optional` so a `SetAutoFeatures` message can flip a
+   * single feature while leaving the other at its current on-chain value.
+   */
+  PortfolioAutoFeatures: [
+    { name: 'rebalance', type: 'bool', optional: true },
+    { name: 'claimRewards', type: 'bool', optional: true },
+  ],
 } as const satisfies Record<string, readonly TypedDataParameter[]>;
 
 /**

@@ -1348,6 +1348,95 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
   });
 });
 
+test('setAutoFeatures grants planner delegation for claimRewards alone', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const {
+    makePortfolioKit,
+    getCallLog,
+    getPortfolioStatus,
+    getPortfolioAgents,
+  } = makeTestSetup({
+    storage,
+  });
+
+  const { manager } = makePortfolioKit({ portfolioId: 23 });
+
+  await manager.setAutoFeatures({ claimRewards: true });
+  t.like(getCallLog(), [
+    [
+      'deliverDelegation',
+      ,
+      23,
+      1,
+      PortfolioPlannerAgent,
+      { rebalance: false, claimRewards: true },
+    ],
+  ]);
+  t.like(await getPortfolioStatus!(23), {
+    enabledAutoFeatures: { claimRewards: true },
+  });
+  t.like(await getPortfolioAgents!(23), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: false, claimRewards: true },
+      state: 'active',
+    },
+  });
+
+  await manager.setAutoFeatures({ claimRewards: false });
+  t.is(getCallLog().length, 1, 'active planner delegation is updated in place');
+  t.like(await getPortfolioAgents!(23), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: false, claimRewards: false },
+      state: 'active',
+    },
+  });
+});
+
+test('setAutoFeatures omitting a feature leaves it at its current setting', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getPortfolioStatus, getPortfolioAgents } =
+    makeTestSetup({
+      storage,
+    });
+
+  const { manager } = makePortfolioKit({ portfolioId: 25 });
+
+  await manager.setAutoFeatures({ rebalance: true });
+  t.like(await getPortfolioStatus!(25), {
+    enabledAutoFeatures: { rebalance: true },
+  });
+
+  // Enabling claimRewards alone (omitting rebalance) must not disable the
+  // already-enabled rebalance feature/permission.
+  await manager.setAutoFeatures({ claimRewards: true });
+  t.like(await getPortfolioStatus!(25), {
+    enabledAutoFeatures: { rebalance: true, claimRewards: true },
+  });
+  t.like(await getPortfolioAgents!(25), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: true, claimRewards: true },
+      state: 'active',
+    },
+  });
+
+  // Symmetrically, disabling rebalance alone (omitting claimRewards) must
+  // not disable the already-enabled claimRewards feature/permission.
+  await manager.setAutoFeatures({ rebalance: false });
+  t.like(await getPortfolioStatus!(25), {
+    enabledAutoFeatures: { rebalance: false, claimRewards: true },
+  });
+  t.like(await getPortfolioAgents!(25), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: false, claimRewards: true },
+      state: 'active',
+    },
+  });
+});
+
 test('evmHandler setAutoFeatures returns the resulting auto-features settings', async t => {
   const ownerAddress = '0x6767676767676767676767676767676767676767' as const;
   const { makePortfolioKit, vowTools } = makeTestSetup();

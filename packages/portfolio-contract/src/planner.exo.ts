@@ -3,19 +3,19 @@
  * @see {@link preparePlanner}
  */
 import { makeTracer, type TypedPattern } from '@agoric/internal';
-import type {
-  FlowKey,
-  FundsFlowPlan,
-  PortfolioDelegatedRebalanceParams,
+import {
+  PortfolioDelegatedClaimRewardsParamsShape,
+  PortfolioDelegatedRebalanceParamsShape,
+  type FlowKey,
+  type FundsFlowPlan,
+  type PortfolioDelegatedClaimRewardsParams,
+  type PortfolioDelegatedRebalanceParams,
 } from '@agoric/portfolio-api';
 import { isInstrumentId } from '@agoric/portfolio-api/src/type-guards.js';
 import type { Zone } from '@agoric/zone';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
-import {
-  PortfolioDelegatedRebalanceParamsShape,
-  type PortfolioDelegationClient,
-} from './delegation.exo.ts';
+import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
@@ -95,6 +95,11 @@ export const preparePlanner = (
       PortfolioDelegatedRebalanceParamsShape,
       planCompatShape,
     ).returns(FlowKeyShape),
+    claimRewards: M.call(
+      portfolioIdShape,
+      PortfolioDelegatedClaimRewardsParamsShape,
+      planCompatShape,
+    ).returns(FlowKeyShape),
   });
 
   return zone.exoClass(
@@ -160,6 +165,42 @@ export const preparePlanner = (
         portfolioPlanner.submitVersion(
           delegatedRebalanceParams.syncState.policyVersion,
           delegatedRebalanceParams.syncState.rebalanceCount,
+        );
+        portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
+        return flowKey;
+      },
+      claimRewards(
+        portfolioId: number,
+        delegatedClaimRewardsParams: PortfolioDelegatedClaimRewardsParams,
+        planOrSteps: FundsFlowPlan | MovementDesc[],
+      ): FlowKey {
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
+        const delegationClient = getPlannerDelegation(portfolioPlanner);
+        assert(
+          delegationClient && delegationClient.getReader().isActive(),
+          `planner delegation must be active for portfolio ${portfolioId}`,
+        );
+
+        const autoFeatures = delegationClient.getReader().getAutoFeatures();
+        assert(
+          autoFeatures?.claimRewards,
+          `portfolio ${portfolioId} auto-feature "claimRewards" must be enabled`,
+        );
+
+        // The flow created by claimRewards is guaranteed to have its plan
+        // sync kit fully ready.
+        const flowKey = delegationClient.claimRewards(
+          delegatedClaimRewardsParams,
+        );
+        const flowId = flowIdFromKey(flowKey);
+        trace.sub(`portfolio${portfolioId}`).sub(flowKey)(
+          'TODO(#11782): vet delegated plan',
+          planOrSteps,
+        );
+        vetNoNewPositions(portfolioPlanner, planOrSteps);
+        portfolioPlanner.submitVersion(
+          delegatedClaimRewardsParams.syncState.policyVersion,
+          delegatedClaimRewardsParams.syncState.rebalanceCount,
         );
         portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
         return flowKey;
