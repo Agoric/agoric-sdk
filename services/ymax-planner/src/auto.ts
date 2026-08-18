@@ -362,7 +362,7 @@ export const maybeAutoClaim = async (
   powers: AutoPowers,
 ): Promise<string | undefined> => {
   const { enabledAutoFeatures } = portfolioStatus;
-  if (!enabledAutoFeatures?.claim) return undefined;
+  if (!enabledAutoFeatures?.claimRewards) return undefined;
 
   const {
     autoClaimConfig,
@@ -392,7 +392,7 @@ export const maybeAutoClaim = async (
 
   const logContext = {
     path,
-    flowDetail: { type: 'claim-rewards' as const },
+    flowDetail: { type: 'claimRewards' as const },
     tokenBalances,
     policyVersion,
     rebalanceCount,
@@ -559,7 +559,7 @@ export const maybeAutoClaim = async (
     const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
     const agentMemo = makeNonce().trim();
     agentMemo || Fail`makeNonce returned an empty agentMemo`;
-    const { tx, id } = await planReceiver.rebalance(
+    const { tx, id } = await planReceiver.claimRewards(
       portfolioId,
       { syncState, agentMemo },
       plan,
@@ -579,7 +579,7 @@ export const maybeAutoClaim = async (
     }
     console.log(
       logPrefix,
-      'claim',
+      'claimRewards',
       inspectForStdout({ ...logContext, plan }),
       tx,
     );

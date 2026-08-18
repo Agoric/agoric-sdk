@@ -579,7 +579,7 @@ export const processPortfolioEvents = async (
     status: StatusFor['portfolio'],
   ): boolean => {
     const { enabledAutoFeatures } = status;
-    if (!exchangeRates || !gasCosts || !enabledAutoFeatures?.claim) {
+    if (!exchangeRates || !gasCosts || !enabledAutoFeatures?.claimRewards) {
       return false;
     }
 
@@ -1070,7 +1070,7 @@ export const startEngine = async (
         [...portfolioRecordForKey],
         ([portfolioKey, record]) => {
           const auto = record.status.enabledAutoFeatures;
-          return (auto?.claim || auto?.rebalance) && portfolioKey;
+          return (auto?.claimRewards || auto?.rebalance) && portfolioKey;
         },
       );
       const summaries = await getPortfolioSummaries?.(autoPortfolios);
