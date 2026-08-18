@@ -16,6 +16,16 @@ export const ONEINCH_API_BASE_URL = 'https://api.1inch.dev';
 /**
  * @see https://business.1inch.com/portal/documentation/apis/swap/classic-swap/methods/v6.1/1/swap/method/get
  */
+type OneInchTokenInfo = {
+  address: EvmAddress;
+  symbol: string;
+  name: string;
+  decimals: number;
+};
+
+/**
+ * @see https://business.1inch.com/portal/documentation/apis/swap/classic-swap/methods/v6.1/1/swap/method/get
+ */
 export type OneInchSwapAPI = {
   RequestParameters: {
     /** EIP155 chain ID. */
@@ -44,12 +54,16 @@ export type OneInchSwapAPI = {
     includeGas?: boolean;
   };
   Response: {
+    srcToken: OneInchTokenInfo;
+    dstToken: OneInchTokenInfo;
     /** Output amount, in RequestParameters `dst` base units. */
     dstAmount: `${bigint}`;
     tx: {
       from: EvmAddress;
       to: EvmAddress;
       data: `0x${string}`;
+      /** Input amount, in RequestParameters `src` base units. */
+      value: `${bigint}`;
       /** Estimated units of gas. */
       gas?: number;
     };
@@ -72,13 +86,35 @@ export const fetchOneInchSwapInfo = async (
   const resp = await client
     .get(`swap/v6.1/${params.chainId}`, { searchParams: params })
     .json<OneInchSwapAPI['Response']>();
-  const { data: txData, gas } = resp.tx;
+  const { from: txFrom, data: txData, gas } = resp.tx;
   const { functionName, args } = decodeFunctionData({
     abi: oneInchRouterABI,
     data: txData,
   });
+
   functionName === 'swap' ||
     Fail`1inch swap returned unexpected function call ${functionName}`;
   const [executor, desc, data] = args;
+  const { srcToken, dstToken, dstReceiver, amount, minReturnAmount } = desc;
+  const errors = [
+    txFrom.toLowerCase() !== params.origin.toLowerCase() &&
+      `from address should have matched ${params.origin} but was ${txFrom}`,
+    srcToken.toLowerCase() !== params.src.toLowerCase() &&
+      `input token should have matched ${params.src} but was ${srcToken}`,
+    dstToken.toLowerCase() !== params.dst.toLowerCase() &&
+      `output token should have matched ${params.dst} but was ${dstToken}`,
+    dstReceiver.toLowerCase() !==
+      (params.receiver || params.from).toLowerCase() &&
+      `output token recipient should have matched ${params.receiver || params.from} but was ${dstReceiver}`,
+    BigInt(amount) !== BigInt(params.amount) &&
+      `input token amount should have matched ${params.amount} but was ${amount}`,
+    params.minReturn !== undefined &&
+      BigInt(minReturnAmount) !== BigInt(params.minReturn) &&
+      `output token minimum amount should have matched ${params.minReturn} but was ${minReturnAmount}`,
+  ].filter(err => !!err);
+  if (errors.length) {
+    throw AggregateError(errors, '1inch swap returned unexpected data');
+  }
+
   return { executor, desc, data, gas: gas ? BigInt(gas) : undefined };
 };
