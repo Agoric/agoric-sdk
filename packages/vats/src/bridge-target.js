@@ -1,4 +1,4 @@
-import { X, Fail, makeError } from '@endo/errors';
+import { X, Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
@@ -201,7 +201,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
           const { type, target: inboundTarget } = obj;
 
           type === inboundEventType ||
-            Fail`Invalid inbound event type ${type}; expected ${inboundEventType}`;
+            Fail`Invalid inbound event type ${q(type)}; expected ${q(inboundEventType)}`;
 
           const { onlyIfRegistered } = inboundTarget || {};
           const target = onlyIfRegistered || inboundTarget;
