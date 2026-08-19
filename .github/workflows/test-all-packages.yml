@@ -688,6 +688,14 @@ jobs:
         run: rm -rf packages/boot/test/cache/runutils/.ci-regenerated
       - name: Compute boot snapshot cache keys
         id: boot-snapshot-keys
+        env:
+          # Must match what `yarn ${{ steps.vars.outputs.test }}` below actually
+          # runs under: packages/boot's test:xs script sets this itself, and
+          # the fingerprint (via getSnapshotManagerType) depends on it. Left
+          # unset here, this step would always compute a 'local'-flavored key
+          # while the xs-worker test run always computes an 'xs-worker' one,
+          # guaranteeing every xs-engine cache lookup misses.
+          SWINGSET_WORKER_TYPE: ${{ matrix.engine == 'xs' && 'xs-worker' || '' }}
         run: |
           snapshot_keys="$(cd packages/boot && node --import ts-blank-space/register ./test/tools/create-runutils-snapshot.ts --cache-keys)"
           SNAPSHOT_KEYS="$snapshot_keys" BOOT_SNAPSHOT_CACHE_VERSION="$BOOT_SNAPSHOT_CACHE_VERSION" node <<'EOF' >> "$GITHUB_OUTPUT"
