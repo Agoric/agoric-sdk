@@ -8,7 +8,10 @@ import {
 } from '@agoric/synthetic-chain';
 import anyTest from 'ava';
 import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
-import { bundleId, ymax0ControlAddr as ymaxControlAddr } from '../consts.js';
+import {
+  ymax0BundleId,
+  ymax0ControlAddr as ymaxControlAddr,
+} from '../consts.js';
 import { redeemInvitation, submitYmaxControl } from '../ymax-util.js';
 import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 
@@ -77,7 +80,7 @@ test.before(async t => (t.context = await makeTestContext(t)));
 test.serial('null upgrade existing instance with args override', async t => {
   // Get contract control from wallet store and call upgrade directly
   const yc = ymaxControl;
-  await yc.upgrade({ bundleId, privateArgsOverrides });
+  await yc.upgrade({ bundleId: ymax0BundleId, privateArgsOverrides });
 
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
