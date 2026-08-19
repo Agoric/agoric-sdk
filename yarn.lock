@@ -5464,12 +5464,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/curves@npm:^1.1.0, @noble/curves@npm:^1.9.2, @noble/curves@npm:~1.9.0":
+"@noble/curves@npm:1.9.7":
   version: 1.9.7
   resolution: "@noble/curves@npm:1.9.7"
   dependencies:
     "@noble/hashes": "npm:1.8.0"
   checksum: 10c0/150014751ebe8ca06a8654ca2525108452ea9ee0be23430332769f06808cddabfe84f248b6dbf836916bc869c27c2092957eec62c7506d68a1ed0a624017c2a3
+  languageName: node
+  linkType: hard
+
+"@noble/curves@patch:@noble/curves@npm%3A1.9.7#~/.yarn/patches/@noble-curves-npm-1.9.7.patch":
+  version: 1.9.7
+  resolution: "@noble/curves@patch:@noble/curves@npm%3A1.9.7#~/.yarn/patches/@noble-curves-npm-1.9.7.patch::version=1.9.7&hash=d4ea46"
+  dependencies:
+    "@noble/hashes": "npm:1.8.0"
+  checksum: 10c0/807dfc2a89b1259c27e4d60cfe3f61982dfe802f1d68afc38c94ff990ac0103864bc69c8dbdac02e704300d7a698da8738f1e8b99edb1eb0451e11560c807e5a
   languageName: node
   linkType: hard
 
@@ -5480,6 +5489,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@noble/hashes@npm:1.5.0":
+  version: 1.5.0
+  resolution: "@noble/hashes@npm:1.5.0"
+  checksum: 10c0/1b46539695fbfe4477c0822d90c881a04d4fa2921c08c552375b444a48cac9930cb1ee68de0a3c7859e676554d0f3771999716606dc4d8f826e414c11692cdd9
+  languageName: node
+  linkType: hard
+
 "@noble/hashes@npm:1.8.0, @noble/hashes@npm:^1.2.0, @noble/hashes@npm:^1.3.1, @noble/hashes@npm:^1.8.0, @noble/hashes@npm:~1.8.0":
   version: 1.8.0
   resolution: "@noble/hashes@npm:1.8.0"
@@ -5487,10 +5503,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/hashes@npm:~1.5.0":
+"@noble/hashes@patch:@noble/hashes@npm%3A1.5.0#~/.yarn/patches/@noble-hashes-npm-1.5.0.patch":
   version: 1.5.0
-  resolution: "@noble/hashes@npm:1.5.0"
-  checksum: 10c0/1b46539695fbfe4477c0822d90c881a04d4fa2921c08c552375b444a48cac9930cb1ee68de0a3c7859e676554d0f3771999716606dc4d8f826e414c11692cdd9
+  resolution: "@noble/hashes@patch:@noble/hashes@npm%3A1.5.0#~/.yarn/patches/@noble-hashes-npm-1.5.0.patch::version=1.5.0&hash=f23fb2"
+  checksum: 10c0/b909f8ea1c9e3f64bca74a1c406037ec75372b05be6f9ba58dfbbbf7a91a8d7b5307e6e4567b479f3d61cc72372ba1dfed548e40129fe4e8b9f320913921578c
+  languageName: node
+  linkType: hard
+
+"@noble/hashes@patch:@noble/hashes@npm%3A1.8.0#~/.yarn/patches/@noble-hashes-npm-1.8.0.patch":
+  version: 1.8.0
+  resolution: "@noble/hashes@patch:@noble/hashes@npm%3A1.8.0#~/.yarn/patches/@noble-hashes-npm-1.8.0.patch::version=1.8.0&hash=95c00b"
+  checksum: 10c0/4978baba1b16a3fd84b7f955c1c2556698b366c48169ea85692e6fa1bb996d7adf9aceb0cc5515aecaad22202745ab5be8cce68fde9fdf4f3e2a702d73822b70
   languageName: node
   linkType: hard
 
@@ -18823,7 +18846,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"viem@npm:^2.31.0, viem@npm:^2.41.2":
+"viem@npm:2.41.2":
   version: 2.41.2
   resolution: "viem@npm:2.41.2"
   dependencies:
@@ -18841,6 +18864,27 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/9fb3fff84addaa073ea83dfa701ae8e3a4aa2bf90c27b34adb5f1e877450db0ba341a0a80dd7cd3422a4f80d27d1921ce6ad877ad5ec7f40d34310701634da54
+  languageName: node
+  linkType: hard
+
+"viem@patch:viem@npm%3A2.41.2#~/.yarn/patches/viem-npm-2.41.2.patch":
+  version: 2.41.2
+  resolution: "viem@patch:viem@npm%3A2.41.2#~/.yarn/patches/viem-npm-2.41.2.patch::version=2.41.2&hash=b9febf"
+  dependencies:
+    "@noble/curves": "npm:1.9.1"
+    "@noble/hashes": "npm:1.8.0"
+    "@scure/bip32": "npm:1.7.0"
+    "@scure/bip39": "npm:1.6.0"
+    abitype: "npm:1.1.0"
+    isows: "npm:1.0.7"
+    ox: "npm:0.9.6"
+    ws: "npm:8.18.3"
+  peerDependencies:
+    typescript: ">=5.0.4"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/13c5a8d50536eba6b521fb67bb6dc6331fcff5a1dbf4a6c3a42b998fb9fd3c8a09679eaef7ff7a97ff92bbe8a236e1510c6738723f18db6667f7e9b05d91c9ca
   languageName: node
   linkType: hard
 

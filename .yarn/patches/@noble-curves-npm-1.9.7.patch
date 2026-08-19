@@ -1,0 +1,26 @@
+diff --git a/abstract/hash-to-curve.js b/abstract/hash-to-curve.js
+index 113df8b2aa72605e269660e95ec3b599ab1e84a9..8f62fe669449b12413c856021d5b9593f7079821 100644
+--- a/abstract/hash-to-curve.js
++++ b/abstract/hash-to-curve.js
+@@ -16,7 +16,7 @@ function i2osp(value, length) {
+     anum(length);
+     if (value < 0 || value >= 1 << (8 * length))
+         throw new Error('invalid I2OSP input: ' + value);
+-    const res = Array.from({ length }).fill(0);
++    const res = new Array(length).fill(0);
+     for (let i = length - 1; i >= 0; i--) {
+         res[i] = value & 0xff;
+         value >>>= 8;
+diff --git a/esm/abstract/hash-to-curve.js b/esm/abstract/hash-to-curve.js
+index d35388a9c2d5b70378946fd6f669ee94fd550563..84095d2a0351562330082bf062dc03d6b73ff955 100644
+--- a/esm/abstract/hash-to-curve.js
++++ b/esm/abstract/hash-to-curve.js
+@@ -8,7 +8,7 @@ function i2osp(value, length) {
+     anum(length);
+     if (value < 0 || value >= 1 << (8 * length))
+         throw new Error('invalid I2OSP input: ' + value);
+-    const res = Array.from({ length }).fill(0);
++    const res = new Array(length).fill(0);
+     for (let i = length - 1; i >= 0; i--) {
+         res[i] = value & 0xff;
+         value >>>= 8;
