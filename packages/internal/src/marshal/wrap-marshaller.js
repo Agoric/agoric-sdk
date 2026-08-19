@@ -200,9 +200,9 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     let hasRemoteCap = false;
     const { length } = slots;
     /** @type {(RemotableSlotWrapper<NonNullable<Slot>> | null | undefined)[]} */
-    const slotWrapperMappedSlots = Array.from({ length });
+    const slotWrapperMappedSlots = new Array(length).fill(undefined);
     /** @type {(object | null | undefined)[]} */
-    const locallyResolvedCapSlots = Array.from({ length });
+    const locallyResolvedCapSlots = new Array(length).fill(undefined);
 
     for (const [index, slot] of slots.entries()) {
       if (slot === null) {
@@ -268,9 +268,9 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     let hasRemoteCap = false;
     const { length } = caps;
     /** @type {(Slot | null | undefined)[]} */
-    const locallyResolvedSlots = Array.from({ length });
+    const locallyResolvedSlots = new Array(length).fill(undefined);
     /** @type {(object | null | undefined)[]} */
-    const remoteCapsToResolve = Array.from({ length });
+    const remoteCapsToResolve = new Array(length).fill(undefined);
 
     for (const [index, cap] of caps.entries()) {
       if (cap === null) {
