@@ -164,8 +164,8 @@ test.serial('brokenUpdateStart', async t => {
     // TODO: allow either message
     // 'vote rejected outcome: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
     // 'update failed: Error: (an object) was not a live payment for brand (an object). It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
-    'vote rejected outcome: Error: (an object) was not a live payment for brand "[Alleged: Zoe Invitation brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
-    'update failed: Error: (an object) was not a live payment for brand "[Alleged: Zoe Invitation brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
+    'vote rejected outcome: Error: "[Alleged: Zoe Invitation payment]" was not a live payment for brand "[Alleged: Zoe Invitation brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
+    'update failed: Error: "[Alleged: Zoe Invitation payment]" was not a live payment for brand "[Alleged: Zoe Invitation brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   ]);
 });
 
