@@ -131,6 +131,7 @@ test.before(async t => {
     },
   ]);
 });
+test.after.always(t => t.context.shutdown?.());
 
 test.beforeEach(t => {
   t.context.axelarLog.reset();
