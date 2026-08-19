@@ -18,7 +18,7 @@ import {
   size,
   stringify,
   toHex
-} from "./chunk-25QYMKH4.js";
+} from "./chunk-UQHGCCOH.js";
 
 // ../../node_modules/viem/_esm/errors/typedData.js
 var InvalidDomainError = class extends BaseError {
