@@ -1,0 +1,57 @@
+diff --git a/_cjs/utils/blob/fromBlobs.js b/_cjs/utils/blob/fromBlobs.js
+index a648aa88465fbd79ab038c3088350c724c18aca2..47483c9c3b4513e5af82330f4d9ac661acad6a64 100644
+--- a/_cjs/utils/blob/fromBlobs.js
++++ b/_cjs/utils/blob/fromBlobs.js
+@@ -19,7 +19,7 @@ function fromBlobs(parameters) {
+             let consume = 31;
+             if (blob.length - cursor.position < 31)
+                 consume = blob.length - cursor.position;
+-            for (const _ in Array.from({ length: consume })) {
++            for (let _i = 0; _i < consume; _i++) {
+                 const byte = cursor.readByte();
+                 const isTerminator = byte === 0x80 && !cursor.inspectBytes(cursor.remaining).includes(0x80);
+                 if (isTerminator) {
+diff --git a/_cjs/utils/encoding/toHex.js b/_cjs/utils/encoding/toHex.js
+index aa10cee96f8a97e5b2fe469e2ba0cc2c7788cf86..97950277ca4855bddf8177f09e9e2396cd84d963 100644
+--- a/_cjs/utils/encoding/toHex.js
++++ b/_cjs/utils/encoding/toHex.js
+@@ -8,7 +8,8 @@ exports.stringToHex = stringToHex;
+ const encoding_js_1 = require("../../errors/encoding.js");
+ const pad_js_1 = require("../data/pad.js");
+ const fromHex_js_1 = require("./fromHex.js");
+-const hexes = Array.from({ length: 256 }, (_v, i) => i.toString(16).padStart(2, '0'));
++const hexes = new Array(256);
++for (let i = 0; i < 256; i++) hexes[i] = i.toString(16).padStart(2, '0');
+ function toHex(value, opts = {}) {
+     if (typeof value === 'number' || typeof value === 'bigint')
+         return numberToHex(value, opts);
+diff --git a/_esm/utils/blob/fromBlobs.js b/_esm/utils/blob/fromBlobs.js
+index c7fdfd2b60ecd9ead95a1dab6a013dcf91c9adef..b77e407175476443e6c382ba82327c0cc426e7e3 100644
+--- a/_esm/utils/blob/fromBlobs.js
++++ b/_esm/utils/blob/fromBlobs.js
+@@ -17,7 +17,7 @@ export function fromBlobs(parameters) {
+             let consume = 31;
+             if (blob.length - cursor.position < 31)
+                 consume = blob.length - cursor.position;
+-            for (const _ in Array.from({ length: consume })) {
++            for (let _i = 0; _i < consume; _i++) {
+                 const byte = cursor.readByte();
+                 const isTerminator = byte === 0x80 && !cursor.inspectBytes(cursor.remaining).includes(0x80);
+                 if (isTerminator) {
+diff --git a/_esm/utils/encoding/toHex.js b/_esm/utils/encoding/toHex.js
+index b721ffb1cd0ebc62de3c75341ec9fa9018b4833d..2c5c811529adeebdfa1a88c75aee88e0ebeeb3b6 100644
+--- a/_esm/utils/encoding/toHex.js
++++ b/_esm/utils/encoding/toHex.js
+@@ -1,7 +1,11 @@
+ import { IntegerOutOfRangeError, } from '../../errors/encoding.js';
+ import { pad } from '../data/pad.js';
+ import { assertSize } from './fromHex.js';
+-const hexes = /*#__PURE__*/ Array.from({ length: 256 }, (_v, i) => i.toString(16).padStart(2, '0'));
++const hexes = /*#__PURE__*/ (() => {
++  const arr = new Array(256);
++  for (let i = 0; i < 256; i++) arr[i] = i.toString(16).padStart(2, '0');
++  return arr;
++})();
+ /**
+  * Encodes a string, number, bigint, or ByteArray into a hex string
+  *

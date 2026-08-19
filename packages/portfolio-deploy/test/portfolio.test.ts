@@ -658,6 +658,83 @@ test.serial(
 );
 
 test.serial(
+  'rejects a signed EIP-712 message with an invalid non-first array element',
+  async t => {
+    const wfd = t.context.walletFactoryDriver;
+    const evmHandlerAddr = 'agoric1evmhandler';
+    const evmHandlerWallet = await wfd.provideSmartWallet(evmHandlerAddr);
+
+    const userPrivateKey = generatePrivateKey();
+    const userAccount = privateKeyToAccount(userPrivateKey);
+
+    const deadline = CURRENT_TIME + 3600n;
+    const nonce = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+
+    const deposit: TokenPermissions = {
+      token: axelarConfig.Arbitrum.contracts.usdc,
+      amount: 1_000n * 1_000_000n,
+    };
+
+    const allocations: TargetAllocation[] = [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ];
+
+    // getYmaxWitness's own normalization already validated this data;
+    // corrupt it afterward to simulate an untrusted relay sending different
+    // data than what it validated, exercising handleMessage's own
+    // validation instead. The invalid element (a number, not a string, for
+    // `instrument`) is second, not first: regression coverage for an
+    // XS-only bug where eip712-normalize.ts's array handling silently
+    // skipped every element past the first -- see
+    // packages/xsnap/test/xs-js.test.js.
+    const witness = getYmaxWitness('OpenPortfolio', { allocations });
+    // @ts-expect-error deliberately violating the declared `string` type
+    witness.witness.allocations[1] = { instrument: 42, portion: 4000n };
+
+    const openPortfolioMessage = getPermitWitnessTransferFromData(
+      {
+        permitted: deposit,
+        spender: axelarConfig.Arbitrum.contracts.depositFactory,
+        nonce,
+        deadline,
+      },
+      axelarConfig.Arbitrum.contracts.permit2,
+      BigInt(axelarConfig.Arbitrum.chainInfo.reference),
+      witness,
+    );
+
+    const signature = await userAccount.signTypedData(openPortfolioMessage);
+
+    const id = Date.now().toString();
+    await evmHandlerWallet.invokeEntry({
+      id,
+      targetName: 'evmWalletHandler',
+      method: 'handleMessage',
+      args: [
+        {
+          ...openPortfolioMessage,
+          signature,
+          // Bypasses recoverTypedDataAddress, so this test targets
+          // handleMessage's own EIP-712 type validation specifically,
+          // independent of signature recovery.
+          verifiedSigner: userAccount.address,
+        } as CopyRecord,
+      ],
+    });
+
+    // handleMessage rejects before ever reaching the ymax0 contract's own
+    // status publishing, so the failure only shows up on the smart wallet's
+    // own generic invocation-result record, not `ymax0.evmWallets.*`.
+    const invocation = t.context.readPublished(`wallet.${evmHandlerAddr}`);
+    t.log('invocation result', invocation);
+    t.like(invocation, { updated: 'invocation', id });
+    // @ts-expect-error readPublished doesn't know this path's shape
+    t.regex(invocation.error, /Expected a string for EIP-712 type "string"/);
+  },
+);
+
+test.serial(
   'CCTP settlement with old invitation doesnt work with new contract instance',
   async t => {
     const { walletFactoryDriver: wfd } = t.context;

@@ -1729,7 +1729,11 @@ function hexToNumber(hex, opts = {}) {
 }
 
 // ../../node_modules/viem/_esm/utils/encoding/toHex.js
-var hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_v, i) => i.toString(16).padStart(2, "0"));
+var hexes = /* @__PURE__ */ (() => {
+  const arr = new Array(256);
+  for (let i = 0; i < 256; i++) arr[i] = i.toString(16).padStart(2, "0");
+  return arr;
+})();
 function toHex(value, opts = {}) {
   if (typeof value === "number" || typeof value === "bigint")
     return numberToHex(value, opts);
@@ -3755,7 +3759,7 @@ async function call(client, args) {
     return { data: response };
   } catch (err) {
     const data2 = getRevertErrorData(err);
-    const { offchainLookup: offchainLookup2, offchainLookupSignature: offchainLookupSignature2 } = await import("./ccip-OD5ST5U4.js");
+    const { offchainLookup: offchainLookup2, offchainLookupSignature: offchainLookupSignature2 } = await import("./ccip-UQBYU7KN.js");
     if (client.ccipRead !== false && data2?.slice(0, 10) === offchainLookupSignature2 && to)
       return { data: await offchainLookup2(client, { data: data2, to }) };
     if (deploylessCall && data2?.slice(0, 10) === "0x101bb98d")

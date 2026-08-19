@@ -4,13 +4,40 @@ import { dirname, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { buildKernelBundle } from '@agoric/swingset-vat/src/controller/initializeSwingset.js';
+import type { ManagerType } from '@agoric/swingset-vat';
 import {
+  insistManagerType,
   makeSwingsetTestKit,
   type SwingsetTestKitSnapshot,
 } from '../../tools/supports.js';
 
-const SNAPSHOT_VERSION = 1;
+// Bumped from 1: snapshot creation now threads `SWINGSET_WORKER_TYPE`
+// through to the kernel (see `getSnapshotManagerType`) instead of silently
+// building every snapshot under `makeSwingsetTestKit`'s hardcoded 'local'
+// default regardless of that env var, and the fingerprint now covers the
+// resulting manager type -- so a pre-existing cache (always 'local', and
+// never invalidated by a manager-type change) is unconditionally treated
+// as stale on upgrade.
+const SNAPSHOT_VERSION = 2;
 const SNAPSHOT_LOCK_WAIT_MS = 15 * 60_000;
+
+/**
+ * `makeSwingsetTestKit`'s own `defaultManagerType` parameter defaults to
+ * the literal `'local'` -- unlike SwingSet's own `initializeSwingset.js`,
+ * it does *not* fall back to `env.SWINGSET_WORKER_TYPE` on its own. Since
+ * snapshot creation calls `makeSwingsetTestKit` directly (not through
+ * anything that applies that fallback), `SWINGSET_WORKER_TYPE=xs-worker`
+ * was silently ignored: every RunUtils-based snapshot -- and everything
+ * layered on top of it, e.g. portfolio-deploy's own snapshots -- was always
+ * built (and then cached indefinitely) under the 'local' worker, no matter
+ * what this env var said. Mirrors the same fallback `initializeSwingset.js`
+ * documents, applied here explicitly since nothing else will.
+ */
+export const getSnapshotManagerType = (): ManagerType => {
+  const mt = process.env.SWINGSET_WORKER_TYPE || 'local';
+  insistManagerType(mt);
+  return mt;
+};
 
 const here = dirname(fileURLToPath(import.meta.url));
 const snapshotDir = resolve(here, '../cache/runutils');
@@ -152,6 +179,7 @@ export const computeRunUtilsSnapshotFingerprint = async (
   const effectiveKernelBundleSha512 =
     kernelBundleSha512 || (await getKernelBundle()).endoZipBase64Sha512;
   hash.update(`kernel-bundle:${effectiveKernelBundleSha512}\n`);
+  hash.update(`manager-type:${getSnapshotManagerType()}\n`);
 
   const inputPaths = getSnapshotInputPaths(name);
   const fileHashes = await Promise.all(inputPaths.map(hashFile));
@@ -203,6 +231,7 @@ export const createRunUtilsSnapshot = async (
   const kit = await makeSwingsetTestKit(log, undefined, {
     configSpecifier: spec.configSpecifier,
     swingStorePath,
+    defaultManagerType: getSnapshotManagerType(),
   });
   try {
     await kit.controller.snapshotAllVats();

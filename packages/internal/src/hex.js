@@ -5,13 +5,10 @@
  */
 
 /** @type {string[]} */
-const encodings = Array.from({ length: 256 }, (_, b) =>
-  // Write the hex representation of the byte.
-  b.toString(16).padStart(2, '0'),
-);
+const encodings = new Array(256);
 
 /**
- * Create map entries for all four permutations of lowercase and uppercase
+ * Map entries for all four permutations of lowercase and uppercase
  * transformations of the two hex digits per byte. The map is keyed by the hex
  * string and the value is the byte value. This allows for fast lookups when
  * decoding hex strings.
@@ -19,9 +16,11 @@ const encodings = Array.from({ length: 256 }, (_, b) =>
  * @type {Map<string, number>}
  */
 const decodings = new Map();
-for (const [b, hexdigits] of encodings.entries()) {
-  const lo = hexdigits.toLowerCase();
-  const UP = hexdigits.toUpperCase();
+for (let b = 0; b < 256; b += 1) {
+  // Write the hex representation of the byte.
+  const lo = b.toString(16).padStart(2, '0');
+  const UP = lo.toUpperCase();
+  encodings[b] = lo;
   decodings.set(lo, b);
   decodings.set(`${lo[0]}${UP[1]}`, b);
   decodings.set(`${UP[0]}${lo[1]}`, b);

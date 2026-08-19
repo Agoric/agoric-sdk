@@ -285,10 +285,8 @@ type FieldState = 'optional-unseen' | 'optional-seen' | 'required';
 
 /**
  * A struct's fields, keyed by name, tracking each field's {@link
- * FieldState}. Also doubles as an array-typed field's per-element record
- * (see `visit`'s `isArray` branch) -- but even then, the keys involved are
- * always strings: `for...in`/`in` read array indices as strings, never as
- * `number`.
+ * FieldState}. Also doubles as an array-typed field's per-element record,
+ * keyed by index instead (as a string, per usual JS property-key coercion).
  */
 type TypeFields = Record<string, { state: FieldState; type: string }>;
 
@@ -380,10 +378,14 @@ const visit = (
       ? actualLength
       : Math.min(actualLength, requiredLength ?? actualLength);
     result = keep ? value : new Array(length);
-    type = Array.from({ length }, () => ({
-      state: 'required' as const,
-      type: base,
-    })) as unknown as TypeFields;
+    // Not `Array.from({ length }, ...)`: our pinned XS mis-enumerates an
+    // array built that way, reporting index "0" `length` times and never
+    // "1".."length - 1" -- see `packages/xsnap/test/xs-js.test.js`. A
+    // null-prototype object with plain indexed assignment avoids it.
+    type = Object.create(null) as TypeFields;
+    for (let index = 0; index < length; index += 1) {
+      type[index] = { state: 'required', type: base };
+    }
   } else {
     // Guaranteed defined (the `!isArray && !baseType` case already
     // returned above); this is just for TS's narrowing.
@@ -408,16 +410,15 @@ const visit = (
 
   // `fieldName in obj`, not `hasOwnProperty`: matches how viem itself reads
   // field values (plain property access resolves the prototype chain).
-  // `type` must be null-prototype or a fresh array-literal record (so
-  // there's no inherited-property risk to guard against here), but this
-  // check protects against future refactorings.
-  if (Object.getPrototypeOf(type) && !Array.isArray(type)) {
+  // `type` must be null-prototype (so there's no inherited-property risk to
+  // guard against here), but this check protects against future
+  // refactorings.
+  if (Object.getPrototypeOf(type)) {
     throw new Error(
-      `EIP-712 type ${quoteName(fieldType)} must be described by a null-prototype object or an array`,
+      `EIP-712 type ${quoteName(fieldType)} must be described by a null-prototype object`,
     );
   }
-  // eslint-disable-next-line guard-for-in
-  for (const fieldName in type) {
+  for (const fieldName of Object.keys(type)) {
     const field = type[fieldName];
     const present = fieldName in value;
 
