@@ -120,6 +120,14 @@ const makeMockPortfolioEvmHandler = ({
         agentId: 1,
       }));
     },
+    changePermissions(
+      ..._args: Parameters<PortfolioEVMFacet['changePermissions']>
+    ) {
+      throw Error('Not implemented');
+    },
+    revoke(..._args: Parameters<PortfolioEVMFacet['revoke']>) {
+      throw Error('Not implemented');
+    },
     setAutoFeatures(
       ..._args: Parameters<PortfolioEVMFacet['setAutoFeatures']>
     ) {

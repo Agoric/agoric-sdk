@@ -8,6 +8,7 @@ import {
   PortfolioDelegatedRebalanceParamsShape,
   type FlowKey,
   type FundsFlowPlan,
+  type PlanObservations,
   type PortfolioDelegatedClaimRewardsParams,
   type PortfolioDelegatedRebalanceParams,
 } from '@agoric/portfolio-api';
@@ -19,7 +20,11 @@ import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
-import { flowIdFromKey, FlowKeyShape } from './type-guards.ts';
+import {
+  flowIdFromKey,
+  FlowKeyShape,
+  PlanObservationsShape,
+} from './type-guards.ts';
 
 const trace = makeTracer('PPLN');
 
@@ -85,7 +90,7 @@ export const preparePlanner = (
       planCompatShape,
       policyVersionShape,
     )
-      .optional(rebalanceCountShape)
+      .optional(rebalanceCountShape, PlanObservationsShape)
       .returns(),
     rejectPlan: M.call(portfolioIdShape, flowIdShape, M.string())
       .optional(policyVersionShape, rebalanceCountShape)
@@ -113,6 +118,7 @@ export const preparePlanner = (
         planOrSteps: FundsFlowPlan | MovementDesc[],
         policyVersion: number,
         rebalanceCount = 0,
+        observations?: PlanObservations,
       ) {
         const traceFlow = trace
           .sub(`portfolio${portfolioId}`)
@@ -120,6 +126,16 @@ export const preparePlanner = (
         traceFlow('TODO(#11782): vet plan', planOrSteps);
         const portfolioPlanner = getPortfolioPlanner(portfolioId);
         vetNoNewPositions(portfolioPlanner, planOrSteps);
+        try {
+          portfolioPlanner.validatePlanObservations(flowId, observations);
+        } catch (reason) {
+          const message =
+            reason instanceof Error ? reason.message : String(reason);
+          traceFlow('reject plan against mandate', message);
+          portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
+          portfolioPlanner.rejectFlowPlan(flowId, message);
+          return;
+        }
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
       },
