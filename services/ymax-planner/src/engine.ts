@@ -60,6 +60,7 @@ import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 import type {
   FlowKey,
   FundsFlowPlan,
+  PlanObservations,
   PortfolioKey,
   SupportedChain,
 } from '@agoric/portfolio-api';
@@ -77,7 +78,10 @@ import {
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { ChainGasState } from './gas-estimation.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import type { InstrumentBlocks } from './instrument-status.ts';
+import type {
+  InstrumentBlocks,
+  InstrumentSnapshot,
+} from './instrument-status.ts';
 import type {
   EvmChain,
   EvmContext,
@@ -223,7 +227,7 @@ export type Powers = {
   network: NetworkSpec;
   getExchangeRates?: () => Promise<RewardTokenRate[] | undefined>;
   getGasCosts?: () => Promise<ChainGasState[] | undefined>;
-  getInstrumentBlocks?: () => Promise<InstrumentBlocks | undefined>;
+  getInstrumentSnapshot?: () => Promise<InstrumentSnapshot | undefined>;
   getPortfolioSummaries?: (
     portfolioKeys: PortfolioKey[],
   ) => Promise<YdsPortfolioSummary[] | undefined>;
@@ -279,6 +283,7 @@ export type ProcessPortfolioPowers = Pick<
   exchangeRates?: RewardTokenRate[];
   gasCosts?: ChainGasState[];
   instrumentBlocks?: InstrumentBlocks;
+  instrumentTvls: PlanObservations['instrumentTvls'];
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
   };
@@ -355,6 +360,7 @@ export const processPortfolioEvents = async (
     exchangeRates,
     gasCosts,
     instrumentBlocks,
+    instrumentTvls,
     signingSmartWalletKit,
     walletStore,
     makeNonce,
@@ -443,6 +449,7 @@ export const processPortfolioEvents = async (
       portfolioKey,
       portfolioStatus,
     );
+    const balancesAsOf = Math.floor(Date.parse(nowISO()) / 1000);
     const logContext = {
       path,
       flowKey,
@@ -529,7 +536,22 @@ export const processPortfolioEvents = async (
       (logContext as any).plan = plan;
 
       const planOrSteps = plan.order ? plan : plan.flow;
-      return settle('resolvePlan', [...scope, planOrSteps, ...versions], {
+      const observations: PlanObservations | undefined = flowDetail.agent
+        ? {
+            balances: Object.fromEntries(
+              Object.entries(currentBalances).map(([place, amount]) => [
+                place,
+                amount.value,
+              ]),
+            ),
+            balancesAsOf,
+            instrumentTvls,
+          }
+        : undefined;
+      const args: Parameters<PortfolioPlanner['resolvePlan']> = observations
+        ? [...scope, planOrSteps, ...versions, observations]
+        : [...scope, planOrSteps, ...versions];
+      return settle('resolvePlan', args, {
         plan,
       });
     } catch (err) {
@@ -1005,7 +1027,7 @@ export const startEngine = async (
     makeNonce,
     getExchangeRates,
     getGasCosts,
-    getInstrumentBlocks,
+    getInstrumentSnapshot,
     getPortfolioSummaries,
     now,
   } = powers;
@@ -1018,12 +1040,12 @@ export const startEngine = async (
   const ydsFetchers = {
     exchangeRates: getExchangeRates,
     gasCosts: getGasCosts,
-    instrumentBlocks: getInstrumentBlocks,
+    instrumentSnapshot: getInstrumentSnapshot,
   } as const;
   const ydsState = {
     exchangeRates: undefined as RewardTokenRate[] | undefined,
     gasCosts: undefined as ChainGasState[] | undefined,
-    instrumentBlocks: undefined as InstrumentBlocks | undefined,
+    instrumentSnapshot: undefined as InstrumentSnapshot | undefined,
   };
   const refreshYdsState = async () =>
     Promise.all(
@@ -1042,6 +1064,17 @@ export const startEngine = async (
         },
       ),
     );
+
+  /** Instrument observations are reported per plan; blocks steer planning. */
+  const ydsPowers = () => {
+    const { exchangeRates, gasCosts, instrumentSnapshot } = ydsState;
+    return {
+      exchangeRates,
+      gasCosts,
+      instrumentBlocks: instrumentSnapshot?.blocks,
+      instrumentTvls: instrumentSnapshot?.tvls ?? {},
+    };
+  };
 
   const [vbankAssetCapData] = await Promise.all([
     readStreamCellValue(query.vstorage, 'published.agoricNames.vbankAsset', {
@@ -1163,7 +1196,7 @@ export const startEngine = async (
     feeBrand: feeAsset.brand as Brand<'nat'>,
     vstoragePathPrefixes,
     evmProviders: evmCtx.evmProviders,
-    ...ydsState,
+    ...ydsPowers(),
   });
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const { streamCellJson, event } = makeVstorageEvent(
@@ -1341,7 +1374,7 @@ export const startEngine = async (
       Promise.all([refreshYdsState(), updatePortfolioBalances()]).then(() =>
         processPortfolioEvents(portfolioEvents, respHeight, portfoliosMemory, {
           ...processPortfolioPowers,
-          ...ydsState,
+          ...ydsPowers(),
         }),
       ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),

@@ -44,8 +44,15 @@ import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
 import type { ChainGasState } from './gas-estimation.ts';
-import { calculateInstrumentBlocks } from './instrument-status.ts';
-import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
+import {
+  calculateInstrumentBlocks,
+  extractInstrumentTvls,
+} from './instrument-status.ts';
+import type {
+  InstrumentBlocks,
+  InstrumentSnapshot,
+  YdsInstrument,
+} from './instrument-status.ts';
 import { GAS_UNITS_PER_CLAIM, GAS_UNITS_PER_SWAP } from './rewards.ts';
 import {
   createEVMContext,
@@ -425,8 +432,8 @@ export const main = async (
     const sets = { noDepositInstruments, noWithdrawInstruments };
     return JSON.stringify(objectMap(sets, s => [...s].sort()));
   };
-  const getInstrumentBlocks = ydsClient
-    ? async (): Promise<InstrumentBlocks | undefined> => {
+  const getInstrumentSnapshot = ydsClient
+    ? async (): Promise<InstrumentSnapshot | undefined> => {
         const resp = await withHealthLogging(
           'instruments',
           ydsClient.get('instruments?includeAll=true').json(),
@@ -435,6 +442,10 @@ export const main = async (
         if (!resp) return undefined;
         const instruments = (resp as any).data as YdsInstrument[];
         const instrumentBlocks = calculateInstrumentBlocks(instruments);
+        const tvls = extractInstrumentTvls(
+          instruments,
+          Math.floor(Date.parse(nowISO()) / 1000),
+        );
 
         const newBlocksString = stringifyInstrumentBlocks(instrumentBlocks);
         if (newBlocksString !== lastInstrumentBlocksString) {
@@ -442,8 +453,8 @@ export const main = async (
         }
         lastInstrumentBlocksString = newBlocksString;
 
-        // TODO(AGO-550): return instrumentBlocks;
-        return undefined;
+        // TODO(AGO-550): return instrumentBlocks as `blocks`.
+        return { tvls };
       }
     : undefined;
 
@@ -568,7 +579,7 @@ export const main = async (
     network: PROD_NETWORK,
     getExchangeRates,
     getGasCosts,
-    getInstrumentBlocks,
+    getInstrumentSnapshot,
     getPortfolioSummaries,
     signingSmartWalletKit,
     makeNonce,
