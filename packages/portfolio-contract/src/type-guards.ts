@@ -35,6 +35,7 @@ import {
   YieldProtocol,
   type AssetPlaceRef,
   type FlowDetail,
+  type PlanObservations,
   type PortfolioAgentStatus,
   type PortfolioPublishedPathTypes,
   type ProposalType,
@@ -138,6 +139,16 @@ export const TargetAllocationShape: TypedPattern<TargetAllocation> = M.recordOf(
 export const TargetAllocationShapeExt: TypedPattern<Record<string, NatValue>> =
   M.recordOf(PoolKeyShapeExt, M.nat());
 
+export const PlanObservationsShape: TypedPattern<PlanObservations> =
+  M.splitRecord({
+    balances: M.recordOf(M.string(), M.nat()),
+    balancesAsOf: M.number(),
+    instrumentTvls: M.recordOf(
+      PoolKeyShapeExt,
+      M.splitRecord({ tvlUsd: M.nat(), asOf: M.number() }),
+    ),
+  });
+
 // #endregion
 
 // #region ymax0 vstorage keys and values
@@ -207,7 +218,10 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
     { type: 'deposit', amount: AnyNatAmountShape },
     { fromChain: ChainNameExtShape },
   ),
-  M.splitRecord({ type: 'rebalance' }, { agent: PortfolioAgentKeyShape }),
+  M.splitRecord(
+    { type: 'rebalance' },
+    { agent: PortfolioAgentKeyShape, policyVersion: M.number() },
+  ),
   M.splitRecord({ type: 'claimRewards' }, { agent: PortfolioAgentKeyShape }),
 );
 

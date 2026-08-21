@@ -32,6 +32,7 @@ import {
   type PermitDetails,
   type YmaxOperationDetails,
 } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import { provideLazy, type MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
@@ -49,6 +50,13 @@ import type { PortfolioKit } from './portfolio.exo.ts';
 const trace = makeTracer('PEWH');
 
 const MAX_DEADLINE_OFFSET = 60n * 60n * 24n; // 1 day in seconds
+const MAX_SAFE_AGENT_ID = BigInt(Number.MAX_SAFE_INTEGER);
+
+const agentIdFromEIP712 = (agentId: bigint): number => {
+  (agentId > 0n && agentId <= MAX_SAFE_AGENT_ID) ||
+    Fail`invalid delegation agent id ${agentId}`;
+  return Number(agentId);
+};
 
 type EIP712Data = WithSignature<
   YmaxStandaloneOperationData | YmaxPermitWitnessTransferFromData
@@ -400,9 +408,26 @@ export const prepareEVMPortfolioOperationManager = (
               // we don't rely on it for correctness: the string will
               // be looked up in NamesByAddress.
               accountHolder as Bech32Address,
-              permissions,
+              portfolioPermissionsFromEIP712(permissions),
             );
 
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'ChangePermissions': {
+            const {
+              data: { agentId, permissions },
+            } = operationDetails;
+            const result = E(portfolio!).changePermissions(
+              agentIdFromEIP712(agentId),
+              portfolioPermissionsFromEIP712(permissions),
+            );
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'Revoke': {
+            const {
+              data: { agentId },
+            } = operationDetails;
+            const result = E(portfolio!).revoke(agentIdFromEIP712(agentId));
             return watch(result, BasicOutcomeWatcher);
           }
           case 'SetAutoFeatures': {
@@ -415,6 +440,7 @@ export const prepareEVMPortfolioOperationManager = (
             return watch(result, BasicOutcomeWatcher);
           }
           default:
+            // @ts-expect-error exhaustiveness check
             Fail`Unsupported operation: ${q(operationDetails.operation)}`;
         }
       } catch (e) {

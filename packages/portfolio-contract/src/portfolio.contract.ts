@@ -53,6 +53,7 @@ import {
 } from '@agoric/portfolio-api/src/constants.js';
 import { ChainTokenMetadataShape } from '@agoric/portfolio-api/src/type-guards.js';
 import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import type {
   PermitDetails,
   YmaxOperationDetails,
@@ -879,7 +880,7 @@ export const contract = async (
           // standalone Grant handler; the string is looked up in NamesByAddress.
           kit.evmHandler.grant(
             grantee.address as Bech32Address,
-            grantee.permissions,
+            portfolioPermissionsFromEIP712(grantee.permissions),
           ),
         );
       }
