@@ -460,7 +460,9 @@ export const maybeAutoClaim = async (
           const { chainName, chainId } = JSON.parse(chainJson);
           const infos = await fetchMerklRewardsInfo(merklClient, {
             chainId,
-            address: portfolioStatus.accountIdByChain[chainName]!,
+            address: parseAccountId(
+              portfolioStatus.accountIdByChain[chainName]!,
+            ).accountAddress as `0x${string}`,
           });
           for (const { chain, rewards } of infos) {
             for (const { token, amount, claimed, proofs } of rewards) {
