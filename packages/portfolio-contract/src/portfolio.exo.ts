@@ -183,6 +183,8 @@ type PortfolioKitState = {
   rebalanceCount: number;
   /** CAIP-10 account ID of the authenticated EVM account that opened this portfolio */
   sourceAccountId?: AccountId;
+  /** Noble ICA retained while its forwarding-account registration is retried. */
+  nobleAccountUnderProvision?: NobleAccountInfo;
   /** reserved for future use */
   etc: unknown;
 };
@@ -202,6 +204,7 @@ export const PortfolioStateShape = {
   policyVersion: M.number(),
   rebalanceCount: M.number(),
   sourceAccountId: M.opt(M.string()),
+  nobleAccountUnderProvision: M.opt(M.any()),
   etc: M.any(),
 };
 harden(PortfolioStateShape);
@@ -526,6 +529,7 @@ export const preparePortfolioKit = (
         policyVersion: 0,
         rebalanceCount: 0,
         sourceAccountId,
+        nobleAccountUnderProvision: undefined,
         etc: undefined,
       };
     },
@@ -897,6 +901,14 @@ export const preparePortfolioKit = (
        * initAccountInfo(info) is optional before the terminal call.
        */
       manager: {
+        getNobleAccountUnderProvision(): NobleAccountInfo | undefined {
+          return this.state.nobleAccountUnderProvision;
+        },
+        initNobleAccountUnderProvision(info: NobleAccountInfo) {
+          this.state.nobleAccountUnderProvision === undefined ||
+            Fail`Noble account provisioning already initialized`;
+          this.state.nobleAccountUnderProvision = info;
+        },
         /**
          * Legacy wrapper for {@link reserveAccountState}.
          * @see reserveAccountState
@@ -989,6 +1001,9 @@ export const preparePortfolioKit = (
           } else {
             traceChain('accounts.init');
             accounts.init(info.chainName, info);
+          }
+          if (info.chainName === 'noble') {
+            this.state.nobleAccountUnderProvision = undefined;
           }
           this.facets.reporter.publishStatus();
         },

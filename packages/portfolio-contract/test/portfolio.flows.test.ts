@@ -58,6 +58,7 @@ import { type PortfolioKit } from '../src/portfolio.exo.ts';
 import {
   makeErrorList,
   provideCosmosAccount,
+  provideNobleAccount,
   executePlan as rawExecutePlan,
   openPortfolio as rawOpenPortfolio,
   rebalance as rawRebalance,
@@ -1021,7 +1022,7 @@ test('withdraw in coordination with planner', async t => {
 
     kit.planner.resolveFlowPlan(Number(flowId.replace('flow', '')), steps);
   })();
-  await Promise.all([webUiDone, plannerP, txResolver.drainPending()]);
+  await Promise.all([webUiDone, plannerP, txResolver.settleUntil(webUiDone)]);
 
   const { log } = offer;
   t.log('calls:', log.map(msg => msg._method).join(', '));
@@ -1030,6 +1031,7 @@ test('withdraw in coordination with planner', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'send', _cap: 'agoric11014' }, // from fee account
     { _method: 'transfer' }, // makeAccount
+    { _method: 'transfer', address: { chainId: nobleId } }, // NFA registration
     { _method: 'localTransfer', amounts: { Deposit: { value: 50000000n } } },
     { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'depositForBurn' },
@@ -1096,6 +1098,7 @@ test('deposit in coordination with planner', async t => {
   t.like(log, [
     // deposit calls
     { _method: 'monitorTransfers' },
+    { _method: 'transfer', address: { chainId: nobleId } }, // NFA registration
     { _method: 'localTransfer', amounts: { Deposit: { value: 1000000n } } },
     { _method: 'transfer', address: { chainId: nobleId } },
     { msgs: [{ typeUrl: '/noble.swap.v1.MsgSwap' }] },
@@ -1273,6 +1276,7 @@ test('parallel execution with scheduler', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'send' },
     { _method: 'transfer', address: { chainId: axelarId } },
+    { _method: 'transfer', address: { chainId: nobleId } }, // NFA registration
     {
       _method: 'localTransfer',
       amounts: { Deposit: { value: 40_000_000n } },
@@ -2746,12 +2750,8 @@ test('openPortfolio from EVM with Permit2 completes a deposit flow', async t => 
   t.is(flowHistory.at(-1)?.state, 'done');
 
   t.log(log.map(msg => msg._method).join(', '));
-  const nobleId = await cosmosId('noble');
   const axelarId = await cosmosId('axelar');
-  const setupCalls = [
-    { _method: 'monitorTransfers' },
-    { _method: 'transfer', address: { chainId: nobleId } },
-  ];
+  const setupCalls = [{ _method: 'monitorTransfers' }];
   const gmpCalls = [{ _method: 'transfer', address: { chainId: axelarId } }];
   t.like(log, [...setupCalls, ...gmpCalls, { _method: 'exit', _cap: 'seat' }]);
   t.snapshot(log, 'call log');
@@ -3002,7 +3002,11 @@ test('evmHandler.withdraw via CCTPtoUser sends depositForBurn to user address', 
     'destination should be user address from sourceAccountId',
   );
 
-  t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'depositForBurn' }]);
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'transfer', address: { chainId: 'noble-1' } },
+    { _method: 'depositForBurn' },
+  ]);
 
   t.snapshot(log, 'call log');
   await documentStorageSchema(t, storage, docOpts);
@@ -3253,7 +3257,7 @@ test('evmHandler.deposit via Permit2 to missing and existing wallet with deposit
 
   const { accountIdByChain: byChainAfter, accountsPending } =
     await getPortfolioStatus(kit.reader.getPortfolioId());
-  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
+  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric']);
   t.deepEqual(accountsPending, []);
 
   await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
@@ -3327,7 +3331,7 @@ test('evmHandler.deposit via Permit2 to missing and existing wallet with router 
     accountsPending,
     accountStateByChain = {},
   } = await getPortfolioStatus(kit.reader.getPortfolioId());
-  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
+  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric']);
   t.deepEqual(accountsPending, []);
   t.like(accountStateByChain.Arbitrum, {
     state: 'active',
@@ -3478,7 +3482,7 @@ test('evmHandler.deposit via Permit2 to a nonexisting (predicted) spender wallet
   const portfolioId = kit.reader.getPortfolioId();
   const { accountIdByChain: byChainAfter } =
     await getPortfolioStatus(portfolioId);
-  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
+  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric']);
   t.is(
     byChainAfter.Arbitrum,
     nonexistingWalletAccountId,
@@ -4079,4 +4083,290 @@ test('claim rewards from Compound position', async t => {
   t.is(comet.toLowerCase(), contractsMock.Arbitrum.compound.toLowerCase());
   t.is(to.toLowerCase(), remoteAddress.toLowerCase());
   t.is(shouldAccrue, true);
+});
+
+test('provideNobleAccount reserves once under concurrency', async t => {
+  const { orch, ctx, offer, cosmosId } = mocks();
+  const { log } = offer;
+  const kit = await ctx.makePortfolioKit();
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const nobleId = await cosmosId('noble');
+
+  // Two concurrent callers within one portfolio.
+  const [first, second] = await Promise.all([
+    provideNobleAccount(orch, ctx, kit, silent),
+    provideNobleAccount(orch, ctx, kit, silent),
+  ]);
+
+  t.is(first.chainName, 'noble');
+  t.is(
+    first.ica.getAddress().value,
+    second.ica.getAddress().value,
+    'both callers observe the same Noble ICA',
+  );
+
+  const nobleTransfers = log.filter(
+    (e: any) => e._method === 'transfer' && e.address?.chainId === nobleId,
+  );
+  t.is(
+    nobleTransfers.length,
+    1,
+    'exactly one NFA registration transfer despite two callers',
+  );
+});
+
+test('provideNobleAccount registers the ICA and NFA before resolving', async t => {
+  const { orch, ctx, offer, cosmosId } = mocks();
+  const { log } = offer;
+  const kit = await ctx.makePortfolioKit();
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const nobleId = await cosmosId('noble');
+
+  t.false(
+    'noble' in kit.reader.accountIdByChain(),
+    'no Noble account before provisioning',
+  );
+
+  const info = await provideNobleAccount(orch, ctx, kit, silent);
+  t.is(info.chainName, 'noble');
+
+  // The NFA registration transfer was sent as part of the same operation.
+  const nfaTransfer = log.find(
+    (e: any) => e._method === 'transfer' && e.address?.chainId === nobleId,
+  );
+  t.truthy(nfaTransfer, 'NFA registration transfer sent');
+  const memo = JSON.parse((nfaTransfer as any).opts.memo);
+  t.truthy(memo.noble.forwarding, 'transfer carries the forwarding memo');
+
+  // The reservation resolved only after both the ICA and the NFA were in place.
+  t.true(
+    'noble' in kit.reader.accountIdByChain(),
+    'Noble account resolved after ICA + NFA',
+  );
+});
+
+test('provideNobleAccount releases on makeAccount failure and a retry re-attempts', async t => {
+  const chainToErr = new Map([['noble', Error('timeout creating ICA')]]);
+  const { orch, ctx } = mocks({ makeAccount: chainToErr });
+  const kit = await ctx.makePortfolioKit();
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  await t.throwsAsync(() => provideNobleAccount(orch, ctx, kit, silent), {
+    message: /timeout creating ICA/,
+  });
+  t.false(
+    'noble' in kit.reader.accountIdByChain(),
+    'reservation released after the failure',
+  );
+
+  // The injected error fires once; the retry re-attempts the whole sequence.
+  const info = await provideNobleAccount(orch, ctx, kit, silent);
+  t.is(info.chainName, 'noble');
+  t.true(
+    'noble' in kit.reader.accountIdByChain(),
+    'retry provisions the Noble account',
+  );
+});
+
+test('provideNobleAccount releases on NFA registration failure and a retry re-attempts', async t => {
+  // A transfer error whose message does not name the destination chain fails
+  // the NFA registration transfer (see flow-test-kit `transfer` mock).
+  const { orch, ctx, offer, cosmosId } = mocks({
+    transfer: Error('IBC is on the fritz'),
+  });
+  const kit = await ctx.makePortfolioKit();
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  await t.throwsAsync(() => provideNobleAccount(orch, ctx, kit, silent));
+  const nobleId = await cosmosId('noble');
+  const firstRegistration = offer.log.find(
+    (event: any) =>
+      event._method === 'transfer' && event.address?.chainId === nobleId,
+  );
+  t.truthy(firstRegistration, 'the first ICA registration was attempted');
+  t.false(
+    'noble' in kit.reader.accountIdByChain(),
+    'reservation released after the registration failure',
+  );
+
+  const info = await provideNobleAccount(orch, ctx, kit, silent);
+  t.is(info.chainName, 'noble');
+  t.true(
+    'noble' in kit.reader.accountIdByChain(),
+    'retry provisions the Noble account',
+  );
+  t.is(
+    info.ica.getAddress().value,
+    (firstRegistration as any).address.value,
+    'retry should register the existing ICA instead of leaking it and creating another',
+  );
+});
+
+test('pure EVM deposit does not provision an unused Noble account', async t => {
+  const permitDetails = makePermitDetails();
+  const amount = make(USDC, permitDetails.amount);
+  const targetAllocation = { Aave_Arbitrum: 10_000n };
+  const { orch, ctx, offer, storage, txResolver } = mocks();
+  const { seat } = offer;
+  const kit = await ctx.makePortfolioKit();
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const webUiDone = openPortfolio(
+    orch,
+    ctx,
+    seat,
+    { targetAllocation },
+    kit,
+    { features: { useProgressTracker: true } },
+    { fromChain: 'Arbitrum', permitDetails, amount },
+  );
+
+  const plannerP = (async () => {
+    const status = await getPortfolioStatus(portfolioId);
+    const { flowsRunning = {}, accountStateByChain = {} } = status;
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+
+    // The open path creates only the Agoric LCA; Noble is not provisioned
+    // until the deposit flow's step needs it.
+    t.true('agoric' in kit.reader.accountIdByChain(), 'Agoric LCA present');
+    t.false(
+      'noble' in kit.reader.accountIdByChain(),
+      'no Noble account immediately after open',
+    );
+    t.is(
+      accountStateByChain.noble,
+      undefined,
+      'accountStateByChain.noble absent immediately after open',
+    );
+
+    const fromChain = detail.fromChain as AxelarChain;
+    const steps: MovementDesc[] = [
+      {
+        src: `+${fromChain}`,
+        dest: `@${fromChain}`,
+        amount,
+        fee: make(BLD, 100n),
+      },
+    ];
+    kit.planner.resolveFlowPlan(Number(flowId.replace('flow', '')), steps);
+    await txResolver.drainPending();
+  })();
+
+  await Promise.all([webUiDone, plannerP, offer.factoryPK.promise]);
+  await eventLoopIteration();
+
+  // A Permit2 deposit directly into the same EVM chain has no Noble leg.
+  t.false(
+    'noble' in kit.reader.accountIdByChain(),
+    'a +Arbitrum to @Arbitrum flow has no Noble dependency',
+  );
+});
+
+test('openPortfolio replay path keeps eager Noble provisioning for EVM', async t => {
+  const permitDetails = makePermitDetails();
+  const amount = make(USDC, permitDetails.amount);
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const reserveCalls: string[] = [];
+  const manager = {
+    reserveAccount: (chainName: any) => {
+      reserveCalls.push(chainName);
+      return kit.manager.reserveAccount(chainName);
+    },
+    resolveAccount: (info: any) => kit.manager.resolveAccount(info),
+    releaseAccount: (chainName: any, reason: any) =>
+      kit.manager.releaseAccount(chainName, reason),
+  } as any;
+  const observedKit = {
+    ...Object.fromEntries(
+      Reflect.ownKeys(kit).map(property => [property, kit[property]]),
+    ),
+    manager,
+  } as typeof kit;
+
+  await rawOpenPortfolio(orch, ctx, offer.seat, {}, observedKit, undefined, {
+    fromChain: 'Arbitrum',
+    permitDetails,
+    amount,
+  });
+
+  t.true(
+    'noble' in kit.reader.accountIdByChain(),
+    'config-less legacy invocation preserves eager Noble provisioning',
+  );
+  t.deepEqual(
+    reserveCalls,
+    ['agoric', 'noble'],
+    'legacy replay must preserve the original host-call sequence',
+  );
+});
+
+test('openPortfolio from EVM: Noble registration failure fails the flow, not the open', async t => {
+  const permitDetails = makePermitDetails();
+  const amount = make(USDC, permitDetails.amount);
+  const targetAllocation = { Aave_Arbitrum: 10_000n };
+  // Fail the Noble Forwarding Account registration transfer (destination chain
+  // 'noble') while leaving the Axelar GMP transfers ('axelar') healthy. The
+  // flow-test-kit `transfer` mock throws when the injected error's message does
+  // not name the transfer's destination chain.
+  const { orch, ctx, offer, storage, txResolver } = mocks({
+    transfer: Error('forwarding registration refused; axelar relay healthy'),
+  });
+  const { seat } = offer;
+  const kit = await ctx.makePortfolioKit();
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+
+  const webUiDone = openPortfolio(
+    orch,
+    ctx,
+    seat,
+    { targetAllocation },
+    kit,
+    { features: { useProgressTracker: true } },
+    { fromChain: 'Arbitrum', permitDetails, amount },
+  );
+
+  let flowNum: number | undefined;
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    flowNum = Number(flowId.replace('flow', ''));
+    const fromChain = detail.fromChain as AxelarChain;
+    const steps: MovementDesc[] = [
+      {
+        src: `+${fromChain}`,
+        dest: `@${fromChain}`,
+        amount,
+        fee: make(BLD, 100n),
+      },
+      { src: `@${fromChain}`, dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+    ];
+    kit.planner.resolveFlowPlan(flowNum, steps);
+    await txResolver.drainPending();
+  })();
+
+  await Promise.all([webUiDone, plannerP, offer.factoryPK.promise]);
+  await eventLoopIteration();
+
+  // The portfolio itself stays open: the Agoric LCA is provisioned and the
+  // continuing invitation is available.
+  const actual = await webUiDone;
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  t.true('agoric' in kit.reader.accountIdByChain(), 'Agoric LCA present');
+  t.false(
+    'noble' in kit.reader.accountIdByChain(),
+    'Noble reservation released after registration failure',
+  );
+
+  // The failure surfaces as an ordinary flow failure (the deposit flow reaches
+  // state: 'fail'), rather than as a failure of the open handler itself, which
+  // still returns its continuing invitation above.
+  if (flowNum === undefined) throw new Error('flow number not captured');
+  const fs = await getFlowStatus(portfolioId, flowNum);
+  t.is(fs?.state, 'fail', 'deposit flow reaches state: fail');
 });
