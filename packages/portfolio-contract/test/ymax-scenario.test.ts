@@ -88,12 +88,21 @@ const rebalanceScenarioMacro = test.macro({
       await E(purse).deposit(funds);
     }
 
-    const ackSteps = async (offerArgs: OfferArgsFor['openPortfolio']) => {
+    const ackSteps = async (
+      offerArgs: OfferArgsFor['openPortfolio'],
+      opening = false,
+    ) => {
       const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
 
-      // Noble forwarding account (NFA)
-      await transmitVTransferEvent('acknowledgementPacket', -1);
+      const nobleInvolved = moves.some(
+        move => move.src === '@noble' || move.dest === '@noble',
+      );
+      // Noble forwarding account (NFA) is now provisioned only by a flow that
+      // actually uses Noble.
+      if (opening || nobleInvolved) {
+        await transmitVTransferEvent('acknowledgementPacket', -1);
+      }
 
       const evmInvolved = moves.some(
         move => move.src === '@Arbitrum' || move.dest === '@Arbitrum',
@@ -124,7 +133,7 @@ const rebalanceScenarioMacro = test.macro({
       offerArgs: OfferArgsFor['openPortfolio'] = {},
     ) => {
       const doneP = trader1.openPortfolio(t, give, offerArgs);
-      await ackSteps(offerArgs);
+      await ackSteps(offerArgs, true);
       const { result, payouts } = await doneP;
       return { result, payouts };
     };

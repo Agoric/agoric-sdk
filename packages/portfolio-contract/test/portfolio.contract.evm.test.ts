@@ -604,7 +604,6 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
       .openPortfolio(allocations, depositAmount.value);
     t.is(result.storagePath, expected.storagePath);
     t.is(result.portfolioId, expected.portfolioId);
-    await ackNFA(common.utils);
     return result;
   })();
 
@@ -742,10 +741,15 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
 
   // Drive flow1 until make-account pending tx is visible, then fail it.
   const flow1TxId = await (async () => {
-    // Send the make-account IBC transfer acks
+    // Send the make-account IBC transfer acks. A portfolio opened from an EVM
+    // wallet provisions Noble lazily, so the step-flow also issues the Noble
+    // Forwarding Account registration transfer (an IBC_FROM_AGORIC that
+    // findPendingTxInfo ignores); acknowledge it alongside the three
+    // make-account GMP transfers.
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -3);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -4);
 
     const flowsInfo = await findPendingTxInfo();
     t.like(
