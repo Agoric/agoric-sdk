@@ -24,6 +24,7 @@ test('normalizeYdsPortfolioBalances accepts current endpoint balances', t => {
           },
         },
         totalValueUsdc: 40.750001,
+        tokenBalances: [],
       },
       brand,
     ),

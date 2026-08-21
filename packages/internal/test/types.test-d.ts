@@ -1,5 +1,6 @@
 import { expectNotType, expectType } from 'tsd';
 import { E, type ERef } from '@endo/far';
+import { naiveCompare } from '../src/js-utils.js';
 import { attenuate } from '../src/ses-utils.js';
 import type { Permit, RecordFromTuple, Remote } from '../src/types.js';
 import type { StorageNode } from '../src/lib-chainStorage.js';
@@ -74,4 +75,25 @@ const remoteStorageNode: Remote<StorageNode> = null as any;
 
   // @ts-expect-error Property 'absent' does not exist on type '{ foo: "foo"; bar: "bar"; baz: "baz"; }'.
   Bogus.absent;
+}
+
+{
+  // @ts-expect-error
+  naiveCompare(0n, 0);
+  // @ts-expect-error
+  naiveCompare(0, 0n);
+
+  // @ts-expect-error
+  naiveCompare(0n, '0');
+  // @ts-expect-error
+  naiveCompare('0', 0n);
+
+  // @ts-expect-error
+  naiveCompare(0, '0');
+  // @ts-expect-error
+  naiveCompare('0', 0);
+
+  const mixed = <T extends bigint | number | string>(a: T, b: T) =>
+    // @ts-expect-error
+    naiveCompare(a, b);
 }

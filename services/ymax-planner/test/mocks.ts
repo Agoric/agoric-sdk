@@ -24,6 +24,7 @@ import type { EvmAddress } from '@agoric/fast-usdc/src/types.ts';
 import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
+import { GAS_UNITS_PER_CLAIM, GAS_UNITS_PER_SWAP } from '../src/rewards.ts';
 import {
   prepareAbortController,
   type ReconnectingEvmProvider,
@@ -117,11 +118,18 @@ export const createMockEnginePowers = (): EnginePowers => ({
   gasEstimator: {} as any,
   usdcTokensByChain: {},
   chainNameToChainIdMap: CaipChainIds.testnet,
+  autoClaimConfig: {
+    maxGasCostSpike: [[1.5, 'P30D', 'p50']],
+    maxSlippageBps: 200,
+    minRewardPerGas: 2,
+  },
   autoRebalance: {
     driftBps: 100n,
     driftMinMoveUusdc: 25_000_000n,
     cashMinMoveUusdc: 25_000_000n,
   },
+  GAS_UNITS_PER_CLAIM,
+  GAS_UNITS_PER_SWAP,
 });
 
 const mockFetchForGasEstimate = async (_, options?: any) => {

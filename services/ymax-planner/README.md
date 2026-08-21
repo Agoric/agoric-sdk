@@ -175,8 +175,13 @@ Environment variables:
 - `GRAPHQL_ENDPOINTS`: JSON text for a Record\<dirname, url[]> object describing endpoints associated with each api-\* GraphQL API directory under [graphql](./src/graphql) (optional)
 - `SQLITE_DB_PATH`: The path where the SQLiteDB used by the resolver should be created. While a relative path can be provided (relative to the cwd),
 an absolute path is recommended
+- `ONEINCH_API_URL`: Base URL of the 1inch.com API, for fetching information to swap reward tokens into USDC (default "https://api.1inch.dev")
+- `ONEINCH_API_KEY`: Bearer token for the 1inch.com API (required for swaps)
 - `YDS_URL`: Base URL of the YMax Data Service API, for fetching dynamic instrument status and sending transaction settlement notifications (optional)
 - `YDS_API_KEY`: API key for authenticating with YDS (required with `YDS_URL`)
+- `AUTO_CLAIM_MAX_GAS_COST_SPIKE`: Gas cost thresholds for when claim-and-swap flows may be initiated, expressed as a comma-separated list of "$factor:$windowDuration:$windowMetric" criteria where $factor is a non-negative number, $windowDuration is one of "PT15M"/"PT24H"/"P30D" (ISO 8601 duration strings for 15 minutes, 24 hours, and 30 days, respectively), and $windowMetric is one of "min"/"mean"/"p50"/"p90"/"max" ("p50" representing "median"). No such flows will be initiated when any criteria fails (default "1.5:P30D:p50" suppresses initiation when the current gas rate in USD exceeds 1.5 times its 30-day median)
+- `AUTO_CLAIM_MAX_SLIPPAGE_BPS`: Basis-point threshold for how much slippage to tolerate in reward-token-to-USDC swaps. For any swap whose slippage would exceed this value, reward tokens instead are either not claimed or remain in a chain account (default "200" = 2%)
+- `AUTO_CLAIM_MIN_REWARD_PER_GAS`: Threshold ratio for when a claim-and-swap flow may be initiated for any given portfolio and reward token (default "2" requires the USD value of rewards to be at least double the estimated transaction gas cost in USD)
 - `AUTO_REBALANCE_DRIFT_BPS`: Basis-point threshold for position drift auto-rebalance candidates. If any single instrument's actual allocation differs from its target by more than this value, and the target balances would increase enough non-zero-weight positions, the planner may submit an auto rebalance (default "100" = 1 percentage point)
 - `AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC`: Minimum total increase of non-zero-weight positions required for the position drift trigger, in micro-USDC (default "25000000" = 25 USDC)
 - `AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC`: Minimum total increase of non-zero-weight positions required for the excess cash trigger, in micro-USDC (default "25000000" = 25 USDC)
