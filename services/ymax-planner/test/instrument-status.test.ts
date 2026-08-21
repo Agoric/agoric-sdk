@@ -2,6 +2,7 @@ import test from 'ava';
 
 import {
   calculateInstrumentBlocks,
+  extractInstrumentTvls,
   type YdsInstrument,
 } from '../src/instrument-status.ts';
 
@@ -19,6 +20,26 @@ const instrument = (
 });
 
 const missingDataInstrument: YdsInstrument = { id: '@Ethereum', caipChainId };
+
+test('extractInstrumentTvls reports valid TVL observations', t => {
+  const instruments: YdsInstrument[] = [
+    {
+      ...missingDataInstrument,
+      id: 'aave' as YdsInstrument['id'],
+      tvl: 12_345.6,
+    },
+    { ...missingDataInstrument, id: 'missing' as YdsInstrument['id'] },
+    {
+      ...missingDataInstrument,
+      id: 'invalid' as YdsInstrument['id'],
+      tvl: -1,
+    },
+  ];
+
+  t.deepEqual(extractInstrumentTvls(instruments, 123), {
+    aave: { tvlUsd: 12_346n, asOf: 123 },
+  });
+});
 
 test('calculateInstrumentBlocks ignores instruments without supply/liquidity data', t => {
   const { noDepositInstruments, noWithdrawInstruments } =

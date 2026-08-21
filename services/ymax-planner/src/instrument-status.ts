@@ -1,5 +1,6 @@
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type { CaipChainId } from '@agoric/orchestration';
+import type { PlanObservations } from '@agoric/portfolio-api';
 import type { ComputeTargetBalancesOptions } from '@agoric/portfolio-api/src/target-balances.js';
 
 /** cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/api-schemas.ts: Instrument */
@@ -15,6 +16,23 @@ export type YdsInstrument = {
 export type InstrumentBlocks = Required<
   ComputeTargetBalancesOptions<any, any>
 >['instrumentBlocks'];
+
+export type InstrumentSnapshot = {
+  blocks?: InstrumentBlocks;
+  tvls: PlanObservations['instrumentTvls'];
+};
+
+export const extractInstrumentTvls = (
+  instruments: YdsInstrument[],
+  asOf: number,
+): PlanObservations['instrumentTvls'] =>
+  Object.fromEntries(
+    instruments.flatMap(({ id, tvl }) =>
+      tvl !== undefined && Number.isFinite(tvl) && tvl >= 0
+        ? [[id, { tvlUsd: BigInt(Math.round(tvl)), asOf }]]
+        : [],
+    ),
+  );
 
 export const calculateInstrumentBlocks = (
   instruments: YdsInstrument[],
