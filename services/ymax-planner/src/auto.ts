@@ -144,6 +144,10 @@ const isGasAcceptable = (
   });
 };
 
+type AutoClaimSource = YdsTokenBalance & {
+  uusdcValue: bigint;
+  usdcTokenId: string;
+};
 export const pickAutoClaimSources = (
   tokenBalances: YdsTokenBalance[],
   {
@@ -164,7 +168,7 @@ export const pickAutoClaimSources = (
     | 'GAS_UNITS_PER_SWAP'
   >,
   pickLimit = Infinity,
-): null | (YdsTokenBalance & { uusdcValue: bigint; usdcTokenId: string })[] => {
+): null | AutoClaimSource[] => {
   if (!exchangeRates || !gasCosts) return null;
   const picks: Exclude<ReturnType<typeof pickAutoClaimSources>, null> = [];
 
@@ -408,6 +412,23 @@ export const maybeAutoClaim = async (
 
     // Build a FundsFlowPlan in which the only dependencies are that each
     // swap step depends upon all claim steps for the same chain.
+    const swapPlaceholders = new Map<SupportedChain, null | AutoClaimSource>();
+    for (const source of sources) {
+      const { chainName } = source;
+      if (source.instrumentName === null) {
+        // This chain is a real source.
+        swapPlaceholders.set(chainName, null);
+      } else if (!swapPlaceholders.has(chainName)) {
+        // Create a dummy source for this chain.
+        swapPlaceholders.set(chainName, {
+          ...source,
+          instrumentName: null,
+          amount: '0',
+          uusdcValue: 0n,
+        });
+      }
+    }
+    sources.push(...[...swapPlaceholders.values()].filter(s => !!s));
     sources.sort((a, b) => {
       const { caipChainId: chainA, instrumentName: instrumentA } = a;
       const { caipChainId: chainB, instrumentName: instrumentB } = b;
