@@ -5,6 +5,7 @@ import type * as _$agoric$swingset$msgs_js from './agoric/swingset/msgs.js';
 import type * as _$agoric$swingset$query_js from './agoric/swingset/query.js';
 import type * as _$agoric$swingset$swingset_js from './agoric/swingset/swingset.js';
 import type * as _$agoric$vbank$genesis_js from './agoric/vbank/genesis.js';
+import type * as _$agoric$vbank$msgs_js from './agoric/vbank/msgs.js';
 import type * as _$agoric$vbank$query_js from './agoric/vbank/query.js';
 import type * as _$agoric$vbank$vbank_js from './agoric/vbank/vbank.js';
 import type * as _$agoric$vibc$msgs_js from './agoric/vibc/msgs.js';
@@ -265,6 +266,8 @@ export type TypeFromUrl = {
   '/agoric.swingset.MsgProvisionResponse': _$agoric$swingset$msgs_js.MsgProvisionResponse;
   '/agoric.swingset.MsgSendChunk': _$agoric$swingset$msgs_js.MsgSendChunk;
   '/agoric.swingset.MsgSendChunkResponse': _$agoric$swingset$msgs_js.MsgSendChunkResponse;
+  '/agoric.swingset.MsgUpdateParams': _$agoric$swingset$msgs_js.MsgUpdateParams;
+  '/agoric.swingset.MsgUpdateParamsResponse': _$agoric$swingset$msgs_js.MsgUpdateParamsResponse;
   '/agoric.swingset.MsgWalletAction': _$agoric$swingset$msgs_js.MsgWalletAction;
   '/agoric.swingset.MsgWalletActionResponse': _$agoric$swingset$msgs_js.MsgWalletActionResponse;
   '/agoric.swingset.MsgWalletSpendAction': _$agoric$swingset$msgs_js.MsgWalletSpendAction;
@@ -291,6 +294,8 @@ export type TypeFromUrl = {
   '/agoric.swingset.SwingStoreArtifact': _$agoric$swingset$swingset_js.SwingStoreArtifact;
   '/agoric.swingset.UintMapEntry': _$agoric$swingset$swingset_js.UintMapEntry;
   '/agoric.vbank.GenesisState': _$agoric$vbank$genesis_js.GenesisState;
+  '/agoric.vbank.MsgUpdateParams': _$agoric$vbank$msgs_js.MsgUpdateParams;
+  '/agoric.vbank.MsgUpdateParamsResponse': _$agoric$vbank$msgs_js.MsgUpdateParamsResponse;
   '/agoric.vbank.QueryParamsRequest': _$agoric$vbank$query_js.QueryParamsRequest;
   '/agoric.vbank.QueryParamsResponse': _$agoric$vbank$query_js.QueryParamsResponse;
   '/agoric.vbank.QueryStateRequest': _$agoric$vbank$query_js.QueryStateRequest;
