@@ -14,6 +14,7 @@ import {
   makeYmaxControlKitForSynthetic,
 } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 import {
+  agoric as agoricAmbient,
   getDetailsMatchingVats,
   getVatInfoFromID,
 } from '@agoric/synthetic-chain';
@@ -52,7 +53,11 @@ const makeNonce = () =>
   `lazy-noble-provisioning-a3p-${Date.now()}-${(walletNonce += 1)}`;
 
 const makeStore = address => {
-  const signer = makeSyntheticWalletKit({ address, vstorageKit: vsc });
+  const signer = makeSyntheticWalletKit({
+    agoric: agoricAmbient,
+    address,
+    vstorageKit: vsc,
+  });
   return makeWalletStoreFromSigner(signer, {
     setTimeout,
     makeNonce,
@@ -108,6 +113,7 @@ const makeContext = async () => {
     { setTimeout },
     {
       signer: makeSyntheticWalletKit({
+        agoric: agoricAmbient,
         address: ymax1ControlAddress,
         vstorageKit: vsc,
       }),
