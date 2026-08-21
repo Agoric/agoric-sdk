@@ -4,19 +4,91 @@ updates:
     # Just yarn workspaces (paths that have a yarn.lock)
     # When we had all package, '/packages/*',' the job timed out (~55 minutes).
     # As long as the yarn.lock is updated, the actual deps are updated,
-    # even if the the version ranges in the package.json are not.
+    # even if the version ranges in the package.json are not.
     directories:
       - '/'
       - '/a3p-integration/'
+      - '/a3p-integration/proposals/*'
       - '/multichain-testing/'
     schedule:
       interval: 'weekly'
+    open-pull-requests-limit: 10
     groups:
-      patches:
+      # Batch all minor and patch updates into one PR
+      production-dependencies:
+        group-by: dependency-name
+        patterns:
+          - '*'
         update-types:
+          - 'minor'
           - 'patch'
+        labels:
+          - 'automerge:rebase'
+          - 'dependencies:minor'
+      # Handle major updates separately or ignore them if too risky.
+      major-updates:
+        group-by: package-name
+        patterns:
+          - '*'
+        update-types:
+          - 'major'
+        labels:
+          - 'automerge:rebase'
+          - 'dependencies:major'
 
   - package-ecosystem: 'gomod'
-    directory: '/'
+    directories:
+      - '/golang/*'
     schedule:
       interval: 'daily'
+    open-pull-requests-limit: 10
+    groups:
+      # Batch all minor and patch updates into one PR
+      production-dependencies:
+        group-by: dependency-name
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+        labels:
+          - 'automerge:rebase'
+          - 'dependencies:minor'
+      # Handle major updates separately or ignore them if too risky.
+      major-updates:
+        group-by: package-name
+        patterns:
+          - '*'
+        update-types:
+          - 'major'
+        labels:
+          - 'automerge:rebase'
+          - 'dependencies:major'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
+    groups:
+      # Batch all minor and patch updates into one PR
+      production-dependencies:
+        group-by: dependency-name
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+        labels:
+          - 'automerge:rebase'
+          - 'dependencies:minor'
+      # Handle major updates separately or ignore them if too risky.
+      major-updates:
+        group-by: package-name
+        patterns:
+          - '*'
+        update-types:
+          - 'major'
+        labels:
+          - 'automerge:rebase'
+          - 'dependencies:major'
