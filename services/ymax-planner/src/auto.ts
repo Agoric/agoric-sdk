@@ -168,6 +168,7 @@ export const pickAutoClaimSources = (
     | 'GAS_UNITS_PER_CLAIM'
     | 'GAS_UNITS_PER_SWAP'
   >,
+  uusdcThreshold?: bigint,
   pickLimit = Infinity,
 ): null | AutoClaimSource[] => {
   if (!exchangeRates || !gasCosts) return null;
@@ -238,7 +239,10 @@ export const pickAutoClaimSources = (
     let claimedUusdc = getUusdcValue(BigInt(claimedBalance?.amount || 0n));
     if (claimedUusdc > 0n) {
       holds.push({ ...claimedBalance!, uusdcValue: claimedUusdc, usdcTokenId });
-      if (Number(claimedUusdc) / estimatedGasUnits >= threshold) {
+      if (
+        Number(claimedUusdc) / estimatedGasUnits >= threshold ||
+        (uusdcThreshold !== undefined && claimedUusdc >= uusdcThreshold)
+      ) {
         picks.push(...holds.splice(0));
         if (picks.length >= pickLimit) return picks.slice(0, pickLimit);
       }
@@ -252,7 +256,9 @@ export const pickAutoClaimSources = (
       if (!gasUnits) return undefined;
       const uusdcValue = getUusdcValue(BigInt(balance.amount));
       const uusdcPerGasUnit = Number(uusdcValue) / gasUnits;
-      return uusdcValue > 0n && uusdcPerGasUnit >= threshold
+      return uusdcValue > 0n &&
+        (uusdcPerGasUnit >= threshold ||
+          (uusdcThreshold !== undefined && uusdcValue >= uusdcThreshold))
         ? { balance, uusdcValue, gasUnits, uusdcPerGasUnit }
         : undefined;
     }).sort((a, b) => naiveCompare(b.uusdcPerGasUnit, a.uusdcPerGasUnit));
@@ -260,7 +266,10 @@ export const pickAutoClaimSources = (
       holds.push({ ...balance, uusdcValue, usdcTokenId });
       estimatedGasUnits += gasUnits;
       claimedUusdc += uusdcValue;
-      if (Number(claimedUusdc) / estimatedGasUnits >= threshold) {
+      if (
+        Number(claimedUusdc) / estimatedGasUnits >= threshold ||
+        (uusdcThreshold !== undefined && claimedUusdc >= uusdcThreshold)
+      ) {
         picks.push(...holds.splice(0));
         if (picks.length >= pickLimit) return picks.slice(0, pickLimit);
       }
@@ -324,6 +333,8 @@ export const checkAutoRebalance = (
 
 export type AutoPowers = {
   autoClaimConfig: AutoClaimConfig;
+  /** for end-to-end testing of specific portfolios */
+  autoClaimUusdcThresholds?: Record<PortfolioKey, bigint>;
   autoRebalance: AutoRebalanceConfig;
   console: Pick<Console, 'error' | 'log' | 'warn'>;
   depositBrand: Brand<'nat'>;
@@ -405,7 +416,11 @@ export const maybeAutoClaim = async (
 
   await null;
   try {
-    const sources = pickAutoClaimSources(tokenBalances, powers);
+    const sources = pickAutoClaimSources(
+      tokenBalances,
+      powers,
+      getOwn(powers.autoClaimUusdcThresholds || {}, portfolioKey),
+    );
     if (!sources?.length) {
       console.log(logPrefix, 'skip', inspectForStdout(logContext));
       return;
