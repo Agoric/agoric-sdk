@@ -241,15 +241,58 @@ const resolveDepositPlan = async (
   };
   await E(planner1.stub).resolvePlan(pId, flowId, plan, ...sync);
 
+  // Acknowledge each distinct outgoing IBC transfer the flow issues. A deposit
+  // flow that opens a portfolio from an EVM wallet provisions the Noble account
+  // lazily, so its step-flow issues an extra transfer (the Noble Forwarding
+  // Account registration) alongside the account-creation GMP. Both appear
+  // together, so acking "the newest un-acknowledged transfer" (rather than
+  // always the very last one) drives each to completion. The outgoing-transfer
+  // log is append-only, so an absolute index is a stable identity for a
+  // transfer already acknowledged.
+  const ackedTransferIndices = new Set<number>();
+  const countOutgoingTransfers = () => {
+    let count = 0;
+    for (;;) {
+      try {
+        common.utils.outgoingTransferAt(count);
+      } catch {
+        return count;
+      }
+      count += 1;
+    }
+  };
+  const ackNewestUnacknowledgedTransfer = async () => {
+    await eventLoopIteration();
+    const total = countOutgoingTransfers();
+    for (let index = total - 1; index >= 0; index -= 1) {
+      if (ackedTransferIndices.has(index)) continue;
+      ackedTransferIndices.add(index);
+      await common.utils.transmitVTransferEvent('acknowledgementPacket', index);
+      return;
+    }
+  };
+
+  const flowStillRunning = async () => {
+    const { flowsRunning: running = {} } = await evmTrader.getPortfolioStatus();
+    return flowKey in running;
+  };
+
   // The contract will issue a separate GMP for make account, not accounted in
   // the steps above, so ack it.
   if (separateMakeAccount) {
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await ackNewestUnacknowledgedTransfer();
     await txResolver.drainPending();
   }
 
-  for (const _ of plan.flow) {
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  // Drive the flow to completion: acknowledge each outgoing transfer and settle
+  // pending GMP/CCTP transactions until the flow leaves flowsRunning. Lazy Noble
+  // provisioning issues its transfer partway through the flow, so a fixed
+  // per-step ack count is not enough; loop until the flow is done, bounded well
+  // above the number of transfers any deposit plan issues.
+  const maxDrainRounds = plan.flow.length + 4;
+  for (let round = 0; round < maxDrainRounds; round += 1) {
+    if (!(await flowStillRunning())) break;
+    await ackNewestUnacknowledgedTransfer();
     await txResolver.drainPending();
   }
 
@@ -419,7 +462,7 @@ const makeEvmPlannerPowers = async (
 };
 
 const doOpenEvmPortfolio = async (
-  shared: Awaited<ReturnType<typeof setupPlanner>>,
+  _shared: Awaited<ReturnType<typeof setupPlanner>>,
   inputs: {
     fromChain: AxelarChain;
     depositAmount: NatAmount;
@@ -436,7 +479,6 @@ const doOpenEvmPortfolio = async (
     .openPortfolio(inputs.allocations, inputs.depositAmount.value, {
       features: inputs.features,
     });
-  await ackNFA(shared.common.utils, -1);
   await eventLoopIteration();
   const flowNum = await resolveDepositPlan(
     { portfolioId: evmTrader.getPortfolioId() },
