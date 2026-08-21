@@ -41,6 +41,7 @@ import type {
 } from '@agoric/portfolio-api';
 import { annotateError, Fail } from '@endo/errors';
 import { inspect } from 'node:util';
+import type { InspectOptions } from 'node:util';
 import {
   type ChainGasState,
   type GasStateWindowDuration,
@@ -331,7 +332,7 @@ export type AutoPowers = {
   gasCosts?: ChainGasState[];
   gasEstimator: GasEstimator;
   getWalletInvocationUpdate: (messageId: string | number) => Promise<unknown>;
-  inspectForStdout: (obj: unknown) => string;
+  inspectForStdout: (obj: unknown, options?: InspectOptions) => string;
   instrumentBlocks?: InstrumentBlocks;
   isDryRun?: boolean;
   makeNonce: () => string;
@@ -603,7 +604,7 @@ export const maybeAutoClaim = async (
     console.log(
       logPrefix,
       'claimRewards',
-      inspectForStdout({ ...logContext, plan }),
+      inspectForStdout({ ...logContext, plan }, { depth: 6 }),
       tx,
     );
     return tx.transactionHash;
