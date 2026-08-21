@@ -114,6 +114,24 @@ export type TargetAllocation = Partial<
   Record<InstrumentId | `@${AxelarChain}`, bigint>
 >;
 
+/** Planner-attested TVL for an instrument, in whole USD. */
+export type InstrumentTvlObservation = {
+  tvlUsd: bigint;
+  /** Source observation time as Unix epoch seconds. */
+  asOf: number;
+};
+
+/**
+ * Off-chain observations used to construct and vet a submitted plan.
+ * Balance values are micro-USDC; timestamps are Unix epoch seconds.
+ */
+export type PlanObservations = {
+  balances: Partial<Record<AssetPlaceRef, bigint>>;
+  /** Time at which the planner completed its balance queries. */
+  balancesAsOf: number;
+  instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
+};
+
 export type FlowDetail =
   | {
       type: 'withdraw';
@@ -133,6 +151,8 @@ export type FlowDetail =
       type: 'rebalance'; // aka simpleRebalance
       agent?: PortfolioAgentKey;
       agentMemo?: string;
+      /** Policy/mandate revision accepted for a delegated flow. */
+      policyVersion?: number;
     }
   | {
       type: 'claimRewards';
@@ -331,6 +351,9 @@ export type PortfolioGrantResult = {
   policyVersion: number;
   agentId: number;
 };
+
+/** Result of an owner-signed external delegation lifecycle operation. */
+export type PortfolioDelegationLifecycleResult = PortfolioGrantResult;
 
 /** Result of a `SetAutoFeatures` operation, referencing the resulting policyVersion. */
 export type PortfolioSetAutoFeaturesResult = {

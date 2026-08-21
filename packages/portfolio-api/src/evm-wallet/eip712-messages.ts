@@ -134,6 +134,14 @@ const OperationTypes = {
     { name: 'permissions', type: 'PortfolioPermissions' },
     PortfolioIdParam,
   ],
+  /** Atomically replace an external delegation's complete permissions. */
+  ChangePermissions: [
+    { name: 'agentId', type: 'uint256' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+    PortfolioIdParam,
+  ],
+  /** Irreversibly revoke an external delegation. */
+  Revoke: [{ name: 'agentId', type: 'uint256' }, PortfolioIdParam],
   /**
    * Update which auto-features are enabled for a portfolio. The contract will
    * generate a permissioned delegation as necessary and deliver it to the planner.
@@ -165,6 +173,33 @@ const OperationSubTypes = {
     { name: 'allocation', type: 'bool' },
     { name: 'rebalance', type: 'bool', optional: true },
     { name: 'claimRewards', type: 'bool', optional: true },
+    {
+      name: 'allocationMaxWeights',
+      type: 'InstrumentMaxWeight[]',
+      optional: true,
+    },
+    {
+      name: 'allocationMinVaultTvls',
+      type: 'InstrumentMinVaultTvl[]',
+      optional: true,
+    },
+    {
+      name: 'allocationMaxVaultShares',
+      type: 'InstrumentMaxVaultShare[]',
+      optional: true,
+    },
+  ],
+  InstrumentMaxWeight: [
+    { name: 'instrument', type: 'string' },
+    { name: 'maxWeightBps', type: 'uint16' },
+  ],
+  InstrumentMinVaultTvl: [
+    { name: 'instrument', type: 'string' },
+    { name: 'minVaultTvlUsd', type: 'uint256' },
+  ],
+  InstrumentMaxVaultShare: [
+    { name: 'instrument', type: 'string' },
+    { name: 'maxVaultShareBps', type: 'uint16' },
   ],
   DelegationGrantee: [
     { name: 'address', type: 'string' },
