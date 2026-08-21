@@ -36,6 +36,11 @@ func DefaultParams() Params {
 		BeansPerUnit:                     DefaultBeansPerUnit(),
 		BootstrapVatConfig:               DefaultBootstrapVatConfig,
 		FeeUnitPrice:                     DefaultFeeUnitPrice,
+		MsgTypeBeansPerUnit:              DefaultMsgTypeBeansPerUnit(),
+		BeanFeeBurnFraction:              DefaultBeanFeeBurnFraction,
+		BeanFeeCollector:                 DefaultBeanFeeCollector,
+		MinGasPrice:                      DefaultMinGasPrice,
+		FeeUnitPriceAlternatives:         DefaultFeeUnitPriceAlternatives,
 		PowerFlagFees:                    DefaultPowerFlagFees,
 		QueueMax:                         DefaultQueueMax,
 		VatCleanupBudget:                 DefaultVatCleanupBudget,
@@ -57,6 +62,21 @@ func (p Params) ValidateBasic() error {
 		return err
 	}
 	if err := validateFeeUnitPrice(p.FeeUnitPrice); err != nil {
+		return err
+	}
+	if err := validateMsgTypeBeansPerUnit(p.MsgTypeBeansPerUnit); err != nil {
+		return err
+	}
+	if err := validateBeanFeeBurnFraction(p.BeanFeeBurnFraction); err != nil {
+		return err
+	}
+	if err := validateBeanFeeCollector(p.BeanFeeCollector); err != nil {
+		return err
+	}
+	if err := validateMinGasPrice(p.MinGasPrice); err != nil {
+		return err
+	}
+	if err := validateFeeUnitPriceAlternatives(p.FeeUnitPriceAlternatives); err != nil {
 		return err
 	}
 	if err := validateBootstrapVatConfig(p.BootstrapVatConfig); err != nil {
@@ -117,6 +137,78 @@ func validateFeeUnitPrice(i interface{}) error {
 		}
 	}
 
+	return nil
+}
+
+func validateMsgTypeBeansPerUnit(i interface{}) error {
+	v, ok := i.([]MsgTypeBeans)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	for _, entry := range v {
+		if entry.MsgTypeUrl == "" {
+			return fmt.Errorf("msg type URL must not be empty")
+		}
+		if err := validateBeansPerUnit(entry.Beans); err != nil {
+			return fmt.Errorf("msg type %s beans must be valid: %w", entry.MsgTypeUrl, err)
+		}
+	}
+	return nil
+}
+
+func validateBeanFeeBurnFraction(i interface{}) error {
+	v, ok := i.(sdk.DecCoins)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	for _, coin := range v {
+		if err := sdk.ValidateDenom(coin.Denom); err != nil {
+			return fmt.Errorf("bean fee burn fraction denom %s must be valid: %w", coin.Denom, err)
+		}
+		if coin.Amount.IsNegative() || coin.Amount.GT(sdkmath.LegacyOneDec()) {
+			return fmt.Errorf("bean fee burn fraction %s must be in [0,1]: %s", coin.Denom, coin.Amount)
+		}
+	}
+	return nil
+}
+
+func validateBeanFeeCollector(i interface{}) error {
+	v, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	if v == "" {
+		return fmt.Errorf("bean fee collector must not be empty")
+	}
+	return nil
+}
+
+func validateMinGasPrice(i interface{}) error {
+	v, ok := i.(sdk.DecCoins)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	for _, coin := range v {
+		if err := sdk.ValidateDenom(coin.Denom); err != nil {
+			return fmt.Errorf("minimum gas price denom %s must be valid: %w", coin.Denom, err)
+		}
+		if coin.Amount.IsNegative() {
+			return fmt.Errorf("minimum gas price %s must not be negative: %s", coin.Denom, coin.Amount)
+		}
+	}
+	return nil
+}
+
+func validateFeeUnitPriceAlternatives(i interface{}) error {
+	v, ok := i.([]FeeUnitPriceAlternative)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	for _, alt := range v {
+		if err := validateFeeUnitPrice(alt.Price); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -249,11 +341,16 @@ func UpdateParams(params Params) (Params, error) {
 	if err != nil {
 		return params, err
 	}
+	newMtb, err := appendMissingDefaults(params.MsgTypeBeansPerUnit, DefaultMsgTypeBeansPerUnit())
+	if err != nil {
+		return params, err
+	}
 
 	params.BeansPerUnit = newBpu
 	params.PowerFlagFees = newPff
 	params.QueueMax = newQm
 	params.VatCleanupBudget = newVcb
+	params.MsgTypeBeansPerUnit = newMtb
 
 	// 0 is treated as unset for these fields.
 	if params.InstallationDeadlineBlocks == 0 {
@@ -268,13 +365,25 @@ func UpdateParams(params Params) (Params, error) {
 	if params.ChunkSizeLimitBytes == 0 {
 		params.ChunkSizeLimitBytes = DefaultChunkSizeLimitBytes
 	}
+	if params.BeanFeeCollector == "" {
+		params.BeanFeeCollector = DefaultBeanFeeCollector
+	}
+	if params.BeanFeeBurnFraction == nil {
+		params.BeanFeeBurnFraction = DefaultBeanFeeBurnFraction
+	}
+	if params.MinGasPrice == nil {
+		params.MinGasPrice = DefaultMinGasPrice
+	}
+	if params.FeeUnitPriceAlternatives == nil {
+		params.FeeUnitPriceAlternatives = DefaultFeeUnitPriceAlternatives
+	}
 
 	return params, nil
 }
 
 // appendMissingDefaults appends to an input list any missing entries with their
 // respective default values and returns the result.
-func appendMissingDefaults[Entry StringBeans | PowerFlagFee | QueueSize | UintMapEntry](entries []Entry, defaults []Entry) ([]Entry, error) {
+func appendMissingDefaults[Entry StringBeans | PowerFlagFee | QueueSize | UintMapEntry | MsgTypeBeans](entries []Entry, defaults []Entry) ([]Entry, error) {
 	getKey := func(entry any) string {
 		switch e := entry.(type) {
 		case StringBeans:
@@ -285,6 +394,8 @@ func appendMissingDefaults[Entry StringBeans | PowerFlagFee | QueueSize | UintMa
 			return e.Key
 		case UintMapEntry:
 			return e.Key
+		case MsgTypeBeans:
+			return e.MsgTypeUrl
 		}
 		panic("unreachable")
 	}
