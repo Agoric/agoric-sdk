@@ -442,8 +442,11 @@ test.serial('Presley completes the delegated mandate journey', async t => {
   const base = contracts.Base;
   const chainId = BigInt(chainInfo.Base.reference);
 
+  // Distinct from the key in lazy-noble-provisioning.test.js: the handler
+  // rejects a replayed (wallet, nonce) until its deadline passes, and that
+  // test's nonces are an hour from expiring when this one runs.
   const presleyAccount = privateKeyToAccount(
-    '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+    '0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
   );
   const presley = makeEvmOwner({
     account: presleyAccount,
