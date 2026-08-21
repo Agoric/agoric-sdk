@@ -587,6 +587,8 @@ export const main = async (
     oneInchClient,
     postYdsTransaction,
     autoClaimConfig: config.autoClaim,
+    autoClaimUusdcThresholds:
+      config.contractInstance === 'ymax0' ? { portfolio19: 500n } : undefined,
     autoRebalance: config.autoRebalance,
     GAS_UNITS_PER_CLAIM,
     GAS_UNITS_PER_SWAP,
