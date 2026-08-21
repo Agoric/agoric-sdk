@@ -253,6 +253,7 @@ export type Powers = {
 export type ProcessPortfolioPowers = Pick<
   Powers,
   | 'network'
+  | 'now'
   | 'nowISO'
   | 'spectrumBlockchain'
   | 'spectrumChainIds'
@@ -283,6 +284,7 @@ export type ProcessPortfolioPowers = Pick<
     portfoliosPathPrefix: string;
   };
   evmProviders: Record<CaipChainId, ReconnectingEvmProvider>;
+  MIN_AUTO_CLAIM_INTERVAL_MS?: number;
 };
 
 type UusdcBalances = Partial<Record<AssetPlaceRef, NatAmount>>;
@@ -310,6 +312,7 @@ export type PortfoliosMemory = {
       tokenBalances: YdsTokenBalance[];
     }
   >;
+  autoClaimTimestamps: Map<PortfolioKey, number>;
 };
 
 export const makePortfoliosMemory = (options?: {
@@ -325,6 +328,7 @@ export const makePortfoliosMemory = (options?: {
       balanceCacheTtlMs !== undefined
         ? makeExpiringMap(balanceCacheTtlMs, { now } as any)
         : new Map(),
+    autoClaimTimestamps: new Map(),
   };
 };
 
@@ -351,6 +355,7 @@ export const processPortfolioEvents = async (
     feeBrand,
     gasEstimator,
     network,
+    now,
     nowISO,
     exchangeRates,
     gasCosts,
@@ -373,9 +378,16 @@ export const processPortfolioEvents = async (
     autoRebalance,
     GAS_UNITS_PER_CLAIM,
     GAS_UNITS_PER_SWAP,
+    // Default to at most one auto-claim per day.
+    MIN_AUTO_CLAIM_INTERVAL_MS = 24 * 86_400 * 1000,
   }: ProcessPortfolioPowers,
 ) => {
-  const { deferrals, portfolioRecordForKey, balanceCache } = memory;
+  const {
+    deferrals,
+    portfolioRecordForKey,
+    balanceCache,
+    autoClaimTimestamps,
+  } = memory;
   const { query, marshaller } = signingSmartWalletKit;
   const { portfoliosPathPrefix } = vstoragePathPrefixes;
   const { vstorage } = query;
@@ -580,6 +592,16 @@ export const processPortfolioEvents = async (
   ): boolean => {
     const { enabledAutoFeatures } = status;
     if (!exchangeRates || !gasCosts || !enabledAutoFeatures?.claimRewards) {
+      return false;
+    }
+
+    // XXX It would be nice for PortfolioStatus to expose something for looking
+    // this up across planner restarts.
+    const lastAutoClaimTimestamp = autoClaimTimestamps.get(portfolioKey);
+    if (
+      lastAutoClaimTimestamp &&
+      now() - lastAutoClaimTimestamp < MIN_AUTO_CLAIM_INTERVAL_MS
+    ) {
       return false;
     }
 
@@ -794,7 +816,10 @@ export const processPortfolioEvents = async (
               autoPowers,
             ),
         );
-        if (txHash) return;
+        if (txHash) {
+          autoClaimTimestamps.set(portfolioKey, now());
+          return;
+        }
       }
     } catch (err) {
       const msg = `[${portfolioKey}.autoClaim] ⚠️ Failure ${err?.name}: ${err?.message}`;
