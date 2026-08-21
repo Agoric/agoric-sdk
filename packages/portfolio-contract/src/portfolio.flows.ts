@@ -2149,6 +2149,11 @@ export const executePlan = (async (
       MovementDesc[] | FundsFlowPlan
     >); // XXX Guest/Host types UNTIL #9822
     const steps = Array.isArray(plan) ? plan : plan.flow;
+    if (steps.length === 0) {
+      traceFlow('no steps to execute');
+      pKit.reporter.publishFlowStatus(flowId, { state: 'done', ...flowDetail });
+      return `flow${flowId}`;
+    }
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {
       const { fromChain, permit2Payload, spender } = options.evmDepositDetail;
@@ -2175,11 +2180,6 @@ export const executePlan = (async (
           config,
         });
       }
-    }
-    if (steps.length === 0) {
-      traceFlow('no steps to execute');
-      pKit.reporter.publishFlowStatus(flowId, { state: 'done', ...flowDetail });
-      return `flow${flowId}`;
     }
     await stepFlow(
       orch,

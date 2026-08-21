@@ -84,9 +84,17 @@ A rebalance that violates the permission's key-set rule causes the offer to reje
 ### Changing the mandate
 
 The delegation does not give the agent authority to change its own mandate.
-To add or remove instruments, the agent proposes a normal portfolio edit by
-generating a link to the Ymax edit-portfolio page. The link encodes the proposed
-target allocation, including its complete instrument key set.
+The EVM portfolio owner changes quantitative limits with the standalone,
+owner-signed `ChangePermissions` operation. It names a stable `agentN` by its
+positive numeric suffix and replaces the complete permissions record. It is
+never a patch: an omitted former limit is cleared. `Revoke` irreversibly marks
+that record revoked and clears its live client, while retaining the record for
+audit. A later grant receives a new ID.
+
+To add or remove instruments from the portfolio itself, the agent instead
+proposes a normal portfolio edit by generating a link to the Ymax
+edit-portfolio page. The link encodes the proposed target allocation,
+including its complete instrument key set.
 
 The user opens the link, reviews the proposed allocation in Ymax, and signs the
 existing EVM `SetTargetAllocation` operation. That owner-authorized operation
@@ -136,25 +144,48 @@ The agent re-reads and retries.
 ### Permissions as a parameter
 
 The app-level permissions field in invitation details and the delegation
-registry is an extensible options bag. The currently implemented shape is:
+registry is an extensible options bag. Quantitative limits are per instrument:
 
 ```ts
 type PortfolioPermissions = {
-  allocation?: boolean;
+  allocation?:
+    | boolean
+    | {
+        instruments?: Record<
+          string,
+          {
+            maxWeightBps?: number;
+            minVaultTvlUsd?: bigint;
+            maxVaultShareBps?: number;
+          }
+        >;
+      };
   rebalance?: boolean;
 };
 ```
 
-The external EIP-712 `Grant` wire format intentionally contains only the
-required `allocation: boolean` field, and the external grant path requires it
-to be `true`. The `rebalance` permission is currently assigned internally to
-the planner delegation when auto-rebalance is enabled. This wire/app
-difference is explicit: clients must not infer that every app-level permission
-can be granted by the current EIP-712 message.
+The external EIP-712 representation keeps required `allocation: boolean` and
+uses optional instrument-keyed arrays for each quantitative field. This makes
+omission independent per instrument and preserves explicit zero without a
+sentinel. The `rebalance` permission remains app-only and is assigned
+internally to the planner delegation.
 
-TODO: more expressive permissions (e.g. min/max portion bands per
-instrument, max drift per rebalance, allowlist of instruments narrower
-than the allocated set). Supporting **multiple agents per portfolio**
+Delegated allocation acceptance reads the current durable record and checks
+each configured maximum weight before changing policy or starting a flow. For
+an attributed delegated flow, the planner attaches balance and instrument-TVL
+observations to `resolvePlan`; the contract checks minimum TVL and proposed
+vault share before installing steps. Missing required observations fail the
+flow closed. Owner flows and automatic rebalancing do not use this observation
+path.
+
+Because the planner supplies both the plan and these observations, this check
+guards against ordinary planning and policy errors, not a compromised planner.
+See [Maximum Vault Share Data Sources](max-vault-share-data-sources.md) for the
+alternative trust models and blast radii.
+
+TODO: more expressive permissions (e.g. min/max portion bands per instrument,
+max drift per rebalance, allowlist of instruments narrower than the allocated
+set). Supporting **multiple agents per portfolio**
 with **different permissions each** falls out of this — each delegation
 is its own exo with its own permissions record — but is only motivated
 once additional permission fields exist.
@@ -169,6 +200,7 @@ resolving the agent reference embedded in a delegated flow:
 const flow34 = {
   type: 'rebalance',
   agent: 'agent4',
+  policyVersion: 7,
   // ...mutable flow status
 };
 ```
@@ -180,6 +212,8 @@ The attribution semantics are:
 - the numeric key is stable for the lifetime of that delegation
 - every flow started through that delegation embeds the assigned
   `agentN` string reference in its flow record
+- every delegated flow also embeds the `policyVersion` accepted for that
+  action; later mandate changes do not rewrite this historical revision
 - "agent" means any registered delegation client, including the internal
   planner delegation used for auto-features as well as an external grantee
 - owner-initiated flows simply omit `agent`, rather than pretending the
@@ -193,9 +227,9 @@ ids:
 - `delegations` map keyed internally by just `n`
 - the next id is derived from the size of this append-only map
 - each record stores at least the grantee identifier, permissions, and
-  lifecycle state (`active`, later maybe `revoked`, `expired`); the grantee is
-  either an external Agoric address or the reserved planner identifier
-  `&planner`
+  lifecycle state (`active` or `revoked`), plus the `policyVersion` at which it
+  was last updated; the grantee is either an external Agoric address or the
+  reserved planner identifier `&planner`
 
 Externally, the published id can stay simple: `agent4`. Since the
 portfolio path already scopes the registry and flow attribution, the
@@ -214,7 +248,7 @@ There are two closely related places to publish this information:
 - alongside each flow record, so historical attribution remains intact
   even if the delegation is later revoked
 
-So the portfolio status might grow something like:
+The published portfolio-agent status is shaped like:
 
 ```js
 // conceptual published view
@@ -223,11 +257,13 @@ portfolio17.agents = {
     grantee: 'agoric1claw1...',
     permissions: { allocation: true },
     state: 'active',
+    updatedAtPolicyVersion: 7,
   },
   agent5: {
     grantee: '&planner',
     permissions: { allocation: false, rebalance: true },
     state: 'active',
+    updatedAtPolicyVersion: 5,
   },
 };
 ```
@@ -239,17 +275,18 @@ portfolio17.flows.flow34 = {
   state: 'run',
   type: 'rebalance',
   agent: 'agent4',
+  policyVersion: 7,
   // ...other flow status
 };
 ```
 
-Do not denormalize permissions, grantee address, or other delegation
-metadata onto the flow. The flow only needs the small string reference.
-Everything else should be resolved through
-`portfolio17.agents.agent4`. That keeps vstorage writes
-smaller and avoids duplicating mutable metadata onto a record that is
-updated many times already. There is no separate
-`portfolio17.flows.flow34.agent` vstorage path.
+Do not denormalize permissions, grantee address, or other mutable delegation
+metadata onto the flow. The flow retains the small `agentN` reference and the
+accepted `policyVersion`; everything else should be resolved through
+`portfolio17.agents.agent4`. The revision is necessary audit data because the
+current agent record can change after the flow starts. This keeps vstorage
+writes smaller without losing the historical mandate boundary. There is no
+separate `portfolio17.flows.flow34.agent` vstorage path.
 
 ### How attribution is attached
 
@@ -267,10 +304,10 @@ Then:
 4. The wrapper performs the key-set check. The portfolio delegation helper
    validates the active client, permission, and version.
 5. The helper constructs the `FlowDetail` from trusted delegation state,
-   including `agent: 'agent4'` and any client-supplied `agentMemo`, and starts
-   the flow.
-6. The portfolio's normal flow publication retains that embedded reference
-   through subsequent status updates.
+   including `agent: 'agent4'`, the accepted `policyVersion`, and any
+   client-supplied `agentMemo`, and starts the flow.
+6. The portfolio's normal flow publication retains that embedded agent and
+   policy revision through subsequent status updates.
 
 The auto-feature path uses the same boundary. `setAutoFeatures` derives the
 planner's permissions from the enabled features and grants or reuses a
@@ -290,16 +327,21 @@ untrusted metadata. This also avoids bloating the mutable
 The implementation divides responsibility across these structures:
 
 - `@agoric/portfolio-api` defines `FlowDetail.agent` as a
-  `PortfolioAgentKey` string and defines the published `portfolioAgents`
-  registry shape.
+  `PortfolioAgentKey` string, `FlowDetail.policyVersion` as the accepted
+  mandate revision, the published `portfolioAgents` registry shape, and the
+  EIP-712 `ChangePermissions` and `Revoke` operations.
 - `packages/portfolio-contract/src/type-guards.ts` accepts the embedded
-  agent key and the published agent registry.
+  agent key and policy revision and the published agent registry.
 - `packages/portfolio-contract/src/portfolio.exo.ts` stores and publishes
-  the registry; its narrowed delegation helper attaches the trusted agent
-  key to `FlowDetail` before starting a delegated flow. `setAutoFeatures`
+  the registry; implements full permission replacement and irreversible
+  external revocation; and attaches the trusted agent key and accepted policy
+  revision to `FlowDetail` before starting a delegated flow. `setAutoFeatures`
   creates or updates the planner's entry in this same registry.
 - `packages/portfolio-contract/src/delegation.exo.ts` carries the assigned
   numeric `agentId` and invokes only that narrowed helper.
+- `packages/portfolio-contract/src/evm-wallet-handler.exo.ts` authenticates and
+  routes owner-signed `ChangePermissions` and `Revoke` operations to the named
+  portfolio.
 - the delegation-grant path assigns the id and persists the registry entry. It
   delivers external grants by invitation and installs the `&planner` grant
   directly in the planner.
@@ -309,18 +351,19 @@ The implementation divides responsibility across these structures:
 At minimum, this design implies tests for:
 
 - published type / path coverage: `StatusFor`, published path typings,
-  and contract-side type guards accept the embedded `flow.agent` key and
-  `portfolioN.agents`
+  and contract-side type guards accept the embedded `flow.agent` and
+  `flow.policyVersion` fields and `portfolioN.agents`
 - lazy registry behavior: portfolios with no delegations publish no
   `agents` collection, and readers treat absence as equivalent to empty
 - grant-time id allocation: the first delegation for `portfolio17`
   becomes `agent1`, the next `agent2`, and ids are
   stable once assigned
 - delegated attribution: a delegated `setTargetAllocation` publishes a flow
-  containing `agent: 'agentM'` as soon as the flow is known
+  containing `agent: 'agentM'` and the accepted `policyVersion` as soon as the
+  flow is known
 - planner attribution: enabling auto-rebalance registers `&planner` as an
-  agent, and its delegated rebalance flows contain that delegation's
-  `agentN` reference
+  agent, and its delegated rebalance flows contain that delegation's `agentN`
+  reference and the accepted `policyVersion`
 - non-delegated flows: owner-initiated flows do not publish a spurious
   `agent` reference
 - registry / flow linkage: every published `flow.agent` resolves to a
@@ -349,12 +392,13 @@ Without a registry:
 
 With a registry:
 
-- revocation and expiration become straightforward state transitions
+- revocation is a per-agent state transition; expiration could use the same
+  model later
 - audits can distinguish "active at the time" from "still active now"
 - future features like labels (`name: 'claw1-prod'`) can hang off the
   same record without changing flow attribution
 
-### Open design choices
+### Lifecycle decisions
 
 - **Id format**: internal key `4`, published id `agent4`.
 - **When the id is allocated**: on grant creation, not on first use.
@@ -364,22 +408,13 @@ With a registry:
   the `&planner` wrapper used by auto-features. Direct owner calls remain
   unattributed. The id records the delegated authority path, not whether the
   actor is external or human-operated.
-- **Historical retention**: the registry should probably retain revoked
-  delegations rather than deleting them, because old flows still refer to
-  them.
-- **Address changes**: if a human rotates to a new agent address, that
-  should probably be a new delegation id. Reusing ids across principals
-  makes audit trails harder to trust.
+- **Historical retention**: the registry retains revoked delegations because
+  old flows still refer to them.
+- **Address changes**: key rotation or a new grantee creates a new delegation
+  id. Revoked ids are never recycled or reactivated.
 
-## out of scope (test.todo)
+## Remaining out of scope
 
-- **Revocation**: Pete revokes claw1's delegation. Likely a product
-  requirement, not in this story. If we adopt durable `agentId`
-  attribution, the portfolio should durably track issued delegations;
-  revocation becomes a state change on that registry.
 - **Expiration**: Time-bounded delegations.
-- **Listing existing delegations**: Once we have an agent registry for
-  audit, this becomes much more natural, though still not required for
-  the first cut.
 - **Cost recovery**: Agents incur gas costs (relayer fees, IBC, etc.);
   some mechanism is needed to charge the delegating portfolio.

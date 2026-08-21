@@ -39,11 +39,11 @@ import type {
   PortfolioPublicInvitationMaker,
   PortfolioContinuingInvitationMaker,
   AxelarChain,
-  PortfolioPermissions,
+  ExternalPortfolioPermissions,
 } from '@agoric/portfolio-api';
 import {
   PortfolioAutoFeaturesEIP712Shape,
-  PortfolioPermissionsEIP712Shape,
+  portfolioPermissionsToEIP712,
 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import {
   getYmaxStandaloneOperationData,
@@ -425,19 +425,20 @@ export const makeEvmTrader = ({
             features?: Required<PortfolioAutoFeatures>;
             grantee?: {
               address: Bech32Address;
-              permissions: PortfolioPermissions;
+              permissions: ExternalPortfolioPermissions;
             };
           } = {},
         ) {
           assert(contractRepresentative, 'missing contract representative');
-          const toGranteePayload = (g: NonNullable<typeof grantee>) => {
-            mustMatch(g.permissions, PortfolioPermissionsEIP712Shape);
-            return { address: g.address, permissions: g.permissions };
-          };
           const witness = getYmaxWitness('OpenPortfolio', {
             allocations,
             ...(features && { features }),
-            ...(grantee && { grantee: toGranteePayload(grantee) }),
+            ...(grantee && {
+              grantee: {
+                address: grantee.address,
+                permissions: portfolioPermissionsToEIP712(grantee.permissions),
+              },
+            }),
           });
           const deadline = await getDeadline();
           const permitMessage = getPermitWitnessTransferFromData(
@@ -557,19 +558,57 @@ export const makeEvmTrader = ({
          */
         async grant(
           granteeAddress: Bech32Address,
-          permissions: PortfolioPermissions,
+          permissions: ExternalPortfolioPermissions,
         ) {
           const deadline = await getDeadline();
-          mustMatch(permissions, PortfolioPermissionsEIP712Shape);
+          const wirePermissions = portfolioPermissionsToEIP712(permissions);
           const message = getYmaxStandaloneOperationData(
             {
               accountHolder: granteeAddress,
-              permissions,
+              permissions: wirePermissions,
               portfolio: BigInt(self.getPortfolioId()),
               nonce: (nonce += 1n),
               deadline,
             },
             'Grant',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
+        },
+        async changePermissions(
+          agentId: number,
+          permissions: ExternalPortfolioPermissions,
+        ) {
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              agentId: BigInt(agentId),
+              permissions: portfolioPermissionsToEIP712(permissions),
+              portfolio: BigInt(self.getPortfolioId()),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'ChangePermissions',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
+        },
+        async revoke(agentId: number) {
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              agentId: BigInt(agentId),
+              portfolio: BigInt(self.getPortfolioId()),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Revoke',
             chainId,
             standaloneVerifyingContract,
           );
