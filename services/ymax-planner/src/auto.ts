@@ -449,8 +449,8 @@ export const maybeAutoClaim = async (
         const { chainName, caipChainId, instrumentName } = source;
         const [, evmChainId] =
           caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
-        if (!evmChainId) return;
-        if (instrumentName && !isERC4626InstrumentId(instrumentName)) return;
+        if (!instrumentName || !evmChainId) return;
+        if (!isERC4626InstrumentId(instrumentName)) return;
         return JSON.stringify({ chainId: evmChainId, chainName });
       }),
     );
