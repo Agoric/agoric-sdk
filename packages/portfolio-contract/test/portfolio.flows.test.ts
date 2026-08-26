@@ -4224,7 +4224,11 @@ test('pure EVM deposit does not provision an unused Noble account', async t => {
 
   const plannerP = (async () => {
     const status = await getPortfolioStatus(portfolioId);
-    const { flowsRunning = {}, accountStateByChain = {} } = status;
+    const {
+      flowsRunning = {},
+      accountStateByChain = {},
+      nobleForwardingAddress,
+    } = status;
     const [[flowId, detail]] = Object.entries(flowsRunning);
     if (detail.type !== 'deposit') throw t.fail(detail.type);
 
@@ -4242,6 +4246,11 @@ test('pure EVM deposit does not provision an unused Noble account', async t => {
       accountStateByChain.noble,
       undefined,
       'accountStateByChain.noble must be absent immediately after open',
+    );
+    t.is(
+      nobleForwardingAddress,
+      undefined,
+      'unregistered Noble forwarding address must not be published',
     );
 
     const fromChain = detail.fromChain as AxelarChain;
@@ -4375,4 +4384,90 @@ test('openPortfolio from EVM: Noble registration failure fails the flow, not the
   if (flowNum === undefined) throw new Error('flow number not captured');
   const fs = await getFlowStatus(portfolioId, flowNum);
   t.is(fs?.state, 'fail', 'deposit flow must reach state: fail');
+});
+
+test('EVM-to-Agoric CCTP provisions the Noble forwarding account', async t => {
+  const amount = make(USDC, 2_000_000n);
+  const fee = make(BLD, 100n);
+  const { orch, ctx, offer, tapPK, txResolver, cosmosId } = mocks();
+  const kit = await ctx.makePortfolioKit();
+
+  const flowP = rebalance(
+    orch,
+    ctx,
+    offer.seat,
+    {
+      flow: [{ src: '@Arbitrum', dest: '@agoric', amount, fee }],
+    },
+    kit,
+  );
+
+  await Promise.all([
+    flowP,
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+
+  t.true(
+    'noble' in kit.reader.accountIdByChain(),
+    'the CCTP mint recipient must be registered before the EVM burn',
+  );
+  const [nobleId, axelarId] = await Promise.all([
+    cosmosId('noble'),
+    cosmosId('axelar'),
+  ]);
+  const registrationIndex = offer.log.findIndex(
+    (event: any) =>
+      event._method === 'transfer' && event.address?.chainId === nobleId,
+  );
+  const burnIndex = offer.log.findLastIndex(
+    (event: any) =>
+      event._method === 'transfer' && event.address?.chainId === axelarId,
+  );
+  t.true(registrationIndex >= 0, 'NFA registration transfer must be sent');
+  t.true(registrationIndex < burnIndex, 'NFA registration must precede burn');
+});
+
+test('EVM-to-EVM CCTP does not provision a Noble forwarding account', async t => {
+  const amount = make(USDC, 2_000_000n);
+  const fee = make(BLD, 100n);
+  const { orch, ctx, offer, tapPK, txResolver, cosmosId } = mocks();
+  const kit = await ctx.makePortfolioKit();
+
+  const flowP = rebalance(
+    orch,
+    ctx,
+    offer.seat,
+    {
+      flow: [
+        {
+          src: '@Base',
+          dest: '@Optimism',
+          amount,
+          fee,
+          detail: { cctpVersion: 2n },
+        },
+      ],
+    },
+    kit,
+  );
+
+  await Promise.all([
+    flowP,
+    tapPK.promise.then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+
+  t.false(
+    'noble' in kit.reader.accountIdByChain(),
+    'direct EVM-to-EVM CCTP must not create a Noble account',
+  );
+  const nobleId = await cosmosId('noble');
+  const registration = offer.log.find(
+    (event: any) =>
+      event._method === 'transfer' && event.address?.chainId === nobleId,
+  );
+  t.falsy(registration, 'direct EVM-to-EVM CCTP must not register an NFA');
 });

@@ -1668,8 +1668,13 @@ const stepFlow = async (
   })();
 
   traceFlow('EVM accounts pre-computed', keys(evmAcctInfo));
-  const nobleMentioned = moves.some(m => [m.src, m.dest].includes('@noble'));
-  const nobleInfo = await (nobleMentioned
+  const nobleNeeded =
+    moves.some(m => [m.src, m.dest].includes('@noble')) ||
+    // V1 EVM-to-Agoric CCTP mints to the portfolio's Noble forwarding address,
+    // so the NFA must be registered even though Noble is not a plan endpoint.
+    // Revisit if a future CCTP version transfers directly to Agoric.
+    todo.some(({ how, dest }) => how === CCTP.how && dest === '@agoric');
+  const nobleInfo = await (nobleNeeded
     ? forChain('noble', async () => {
         await null;
         const progressTracker = features?.useProgressTracker

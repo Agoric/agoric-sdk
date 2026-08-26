@@ -777,11 +777,16 @@ export const preparePortfolioKit = (
             const { lca, lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
             const { value: recipient } = lca.getAddress();
             const { value: depositAddress } = lcaIn.getAddress();
-            const nobleForwardingAddress = generateNobleForwardingAddress(
-              transferChannels.noble.counterPartyChannelId,
-              recipient,
-            );
-            return { depositAddress, nobleForwardingAddress };
+            const nobleForwardingAddress = accounts.has('noble')
+              ? generateNobleForwardingAddress(
+                  transferChannels.noble.counterPartyChannelId,
+                  recipient,
+                )
+              : undefined;
+            return {
+              depositAddress,
+              ...(nobleForwardingAddress && { nobleForwardingAddress }),
+            };
           };
 
           publishStatus(makePortfolioPath(portfolioId), {
