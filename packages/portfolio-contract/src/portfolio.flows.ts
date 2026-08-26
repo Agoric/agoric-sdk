@@ -67,7 +67,11 @@ import { assert, Fail, q } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
-import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
+import type {
+  AccountInfo,
+  AccountInfoFor,
+  PortfolioKit,
+} from './portfolio.exo.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -280,7 +284,13 @@ const makeFlowStepPowers = (
   updateTxMeta: (txId: TxId, txMeta: PendingTxMeta) =>
     resolverClient.updateTxMeta(txId, txMeta),
   updatePhase: (txIds: TxId[]) => {
-    phasesForStep[step - 1].set(phase, txIds);
+    // `phasesForStep` is indexed by plan-step (step 1 maps to index 0). Account
+    // setup runs at `SETUP_STEP` (0), which has no plan-step phase slot, so
+    // record phase transitions only for numbered plan steps.
+    const stepIndex = step - 1;
+    if (stepIndex >= 0 && stepIndex < phasesForStep.length) {
+      phasesForStep[stepIndex].set(phase, txIds);
+    }
     if (!assetMoves) {
       // XXX what can we publish before AssetMovements are initialized?
       return;
@@ -507,6 +517,43 @@ const trackFlow = async (
   reporter.publishFlowStatus(flowId, { state: 'done', ...detail });
 };
 
+const makeAgoricAccount = async (
+  orch: Orchestrator,
+  tap: GuestInterface<PortfolioKit>['tap'],
+  trace: TraceLogger,
+  ...optsArgs: [OrchestrationOptions?]
+): Promise<AccountInfoFor['agoric']> => {
+  const agoricChain = await orch.getChain('agoric');
+  trace('makeAgoricAccount()');
+  const lca = await agoricChain.makeAccount(...optsArgs);
+  const lcaIn = await agoricChain.makeAccount(...optsArgs);
+  const reg = await lca.monitorTransfers(tap);
+  trace('Monitoring transfers for', lca.getAddress().value);
+  return {
+    namespace: 'cosmos',
+    chainName: 'agoric',
+    lca,
+    lcaIn,
+    reg,
+  };
+};
+
+const makeNobleAccount = async (
+  orch: Orchestrator,
+  trace: TraceLogger,
+  ...optsArgs: [OrchestrationOptions?]
+): Promise<AccountInfoFor['noble']> => {
+  const nobleChain = await orch.getChain('noble');
+  trace('makeNobleAccount()');
+  const ica: NobleAccount = await nobleChain.makeAccount(...optsArgs);
+  trace('result:', coerceAccountId(ica.getAddress()));
+  return {
+    namespace: 'cosmos',
+    chainName: 'noble',
+    ica,
+  };
+};
+
 export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   orch: Orchestrator,
   chainName: C,
@@ -523,45 +570,26 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
 
   // We have the map entry reserved - use critical section pattern
   try {
+    let info: AccountInfo;
     switch (chainName) {
-      case 'noble': {
-        const nobleChain = await orch.getChain('noble');
-        traceChain('makeAccount()');
-        const ica: NobleAccount = await nobleChain.makeAccount(...optsArgs);
-        traceChain('result:', coerceAccountId(ica.getAddress()));
-        const info: AccountInfoFor['noble'] = {
-          namespace: 'cosmos',
-          chainName: 'noble' as const,
-          ica,
-        };
-        kit.manager.resolveAccount(info);
-        return info as AccountInfoFor[C];
-      }
-      case 'agoric': {
-        const agoricChain = await orch.getChain('agoric');
-        const lca = await agoricChain.makeAccount(...optsArgs);
-        const lcaIn = await agoricChain.makeAccount(...optsArgs);
-        const reg = await lca.monitorTransfers(kit.tap);
-        traceChain('Monitoring transfers for', lca.getAddress().value);
-        const info: AccountInfoFor['agoric'] = {
-          namespace: 'cosmos',
-          chainName,
-          lca,
-          lcaIn,
-          reg,
-        };
-        kit.manager.resolveAccount(info);
-        return info as AccountInfoFor[C];
-      }
+      case 'agoric':
+        info = await makeAgoricAccount(orch, kit.tap, traceChain, ...optsArgs);
+        break;
+      case 'noble':
+        info = await makeNobleAccount(orch, traceChain, ...optsArgs);
+        break;
       default:
         throw Error('unreachable');
     }
+    kit.manager.resolveAccount(info);
+    return info as AccountInfoFor[C];
   } catch (reason) {
     traceChain('failed to make', reason);
     kit.manager.releaseAccount(chainName, reason);
     throw reason;
   }
 };
+harden(provideCosmosAccount);
 
 /**
  * Send minimal BLD amount to LCA for registering the forwarding account
@@ -586,7 +614,112 @@ const registerNobleForwardingAccount = async (
   trace('NFA registration transfer sent');
 };
 
+/**
+ * Provision the Noble account a flow needs: create the Noble Interchain Account
+ * (ICA) and register its Noble Forwarding Account (NFA), as one lazy operation
+ * guarded by the per-chain reservation protocol.
+ *
+ * Two concurrent callers within one portfolio produce exactly one provisioning
+ * attempt: the second caller receives the first caller's pending vow. The ICA
+ * creation and the NFA registration transfer both complete before the
+ * reservation resolves, so a caller that observes success sees both in place.
+ * A failure of either sub-step releases the reservation, so a later retry
+ * re-attempts the whole sequence.
+ *
+ * @param orch
+ * @param ctx - supplies the contract's fee account and the Noble transfer channel
+ * @param kit
+ * @param trace
+ * @param optsArgs - forwarded to both the Interchain Account creation and the registration transfer
+ * @returns the Noble account info once the ICA exists and the NFA is registered
+ */
+export const provideNobleAccount = async (
+  orch: Orchestrator,
+  ctx: Pick<PortfolioInstanceContext, 'contractAccount' | 'transferChannels'>,
+  kit: GuestInterface<PortfolioKit>,
+  trace: TraceLogger,
+  ...optsArgs: [OrchestrationOptions?]
+): Promise<AccountInfoFor['noble']> => {
+  await null;
+  const traceChain = trace.sub('noble');
+  const reservation = kit.manager.reserveAccountState('noble');
+  if (reservation.state === 'pending' || reservation.state === 'ok') {
+    return reservation.ready as unknown as Promise<AccountInfoFor['noble']>;
+  }
+
+  // We hold the reservation - run the ICA + NFA critical section.
+  try {
+    let info = kit.manager.getNobleAccountUnderProvision();
+    if (!info) {
+      info = await makeNobleAccount(orch, traceChain, ...optsArgs);
+      kit.manager.initNobleAccountUnderProvision(info);
+    }
+    const sender = await ctx.contractAccount;
+    const { lca } = await provideCosmosAccount(orch, 'agoric', kit, trace);
+    const forwarding = {
+      channel: ctx.transferChannels.noble.counterPartyChannelId,
+      recipient: lca.getAddress().value,
+    };
+    await registerNobleForwardingAccount(
+      sender,
+      info.ica.getAddress(),
+      forwarding,
+      trace,
+      undefined,
+      ...optsArgs,
+    );
+    kit.manager.resolveAccount(info);
+    return info;
+  } catch (reason) {
+    traceChain('failed to make', reason);
+    kit.manager.releaseAccount('noble', reason);
+    throw reason;
+  }
+};
+harden(provideNobleAccount);
+
+/**
+ * Provision the accounts a portfolio needs at open time.
+ *
+ * The Agoric local account (LCA) is always created, since it is same-chain and
+ * other machinery depends on it existing early. The Noble ICA and NFA are
+ * created here only when `provisionNoble` is set; otherwise they are deferred
+ * to the first flow step that needs a Noble account.
+ *
+ * @param orch
+ * @param ctx
+ * @param kit
+ * @param trace
+ * @param provisionNoble - whether to create the Noble ICA and register the NFA now
+ * @param features
+ * @returns the LCA, and the Noble ICA when `provisionNoble` is set
+ */
 const setupPortfolioAccounts = async (
+  orch: Orchestrator,
+  ctx: Pick<PortfolioInstanceContext, 'contractAccount' | 'transferChannels'>,
+  kit: GuestInterface<PortfolioKit>,
+  trace: TraceLogger,
+  provisionNoble: boolean,
+  { useProgressTracker = false }: FlowFeatures = {},
+) => {
+  const { lca } = await provideCosmosAccount(orch, 'agoric', kit, trace);
+  if (!provisionNoble) {
+    return { lca };
+  }
+  const optsArgs = useProgressTracker
+    ? [{ progressTracker: lca.makeProgressTracker() }]
+    : [];
+  const { ica } = await provideNobleAccount(orch, ctx, kit, trace, ...optsArgs);
+  return { lca, ica };
+};
+
+/**
+ * Preserve the host-call sequence recorded by openPortfolio activations that
+ * predate flow configuration. Keep this implementation structurally aligned
+ * with the former eager setup rather than routing it through new provisioning
+ * helpers.
+ */
+const setupPortfolioAccountsLegacy = async (
   orch: Orchestrator,
   ctx: Pick<PortfolioInstanceContext, 'contractAccount' | 'transferChannels'>,
   kit: GuestInterface<PortfolioKit>,
@@ -609,10 +742,9 @@ const setupPortfolioAccounts = async (
     channel: ctx.transferChannels.noble.counterPartyChannelId,
     recipient: lca.getAddress().value,
   };
-  const dest = ica.getAddress();
   await registerNobleForwardingAccount(
     sender,
-    dest,
+    ica.getAddress(),
     forwarding,
     trace,
     undefined,
@@ -1107,11 +1239,12 @@ const stepFlow = async (
             _tracer,
             ...optsArgs
           ) => {
-            // If an EVM account is in a move, it's available
-            // in the accounts arg, along with noble.
-            assert(gInfo && noble, evmChain);
+            // Every CCTP move needs the EVM account. Only outbound CCTP uses
+            // the Noble ICA; inbound CCTP sends from the EVM wallet to Agoric.
+            assert(gInfo, evmChain);
             await null;
             if (outbound) {
+              assert(noble, 'noble');
               await CCTP.apply(ctx, amount, noble, gInfo, ...optsArgs);
               return {};
             }
@@ -1536,7 +1669,7 @@ const stepFlow = async (
 
   traceFlow('EVM accounts pre-computed', keys(evmAcctInfo));
   const nobleMentioned = moves.some(m => [m.src, m.dest].includes('@noble'));
-  const nobleInfo = await (nobleMentioned || keys(evmAcctInfo).length > 0
+  const nobleInfo = await (nobleMentioned
     ? forChain('noble', async () => {
         await null;
         const progressTracker = features?.useProgressTracker
@@ -1549,9 +1682,9 @@ const stepFlow = async (
             SETUP_STEP,
             'makeDestAccount',
           );
-          const result = await provideCosmosAccount(
+          const result = await provideNobleAccount(
             orch,
-            'noble',
+            ctx,
             kit,
             traceFlow,
             ...optsArgs,
@@ -1797,6 +1930,11 @@ export const openPortfolio = (async (
   const { explicitStartFlow, ...flowConfig } = openConfig ?? {};
   const config = openConfig !== undefined ? flowConfig : undefined;
   const features = config?.features;
+  // The contract wrapper omits openConfig when replaying activations created
+  // before flow configuration was introduced. Keep their eager provisioning
+  // sequence intact; only newly-created EVM opens defer Noble provisioning.
+  const needsNobleNow =
+    evmDepositDetails === undefined || openConfig === undefined;
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   const trace = makeTracer('openPortfolio');
   try {
@@ -1810,10 +1948,25 @@ export const openPortfolio = (async (
       kit.manager.setTargetAllocation(offerArgs.targetAllocation);
     }
 
+    // A Cosmos-wallet open provisions the Noble ICA and registers the NFA here.
+    // A new ETH-wallet open defers both to the first flow step that needs a
+    // Noble account, where a provisioning failure is handled as an ordinary
+    // flow-step failure. Replaying legacy opens retain their eager host-call
+    // sequence because openConfig is omitted by the contract wrapper.
     // TODO provide a way to recover if any of these provisionings fail
     // SEE https://github.com/Agoric/agoric-private/issues/488
-    // Register Noble Forwarding Account (NFA) for CCTP transfers
-    await setupPortfolioAccounts(orch, ctxI, kit, traceP, features);
+    if (openConfig === undefined) {
+      await setupPortfolioAccountsLegacy(orch, ctxI, kit, traceP, features);
+    } else {
+      await setupPortfolioAccounts(
+        orch,
+        ctxI,
+        kit,
+        traceP,
+        needsNobleNow,
+        features,
+      );
+    }
 
     const { give } = seat.getProposal() as ProposalType['openPortfolio'];
     try {
