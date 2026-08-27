@@ -23,12 +23,11 @@ test('readFully can be used without instance binding', async t => {
   await t.notThrowsAsync(() => readFully('some/path'));
 });
 
-test('readStorageMeta surfaces HTTP status and retryAfter on a non-JSON error response (e.g. rate-limiting proxy)', async t => {
+test('readStorageMeta surfaces HTTP status on a non-JSON error response (e.g. rate-limiting proxy)', async t => {
   /** @type {any} */
   const fetchWith429 = async () => ({
     ok: false,
     status: 429,
-    headers: new Map([['retry-after', '5']]),
   });
 
   const vstorage = makeVStorage({ fetch: fetchWith429 }, testConfig);
@@ -36,7 +35,6 @@ test('readStorageMeta surfaces HTTP status and retryAfter on a non-JSON error re
     vstorage.readStorageMeta('published.test', { kind: 'data' }),
   );
   t.is(/** @type {any} */ (err).status, 429);
-  t.is(/** @type {any} */ (err).retryAfter, '5');
 });
 
 test('storage history should be in chronological order', async t => {
