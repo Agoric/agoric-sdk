@@ -23,6 +23,20 @@ test('readFully can be used without instance binding', async t => {
   await t.notThrowsAsync(() => readFully('some/path'));
 });
 
+test('readStorageMeta surfaces HTTP status on a non-JSON error response (e.g. rate-limiting proxy)', async t => {
+  /** @type {any} */
+  const fetchWith429 = async () => ({
+    ok: false,
+    status: 429,
+  });
+
+  const vstorage = makeVStorage({ fetch: fetchWith429 }, testConfig);
+  const err = await t.throwsAsync(() =>
+    vstorage.readStorageMeta('published.test', { kind: 'data' }),
+  );
+  t.is(/** @type {any} */ (err).status, 429);
+});
+
 test('storage history should be in chronological order', async t => {
   /**
    * @param {number} maximumHeight

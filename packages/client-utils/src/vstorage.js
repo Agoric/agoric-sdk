@@ -91,6 +91,18 @@ export const makeVStorage = ({ fetch }, config) => {
     const url =
       config.rpcAddrs[0] + makeAbciQuery(vstoragePath, { kind, height });
     const res = await fetch(url, { keepalive: true });
+    // `res.ok === false` (not just falsy) so a minimal fetch-like mock
+    // that omits `ok` entirely still falls through to `res.json()` below.
+    if (res.ok === false) {
+      // e.g. an RPC-provider proxy's own 429/5xx, not a CometBFT ABCI
+      // response — surface `status` so callers can distinguish a retryable
+      // transport error from the JSON-parseable ABCI-level errors handled
+      // below.
+      /** @type {any} */
+      const err = Error(`HTTP ${res.status} querying ${url}`);
+      err.status = res.status;
+      throw err;
+    }
     return res.json();
   };
 
@@ -122,7 +134,12 @@ export const makeVStorage = ({ fetch }, config) => {
     try {
       data = await getVstorageJson(path, { kind, height });
     } catch (err) {
-      throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
+      /** @type {any} */
+      const wrapped = Error(`cannot read ${kind} of ${path}: ${err.message}`);
+      if (err.status !== undefined) {
+        wrapped.status = err.status;
+      }
+      throw wrapped;
     }
 
     const {
