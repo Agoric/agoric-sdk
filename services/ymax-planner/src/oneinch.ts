@@ -83,8 +83,9 @@ export const fetchOneInchSwapInfo = async (
   data: OneInchRouterSwapArgs[2];
   gas?: bigint;
 }> => {
+  const { chainId, ...searchParams } = params;
   const resp = await client
-    .get(`swap/v6.1/${params.chainId}`, { searchParams: params })
+    .get(`swap/v6.1/${chainId}/swap`, { searchParams })
     .json<OneInchSwapAPI['Response']>();
   const { from: txFrom, data: txData, gas } = resp.tx;
   const { functionName, args } = decodeFunctionData({
