@@ -1098,6 +1098,11 @@ const stepFlow = async (
   moves.length > 0 || Fail`moves list must not be empty`;
 
   for (const [i, move] of moves.entries()) {
+    const isClaimRewards =
+      getAssetPlaceRefKind(move.src) === 'pos' && !!move.claimRewards;
+    move.amount.value > 0n ||
+      isClaimRewards ||
+      Fail`movement amount must be positive in ${q(move)}`;
     const queuedStep = getQueuedStep(move);
     if (queuedStep) {
       const maybeChain =
