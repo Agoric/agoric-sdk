@@ -493,7 +493,8 @@ export const maybeAutoClaim = async (
       );
     }
 
-    const dummyAmount = AmountMath.make(depositBrand, 0n);
+    // TODO(#12869): Replace with 0n
+    const dummyAmount = AmountMath.make(depositBrand, 1n);
     const swapInputs: { tokenCount: bigint; uusdcValue: bigint }[] = [];
     const order: FundsFlowPlan['order'] = [];
     const flow: (MovementDesc | null)[] = await Promise.all(
