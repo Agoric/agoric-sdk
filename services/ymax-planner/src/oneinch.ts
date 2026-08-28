@@ -1,10 +1,12 @@
 import type { KyInstance } from 'ky';
 import { decodeFunctionData, type DecodeFunctionDataReturnType } from 'viem';
 
-import { Fail } from '@endo/errors';
+import { annotateError, Fail } from '@endo/errors';
 
 import { oneInchRouterABI } from '@aglocal/portfolio-contract/src/interfaces/one-inch.js';
 import type { EvmAddress } from '@agoric/fast-usdc';
+
+import { prettyJsonable } from './utils.ts';
 
 type OneInchRouterSwapArgs = DecodeFunctionDataReturnType<
   typeof oneInchRouterABI,
@@ -83,9 +85,21 @@ export const fetchOneInchSwapInfo = async (
   data: OneInchRouterSwapArgs[2];
   gas?: bigint;
 }> => {
+  const { chainId, ...searchParams } = params;
   const resp = await client
-    .get(`swap/v6.1/${params.chainId}`, { searchParams: params })
-    .json<OneInchSwapAPI['Response']>();
+    .get(`swap/v6.1/${chainId}/swap`, { searchParams })
+    .json<OneInchSwapAPI['Response']>()
+    .catch(async err => {
+      await null;
+      try {
+        // ky ^2.0 pre-parses the error response body into `data`
+        // https://github.com/sindresorhus/ky/blob/v2.0.0/readme.md#kyerror
+        const { data = await err.response?.json() } = err;
+        if (data) annotateError(err, prettyJsonable(data));
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-empty
+      } catch (_err) {}
+      throw err;
+    });
   const { from: txFrom, data: txData, gas } = resp.tx;
   const { functionName, args } = decodeFunctionData({
     abi: oneInchRouterABI,

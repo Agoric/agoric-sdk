@@ -41,6 +41,7 @@ import type {
 } from '@agoric/portfolio-api';
 import { annotateError, Fail } from '@endo/errors';
 import { inspect } from 'node:util';
+import type { InspectOptions } from 'node:util';
 import {
   type ChainGasState,
   type GasStateWindowDuration,
@@ -144,6 +145,10 @@ const isGasAcceptable = (
   });
 };
 
+type AutoClaimSource = YdsTokenBalance & {
+  uusdcValue: bigint;
+  usdcTokenId: string;
+};
 export const pickAutoClaimSources = (
   tokenBalances: YdsTokenBalance[],
   {
@@ -163,8 +168,9 @@ export const pickAutoClaimSources = (
     | 'GAS_UNITS_PER_CLAIM'
     | 'GAS_UNITS_PER_SWAP'
   >,
+  uusdcThreshold?: bigint,
   pickLimit = Infinity,
-): null | (YdsTokenBalance & { uusdcValue: bigint; usdcTokenId: string })[] => {
+): null | AutoClaimSource[] => {
   if (!exchangeRates || !gasCosts) return null;
   const picks: Exclude<ReturnType<typeof pickAutoClaimSources>, null> = [];
 
@@ -233,7 +239,10 @@ export const pickAutoClaimSources = (
     let claimedUusdc = getUusdcValue(BigInt(claimedBalance?.amount || 0n));
     if (claimedUusdc > 0n) {
       holds.push({ ...claimedBalance!, uusdcValue: claimedUusdc, usdcTokenId });
-      if (Number(claimedUusdc) / estimatedGasUnits >= threshold) {
+      if (
+        Number(claimedUusdc) / estimatedGasUnits >= threshold ||
+        (uusdcThreshold !== undefined && claimedUusdc >= uusdcThreshold)
+      ) {
         picks.push(...holds.splice(0));
         if (picks.length >= pickLimit) return picks.slice(0, pickLimit);
       }
@@ -247,7 +256,9 @@ export const pickAutoClaimSources = (
       if (!gasUnits) return undefined;
       const uusdcValue = getUusdcValue(BigInt(balance.amount));
       const uusdcPerGasUnit = Number(uusdcValue) / gasUnits;
-      return uusdcValue > 0n && uusdcPerGasUnit >= threshold
+      return uusdcValue > 0n &&
+        (uusdcPerGasUnit >= threshold ||
+          (uusdcThreshold !== undefined && uusdcValue >= uusdcThreshold))
         ? { balance, uusdcValue, gasUnits, uusdcPerGasUnit }
         : undefined;
     }).sort((a, b) => naiveCompare(b.uusdcPerGasUnit, a.uusdcPerGasUnit));
@@ -255,7 +266,10 @@ export const pickAutoClaimSources = (
       holds.push({ ...balance, uusdcValue, usdcTokenId });
       estimatedGasUnits += gasUnits;
       claimedUusdc += uusdcValue;
-      if (Number(claimedUusdc) / estimatedGasUnits >= threshold) {
+      if (
+        Number(claimedUusdc) / estimatedGasUnits >= threshold ||
+        (uusdcThreshold !== undefined && claimedUusdc >= uusdcThreshold)
+      ) {
         picks.push(...holds.splice(0));
         if (picks.length >= pickLimit) return picks.slice(0, pickLimit);
       }
@@ -319,6 +333,8 @@ export const checkAutoRebalance = (
 
 export type AutoPowers = {
   autoClaimConfig: AutoClaimConfig;
+  /** for end-to-end testing of specific portfolios */
+  autoClaimUusdcThresholds?: Record<PortfolioKey, bigint>;
   autoRebalance: AutoRebalanceConfig;
   console: Pick<Console, 'error' | 'log' | 'warn'>;
   depositBrand: Brand<'nat'>;
@@ -327,7 +343,7 @@ export type AutoPowers = {
   gasCosts?: ChainGasState[];
   gasEstimator: GasEstimator;
   getWalletInvocationUpdate: (messageId: string | number) => Promise<unknown>;
-  inspectForStdout: (obj: unknown) => string;
+  inspectForStdout: (obj: unknown, options?: InspectOptions) => string;
   instrumentBlocks?: InstrumentBlocks;
   isDryRun?: boolean;
   makeNonce: () => string;
@@ -400,7 +416,11 @@ export const maybeAutoClaim = async (
 
   await null;
   try {
-    const sources = pickAutoClaimSources(tokenBalances, powers);
+    const sources = pickAutoClaimSources(
+      tokenBalances,
+      powers,
+      getOwn(powers.autoClaimUusdcThresholds || {}, portfolioKey),
+    );
     if (!sources?.length) {
       console.log(logPrefix, 'skip', inspectForStdout(logContext));
       return;
@@ -408,6 +428,23 @@ export const maybeAutoClaim = async (
 
     // Build a FundsFlowPlan in which the only dependencies are that each
     // swap step depends upon all claim steps for the same chain.
+    const swapPlaceholders = new Map<SupportedChain, null | AutoClaimSource>();
+    for (const source of sources) {
+      const { chainName } = source;
+      if (source.instrumentName === null) {
+        // This chain is a real source.
+        swapPlaceholders.set(chainName, null);
+      } else if (!swapPlaceholders.has(chainName)) {
+        // Create a dummy source for this chain.
+        swapPlaceholders.set(chainName, {
+          ...source,
+          instrumentName: null,
+          amount: '0',
+          uusdcValue: 0n,
+        });
+      }
+    }
+    sources.push(...[...swapPlaceholders.values()].filter(s => !!s));
     sources.sort((a, b) => {
       const { caipChainId: chainA, instrumentName: instrumentA } = a;
       const { caipChainId: chainB, instrumentName: instrumentB } = b;
@@ -428,8 +465,8 @@ export const maybeAutoClaim = async (
         const { chainName, caipChainId, instrumentName } = source;
         const [, evmChainId] =
           caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
-        if (!evmChainId) return;
-        if (instrumentName && !isERC4626InstrumentId(instrumentName)) return;
+        if (!instrumentName || !evmChainId) return;
+        if (!isERC4626InstrumentId(instrumentName)) return;
         return JSON.stringify({ chainId: evmChainId, chainName });
       }),
     );
@@ -439,7 +476,9 @@ export const maybeAutoClaim = async (
           const { chainName, chainId } = JSON.parse(chainJson);
           const infos = await fetchMerklRewardsInfo(merklClient, {
             chainId,
-            address: portfolioStatus.accountIdByChain[chainName]!,
+            address: parseAccountId(
+              portfolioStatus.accountIdByChain[chainName]!,
+            ).accountAddress as `0x${string}`,
           });
           for (const { chain, rewards } of infos) {
             for (const { token, amount, claimed, proofs } of rewards) {
@@ -519,37 +558,47 @@ export const maybeAutoClaim = async (
           const caip10 = parseAccountId(
             portfolioStatus.accountIdByChain[source.chainName]!,
           );
-          const swapInfo = await fetchOneInchSwapInfo(oneInchClient, {
-            chainId: Number(evmChainId),
-            src: tokenId as EvmAddress,
-            dst: source.usdcTokenId as EvmAddress,
-            amount: `${rewardTokenCount}`,
-            from: caip10.accountAddress as EvmAddress,
-            origin: caip10.accountAddress as EvmAddress,
-            minReturn: `${minReturn}`,
-            includeGas: true,
-          });
-          const uusdcAmount = AmountMath.make(depositBrand, minReturn);
+          // TODO(AGO-1115): Propagate 1inch.com failures rather than suppressing them.
+          try {
+            const swapInfo = await fetchOneInchSwapInfo(oneInchClient, {
+              chainId: Number(evmChainId),
+              src: tokenId as EvmAddress,
+              dst: source.usdcTokenId as EvmAddress,
+              amount: `${rewardTokenCount}`,
+              from: caip10.accountAddress as EvmAddress,
+              origin: caip10.accountAddress as EvmAddress,
+              minReturn: `${minReturn}`,
+              includeGas: true,
+            });
+            const uusdcAmount = AmountMath.make(depositBrand, minReturn);
 
-          const src = `@${chainName}` as AssetPlaceRef;
-          const swap: SwapDesc = {
-            tokenIn: tokenId as any,
-            amountIn: rewardTokenCount,
-            provider: '1inch',
-            // Disallow partial fill etc.
-            flags: 0n,
-            executor: swapInfo.executor,
-            srcReceiver: swapInfo.desc.srcReceiver,
-            data: swapInfo.data,
-          };
-          const feeValue = await gasEstimator.getWalletEstimate(
-            chainName as AxelarChain,
-            EvmWalletOperationType.Swap,
-            undefined,
-            swapInfo.gas ?? GAS_UNITS_PER_SWAP,
-          );
-          const fee = makeGmpFeeAmount(feeBrand, feeValue);
-          return { src, dest, amount: uusdcAmount, fee, swap };
+            const src = `@${chainName}` as AssetPlaceRef;
+            const swap: SwapDesc = {
+              tokenIn: tokenId as any,
+              amountIn: rewardTokenCount,
+              provider: '1inch',
+              // Disallow partial fill etc.
+              flags: 0n,
+              executor: swapInfo.executor,
+              srcReceiver: swapInfo.desc.srcReceiver,
+              data: swapInfo.data,
+            };
+            const feeValue = await gasEstimator.getWalletEstimate(
+              chainName as AxelarChain,
+              EvmWalletOperationType.Swap,
+              undefined,
+              swapInfo.gas ?? GAS_UNITS_PER_SWAP,
+            );
+            const fee = makeGmpFeeAmount(feeBrand, feeValue);
+            return { src, dest, amount: uusdcAmount, fee, swap };
+          } catch (err) {
+            console.warn(
+              logPrefix,
+              '⚠️ Temporarily suppressed auto-swap failure',
+              err,
+            );
+            return null;
+          }
         }
       }),
     );
@@ -580,7 +629,7 @@ export const maybeAutoClaim = async (
     console.log(
       logPrefix,
       'claimRewards',
-      inspectForStdout({ ...logContext, plan }),
+      inspectForStdout({ ...logContext, plan }, { depth: 6 }),
       tx,
     );
     return tx.transactionHash;

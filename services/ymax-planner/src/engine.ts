@@ -100,7 +100,7 @@ import {
   setResolvedTx,
 } from './kv-store.ts';
 import { UserInputError, type ReconnectingEvmProvider } from './support.ts';
-import { makeExpiringMap, normalizeIsoTimestamp } from './utils.ts';
+import { getOwn, makeExpiringMap, normalizeIsoTimestamp } from './utils.ts';
 import type { IsoTimestamp } from './utils.ts';
 import {
   encodedKeyToPath,
@@ -245,6 +245,7 @@ export type Powers = {
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
   postYdsTransaction?: (txHash: string) => Promise<void>;
   autoClaimConfig: AutoClaimConfig;
+  autoClaimUusdcThresholds?: Record<PortfolioKey, bigint>;
   autoRebalance: AutoRebalanceConfig;
   GAS_UNITS_PER_CLAIM: Record<string, bigint>;
   GAS_UNITS_PER_SWAP: bigint;
@@ -269,6 +270,7 @@ export type ProcessPortfolioPowers = Pick<
   | 'oneInchClient'
   | 'postYdsTransaction'
   | 'autoClaimConfig'
+  | 'autoClaimUusdcThresholds'
   | 'autoRebalance'
   | 'GAS_UNITS_PER_CLAIM'
   | 'GAS_UNITS_PER_SWAP'
@@ -375,6 +377,7 @@ export const processPortfolioEvents = async (
     oneInchClient,
     postYdsTransaction,
     autoClaimConfig,
+    autoClaimUusdcThresholds,
     autoRebalance,
     GAS_UNITS_PER_CLAIM,
     GAS_UNITS_PER_SWAP,
@@ -563,6 +566,7 @@ export const processPortfolioEvents = async (
   };
   const autoPowers: AutoPowers = {
     autoClaimConfig,
+    autoClaimUusdcThresholds,
     autoRebalance,
     console,
     depositBrand,
@@ -611,6 +615,7 @@ export const processPortfolioEvents = async (
     const claimFrom = pickAutoClaimSources(
       cachedBalanceData.tokenBalances,
       autoPowers,
+      getOwn(autoClaimUusdcThresholds || {}, portfolioKey),
       1,
     );
     return !!claimFrom;
