@@ -47,6 +47,15 @@ export type YmaxOperationDetails<
   [P in T]: {
     operation: P;
     domain: YmaxFullDomain;
+    /**
+     * A *lower bound* on the runtime shape, not an exact description: since
+     * `extractOperationDetailsFromStandaloneData` /
+     * `extractOperationDetailsFromPermit2WitnessData` keep (rather than
+     * drop) genuinely-signed fields this version doesn't recognize, `data`
+     * can carry extra properties beyond `YmaxOperationType<P>` at runtime.
+     * Consumers that must reject such fields (e.g. permission records)
+     * need to validate that themselves against a closed shape.
+     */
     data: YmaxOperationType<P>;
   };
 }[T];
@@ -115,15 +124,19 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * By the time this is called, `data.message` has already been through the
    * "reject anything unsigned" normalize pass (see
    * `extractOperationDetailsFromDataWithAddress`), so any field here was
-   * actually part of what was signed. This function normalizes *and
-   * validates* it a second time against the types this (possibly older)
-   * version of the code expects for the operation: any field the signer's
-   * client signed but this version doesn't know about is dropped (not
-   * rejected -- it was signed, just not supported yet), and any `optional`
-   * field is resolved based on whether it's actually present in the
-   * message. The returned `data` is exactly the normalized/expected shape,
-   * never a superset of it, and is guaranteed to satisfy the expected types
-   * (required fields present, values of the right shape/range).
+   * actually part of what was signed. This function normalizes it a second
+   * time against the types this (possibly older) version of the code
+   * expects for the operation, resolving any `optional` field based on
+   * whether it's actually present in the message, but *keeps* rather than
+   * drops fields the signer's client signed that this version doesn't know
+   * about yet: dropping them would let a permissions-bearing field silently
+   * disappear (e.g. a not-yet-understood attenuation on a `Grant`), turning
+   * an attenuated grant into an unconstrained one. The returned `data` can
+   * therefore be a superset of the expected shape; it is guaranteed to
+   * satisfy the expected types (required fields present, values of the
+   * right shape/range), but consumers that must reject unrecognized fields
+   * (e.g. permission records) need to validate that themselves against a
+   * closed shape.
    *
    * Assumes the domain has the expected shape of a Ymax domain.
    *
@@ -159,7 +172,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
         types: getYmaxOperationTypes(operation),
         primaryType: operation,
       },
-      { onExtraField: 'drop' },
+      { onExtraField: 'keep' },
     );
     return {
       operation,
@@ -176,15 +189,18 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * through the "reject anything unsigned" normalize pass (see
    * `extractOperationDetailsFromDataWithAddress`), so any field in the
    * witness data here was actually part of what was signed. This function
-   * normalizes *and validates* it a second time against the types this
-   * (possibly older) version of the code expects for the operation: any
-   * field the signer's client signed but this version doesn't know about is
-   * dropped (not rejected -- it was signed, just not supported yet), and
-   * any `optional` field is resolved based on whether it's actually present
-   * in the witness data. The returned `data` is exactly the
-   * normalized/expected shape, never a superset of it, and is guaranteed to
-   * satisfy the expected types (required fields present, values of the
-   * right shape/range).
+   * normalizes it a second time against the types this (possibly older)
+   * version of the code expects for the operation, resolving any `optional`
+   * field based on whether it's actually present in the witness data, but
+   * *keeps* rather than drops fields the signer's client signed that this
+   * version doesn't know about yet: dropping them would let a
+   * permissions-bearing field silently disappear (e.g. a not-yet-understood
+   * attenuation on a `Grant`), turning an attenuated grant into an
+   * unconstrained one. The returned `data` can therefore be a superset of
+   * the expected shape; it is guaranteed to satisfy the expected types
+   * (required fields present, values of the right shape/range), but
+   * consumers that must reject unrecognized fields (e.g. permission
+   * records) need to validate that themselves against a closed shape.
    *
    * Assumes the message has already been validated against the types from the data.
    * Assumes the domain has the expected shape of a permit2 domain.
@@ -216,7 +232,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
         types: getYmaxOperationTypes(operation),
         primaryType: operation,
       },
-      { onExtraField: 'drop' },
+      { onExtraField: 'keep' },
     );
     const spender = permitData.message.spender;
     return {
@@ -341,10 +357,15 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * the same way, separately (its values live outside `message`).
    * A *different*, later normalize pass (in
    * `extractOperationDetailsFromStandaloneData` /
-   * `extractOperationDetailsFromPermit2WitnessData`) drops -- rather than
+   * `extractOperationDetailsFromPermit2WitnessData`) keeps -- rather than
    * rejects -- fields that were genuinely signed but aren't supported by
-   * this version's generated operation types; those are legitimate,
-   * merely unsupported (yet), not a security concern.
+   * this version's generated operation types: they were legitimately
+   * signed, merely not (yet) understood by this version. They are not
+   * dropped, because a permissions-bearing field this version doesn't
+   * understand yet must not silently vanish and be treated as absent (that
+   * would turn an attenuated grant into an unconstrained one); instead,
+   * downstream permission consumers validate against a closed shape and
+   * reject any field they don't recognize.
    *
    * @param data The operation data with an `address` field of the signing owner.
    * @param contractAddresses Optionally, a set of valid contract addresses to validate against
