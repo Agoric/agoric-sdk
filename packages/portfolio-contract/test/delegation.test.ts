@@ -15,6 +15,7 @@ import {
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
 import type { Bech32Address } from '@agoric/orchestration';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { NameAdmin } from '@agoric/vats';
@@ -592,6 +593,83 @@ test('Pete may open a portfolio and grant control in a single signed message', a
       walletOutcomes: { openAndGrant: openAndGrantWalletStatus },
     }),
     'open+grant vstorage',
+  );
+});
+
+test('Pete enables auto-features, granting the planner a delegation', async t => {
+  const deployed = await deploy(t);
+  const { peteKit, peteArbitrum } = await openPetePortfolio(deployed);
+  const openWalletStatus = await getWalletStatus(peteKit);
+
+  const setAutoFeaturesStatus = await peteArbitrum.setAutoFeatures({
+    rebalance: true,
+  });
+  t.is(setAutoFeaturesStatus.status, 'ok');
+
+  await eventLoopIteration();
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
+  const portfolioStatus = await peteKit.evmTrader.getPortfolioStatus();
+  t.like(portfolioStatus, { enabledAutoFeatures: { rebalance: true } });
+  const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
+  t.like(agents, {
+    agent1: { grantee: PortfolioPlannerAgent, state: 'active' },
+  });
+
+  snapshotVstorage(
+    t,
+    harden({
+      portfolioStatus,
+      agents,
+      walletOutcomes: {
+        open: openWalletStatus,
+        setAutoFeatures: setAutoFeaturesStatus,
+      },
+    }),
+    'setAutoFeatures vstorage',
+  );
+});
+
+test('Pete may open a portfolio and enable auto-features in a single signed message', async t => {
+  const deployed = await deploy(t);
+  const peteKit = await makeEvmTraderKit(deployed, {
+    privateKey: evmTrader0PrivateKey,
+  });
+  const peteArbitrum = peteKit.evmTrader.forChain('Arbitrum');
+
+  // One user signature: create the portfolio AND enable auto-features,
+  // matching the combined open+grant form above but for the
+  // `features` field instead of `grantee`.
+  await peteArbitrum.openPortfolio(
+    [
+      { instrument: 'Aave_Arbitrum', portion: 60n },
+      { instrument: 'Compound_Arbitrum', portion: 40n },
+    ],
+    10_000_000n,
+    { features: { rebalance: true, claimRewards: false } },
+  );
+  await eventLoopIteration();
+  const openWithFeaturesStatus = await getWalletStatus(peteKit);
+
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
+  const portfolioStatus = await peteKit.evmTrader.getPortfolioStatus();
+  t.like(portfolioStatus, { enabledAutoFeatures: { rebalance: true } });
+  const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
+  t.like(agents, {
+    agent1: { grantee: PortfolioPlannerAgent, state: 'active' },
+  });
+
+  snapshotVstorage(
+    t,
+    harden({
+      portfolioStatus,
+      agents,
+      walletOutcomes: { openWithFeatures: openWithFeaturesStatus },
+    }),
+    'open+autoFeatures vstorage',
   );
 });
 
