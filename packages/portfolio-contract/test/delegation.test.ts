@@ -56,6 +56,12 @@ const getSyncState = ({
 }: Pick<PortfolioStatus, 'policyVersion' | 'rebalanceCount'>) =>
   harden({ policyVersion, rebalanceCount });
 
+/** The wallet's published status for its most recently submitted message. */
+const getWalletStatus = (peteKit: {
+  readPublished: (path: string) => Promise<unknown>;
+  evmAccount: { address: string };
+}) => peteKit.readPublished(`evmWallets.${peteKit.evmAccount.address}`);
+
 const stripRootStoragePath = (path: string) =>
   path.replace(new RegExp(`^(${ROOT_STORAGE_PATH}|published)\\.`), '');
 
@@ -165,6 +171,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
   const { zoe } = deployed;
   const { receiver, peteKit, peteArbitrum, portfolioId } =
     await openPetePortfolio(deployed);
+  const openWalletStatus = await getWalletStatus(peteKit);
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
     harden({ allocation: true }),
@@ -219,6 +226,11 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
     t,
     deployed.common.bootstrap.storage,
     delegationDocOpts,
+  );
+  snapshotVstorage(
+    t,
+    harden({ walletOutcomes: { open: openWalletStatus, grant: grantStatus } }),
+    'wallet outcomes',
   );
 });
 
@@ -457,6 +469,7 @@ test('Grant delivery failure is surfaced in wallet vstorage without publishing a
     ],
     10_000_000n,
   );
+  const openWalletStatus = await getWalletStatus(peteKit);
 
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
@@ -470,10 +483,6 @@ test('Grant delivery failure is surfaced in wallet vstorage without publishing a
   }
   t.regex(grantStatus.error || '', /"nameKey" not found: "agoric1petesAgent"/);
 
-  const walletStatusPath = `ymax0.evmWallets.${peteKit.evmAccount.address}`;
-  const walletStatus = await peteKit.readPublished(
-    walletStatusPath.replace(/^ymax0\./, ''),
-  );
   const portfolioPath = peteKit.evmTrader.getPortfolioPath();
   const portfolioSubtree = readPublishedSubtree(
     deployed.common.bootstrap.storage,
@@ -483,7 +492,7 @@ test('Grant delivery failure is surfaced in wallet vstorage without publishing a
   snapshotVstorage(
     t,
     harden({
-      [walletStatusPath]: walletStatus,
+      walletOutcomes: { open: openWalletStatus, grant: grantStatus },
       ...portfolioSubtree,
     }),
     'grant delivery failure vstorage',
@@ -520,6 +529,7 @@ test('Pete may open a portfolio and grant control in a single signed message', a
     },
   );
   await eventLoopIteration();
+  const openAndGrantWalletStatus = await getWalletStatus(peteKit);
 
   // The combined operation delivered the delegation as part of the same call.
   // (openPortfolioWithGrant only resolves once the contract's
@@ -573,6 +583,16 @@ test('Pete may open a portfolio and grant control in a single signed message', a
     Aave_Arbitrum: 50n,
     Compound_Arbitrum: 50n,
   });
+
+  snapshotVstorage(
+    t,
+    harden({
+      portfolioStatus: after,
+      agents,
+      walletOutcomes: { openAndGrant: openAndGrantWalletStatus },
+    }),
+    'open+grant vstorage',
+  );
 });
 
 test('open+grant with an unregistered grantee aborts before portfolio creation', async t => {
