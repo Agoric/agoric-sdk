@@ -388,6 +388,20 @@ export type PortfolioSetAutoFeaturesResult = {
   enabledAutoFeatures: PortfolioAutoFeaturesExt;
 };
 
+/**
+ * Result of an `OpenPortfolio` operation that also granted delegated
+ * control (`grantee`) and/or enabled auto-features (`features`),
+ * referencing the resulting policyVersion. A plain open (neither
+ * `grantee` nor `features`) keeps publishing the bare
+ * `portfolio${number}` result for backward compatibility.
+ */
+export type PortfolioOpenResult = {
+  portfolioId: number;
+  policyVersion: number;
+  agentId?: number;
+  enabledAutoFeatures?: PortfolioAutoFeaturesExt;
+};
+
 export type PortfolioRemoteAccountCommonStates =
   | 'provisioning'
   | 'active'

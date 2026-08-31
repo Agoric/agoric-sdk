@@ -42,8 +42,10 @@ import {
   type FlowConfig,
   type PortfolioAgentGrantee,
   type PortfolioAgentKey,
+  type PortfolioGrantResult,
   type PortfolioPermissionsExt,
   type PortfolioPublicInvitationMaker,
+  type PortfolioSetAutoFeaturesResult,
   type TargetAllocation,
 } from '@agoric/portfolio-api';
 import {
@@ -824,6 +826,8 @@ export const contract = async (
     ): Promise<{
       storagePath: string;
       evmHandler: PortfolioKit['evmHandler'];
+      grantResult?: PortfolioGrantResult;
+      autoFeaturesResult?: PortfolioSetAutoFeaturesResult;
     }> {
       validateOpenMessageRepresentativeInfo(
         permitDetails.chainId,
@@ -884,17 +888,21 @@ export const contract = async (
         `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
       const kit = makeNextPortfolioKit({ sourceAccountId });
 
+      let autoFeaturesResult: PortfolioSetAutoFeaturesResult | undefined;
       if (features !== undefined) {
         // setAutoFeatures is promptly resolved
-        await vowTools.asPromise(kit.evmHandler.setAutoFeatures(features));
+        autoFeaturesResult = await vowTools.asPromise(
+          kit.evmHandler.setAutoFeatures(features),
+        );
       }
+      let grantResult: PortfolioGrantResult | undefined;
       if (grantee) {
         // `grant()` already enforces the shared auth and permission checks.
         // `asPromise()` is safe because grant delivery is prompt: it hands the
         // invitation to an already-provisioned smart wallet via
         // `deliverDelegation` / `NamesByAddress`, so success resolves promptly
         // and an unregistered grantee rejects promptly too.
-        await vowTools.asPromise(
+        grantResult = await vowTools.asPromise(
           // cast from EIP-712 string to agoric1 Bech32 address, as in the
           // standalone Grant handler; the string is looked up in NamesByAddress.
           kit.evmHandler.grant(
@@ -923,6 +931,8 @@ export const contract = async (
       return harden({
         storagePath,
         evmHandler: kit.evmHandler,
+        ...(autoFeaturesResult && { autoFeaturesResult }),
+        ...(grantResult && { grantResult }),
       });
     },
     async validateEVMMessageDomain(

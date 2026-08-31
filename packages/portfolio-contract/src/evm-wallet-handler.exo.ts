@@ -20,7 +20,12 @@ import {
   isHex,
   recoverTypedDataAddress,
 } from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
-import type { StatusFor } from '@agoric/portfolio-api';
+import type {
+  PortfolioGrantResult,
+  PortfolioOpenResult,
+  PortfolioSetAutoFeaturesResult,
+  StatusFor,
+} from '@agoric/portfolio-api';
 import type {
   YmaxFullDomain,
   YmaxPermitWitnessTransferFromData,
@@ -65,6 +70,8 @@ interface PortfolioContractPublicFacet {
   ): Promise<{
     evmHandler: PortfolioEVMFacet;
     storagePath: string;
+    grantResult?: PortfolioGrantResult;
+    autoFeaturesResult?: PortfolioSetAutoFeaturesResult;
   }>;
   validateEVMMessageDomain(
     domain: YmaxFullDomain,
@@ -213,6 +220,8 @@ export const prepareEVMPortfolioOperationManager = (
       OpenOutcomeWatcher: {
         async onFulfilled({
           evmHandler,
+          grantResult,
+          autoFeaturesResult,
         }: Awaited<
           ReturnType<PortfolioContractPublicFacet['openPortfolioFromEVM']>
         >) {
@@ -241,9 +250,25 @@ export const prepareEVMPortfolioOperationManager = (
               portfolioPaths,
             );
 
-            return this.facets.BasicOutcomeWatcher.onFulfilled(
-              `portfolio${portfolioId}`,
-            );
+            // A plain open (neither grantee nor features) keeps the bare
+            // `portfolio${number}` result for backward compatibility with
+            // existing consumers; grant runs after setAutoFeatures, so its
+            // policyVersion (when present) reflects the final policy state.
+            const result: PortfolioOpenResult | `portfolio${number}` =
+              grantResult || autoFeaturesResult
+                ? harden({
+                    portfolioId,
+                    policyVersion: (grantResult ?? autoFeaturesResult)!
+                      .policyVersion,
+                    ...(grantResult && { agentId: grantResult.agentId }),
+                    ...(autoFeaturesResult && {
+                      enabledAutoFeatures:
+                        autoFeaturesResult.enabledAutoFeatures,
+                    }),
+                  })
+                : `portfolio${portfolioId}`;
+
+            return this.facets.BasicOutcomeWatcher.onFulfilled(result);
           } catch (e) {
             return this.facets.BasicOutcomeWatcher.onRejected(e);
           }
