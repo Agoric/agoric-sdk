@@ -536,7 +536,6 @@ export const maybeAutoClaim = async (
           // Record and consume from input steps.
           let rewardTokenCount = BigInt(source.amount);
           let uusdcValue = source.uusdcValue;
-          let consumesInput = false;
           if (swapInputs.length > 0) {
             const firstClaimIndex = stepIndex - swapInputs.length;
             const prerequisiteIndexes = swapInputs.map((input, i) => {
@@ -546,7 +545,6 @@ export const maybeAutoClaim = async (
             });
             order.push([stepIndex, prerequisiteIndexes]);
             swapInputs.splice(0);
-            consumesInput = true;
           }
           // These values are sufficiently low to justify non-bigint arithmetic.
           // Revisit if we start swapping into tokens with more than 6 decimals
@@ -561,48 +559,37 @@ export const maybeAutoClaim = async (
           const caip10 = parseAccountId(
             portfolioStatus.accountIdByChain[source.chainName]!,
           );
-          // TODO(AGO-1115): Propagate 1inch.com failures rather than suppressing them.
-          try {
-            const swapInfo = await fetchOneInchSwapInfo(oneInchClient, {
-              chainId: Number(evmChainId),
-              src: tokenId as EvmAddress,
-              dst: source.usdcTokenId as EvmAddress,
-              amount: `${rewardTokenCount}`,
-              from: caip10.accountAddress as EvmAddress,
-              origin: caip10.accountAddress as EvmAddress,
-              minReturn: `${minReturn}`,
-              includeGas: true,
-            });
-            const uusdcAmount = AmountMath.make(depositBrand, minReturn);
+          const swapInfo = await fetchOneInchSwapInfo(oneInchClient, {
+            chainId: Number(evmChainId),
+            src: tokenId as EvmAddress,
+            dst: source.usdcTokenId as EvmAddress,
+            amount: `${rewardTokenCount}`,
+            from: caip10.accountAddress as EvmAddress,
+            origin: caip10.accountAddress as EvmAddress,
+            minReturn: `${minReturn}`,
+            includeGas: true,
+          });
+          const uusdcAmount = AmountMath.make(depositBrand, minReturn);
 
-            const src = `@${chainName}` as AssetPlaceRef;
-            const swap: SwapDesc = {
-              tokenIn: tokenId as any,
-              amountIn: rewardTokenCount,
-              provider: '1inch',
-              // Disallow partial fill etc.
-              flags: 0n,
-              executor: swapInfo.executor,
-              srcReceiver: swapInfo.desc.srcReceiver,
-              data: swapInfo.data,
-            };
-            const feeValue = await gasEstimator.getWalletEstimate(
-              chainName as AxelarChain,
-              EvmWalletOperationType.Swap,
-              undefined,
-              swapInfo.gas ?? GAS_UNITS_PER_SWAP,
-            );
-            const fee = makeGmpFeeAmount(feeBrand, feeValue);
-            return { src, dest, amount: uusdcAmount, fee, swap };
-          } catch (err) {
-            console.warn(
-              logPrefix,
-              '⚠️ Temporarily suppressed auto-swap failure',
-              err,
-            );
-            if (consumesInput) order.pop();
-            return null;
-          }
+          const src = `@${chainName}` as AssetPlaceRef;
+          const swap: SwapDesc = {
+            tokenIn: tokenId as any,
+            amountIn: rewardTokenCount,
+            provider: '1inch',
+            // Disallow partial fill etc.
+            flags: 0n,
+            executor: swapInfo.executor,
+            srcReceiver: swapInfo.desc.srcReceiver,
+            data: swapInfo.data,
+          };
+          const feeValue = await gasEstimator.getWalletEstimate(
+            chainName as AxelarChain,
+            EvmWalletOperationType.Swap,
+            undefined,
+            swapInfo.gas ?? GAS_UNITS_PER_SWAP,
+          );
+          const fee = makeGmpFeeAmount(feeBrand, feeValue);
+          return { src, dest, amount: uusdcAmount, fee, swap };
         }
       }),
     );

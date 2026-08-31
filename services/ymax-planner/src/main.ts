@@ -588,8 +588,6 @@ export const main = async (
     postYdsTransaction,
     autoClaimConfig: config.autoClaim,
     autoRebalance: config.autoRebalance,
-    autoClaimUusdcThresholds:
-      config.contractInstance === 'ymax0' ? { portfolio19: 500n } : undefined,
     GAS_UNITS_PER_CLAIM,
     GAS_UNITS_PER_SWAP,
   };
