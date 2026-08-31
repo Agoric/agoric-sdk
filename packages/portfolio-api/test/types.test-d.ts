@@ -108,6 +108,52 @@ expectAssignable<FlowDetail>({
 expectNotAssignable<FlowDetail>({ type: 'deposit' });
 expectNotAssignable<FlowDetail>({ type: 'withdraw' });
 
+expectAssignable<FlowDetail>({
+  type: 'rebalance',
+  agent: 'agent1',
+  initiatingOperation: {
+    type: 'setTargetAllocation',
+    targetAllocation,
+    status: 'pending',
+  },
+});
+expectAssignable<FlowDetail>({
+  type: 'rebalance',
+  initiatingOperation: {
+    type: 'setTargetAllocation',
+    targetAllocation,
+    status: 'ok',
+    result: { policyVersion: 3 },
+  },
+});
+expectAssignable<FlowDetail>({
+  type: 'rebalance',
+  initiatingOperation: {
+    type: 'setTargetAllocation',
+    targetAllocation,
+    status: 'error',
+    error: 'mandate rejected',
+  },
+});
+expectNotAssignable<FlowDetail>({
+  type: 'rebalance',
+  initiatingOperation: {
+    type: 'setTargetAllocation',
+    targetAllocation,
+    status: 'ok',
+  },
+});
+expectNotAssignable<FlowDetail>({
+  type: 'deposit',
+  amount: natAmount,
+  initiatingOperation: {
+    type: 'setTargetAllocation',
+    targetAllocation,
+    status: 'ok',
+    result: { policyVersion: 3 },
+  },
+});
+
 expectAssignable<FlowStatus>({ state: 'run', step: 1, how: 'start' });
 expectAssignable<FlowStatus>({
   state: 'fail',
