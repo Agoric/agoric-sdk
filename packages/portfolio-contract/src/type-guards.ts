@@ -35,6 +35,7 @@ import {
   YieldProtocol,
   type AssetPlaceRef,
   type FlowDetail,
+  type OpenPortfolioInitiatingOperation,
   type PortfolioAgentStatus,
   type PortfolioPublishedPathTypes,
   type ProposalType,
@@ -244,6 +245,15 @@ const SetTargetAllocationInitiatingOperationShape: TypedPattern<SetTargetAllocat
     result: M.splitRecord({ policyVersion: M.number() }),
   });
 
+const OpenPortfolioInitiatingOperationShape: TypedPattern<OpenPortfolioInitiatingOperation> =
+  makeInitiatingOperationShape({
+    required: {
+      type: 'openPortfolio',
+      targetAllocation: TargetAllocationShape,
+    },
+    result: M.splitRecord({ policyVersion: M.number() }),
+  });
+
 export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
   M.splitRecord(
     { type: 'withdraw', amount: AnyNatAmountShape },
@@ -251,7 +261,10 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
   ),
   M.splitRecord(
     { type: 'deposit', amount: AnyNatAmountShape },
-    { fromChain: ChainNameExtShape, initiatingOperation: M.undefined() },
+    {
+      fromChain: ChainNameExtShape,
+      initiatingOperation: OpenPortfolioInitiatingOperationShape,
+    },
   ),
   M.splitRecord(
     { type: 'rebalance' },

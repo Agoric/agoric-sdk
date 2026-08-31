@@ -521,6 +521,16 @@ test('vstorage flow detail type matches shape', t => {
         error: 'mandate rejected',
       },
     },
+    depositWithOkOpenPortfolioInitiatingOperation: {
+      type: 'deposit',
+      amount: usdc(1n),
+      initiatingOperation: {
+        type: 'openPortfolio',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
+    },
   });
 
   const failCases = harden({
@@ -548,6 +558,16 @@ test('vstorage flow detail type matches shape', t => {
         type: 'setTargetAllocation',
         targetAllocation: { Aave_Ethereum: 10000n },
         status: 'error',
+      },
+    },
+    depositWithSetTargetAllocationInitiatingOperation: {
+      type: 'deposit',
+      amount: usdc(1n),
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
       },
     },
     rebalanceWithOpenPortfolioInitiatingOperation: {

@@ -147,6 +147,16 @@ export type SetTargetAllocationInitiatingOperation = {
   targetAllocation: TargetAllocation;
 } & OperationOutcome<{ policyVersion: number }>;
 
+/**
+ * The `openPortfolio` operation that initiated a deposit flow, when it also
+ * set the portfolio's initial target allocation, carrying that proposed
+ * allocation and the outcome of committing it as the new policy.
+ */
+export type OpenPortfolioInitiatingOperation = {
+  type: 'openPortfolio';
+  targetAllocation: TargetAllocation;
+} & OperationOutcome<{ policyVersion: number }>;
+
 export type FlowDetail =
   | {
       type: 'withdraw';
@@ -162,7 +172,8 @@ export type FlowDetail =
       fromChain?: SupportedChain;
       agent?: undefined;
       agentMemo?: undefined;
-      initiatingOperation?: undefined;
+      /** The operation that initiated this flow, when known. */
+      initiatingOperation?: OpenPortfolioInitiatingOperation;
     }
   | {
       type: 'rebalance'; // aka simpleRebalance

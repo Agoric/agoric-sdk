@@ -154,6 +154,26 @@ expectNotAssignable<FlowDetail>({
   },
 });
 
+expectAssignable<FlowDetail>({
+  type: 'deposit',
+  amount: natAmount,
+  initiatingOperation: {
+    type: 'openPortfolio',
+    targetAllocation,
+    status: 'ok',
+    result: { policyVersion: 1 },
+  },
+});
+expectNotAssignable<FlowDetail>({
+  type: 'rebalance',
+  initiatingOperation: {
+    type: 'openPortfolio',
+    targetAllocation,
+    status: 'ok',
+    result: { policyVersion: 1 },
+  },
+});
+
 expectAssignable<FlowStatus>({ state: 'run', step: 1, how: 'start' });
 expectAssignable<FlowStatus>({
   state: 'fail',
