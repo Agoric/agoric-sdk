@@ -43,6 +43,7 @@ import {
   type PortfolioDelegatedSetTargetAllocationParams,
   type PortfolioGrantResult,
   type PortfolioSetAutoFeaturesResult,
+  type SetTargetAllocationInitiatingOperation,
   PortfolioAutoFeaturesExtShape,
 } from '@agoric/portfolio-api';
 import {
@@ -682,11 +683,18 @@ export const preparePortfolioKit = (
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
-          manager.setTargetAllocation(targetAllocation);
+          const newPolicyVersion =
+            manager.setTargetAllocation(targetAllocation);
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
             ...(agentMemo != null && { agentMemo }),
+            initiatingOperation: {
+              type: 'setTargetAllocation',
+              targetAllocation,
+              status: 'ok',
+              result: { policyVersion: newPolicyVersion },
+            },
           };
           const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
@@ -1088,7 +1096,7 @@ export const preparePortfolioKit = (
         },
         setTargetAllocation(allocation: TargetAllocation) {
           this.state.targetAllocation = allocation;
-          this.facets.manager.incrPolicyVersion();
+          return this.facets.manager.incrPolicyVersion();
         },
         /** state-only version bump; callers are responsible for publishing */
         bumpPolicyVersion() {
@@ -1098,8 +1106,9 @@ export const preparePortfolioKit = (
           return newPolicyVersion;
         },
         incrPolicyVersion() {
-          this.facets.manager.bumpPolicyVersion();
+          const newPolicyVersion = this.facets.manager.bumpPolicyVersion();
           this.facets.reporter.publishStatus();
+          return newPolicyVersion;
         },
         /**
          * Creates and delivers a new delegation client with the specified
@@ -1548,6 +1557,9 @@ export const preparePortfolioKit = (
 
           !depositDetails || Fail`rebalance does not yet support deposit`;
 
+          let initiatingOperation:
+            | SetTargetAllocationInitiatingOperation
+            | undefined;
           if (allocations) {
             allocations.length > 0 ||
               Fail`rebalance with allocations requires non-empty allocations`;
@@ -1560,13 +1572,23 @@ export const preparePortfolioKit = (
               ]),
             );
 
-            this.facets.manager.setTargetAllocation(targetAllocation);
+            const policyVersion =
+              this.facets.manager.setTargetAllocation(targetAllocation);
+            initiatingOperation = {
+              type: 'setTargetAllocation',
+              targetAllocation,
+              status: 'ok',
+              result: { policyVersion },
+            };
           } else {
             const { targetAllocation } = this.state;
             (targetAllocation && Object.keys(targetAllocation).length > 0) ||
               Fail`rebalance requires targetAllocation to be set`;
           }
-          const flowDetail: FlowDetail = { type: 'rebalance' };
+          const flowDetail: FlowDetail = {
+            type: 'rebalance',
+            ...(initiatingOperation && { initiatingOperation }),
+          };
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           const seat = zcf.makeEmptySeatKit().zcfSeat;
 
@@ -1700,6 +1722,13 @@ export const preparePortfolioKit = (
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
           mustMatch(offerArgs, offerArgsShapes.rebalance);
+          // XXX not wired to record `initiatingOperation` (AGO-1125) like the
+          // other setTargetAllocation call sites: this legacy path has no
+          // real callers (superseded by SimpleRebalance) and switching it to
+          // executePlan surfaced a separate, pre-existing bug where
+          // executePlan republishes a duplicate, badly-formatted fail entry
+          // on any step failure (unlike this `rebalance` flow's quieter
+          // handling). Revisit once that's fixed.
           const startedFlow = this.facets.manager.startFlow(
             { type: 'rebalance' },
             offerArgs.flow,
@@ -1740,10 +1769,23 @@ export const preparePortfolioKit = (
           // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           const { manager } = this.facets;
-          if (offerArgs.targetAllocation) {
-            manager.setTargetAllocation(offerArgs.targetAllocation);
+          let initiatingOperation:
+            | SetTargetAllocationInitiatingOperation
+            | undefined;
+          const { targetAllocation } = offerArgs;
+          if (targetAllocation) {
+            const policyVersion = manager.setTargetAllocation(targetAllocation);
+            initiatingOperation = {
+              type: 'setTargetAllocation',
+              targetAllocation,
+              status: 'ok',
+              result: { policyVersion },
+            };
           }
-          const flowDetail = { type: 'rebalance' } as FlowDetail;
+          const flowDetail = {
+            type: 'rebalance',
+            ...(initiatingOperation && { initiatingOperation }),
+          } as FlowDetail;
           const startedFlow = manager.startFlow(flowDetail, offerArgs.flow);
           // This flow does its own error handling and always exits the seat
           void executePlan(

@@ -251,7 +251,7 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
   ),
   M.splitRecord(
     { type: 'deposit', amount: AnyNatAmountShape },
-    { fromChain: ChainNameExtShape },
+    { fromChain: ChainNameExtShape, initiatingOperation: M.undefined() },
   ),
   M.splitRecord(
     { type: 'rebalance' },
