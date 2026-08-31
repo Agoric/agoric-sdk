@@ -19,12 +19,18 @@ import type { Bech32Address } from '@agoric/orchestration';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { NameAdmin } from '@agoric/vats';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
+import {
+  getYmaxStandaloneOperationData,
+  getYmaxWitness,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { getPermitWitnessTransferFromData } from '@agoric/orchestration/src/utils/permit2.js';
 import { E, Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { deploy, makeEvmTraderKit } from './contract-setup.ts';
-import { evmTrader0PrivateKey } from './mocks.ts';
+import { contractsMock, evmTrader0PrivateKey } from './mocks.ts';
 import type { PortfolioStatus } from './contract-test-support.ts';
+import { chainInfoWithCCTP } from './supports.ts';
 
 const PETE_AGENT = 'agoric1petesAgent' as const;
 type Deployed = Awaited<ReturnType<typeof deploy>>;
@@ -359,6 +365,85 @@ test('Grant rejects allocation permission set to false', async t => {
   t.regex(grantStatus.error || '', /grant requires allocation permission/);
 });
 
+test('SetAutoFeatures keeps a UI-added tosAcceptance field signed at the top level of the message, and consumers ignore it', async t => {
+  const deployed = await deploy(t);
+  const { peteKit, portfolioId } = await openPetePortfolio(deployed);
+  const { evmWalletHandler, evmAccount, readPublished } = peteKit;
+  const { when } = deployed.common.utils.vowTools;
+
+  const address = evmAccount.address;
+  const priorStatus: any = await readPublished(`evmWallets.${address}`);
+  const nonce = priorStatus.nonce + 1n;
+  const { absValue: now } = await E(
+    deployed.timerService,
+  ).getCurrentTimestamp();
+  const deadline = now + 3600n;
+
+  const chainId = BigInt(chainInfoWithCCTP.Arbitrum.reference);
+  const verifyingContract = contractsMock.Arbitrum
+    .depositFactory as `0x${string}`;
+
+  const message = getYmaxStandaloneOperationData(
+    {
+      features: { rebalance: true },
+      portfolio: BigInt(portfolioId),
+      nonce,
+      deadline,
+    },
+    'SetAutoFeatures',
+    chainId,
+    verifyingContract,
+  );
+
+  // Mirrors ymax-web's `addTermsAcceptanceToSetAutoFeaturesTypedData`
+  // (ui/src/evm/setAutoFeaturesTermsPatch.ts), a documented AGO-681
+  // workaround that has the user sign a `tosAcceptance` struct alongside
+  // (not nested inside) `features`/`portfolio` on the SetAutoFeatures
+  // message, until portfolio-api supports the field natively. The contract
+  // doesn't know about it, so per AGO-1131 it is kept (not dropped) through
+  // EIP-712 extraction rather than silently vanishing -- but since nothing
+  // downstream validates the *whole* operation payload against a closed
+  // shape (only the nested `features`/`permissions` records are closed),
+  // it is simply ignored rather than rejected.
+  const augmented = {
+    ...message,
+    types: {
+      ...message.types,
+      SetAutoFeatures: [
+        ...message.types.SetAutoFeatures,
+        { name: 'tosAcceptance', type: 'TermsAcceptance' },
+      ],
+      TermsAcceptance: [
+        { name: 'agreementName', type: 'string' },
+        { name: 'version', type: 'string' },
+        { name: 'documentId', type: 'bytes32' },
+        { name: 'acceptedAt', type: 'uint256' },
+      ],
+    },
+    message: {
+      ...message.message,
+      tosAcceptance: {
+        agreementName: 'Automation Terms of Service',
+        version: '1.0',
+        documentId: `0x${'ab'.repeat(32)}`,
+        acceptedAt: 1700000000000n,
+      },
+    },
+  };
+
+  const signature = await evmAccount.signTypedData(augmented as any);
+
+  await when(
+    E(evmWalletHandler).handleMessage({
+      ...augmented,
+      signature,
+    } as any),
+  );
+
+  const status = await peteKit.evmTrader.getPortfolioStatus();
+  t.like(status, { enabledAutoFeatures: { rebalance: true } });
+});
+
 test('Grant delivery failure is surfaced in wallet vstorage without publishing an unusable agent', async t => {
   const deployed = await deploy(t);
   const peteKit = await makeEvmTraderKit(deployed, {
@@ -545,6 +630,105 @@ test('open+grant with an unregistered grantee aborts before portfolio creation',
   );
 
   await t.throwsAsync(peteKit.readPublished('portfolios.portfolio0'), {
+    message: /no data at path/,
+  });
+});
+
+test('open+grant with an unrecognized permission key aborts before portfolio creation', async t => {
+  const deployed = await deploy(t);
+  const peteKit = await makeEvmTraderKit(deployed, {
+    privateKey: evmTrader0PrivateKey,
+  });
+  const { evmWalletHandler, evmAccount, readPublished } = peteKit;
+  const walletAddress = evmAccount.address;
+
+  const witness = getYmaxWitness('OpenPortfolio', {
+    allocations: [
+      { instrument: 'Aave_Arbitrum', portion: 60n },
+      { instrument: 'Compound_Arbitrum', portion: 40n },
+    ],
+    grantee: {
+      address: PETE_AGENT,
+      permissions: { allocation: true },
+    },
+  });
+
+  // Simulate a newer client that signs a not-yet-supported narrowing
+  // constraint on `grantee.permissions` (e.g. from #12848) that this
+  // (older) contract doesn't recognize yet. Per AGO-1131 it is kept
+  // (not dropped) through extraction, so `grant()`'s closed-shape check
+  // rejects it -- and, since that check is now validated before
+  // `makeNextPortfolioKit()` runs, the combined open+grant aborts without
+  // orphaning a portfolio shell, exactly like the unregistered-grantee
+  // case above.
+  const { grantee: witnessGrantee, ...restWitness } = witness.witness as any;
+  const augmentedWitness = {
+    witnessField: witness.witnessField,
+    witnessTypes: {
+      ...witness.witnessTypes,
+      PortfolioPermissions: [
+        ...(witness.witnessTypes as any).PortfolioPermissions,
+        { name: 'allocationMaxWeights', type: 'bool' },
+      ],
+    },
+    witness: {
+      ...restWitness,
+      grantee: {
+        ...witnessGrantee,
+        permissions: {
+          ...witnessGrantee.permissions,
+          allocationMaxWeights: true,
+        },
+      },
+    },
+  };
+
+  const { absValue: now } = await E(
+    deployed.timerService,
+  ).getCurrentTimestamp();
+  const permitMessage = getPermitWitnessTransferFromData(
+    {
+      permitted: {
+        token: contractsMock.Arbitrum.usdc as `0x${string}`,
+        amount: 10_000_000n,
+      },
+      spender: contractsMock.Arbitrum.depositFactory as `0x${string}`,
+      nonce: 1n,
+      deadline: now + 3600n,
+    },
+    contractsMock.Arbitrum.permit2 as `0x${string}`,
+    BigInt(chainInfoWithCCTP.Arbitrum.reference),
+    augmentedWitness as any,
+  );
+
+  const signature = await evmAccount.signTypedData(permitMessage as any);
+  const { when } = deployed.common.utils.vowTools;
+
+  // The failure happens asynchronously (inside `openPortfolioFromEVM`,
+  // watched rather than awaited by the dispatcher), so `handleMessage`
+  // itself resolves; the failure is recorded on the wallet status instead,
+  // same as the unregistered-grantee case above.
+  await when(
+    E(evmWalletHandler).handleMessage({
+      ...permitMessage,
+      signature,
+    } as any),
+  );
+  await eventLoopIteration();
+
+  const walletStatus = (await readPublished(`evmWallets.${walletAddress}`)) as {
+    status: string;
+    error?: string;
+  };
+  t.is(walletStatus.status, 'error');
+  t.regex(walletStatus.error || '', /allocationMaxWeights/);
+
+  await t.throwsAsync(
+    readPublished(`evmWallets.${walletAddress}.portfolio`),
+    { message: /no data at path/ },
+    'no portfolio path is published for the wallet after the aborted open+grant',
+  );
+  await t.throwsAsync(readPublished('portfolios.portfolio0'), {
     message: /no data at path/,
   });
 });
