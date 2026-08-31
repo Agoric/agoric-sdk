@@ -37,7 +37,7 @@ import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
  * @import {PortfolioDelegationClient} from '@aglocal/portfolio-contract/src/delegation.exo.ts';
  * @import {EVMContractAddresses, PortfolioPrivateArgs} from '@aglocal/portfolio-contract/src/portfolio.contract.js';
  * @import {PortfolioPlanner} from '@aglocal/portfolio-contract/src/planner.exo.ts';
- * @import {ExternalPortfolioPermissions, PlanObservations, PortfolioKey, PortfolioPublishedPathTypes, StatusFor} from '@agoric/portfolio-api';
+ * @import {ExternalPortfolioPermissions, PlanObservations, PortfolioKey, PortfolioOpenResult, PortfolioPublishedPathTypes, StatusFor} from '@agoric/portfolio-api';
  * @import {WalletStoreEntryProxy} from '@agoric/client-utils/src/wallet-store.ts';
  * @import {VstorageKit} from '@agoric/client-utils';
  * @import {PrivateKeyAccount} from 'viem';
@@ -187,12 +187,17 @@ const makeEvmOwner = ({ account, handler, base, chainId, vsc, now, log }) => {
           witness,
         );
       }, 'signed open+grant did not succeed');
-      assert.typeof(status.result, 'string');
-      const reader = makePortfolioReader(
-        /** @type {PortfolioKey} */ (status.result),
-        vsc,
-        log,
+      // Combined open+grant publishes a structured result (portfolioId,
+      // policyVersion, agentId), not the bare `portfolio${number}` string a
+      // plain OpenPortfolio publishes.
+      assert.typeof(status.result, 'object');
+      const { portfolioId } = /** @type {PortfolioOpenResult} */ (
+        status.result
       );
+      const portfolioKey = /** @type {PortfolioKey} */ (
+        `portfolio${portfolioId}`
+      );
+      const reader = makePortfolioReader(portfolioKey, vsc, log);
       openedId = reader.id;
       return reader;
     },
