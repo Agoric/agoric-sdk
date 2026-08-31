@@ -4389,8 +4389,10 @@ test('openPortfolio from EVM: Noble registration failure fails the flow, not the
 test('EVM-to-Agoric CCTP provisions the Noble forwarding account', async t => {
   const amount = make(USDC, 2_000_000n);
   const fee = make(BLD, 100n);
-  const { orch, ctx, offer, tapPK, txResolver, cosmosId } = mocks();
+  const { orch, ctx, offer, storage, tapPK, txResolver, cosmosId } = mocks();
   const kit = await ctx.makePortfolioKit();
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus } = makeStorageTools(storage);
 
   const flowP = rebalance(
     orch,
@@ -4427,6 +4429,12 @@ test('EVM-to-Agoric CCTP provisions the Noble forwarding account', async t => {
   );
   t.true(registrationIndex >= 0, 'NFA registration transfer must be sent');
   t.true(registrationIndex < burnIndex, 'NFA registration must precede burn');
+
+  const { nobleForwardingAddress } = await getPortfolioStatus(portfolioId);
+  t.truthy(
+    nobleForwardingAddress,
+    'nobleForwardingAddress must appear in vstorage after NFA registration',
+  );
 });
 
 test('EVM-to-EVM CCTP does not provision a Noble forwarding account', async t => {
