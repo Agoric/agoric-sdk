@@ -114,6 +114,49 @@ export type TargetAllocation = Partial<
   Record<InstrumentId | `@${AxelarChain}`, bigint>
 >;
 
+/**
+ * Outcome of an operation that may be resolved asynchronously (e.g. subject
+ * to delayed mandate validation) after it has already had some other,
+ * immediately-visible effect (such as starting a flow).
+ */
+export type OperationOutcome<Result, Error = string> =
+  | {
+      status: 'pending';
+      result?: never;
+      error?: never;
+    }
+  | {
+      status: 'ok';
+      result: Result;
+      error?: never;
+    }
+  | {
+      status: 'error';
+      result?: never;
+      error: Error;
+    };
+
+/**
+ * The delegated `SetTargetAllocation` operation that initiated a rebalance
+ * flow, carrying the proposed allocation and, independently of the flow's
+ * own execution outcome, the outcome of validating and committing that
+ * allocation as the new policy.
+ */
+export type SetTargetAllocationInitiatingOperation = {
+  type: 'setTargetAllocation';
+  targetAllocation: TargetAllocation;
+} & OperationOutcome<{ policyVersion: number }>;
+
+/**
+ * The `openPortfolio` operation that initiated a deposit flow, when it also
+ * set the portfolio's initial target allocation, carrying that proposed
+ * allocation and the outcome of committing it as the new policy.
+ */
+export type OpenPortfolioInitiatingOperation = {
+  type: 'openPortfolio';
+  targetAllocation: TargetAllocation;
+} & OperationOutcome<{ policyVersion: number }>;
+
 export type FlowDetail =
   | {
       type: 'withdraw';
@@ -121,6 +164,7 @@ export type FlowDetail =
       toChain?: SupportedChain;
       agent?: undefined;
       agentMemo?: undefined;
+      initiatingOperation?: undefined;
     }
   | {
       type: 'deposit';
@@ -128,16 +172,21 @@ export type FlowDetail =
       fromChain?: SupportedChain;
       agent?: undefined;
       agentMemo?: undefined;
+      /** The operation that initiated this flow, when known. */
+      initiatingOperation?: OpenPortfolioInitiatingOperation;
     }
   | {
       type: 'rebalance'; // aka simpleRebalance
       agent?: PortfolioAgentKey;
       agentMemo?: string;
+      /** The operation that initiated this flow, when known. */
+      initiatingOperation?: SetTargetAllocationInitiatingOperation;
     }
   | {
       type: 'claimRewards';
       agent?: PortfolioAgentKey;
       agentMemo?: string;
+      initiatingOperation?: undefined;
     };
 
 /** linked list of concurrent failures, including dependencies */

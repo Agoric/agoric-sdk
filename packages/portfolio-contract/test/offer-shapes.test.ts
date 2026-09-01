@@ -492,6 +492,45 @@ test('vstorage flow detail type matches shape', t => {
       type: 'rebalance',
       agent: 'agent1',
     },
+    rebalanceWithPendingInitiatingOperation: {
+      type: 'rebalance',
+      agent: 'agent1',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'pending',
+      },
+    },
+    rebalanceWithOkInitiatingOperation: {
+      type: 'rebalance',
+      agent: 'agent1',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 3 },
+      },
+    },
+    rebalanceWithErrorInitiatingOperation: {
+      type: 'rebalance',
+      agent: 'agent1',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'error',
+        error: 'mandate rejected',
+      },
+    },
+    depositWithOkOpenPortfolioInitiatingOperation: {
+      type: 'deposit',
+      amount: usdc(1n),
+      initiatingOperation: {
+        type: 'openPortfolio',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
+    },
   });
 
   const failCases = harden({
@@ -504,6 +543,79 @@ test('vstorage flow detail type matches shape', t => {
       type: 'withdraw',
       amount: usdc(1n),
       toChain: 123,
+    },
+    initiatingOperationOkMissingResult: {
+      type: 'rebalance',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+      },
+    },
+    initiatingOperationErrorMissingError: {
+      type: 'rebalance',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'error',
+      },
+    },
+    depositWithSetTargetAllocationInitiatingOperation: {
+      type: 'deposit',
+      amount: usdc(1n),
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
+    },
+    rebalanceWithOpenPortfolioInitiatingOperation: {
+      type: 'rebalance',
+      initiatingOperation: {
+        type: 'openPortfolio',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
+    },
+    initiatingOperationPendingWithResult: {
+      type: 'rebalance',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'pending',
+        result: { policyVersion: 1 },
+      },
+    },
+    initiatingOperationOkWithError: {
+      type: 'rebalance',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+        error: 'unexpected',
+      },
+    },
+    withdrawWithInitiatingOperation: {
+      type: 'withdraw',
+      amount: usdc(1n),
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
+    },
+    claimRewardsWithInitiatingOperation: {
+      type: 'claimRewards',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
     },
   });
 

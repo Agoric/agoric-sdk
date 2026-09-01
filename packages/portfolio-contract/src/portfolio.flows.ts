@@ -48,6 +48,7 @@ import {
   type FlowFeatures,
   type FlowStep,
   type FundsFlowPlan,
+  type OpenPortfolioInitiatingOperation,
   type TrafficReport,
   type TxId,
   type TxPhase,
@@ -1960,8 +1961,22 @@ export const openPortfolio = (async (
     const id = kit.reader.getPortfolioId();
     const traceP = trace.sub(`portfolio${id}`);
     traceP('portfolio opened');
+    let initiatingOperation: OpenPortfolioInitiatingOperation | undefined;
     if (offerArgs.targetAllocation && !offerArgs.flow) {
-      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+      const { targetAllocation } = offerArgs;
+      const policyVersion = kit.manager.setTargetAllocation(targetAllocation);
+      // `policyVersion` replays as the historically-logged return value of
+      // this host call; for flows already in flight when `setTargetAllocation`
+      // was changed to return it, that's `undefined` (pre-upgrade behavior).
+      // Omit `initiatingOperation` rather than publish a broken result.
+      if (policyVersion != null) {
+        initiatingOperation = {
+          type: 'openPortfolio',
+          targetAllocation,
+          status: 'ok',
+          result: { policyVersion },
+        };
+      }
     }
 
     // A Cosmos-wallet open provisions the Noble ICA and registers the NFA here.
@@ -1995,12 +2010,21 @@ export const openPortfolio = (async (
 
         if (evmDepositDetails) {
           const { fromChain, amount, permitDetails } = evmDepositDetails;
-          depositFlowDetail = { type: 'deposit', amount, fromChain };
+          depositFlowDetail = {
+            type: 'deposit',
+            amount,
+            fromChain,
+            ...(initiatingOperation && { initiatingOperation }),
+          };
           depositOptions = {
             evmDepositDetail: { ...permitDetails, fromChain },
           };
         } else if (give.Deposit) {
-          depositFlowDetail = { type: 'deposit', amount: give.Deposit };
+          depositFlowDetail = {
+            type: 'deposit',
+            amount: give.Deposit,
+            ...(initiatingOperation && { initiatingOperation }),
+          };
         }
 
         if (depositFlowDetail) {

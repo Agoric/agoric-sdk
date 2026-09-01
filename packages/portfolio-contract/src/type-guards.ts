@@ -35,9 +35,11 @@ import {
   YieldProtocol,
   type AssetPlaceRef,
   type FlowDetail,
+  type OpenPortfolioInitiatingOperation,
   type PortfolioAgentStatus,
   type PortfolioPublishedPathTypes,
   type ProposalType,
+  type SetTargetAllocationInitiatingOperation,
   type StatusFor,
   type TargetAllocation,
 } from '@agoric/portfolio-api';
@@ -58,7 +60,7 @@ import type {
 } from '@agoric/smart-wallet/src/invitations.js';
 import { Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
-import { M } from '@endo/patterns';
+import { M, type Pattern } from '@endo/patterns';
 import type { EVMContractAddresses } from './portfolio.contract.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
@@ -198,17 +200,83 @@ export const portfolioIdOfPath = (path: string | string[]) => {
 type ChainNameExt = string;
 const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
 
+/**
+ * Builds an {@link OperationOutcome}-shaped pattern (`status: 'pending' |
+ * 'ok' | 'error'`, with `result`/`error` present accordingly) layered on top
+ * of a base record shape shared by all three statuses.
+ */
+const makeInitiatingOperationShape = ({
+  required,
+  optional,
+  rest,
+  result,
+  error = M.string(),
+}: {
+  required: Record<string, Pattern>;
+  optional?: Record<string, Pattern>;
+  rest?: Pattern;
+  result: Pattern;
+  error?: Pattern;
+}) =>
+  M.or(
+    M.splitRecord(
+      { ...required, status: 'pending' },
+      { ...optional, result: M.undefined(), error: M.undefined() },
+      rest,
+    ),
+    M.splitRecord(
+      { ...required, status: 'ok', result },
+      { ...optional, error: M.undefined() },
+      rest,
+    ),
+    M.splitRecord(
+      { ...required, status: 'error', error },
+      { ...optional, result: M.undefined() },
+      rest,
+    ),
+  );
+
+const SetTargetAllocationInitiatingOperationShape: TypedPattern<SetTargetAllocationInitiatingOperation> =
+  makeInitiatingOperationShape({
+    required: {
+      type: 'setTargetAllocation',
+      targetAllocation: TargetAllocationShape,
+    },
+    result: M.splitRecord({ policyVersion: M.number() }),
+  });
+
+const OpenPortfolioInitiatingOperationShape: TypedPattern<OpenPortfolioInitiatingOperation> =
+  makeInitiatingOperationShape({
+    required: {
+      type: 'openPortfolio',
+      targetAllocation: TargetAllocationShape,
+    },
+    result: M.splitRecord({ policyVersion: M.number() }),
+  });
+
 export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
   M.splitRecord(
     { type: 'withdraw', amount: AnyNatAmountShape },
-    { toChain: ChainNameExtShape },
+    { toChain: ChainNameExtShape, initiatingOperation: M.undefined() },
   ),
   M.splitRecord(
     { type: 'deposit', amount: AnyNatAmountShape },
-    { fromChain: ChainNameExtShape },
+    {
+      fromChain: ChainNameExtShape,
+      initiatingOperation: OpenPortfolioInitiatingOperationShape,
+    },
   ),
-  M.splitRecord({ type: 'rebalance' }, { agent: PortfolioAgentKeyShape }),
-  M.splitRecord({ type: 'claimRewards' }, { agent: PortfolioAgentKeyShape }),
+  M.splitRecord(
+    { type: 'rebalance' },
+    {
+      agent: PortfolioAgentKeyShape,
+      initiatingOperation: SetTargetAllocationInitiatingOperationShape,
+    },
+  ),
+  M.splitRecord(
+    { type: 'claimRewards' },
+    { agent: PortfolioAgentKeyShape, initiatingOperation: M.undefined() },
+  ),
 );
 
 export const FlowKeyShape: TypedPattern<`flow${number}`> =
