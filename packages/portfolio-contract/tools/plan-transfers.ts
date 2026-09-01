@@ -71,7 +71,7 @@ export function planDepositTransfers(
 
 /**
  * Build deposit (give) and movement steps to achieve goal amounts per protocol.
- * Aggregates deposit at @noble then fan-outs to chain-specific pools.
+ * Aggregates deposit at `@noble` then fan-outs to chain-specific pools.
  */
 export const makePortfolioSteps = async <
   G extends Partial<Record<YieldProtocol, NatAmount>>,
