@@ -84,18 +84,48 @@ const assertRecord = (
 };
 
 /**
- * Scale a floating-point number up to a natural number without rounding.
+ * Scale a floating-point number up to a natural number without rounding (beyond
+ * a configurable count of subsequent decimal places that must be entirely zeros
+ * or entirely nines).
  */
-const scaleToNat = (value: unknown, fixedPlaces: number): bigint => {
+const scaleToNat = (
+  value: unknown,
+  fixedPlaces: number,
+  strictness: number = Infinity,
+): bigint => {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     throw Fail`scaleToNat requires a non-negative finite number, not ${value}`;
   }
-  const [, n, f = '', e] =
+  const [, N, F = '', E] =
     value.toExponential().match(/^(\d)(?:\.(\d+))?e([+-]\d+)$/) ||
     Fail`internal: scaleToNat requires parsable toExponential() output from ${value}`;
+  const exp = Number(E);
+  let [n, f] = [N, F];
   try {
-    const fracDigitCount = f.length - Number(e);
-    fracDigitCount <= fixedPlaces || Fail``;
+    let fracDigitCount = f.length - exp;
+    if (fracDigitCount > fixedPlaces) {
+      // We have unexpected fractional digits, but they might still fit within
+      // our strictness (e.g., 17.578324000000002 with fixedPlaces=6 passes when
+      // strictness<=8).
+      const tail = f.slice(exp + fixedPlaces, exp + fixedPlaces + strictness);
+      if (tail.match(/^0+$/)) {
+        // round down via truncation
+        f = f.slice(0, exp + fixedPlaces);
+        fracDigitCount = fixedPlaces;
+      } else if (tail.length === strictness && tail.match(/^9+$/)) {
+        // round up, possibly with carry
+        f = f.slice(0, exp + fixedPlaces);
+        fracDigitCount = fixedPlaces;
+        if (f.match(/^9+$/)) {
+          n = String(Number(n) + 1);
+          f = f.replaceAll('9', '0');
+        } else {
+          f = String(Number(f) + 1);
+        }
+      } else {
+        throw Fail``;
+      }
+    }
     const big = BigInt(`${n}${f}${'0'.repeat(fixedPlaces - fracDigitCount)}`);
     return Nat(Number(big));
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -116,7 +146,7 @@ export const normalizeYdsPortfolioBalances = (
   for (const [instrumentId, value] of Object.entries(positions)) {
     Object.hasOwn(PoolPlaces, instrumentId) ||
       Fail`Invalid YDS instrument id ${q(instrumentId)}`;
-    const balance = scaleToNat(value, USDC_DECIMALS);
+    const balance = scaleToNat(value, USDC_DECIMALS, 3);
     if (balance <= 0n) continue;
     balances[instrumentId] = AmountMath.make(brand, balance);
   }
@@ -124,7 +154,7 @@ export const normalizeYdsPortfolioBalances = (
     Object.hasOwn(SupportedChain, chainName) ||
       Fail`Invalid YDS account chain ${q(chainName)}`;
     const place = `@${chainName}` as AssetPlaceRef;
-    const balance = scaleToNat(value, USDC_DECIMALS);
+    const balance = scaleToNat(value, USDC_DECIMALS, 3);
     if (balance <= 0n) continue;
     balances[place] = AmountMath.make(brand, balance);
   }
