@@ -3,6 +3,7 @@
  */
 
 import { Fail, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
 
 const { freeze } = Object;
 
@@ -40,3 +41,55 @@ export const generateDiff = <T>(
 ): ReturnType<typeof generateDiffInternal<T>> =>
   harden(generateDiffInternal(...args));
 harden(generateDiff);
+
+/**
+ * Scale a floating-point number up to a natural number without rounding (beyond
+ * a configurable count of subsequent decimal places that must be entirely zeros
+ * or entirely nines).
+ */
+export const scaleToNat = (
+  value: unknown,
+  fixedPlaces: number,
+  strictness: number = Infinity,
+): bigint => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw Fail`scaleToNat requires a non-negative finite number, not ${value}`;
+  }
+  const [, N, F = '', E] =
+    value.toExponential().match(/^(\d)(?:\.(\d+))?e([+-]\d+)$/) ||
+    Fail`internal: scaleToNat requires parsable toExponential() output from ${value}`;
+  const exp = Number(E);
+  let [n, f] = [N, F];
+  try {
+    let fracDigitCount = f.length - exp;
+    if (fracDigitCount > fixedPlaces) {
+      // We have unexpected fractional digits, but they might still fit within
+      // our strictness (e.g., 17.578324000000002 with fixedPlaces=6 passes when
+      // strictness<=8).
+      const tail = f.slice(exp + fixedPlaces, exp + fixedPlaces + strictness);
+      if (tail.match(/^0+$/)) {
+        // round down via truncation
+        f = f.slice(0, exp + fixedPlaces);
+        fracDigitCount = fixedPlaces;
+      } else if (tail.length === strictness && tail.match(/^9+$/)) {
+        // round up, possibly with carry
+        f = f.slice(0, exp + fixedPlaces);
+        fracDigitCount = fixedPlaces;
+        if (f.match(/^9+$/)) {
+          n = String(Number(n) + 1);
+          f = f.replaceAll('9', '0');
+        } else {
+          f = String(Number(f) + 1);
+        }
+      } else {
+        throw Fail``;
+      }
+    }
+    const big = BigInt(`${n}${f}${'0'.repeat(fixedPlaces - fracDigitCount)}`);
+    return Nat(Number(big));
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_err) {
+    throw Fail`scaleToNat found precision loss at scale ${q(fixedPlaces)}: ${value}`;
+  }
+};
+harden(scaleToNat);
