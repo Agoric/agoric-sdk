@@ -2261,10 +2261,9 @@ test('withdraw from ERC4626 position', async t => {
   );
 
   const kit = await ctx.makePortfolioKit();
-  const emptyAmount = AmountMath.make(USDC, 0n);
 
   await Promise.all([
-    rebalance(
+    executePlan(
       orch,
       ctx,
       offer.seat,
@@ -2273,12 +2272,13 @@ test('withdraw from ERC4626 position', async t => {
           {
             dest: '@Ethereum',
             src: 'ERC4626_vaultU2_Ethereum',
-            amount: emptyAmount,
+            amount,
             fee: feeCall,
           },
         ],
       },
       kit,
+      { type: 'withdraw', amount },
     ),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       await txResolver.drainPending();

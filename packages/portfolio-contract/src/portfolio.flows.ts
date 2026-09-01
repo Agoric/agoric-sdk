@@ -804,31 +804,31 @@ type Way =
 
 // exported only for testing
 export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
-  const { src } = moveDesc;
-  const { dest } = moveDesc;
+  const { src, dest } = moveDesc;
 
   const srcKind = getAssetPlaceRefKind(src);
   switch (srcKind) {
     case 'pos': {
-      const destName = getChainNameOfPlaceRef(dest);
-      if (!destName)
-        throw Fail`src pos must have account as dest ${q(moveDesc)}`;
+      const destChain =
+        getChainNameOfPlaceRef(dest) ||
+        Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
-      const { protocol, chainName } = PoolPlaces[poolKey];
-      destName === chainName ||
-        Fail`pool ${q(poolKey)} lives on ${q(chainName)}, not ${q(destName)}`;
+      const { protocol, chainName: srcChain } = PoolPlaces[poolKey];
+      destChain === srcChain ||
+        Fail`pool ${q(poolKey)} lives on ${q(srcChain)}, not ${q(destChain)}`;
       // TODO move this into metadata
       const feeRequired = ['Compound', 'Aave', 'Beefy', 'ERC4626'];
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
-      const baseWay = {
+
+      const { claimRewards } = moveDesc;
+      return {
         how: protocol,
         poolKey,
-        dest: destName,
+        dest: destChain,
+        ...(claimRewards && { claimRewards }),
       };
-      const { claimRewards } = moveDesc;
-      return claimRewards ? { ...baseWay, claimRewards } : baseWay;
     }
 
     case 'seat':
@@ -843,86 +843,90 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
         dest === '@agoric' || Fail`src +agoric must have dest @agoric`;
         return { how: 'send' };
       }
+
       const srcChain = getDepositChainOfPlaceRef(src);
       assert(srcChain);
-      const destName = getChainNameOfPlaceRef(dest);
-      srcChain === destName ||
+      const destChain = getChainNameOfPlaceRef(dest);
+      srcChain === destChain ||
         Fail`depositFromEVM src ${q(src)} must match dest chain ${q(dest)}`;
       return { how: 'depositFromEVM', src: srcChain };
     }
 
     case 'accountId': {
-      const srcName = getChainNameOfPlaceRef(src);
-      assert(srcName);
+      const srcChain = getChainNameOfPlaceRef(src);
+      assert(srcChain);
       const destKind = getAssetPlaceRefKind(dest);
       switch (destKind) {
         case 'seat':
           return { how: 'withdrawToSeat' }; // XXX check that src is agoric
+
         case 'withdrawAddr': {
           const destChain = getWithdrawChainOfPlaceRef(dest);
           assert(destChain);
+
           // Same-chain EVM transfer: @Arbitrum -> -Arbitrum
-          if (srcName === destChain) {
+          if (srcChain === destChain) {
             return { how: 'withdrawToEVM', dest: destChain };
           }
+
           // Cross-chain from noble: @noble -> -Arbitrum (CCTP to user's address)
-          srcName === 'noble' ||
+          srcChain === 'noble' ||
             Fail`src for withdraw to ${q(destChain)} must be same chain or noble`;
           return { how: 'CCTPtoUser', dest: destChain };
         }
+
         case 'accountId': {
-          const destName = getChainNameOfPlaceRef(dest);
-          assert(destName);
+          const destChain = getChainNameOfPlaceRef(dest);
+          assert(destChain);
 
           // Check if planner explicitly requested CCTPv2 (EVM-to-EVM direct)
           // Otherwise, fall through to existing v1 routing which may be cheaper
-          const srcIsEVM = keys(AxelarChain).includes(srcName);
-          const destIsEVM = keys(AxelarChain).includes(destName);
+          const srcIsEVM = keys(AxelarChain).includes(srcChain);
+          const destIsEVM = keys(AxelarChain).includes(destChain);
 
-          // In-place reward-token -> stable-token swap via 1inch (e.g. @Arbitrum -> @Arbitrum)
-          if (srcIsEVM && srcName === destName && moveDesc.swap) {
-            return { how: 'swap', chain: srcName as AxelarChain };
+          // In-place reward-token -> stable-token swap (e.g. @Arbitrum -> @Arbitrum)
+          if (srcIsEVM && srcChain === destChain && moveDesc.swap) {
+            return { how: 'swap', chain: srcChain as AxelarChain };
           }
 
           // TODO HACK don't use magic number 2 for CCTPv2 signal
-          if (
-            srcIsEVM &&
-            destIsEVM &&
-            moveDesc.detail?.cctpVersion === 2n // CCTPv2 explicitly requested
-          ) {
+          const { cctpVersion } = moveDesc.detail ?? {};
+          if (srcIsEVM && destIsEVM && cctpVersion === 2n) {
             return {
               how: 'CCTPv2',
-              src: srcName as AxelarChain,
-              dest: destName as AxelarChain,
+              src: srcChain as AxelarChain,
+              dest: destChain as AxelarChain,
             };
           }
 
           if (destIsEVM) {
-            srcName === 'noble' || Fail`src for ${q(destName)} must be noble`;
-            return { how: 'CCTP', dest: destName as AxelarChain };
+            srcChain === 'noble' || Fail`src for ${q(destChain)} must be noble`;
+            return { how: 'CCTP', dest: destChain as AxelarChain };
           }
           if (srcIsEVM) {
-            destName === 'agoric' ||
-              Fail`dest for ${q(srcName)} must be agoric`;
-            return { how: 'CCTP', src: srcName as AxelarChain };
+            destChain === 'agoric' ||
+              Fail`dest for ${q(srcChain)} must be agoric`;
+            return { how: 'CCTP', src: srcChain as AxelarChain };
           }
-          if (srcName === 'agoric' && destName === 'noble') {
-            return { how: 'IBC', src: srcName, dest: destName };
-          } else if (srcName === 'noble' && destName === 'agoric') {
-            return { how: 'IBC', src: srcName, dest: destName };
-          } else {
-            throw Fail`no route between chains: ${q(moveDesc)}`;
+          if (srcChain === 'agoric' && destChain === 'noble') {
+            return { how: 'IBC', src: srcChain, dest: destChain };
+          } else if (srcChain === 'noble' && destChain === 'agoric') {
+            return { how: 'IBC', src: srcChain, dest: destChain };
           }
+          throw Fail`no route between chains: ${q(moveDesc)}`;
         }
+
         case 'pos': {
           const poolKey = dest as PoolKey;
           const { protocol } = PoolPlaces[poolKey];
-          return { how: protocol, poolKey, src: srcName };
+          return { how: protocol, poolKey, src: srcChain };
         }
+
         default:
           throw Fail`unreachable:${destKind} ${dest}`;
       }
     }
+
     default:
       throw Fail`unreachable: ${srcKind} ${src}`;
   }
@@ -1042,17 +1046,20 @@ const stepFlow = async (
     const { amount } = move;
     const phases =
       features?.useProgressTracker && ({} as Record<TxPhase, TxId>);
+    const { how, poolKey } = way;
+    // XXX type-fest: const { claimRewards } = way as AllUnionFields<Way>;
+    type ClaimRewardsWay = Extract<Way, { claimRewards: any }>;
+    const { claimRewards } = way as Partial<ClaimRewardsWay>;
     return harden({
       how: way.how,
       amount,
       src: move.src,
       dest: move.dest,
-      ...(phases ? { phases } : undefined),
-      ...(move.claimRewards ? { claimRewards: move.claimRewards } : undefined),
+      ...(phases && { phases }),
+      ...(claimRewards && { claimRewards }),
       apply: async ({ [evmChain]: gInfo, agoric }, _traceStep, opts) => {
         assert(gInfo, evmChain);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
-        const { poolKey, how } = way;
         const pos = kit.manager.providePosition(poolKey, how, accountId);
         const { lca } = agoric;
         const evmCtx = await makeEVMPoolCtx(
@@ -1068,10 +1075,9 @@ const stepFlow = async (
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo, opts);
           return harden({ destPos: pos });
-        } else if ('claimRewards' in way && way.claimRewards) {
-          pImpl.claimRewards ||
-            Fail`${q(way.how)} does not support claimRewards`;
-          await pImpl.claimRewards!(evmCtx, gInfo, way.claimRewards, opts);
+        } else if (claimRewards) {
+          pImpl.claimRewards || Fail`${q(how)} does not support claimRewards`;
+          await pImpl.claimRewards!(evmCtx, gInfo, claimRewards, opts);
           // Rewards land in the user's remote address as separate tokens;
           // the pool position is unchanged.
           return harden({});
@@ -1092,6 +1098,11 @@ const stepFlow = async (
   moves.length > 0 || Fail`moves list must not be empty`;
 
   for (const [i, move] of moves.entries()) {
+    const isClaimRewards =
+      getAssetPlaceRefKind(move.src) === 'pos' && !!move.claimRewards;
+    move.amount.value > 0n ||
+      isClaimRewards ||
+      Fail`movement amount must be positive in ${q(move)}`;
     const queuedStep = getQueuedStep(move);
     if (queuedStep) {
       const maybeChain =

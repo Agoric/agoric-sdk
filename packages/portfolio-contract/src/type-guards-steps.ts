@@ -117,10 +117,11 @@ export type OfferArgsFor = {
 };
 
 export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
-  const usdcAmountShape = makeNatAmountShape(usdcBrand, 1n);
   const movementDescShape = M.splitRecord(
     {
-      amount: usdcAmountShape,
+      // amount should be 0 for claimRewards (but is ignored) and positive
+      // otherwise.
+      amount: makeNatAmountShape(usdcBrand),
       src: AssetPlaceRefShape,
       dest: AssetPlaceRefShape,
     },
