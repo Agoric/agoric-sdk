@@ -1095,6 +1095,7 @@ export const startEngine = async (
 
   const updatePortfolioBalances = async () => {
     await null;
+    const errContext: Record<string, unknown> = Object.create(null);
     try {
       const autoPortfolios = partialMap(
         [...portfolioRecordForKey],
@@ -1103,10 +1104,12 @@ export const startEngine = async (
           return (auto?.claimRewards || auto?.rebalance) && portfolioKey;
         },
       );
+      errContext.autoPortfolios = autoPortfolios;
       const summaries = await getPortfolioSummaries?.(autoPortfolios);
       if (!summaries) return;
       for (const { portfolioId, latestSnapshot } of summaries) {
         if (!latestSnapshot) continue;
+        errContext[portfolioId] = latestSnapshot;
         const { tokenBalances } = latestSnapshot;
 
         // This data might be more stale than that of our own balance queries,
@@ -1127,9 +1130,14 @@ export const startEngine = async (
             tokenBalances,
           });
         }
+        delete errContext[portfolioId];
       }
     } catch (err) {
-      console.error('🚨 [updatePortfolioBalances]', err);
+      console.error(
+        '🚨 [updatePortfolioBalances]',
+        err,
+        ...(Object.keys(errContext).length >= 1 ? [errContext] : []),
+      );
     }
   };
 
