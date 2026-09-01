@@ -297,19 +297,23 @@ export type MovementDesc = {
   fee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
+  /** Present only for reward-token claims. */
   claimRewards?: ClaimRewardsParams;
+  /** Present only for reward-token -> stable-token swaps. */
   swap?: SwapDesc;
 };
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
 
-export type FlowStep = {
-  /** Human readable description of how the step accomplishes the transfer from `src` to `dest` */
-  // Distinct from `Way.how` in the contract
+export type FlowStep = Pick<
+  MovementDesc,
+  'amount' | 'src' | 'dest' | 'claimRewards' | 'swap'
+> & {
+  /**
+   * Human-readable description of how the step accomplishes the transfer from
+   * `src` to `dest` (distinct from `Way.how` in the contract).
+   */
   how: string;
-  amount: NatAmount;
-  src: AssetPlaceRef;
-  dest: AssetPlaceRef;
   /**
    * A single FlowStep can have an arbitrary number of associated pendingTxs
    * entries. They are tracked by grouping them into "phases", each phase
@@ -324,13 +328,7 @@ export type FlowStep = {
    * and for each property, to have an array of zero or more TxIds.
    */
   phases?: Partial<Record<TxPhase, TxId[]>>;
-  /**
-   * The swap request this step performs, carried through from the plan
-   * `MovementDesc` so it is visible in published flow steps. Present only on
-   * reward-token -> stable-token swap steps.
-   */
-  swap?: SwapDesc;
-  // XXX remaining plan parts (fee, detail, claim) could be surfaced the same way
+  // XXX remaining plan parts (fee, detail, etc.) could be surfaced the same way
 };
 
 /**

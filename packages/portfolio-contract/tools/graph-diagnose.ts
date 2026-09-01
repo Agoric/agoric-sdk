@@ -47,7 +47,9 @@ const bfs = <T>(start: T, adj: Map<T, T[]>): Set<T> => {
  * Heuristics only: checks supply balance and reachability of sinks from sources.
  *
  * Example output (when graph.debug is true):
- * `No feasible solution: nodes=7 edges=12 | supply: sum=0 pos=1500 neg=1500 (pos should equal neg; sum should be 0) | sources=2 sinks=2 | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum`
+ * ```
+ * No feasible solution: nodes=7 edges=12 | supply: sum=0 pos=1500 neg=1500 (pos should equal neg; sum should be 0) | sources=2 sinks=2 | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum
+ * ```
  *
  * How to enable:
  *   - Set `debug: true` on the NetworkSpec used to build the graph.

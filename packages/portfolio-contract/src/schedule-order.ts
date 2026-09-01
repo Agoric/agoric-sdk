@@ -79,7 +79,7 @@ const cycleCheck = (
  * call runTask(ix, ...) for each 0 <= ix < job.taskQty,
  * only when dependent tasks are finished.
  *
- * @throws before any calls to runTask() in case of cycles
+ * @throws {Error} before any calls to runTask() in case of cycles
  */
 export const runJob = async (
   job: Job,
