@@ -35,14 +35,16 @@ import {
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
-import type {
-  ChainTokenMetadata,
-  FlowConfig,
-  PortfolioAgentGrantee,
-  PortfolioAgentKey,
-  PortfolioPermissionsExt,
-  PortfolioPublicInvitationMaker,
-  TargetAllocation,
+import {
+  PortfolioAutoFeaturesShape,
+  PortfolioPermissionsShape,
+  type ChainTokenMetadata,
+  type FlowConfig,
+  type PortfolioAgentGrantee,
+  type PortfolioAgentKey,
+  type PortfolioPermissionsExt,
+  type PortfolioPublicInvitationMaker,
+  type TargetAllocation,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -848,6 +850,24 @@ export const contract = async (
         'grantee' in data && data.grantee !== undefined
           ? data.grantee
           : undefined;
+      const features =
+        'features' in data && data.features !== undefined
+          ? data.features
+          : undefined;
+
+      // Validate the nested permission/feature records before any preflight
+      // or portfolio allocation below. `grant()`/`setAutoFeatures()` already
+      // enforce these shapes, but only after `makeNextPortfolioKit()` has
+      // allocated a persistent kit -- validating here first keeps a
+      // combined open+grant/setAutoFeatures message carrying an
+      // unrecognized permission/feature key (kept, not dropped, per
+      // AGO-1131) from leaving an orphaned shell.
+      if (features !== undefined) {
+        mustMatch(features, PortfolioAutoFeaturesShape);
+      }
+      if (grantee) {
+        mustMatch(grantee.permissions, PortfolioPermissionsShape);
+      }
 
       await null;
       if (grantee) {
@@ -864,9 +884,9 @@ export const contract = async (
         `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
       const kit = makeNextPortfolioKit({ sourceAccountId });
 
-      if ('features' in data && data.features !== undefined) {
+      if (features !== undefined) {
         // setAutoFeatures is promptly resolved
-        await vowTools.asPromise(kit.evmHandler.setAutoFeatures(data.features));
+        await vowTools.asPromise(kit.evmHandler.setAutoFeatures(features));
       }
       if (grantee) {
         // `grant()` already enforces the shared auth and permission checks.

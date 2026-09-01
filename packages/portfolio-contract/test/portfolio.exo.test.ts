@@ -1066,6 +1066,25 @@ test('evmHandler grant passes only the delegation client to delivery', async t =
   t.deepEqual(permissions, { allocation: true });
 });
 
+test('evmHandler grant rejects an unrecognized permission key', async t => {
+  const ownerAddress = '0x1313131313131313131313131313131313131313' as const;
+  const { makePortfolioKit, vowTools } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 15,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  await t.throwsAsync(
+    vowTools.when(
+      evmHandler.grant('agoric1delegate', {
+        allocation: true,
+        allocationMaxWeights: true,
+      } as any),
+    ),
+    { message: /allocationMaxWeights/ },
+  );
+});
+
 test('evmHandler grant allocates sequential agent ids', async t => {
   const ownerAddress = '0x3434343434343434343434343434343434343434' as const;
   const { makePortfolioKit, getCallLog, vowTools } = makeTestSetup();
@@ -1462,6 +1481,25 @@ test('evmHandler setAutoFeatures returns the resulting auto-features settings', 
     policyVersion: 2,
     enabledAutoFeatures: { rebalance: false },
   });
+});
+
+test('evmHandler setAutoFeatures rejects an unrecognized feature key', async t => {
+  const ownerAddress = '0x6868686868686868686868686868686868686868' as const;
+  const { makePortfolioKit, vowTools } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 25,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  await t.throwsAsync(
+    vowTools.when(
+      evmHandler.setAutoFeatures({
+        rebalance: true,
+        autoCompound: true,
+      } as any),
+    ),
+    { message: /autoCompound/ },
+  );
 });
 
 test('awaitingSteps is published in flowsRunning and reflects resolution state', async t => {

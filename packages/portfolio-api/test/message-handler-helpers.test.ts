@@ -128,7 +128,7 @@ test('extractOperationDetailsFromDataWithAddress accepts a legitimate optional f
   });
 });
 
-test('extractOperationDetailsFromDataWithAddress drops (does not reject) a field that was genuinely signed but is unsupported by this version (standalone Grant)', t => {
+test('extractOperationDetailsFromDataWithAddress keeps (does not reject or drop) a field that was genuinely signed but is unsupported by this version (standalone Grant)', t => {
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
@@ -145,8 +145,10 @@ test('extractOperationDetailsFromDataWithAddress drops (does not reject) a field
   // Simulate a newer client that signs an extra `memo` field on `Grant`,
   // declaring it in `types` too -- so it's genuinely part of what gets
   // hashed/signed. This (older) code doesn't know about `memo` yet, but
-  // since it was actually signed (not smuggled in unsigned), it should be
-  // silently dropped rather than rejected.
+  // since it was actually signed (not smuggled in unsigned), it must be
+  // kept rather than silently dropped -- an unknown field could be
+  // permissions-bearing (e.g. a not-yet-understood attenuation), and
+  // dropping it would turn an attenuated grant into an unconstrained one.
   const augmented = {
     ...message,
     types: {
@@ -166,8 +168,60 @@ test('extractOperationDetailsFromDataWithAddress drops (does not reject) a field
     accountHolder: 'agoric1exampleaccountholder',
     permissions: { allocation: true, rebalance: false },
     portfolio: 0n,
+    memo: 'hello',
   });
-  t.false('memo' in (details.data as any));
+});
+
+test('extractOperationDetailsFromDataWithAddress keeps a signed-but-unsupported field nested inside `permissions` (standalone Grant)', t => {
+  const message = getYmaxStandaloneOperationData(
+    {
+      accountHolder: 'agoric1exampleaccountholder',
+      permissions: { allocation: true, rebalance: false },
+      portfolio: 0n,
+      nonce: 1n,
+      deadline: 1700000000n,
+    },
+    'Grant',
+    CHAIN_ID,
+    CONTRACT_ADDRESS,
+  );
+
+  // Simulate a newer client whose `permissions` struct carries an extra,
+  // genuinely signed constraint field this (older) code doesn't understand
+  // yet -- e.g. a future per-instrument attenuation. This is exactly the
+  // compatibility hazard: silently dropping it here would make an
+  // attenuated grant look unconstrained to this version's `grant()`.
+  // Permission consumers, not this extraction step, are responsible for
+  // rejecting the unrecognized field.
+  const augmented = {
+    ...message,
+    types: {
+      ...message.types,
+      PortfolioPermissions: [
+        ...message.types.PortfolioPermissions,
+        { name: 'allocationMaxWeights', type: 'string' },
+      ],
+    },
+    message: {
+      ...message.message,
+      permissions: {
+        ...message.message.permissions,
+        allocationMaxWeights: 'unsupported-constraint',
+      },
+    },
+  };
+
+  const details = extractOperationDetailsFromDataWithAddress(
+    { ...augmented, signature: MOCK_SIGNATURE, address: MOCK_ADDRESS } as any,
+    {},
+  );
+
+  t.is(details.operation, 'Grant');
+  t.deepEqual((details.data as any).permissions, {
+    allocation: true,
+    rebalance: false,
+    allocationMaxWeights: 'unsupported-constraint',
+  });
 });
 
 test('extractOperationDetailsFromDataWithAddress rejects an extra field nested inside a permit2 witness (OpenPortfolio with grantee)', t => {
@@ -214,7 +268,7 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra field nested i
   );
 });
 
-test('extractOperationDetailsFromDataWithAddress computes the permit2 witness hash/type string from the actual signed data, not the (dropped) generated-types data', t => {
+test('extractOperationDetailsFromDataWithAddress computes the permit2 witness hash/type string from the actual signed data, consistent with the kept generated-types data', t => {
   const witness = getYmaxWitness('OpenPortfolio', {
     allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
   });
@@ -266,12 +320,13 @@ test('extractOperationDetailsFromDataWithAddress computes the permit2 witness ha
     {},
   );
 
-  // The authorization-facing `data` is still shaped by (and dropped against)
-  // this version's generated types -- `memo` has no business influencing
-  // what the contract acts on.
+  // The authorization-facing `data` keeps `memo` even though it isn't part
+  // of this version's generated types for `OpenPortfolio` -- it was
+  // genuinely signed, so it must not silently disappear.
   t.is(details.operation, 'OpenPortfolio');
   t.deepEqual(details.data, {
     allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+    memo: 'hello',
   });
 
   // But the permit2 witness hash and type string -- what actually gets
