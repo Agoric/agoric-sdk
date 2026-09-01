@@ -410,6 +410,8 @@ export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf(
     },
     {
       phases: M.recordOf(M.string(), M.arrayOf(M.string())),
+      // `claimRewards` and `swap` are intentionally non-strict.
+      claimRewards: M.record(),
       swap: M.record(),
     },
   ),

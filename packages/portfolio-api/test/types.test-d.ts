@@ -192,7 +192,33 @@ const flowStep: FlowStep = {
   dest: '+agoric',
 };
 
-const flowSteps: FlowStep[] = [flowStep, { ...flowStep, dest: '@Base' }];
+const flowSteps: FlowStep[] = [
+  flowStep,
+  { ...flowStep, dest: '@Base', phases: { apply: ['tx42'] } },
+  {
+    how: 'Compound',
+    amount: natAmount,
+    src: 'Compound_Arbitrum',
+    dest: '@Arbitrum',
+    claimRewards: { tokens: ['0xCAFED00D'], minAmounts: [1000n] },
+  },
+  {
+    how: 'Compound',
+    amount: natAmount,
+    src: '@Arbitrum',
+    dest: '@Arbitrum',
+    swap: {
+      provider: '1inch',
+      tokenIn: '0xCAFED00D',
+      tokenOut: '0xDEADBEEF',
+      amountIn: 1000n,
+      flags: 0n,
+      executor: '0xca11ab1e',
+      srcReceiver: '0xBOB5C0FFEEFACADE',
+      data: '0xB0A710AD',
+    },
+  },
+];
 
 expectType<FlowKey>('flow1');
 expectNotAssignable<FlowKey>('flow');

@@ -160,12 +160,7 @@ type AccountsByChain = {
   noble?: AccountInfoFor['noble'];
 } & EVMAccounts;
 
-type AssetMovement = {
-  how: string;
-  amount: Amount<'nat'>;
-  src: AssetPlaceRef;
-  dest: AssetPlaceRef;
-  swap?: FlowStep['swap'];
+type AssetMovement = FlowStep & {
   apply: (
     accounts: AccountsByChain,
     tracer: TraceLogger,
@@ -1046,7 +1041,7 @@ const stepFlow = async (
 
     const { amount } = move;
     const phases =
-      features?.useProgressTracker && ({} as Record<TxPhase, TxId>);
+      features?.useProgressTracker && ({} as Record<TxPhase, TxId[]>);
     const { how, poolKey } = way;
     // XXX type-fest: const { claimRewards } = way as AllUnionFields<Way>;
     type ClaimRewardsWay = Extract<Way, { claimRewards: any }>;
