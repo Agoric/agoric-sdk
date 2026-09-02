@@ -37,7 +37,6 @@ import {
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import {
   PortfolioAutoFeaturesShape,
-  PortfolioPermissionsShape,
   type ChainTokenMetadata,
   type FlowConfig,
   type PortfolioAgentGrantee,
@@ -55,6 +54,7 @@ import {
 } from '@agoric/portfolio-api/src/constants.js';
 import { ChainTokenMetadataShape } from '@agoric/portfolio-api/src/type-guards.js';
 import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import type {
   PermitDetails,
   YmaxOperationDetails,
@@ -865,9 +865,9 @@ export const contract = async (
       if (features !== undefined) {
         mustMatch(features, PortfolioAutoFeaturesShape);
       }
-      if (grantee) {
-        mustMatch(grantee.permissions, PortfolioPermissionsShape);
-      }
+      const granteePermissions = grantee
+        ? portfolioPermissionsFromEIP712(grantee.permissions)
+        : undefined;
 
       await null;
       if (grantee) {
@@ -899,7 +899,7 @@ export const contract = async (
           // standalone Grant handler; the string is looked up in NamesByAddress.
           kit.evmHandler.grant(
             grantee.address as Bech32Address,
-            grantee.permissions,
+            granteePermissions ?? Fail`missing grantee permissions`,
           ),
         );
       }
