@@ -42,7 +42,7 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra top-level fiel
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true, rebalance: false },
+      permissions: { allocation: true },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -74,7 +74,7 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra nested field (
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true, rebalance: false },
+      permissions: { allocation: true },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -102,11 +102,14 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra nested field (
   );
 });
 
-test('extractOperationDetailsFromDataWithAddress accepts a legitimate optional field (Grant with rebalance)', t => {
+test('extractOperationDetailsFromDataWithAddress accepts a legitimate optional permission constraint', t => {
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true, rebalance: true },
+      permissions: {
+        allocation: true,
+        maxWeightBps: 1_500n,
+      },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -124,7 +127,7 @@ test('extractOperationDetailsFromDataWithAddress accepts a legitimate optional f
   t.is(details.operation, 'Grant');
   t.deepEqual((details.data as any).permissions, {
     allocation: true,
-    rebalance: true,
+    maxWeightBps: 1_500n,
   });
 });
 
@@ -132,7 +135,7 @@ test('extractOperationDetailsFromDataWithAddress keeps (does not reject or drop)
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true, rebalance: false },
+      permissions: { allocation: true },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -166,7 +169,7 @@ test('extractOperationDetailsFromDataWithAddress keeps (does not reject or drop)
   t.is(details.operation, 'Grant');
   t.deepEqual(details.data, {
     accountHolder: 'agoric1exampleaccountholder',
-    permissions: { allocation: true, rebalance: false },
+    permissions: { allocation: true },
     portfolio: 0n,
     memo: 'hello',
   });
@@ -176,7 +179,7 @@ test('extractOperationDetailsFromDataWithAddress keeps a signed-but-unsupported 
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true, rebalance: false },
+      permissions: { allocation: true },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -219,7 +222,6 @@ test('extractOperationDetailsFromDataWithAddress keeps a signed-but-unsupported 
   t.is(details.operation, 'Grant');
   t.deepEqual((details.data as any).permissions, {
     allocation: true,
-    rebalance: false,
     allocationMaxWeights: 'unsupported-constraint',
   });
 });
@@ -229,7 +231,7 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra field nested i
     allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
     grantee: {
       address: 'agoric1exampleagentaddress',
-      permissions: { allocation: true, rebalance: false },
+      permissions: { allocation: true },
     },
   });
   const permitMessage = getPermitWitnessTransferFromData(

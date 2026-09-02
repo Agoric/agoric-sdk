@@ -20,6 +20,8 @@ import type {
   InterChainAccountRef,
   PortfolioAgentKey,
   LocalChainAccountRef,
+  PlanObservations,
+  PortfolioBalancePlaceRef,
   PortfolioKey,
   ProposalType,
   SeatKeyword,
@@ -60,6 +62,29 @@ const targetAllocation: TargetAllocation = {
 };
 
 expectNotAssignable<TargetAllocation>({ Arbitrary: 100n });
+
+const planObservations = {
+  balances: {
+    '@Base': 2_000_000n,
+    Aave_Base: 8_000_000n,
+  },
+  instrumentTvls: {
+    Aave_Base: { tvlUsd: 20_000_000n },
+  },
+} satisfies PlanObservations;
+expectType<PlanObservations>(planObservations);
+expectAssignable<PortfolioBalancePlaceRef>('@Base');
+expectAssignable<PortfolioBalancePlaceRef>('Aave_Base');
+expectNotAssignable<PortfolioBalancePlaceRef>('<Deposit>');
+expectNotAssignable<PortfolioBalancePlaceRef>('+agoric');
+expectNotAssignable<PlanObservations>({
+  ...planObservations,
+  balances: { Arbitrary: 1n },
+});
+expectNotAssignable<PlanObservations>({
+  ...planObservations,
+  instrumentTvls: { Arbitrary: { tvlUsd: 1n } },
+});
 
 const emptyGive: ProposalType['openPortfolio']['give'] = {};
 const openPortfolio = {
