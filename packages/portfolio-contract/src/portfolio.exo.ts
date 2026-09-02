@@ -10,6 +10,7 @@ import {
 } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import { stripPrefix } from '@agoric/internal/src/ses-utils.js';
 import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import {
   type AccountId,
@@ -24,12 +25,14 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import {
-  PortfolioPermissionsShape,
   PortfolioAutoFeaturesShape,
+  PortfolioPermissionsShape,
   type FlowConfig,
   type FlowKey,
   type FlowStatus,
   type FundsFlowPlan,
+  type FundsFlow,
+  type PlanObservations,
   type PortfolioAgentGrantee,
   type PortfolioAgentStatus,
   type PortfolioContinuingInvitationMaker,
@@ -42,6 +45,7 @@ import {
   type PortfolioDelegatedRebalanceParams,
   type PortfolioDelegatedSetTargetAllocationParams,
   type PortfolioGrantResult,
+  type PortfolioDelegationLifecycleResult,
   type PortfolioSetAutoFeaturesResult,
   type SetTargetAllocationInitiatingOperation,
   PortfolioAutoFeaturesExtShape,
@@ -73,6 +77,10 @@ import {
   type PortfolioDelegationClient,
 } from './delegation.exo.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
+import {
+  assertMandateForAllocation,
+  assertMandateForPlanObservations,
+} from './mandate.ts';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -166,15 +174,16 @@ type MaybeResolvedVowKit<T> =
   | VowKit<T>
   | (Omit<VowKit<T>, 'resolver'> & { resolver?: undefined });
 
+type RunningFlowDetail = {
+  sync: MaybeResolvedVowKit<FundsFlow>;
+} & FlowDetail;
+
 type PortfolioKitState = {
   portfolioId: number;
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
-  flowsRunning: MapStore<
-    number,
-    { sync: MaybeResolvedVowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
-  >;
+  flowsRunning: MapStore<number, RunningFlowDetail>;
   delegations?: MapStore<number, PortfolioAgentInfo>;
   plannerAgentId?: number;
   enabledAutoFeatures?: PortfolioAutoFeatures;
@@ -362,6 +371,22 @@ const makeFlowsRunningRecord = (
     return [`flow${num}`, { ...data, awaitingSteps: !!resolver }];
   });
   return harden(fromEntries(statusEntries));
+};
+
+const assertExternalDelegationTarget = (
+  state: PortfolioKitState,
+  agentId: number,
+) => {
+  const { delegations, plannerAgentId } = state;
+  delegations?.has(agentId) || Fail`no delegation found for agent ${agentId}`;
+  const delegation = delegations!.get(agentId);
+  agentId !== plannerAgentId ||
+    Fail`planner delegation cannot be changed or revoked externally`;
+  delegation.grantee !== PortfolioPlannerAgent ||
+    delegation.state === 'revoked' ||
+    Fail`active planner delegation agent${agentId} is not current`;
+  delegation.state === 'active' ||
+    Fail`delegation agent${agentId} cannot be changed or revoked while ${delegation.state}`;
 };
 
 export type PublishStatusFn = <K extends keyof StatusFor>(
@@ -628,7 +653,7 @@ export const preparePortfolioKit = (
         },
       },
       delegationHelper: {
-        assertActive(
+        getAuthorizedDelegation(
           client: PortfolioDelegationClient,
           agentId: number,
           required: Partial<PortfolioPermissions> = {},
@@ -649,14 +674,15 @@ export const preparePortfolioKit = (
             status.permissions[permission] ||
               Fail`delegation agent${agentId} does not have required permission ${permission}`;
           }
+          return status;
         },
         getPortfolioId(client: PortfolioDelegationClient, agentId: number) {
-          this.facets.delegationHelper.assertActive(client, agentId);
+          this.facets.delegationHelper.getAuthorizedDelegation(client, agentId);
           const { reader } = this.facets;
           return reader.getPortfolioId();
         },
         getAutoFeatures(client: PortfolioDelegationClient, agentId: number) {
-          this.facets.delegationHelper.assertActive(client, agentId);
+          this.facets.delegationHelper.getAuthorizedDelegation(client, agentId);
           const { enabledAutoFeatures } = this.state;
           return enabledAutoFeatures;
         },
@@ -664,7 +690,7 @@ export const preparePortfolioKit = (
           client: PortfolioDelegationClient,
           agentId: number,
         ) {
-          this.facets.delegationHelper.assertActive(client, agentId);
+          this.facets.delegationHelper.getAuthorizedDelegation(client, agentId);
           const { reader } = this.facets;
           return reader.getTargetAllocation();
         },
@@ -673,34 +699,56 @@ export const preparePortfolioKit = (
           agentId: number,
           delegatedSetTargetAllocationParams: PortfolioDelegatedSetTargetAllocationParams,
         ): FlowKey {
-          this.facets.delegationHelper.assertActive(client, agentId, {
-            allocation: true,
-          });
-          const { reader, manager } = this.facets;
+          const { reader, manager, delegationHelper } = this.facets;
+          const delegation = delegationHelper.getAuthorizedDelegation(
+            client,
+            agentId,
+            { allocation: true },
+          );
           const { syncState, targetAllocation, agentMemo } =
             delegatedSetTargetAllocationParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
+          const { permissions } = delegation;
+          const allocation = permissions.allocation;
+          const needsPlanObservations =
+            typeof allocation === 'object' &&
+            (allocation.minVaultTvlUsd !== undefined ||
+              allocation.maxVaultShareBps !== undefined);
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
-          const newPolicyVersion =
-            manager.setTargetAllocation(targetAllocation);
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
+            createdAtPolicyVersion: policyVersion,
             ...(agentMemo != null && { agentMemo }),
             initiatingOperation: {
               type: 'setTargetAllocation',
               targetAllocation,
-              status: 'ok',
-              result: { policyVersion: newPolicyVersion },
+              status: 'pending',
             },
           };
           const startedFlow = manager.startFlow(flowDetail);
-          // This flow does its own error handling and always exits the seat
+          // Rely on platform-level unhandled Vow reporting rather than ad-hoc
+          // contract logging. See https://github.com/Agoric/agoric-sdk/issues/10576
           void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
+          try {
+            assertMandateForAllocation(permissions, targetAllocation);
+            if (!needsPlanObservations) {
+              const resultingPolicyVersion =
+                manager.updateTargetAllocation(targetAllocation);
+              this.facets.planner.resolvePendingPolicy(
+                flowId,
+                resultingPolicyVersion,
+              );
+            }
+          } catch (reason) {
+            const message =
+              reason instanceof Error ? reason.message : String(reason);
+            this.facets.planner.rejectFlowPlan(flowId, message);
+          }
           return `flow${flowId}`;
         },
         submitRebalance(
@@ -708,26 +756,45 @@ export const preparePortfolioKit = (
           agentId: number,
           delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
         ): FlowKey {
-          this.facets.delegationHelper.assertActive(client, agentId, {
-            rebalance: true,
-          });
-          const { reader, manager } = this.facets;
+          const { reader, manager, delegationHelper } = this.facets;
+          const delegation = delegationHelper.getAuthorizedDelegation(
+            client,
+            agentId,
+            { rebalance: true },
+          );
           const { syncState, agentMemo } = delegatedRebalanceParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
+          const { permissions } = delegation;
+          const targetAllocation =
+            typeof permissions.allocation === 'object'
+              ? (reader.getTargetAllocation() ??
+                Fail`delegated rebalance requires target allocation`)
+              : undefined;
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
 
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
+            createdAtPolicyVersion: policyVersion,
             ...(agentMemo != null && { agentMemo }),
           };
           const startedFlow = manager.startFlow(flowDetail);
-          // This flow does its own error handling and always exits the seat
+          // Rely on platform-level unhandled Vow reporting rather than ad-hoc
+          // contract logging. See https://github.com/Agoric/agoric-sdk/issues/10576
           void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
+          if (targetAllocation) {
+            try {
+              assertMandateForAllocation(permissions, targetAllocation);
+            } catch (reason) {
+              const message =
+                reason instanceof Error ? reason.message : String(reason);
+              this.facets.planner.rejectFlowPlan(flowId, message);
+            }
+          }
           return `flow${flowId}`;
         },
         submitClaimRewards(
@@ -735,10 +802,10 @@ export const preparePortfolioKit = (
           agentId: number,
           delegatedClaimRewardsParams: PortfolioDelegatedClaimRewardsParams,
         ): FlowKey {
-          this.facets.delegationHelper.assertActive(client, agentId, {
+          const { reader, manager, delegationHelper } = this.facets;
+          delegationHelper.getAuthorizedDelegation(client, agentId, {
             claimRewards: true,
           });
-          const { reader, manager } = this.facets;
           const { syncState, agentMemo } = delegatedClaimRewardsParams;
 
           const { policyVersion, rebalanceCount } = syncState;
@@ -854,13 +921,104 @@ export const preparePortfolioKit = (
         },
       },
       planner: {
-        submitVersion(versionPre: number, countPre: number) {
+        validateAndCommitPlanPolicy(
+          flowId: number,
+          observations: PlanObservations | undefined,
+          versionPre: number,
+          countPre: number,
+        ) {
+          this.facets.reader.checkVersion(versionPre, countPre);
+          const { delegations, flowsRunning } = this.state;
+          const detail = flowsRunning.get(flowId);
+          const { agent } = detail;
+          if (!agent) {
+            const { policyVersion, rebalanceCount } = this.state;
+            return harden({ policyVersion, rebalanceCount });
+          }
+          if (detail.type === 'rebalance') {
+            const { createdAtPolicyVersion, initiatingOperation } = detail;
+            const targetAllocationAlreadyCommitted =
+              initiatingOperation?.type === 'setTargetAllocation' &&
+              initiatingOperation.status === 'ok';
+            if (!targetAllocationAlreadyCommitted) {
+              createdAtPolicyVersion === this.state.policyVersion ||
+                Fail`mandate.policyVersion.changed`;
+            }
+          }
+          const agentId = Number(stripPrefix('agent', agent));
+          Number.isSafeInteger(agentId) ||
+            Fail`invalid flow agent reference ${agent}`;
+          const permissions =
+            delegations?.get(agentId).permissions ??
+            Fail`missing mandate for ${agent}`;
+          const pendingTargetAllocation =
+            detail.type === 'rebalance' &&
+            detail.initiatingOperation?.type === 'setTargetAllocation' &&
+            detail.initiatingOperation.status === 'pending'
+              ? detail.initiatingOperation.targetAllocation
+              : undefined;
+          const targetAllocation =
+            pendingTargetAllocation ??
+            this.state.targetAllocation ??
+            Fail`mandate.targetAllocation.missing`;
+          assertMandateForAllocation(permissions, targetAllocation);
+          const allocation = permissions.allocation;
+          const needsObservations =
+            typeof allocation === 'object' &&
+            (allocation.minVaultTvlUsd !== undefined ||
+              allocation.maxVaultShareBps !== undefined);
+          if (needsObservations) {
+            const planObservations =
+              observations ?? Fail`mandate.observations.missing`;
+            assertMandateForPlanObservations(
+              permissions,
+              targetAllocation,
+              planObservations,
+            );
+          }
+          if (pendingTargetAllocation !== undefined) {
+            const resultingPolicyVersion =
+              this.facets.manager.updateTargetAllocation(
+                pendingTargetAllocation,
+              );
+            this.facets.planner.resolvePendingPolicy(
+              flowId,
+              resultingPolicyVersion,
+            );
+          }
           const { policyVersion, rebalanceCount } = this.state;
-          policyVersion === versionPre ||
-            Fail`expected policyVersion ${policyVersion}; got ${versionPre}`;
-          rebalanceCount === countPre ||
-            Fail`expected rebalanceCount ${rebalanceCount}; got ${countPre}`;
+          return harden({ policyVersion, rebalanceCount });
+        },
+        submitVersion(versionPre: number, countPre: number) {
+          this.facets.reader.checkVersion(versionPre, countPre);
           this.state.rebalanceCount += 1;
+          this.facets.reporter.publishStatus();
+        },
+        resolvePendingPolicy(flowId: number, policyVersion: number) {
+          const { flowsRunning } = this.state;
+          const detail = flowsRunning.get(flowId);
+          const { initiatingOperation } = detail;
+          if (
+            detail.type !== 'rebalance' ||
+            initiatingOperation?.type !== 'setTargetAllocation'
+          ) {
+            throw Fail`flow${flowId} has no pending setTargetAllocation operation`;
+          }
+          if (initiatingOperation.status !== 'pending') {
+            throw Fail`flow${flowId} setTargetAllocation operation is not pending`;
+          }
+          flowsRunning.set(
+            flowId,
+            harden({
+              ...detail,
+              initiatingOperation: {
+                type: 'setTargetAllocation',
+                targetAllocation: initiatingOperation.targetAllocation,
+                status: 'ok',
+                result: { policyVersion },
+              },
+            }),
+          );
           this.facets.reporter.publishStatus();
         },
         resolveFlowPlan(flowId: number, steps: MovementDesc[] | FundsFlowPlan) {
@@ -890,7 +1048,25 @@ export const preparePortfolioKit = (
             return;
           }
           resolver.reject(new Error(reason));
-          flowsRunning.set(flowId, { ...detail, sync });
+          const { initiatingOperation } = detail;
+          let updatedDetail: RunningFlowDetail = harden({ ...detail, sync });
+          if (
+            detail.type === 'rebalance' &&
+            initiatingOperation?.type === 'setTargetAllocation' &&
+            initiatingOperation.status === 'pending'
+          ) {
+            updatedDetail = harden({
+              ...detail,
+              sync,
+              initiatingOperation: {
+                type: 'setTargetAllocation',
+                targetAllocation: initiatingOperation.targetAllocation,
+                status: 'error',
+                error: reason,
+              },
+            });
+          }
+          flowsRunning.set(flowId, updatedDetail);
           this.facets.reporter.publishStatus();
         },
         getTargetAllocation() {
@@ -1095,8 +1271,15 @@ export const preparePortfolioKit = (
           return position;
         },
         setTargetAllocation(allocation: TargetAllocation) {
+          const newPolicyVersion =
+            this.facets.manager.updateTargetAllocation(allocation);
+          this.facets.reporter.publishStatus();
+          return newPolicyVersion;
+        },
+        /** state-only target update; callers are responsible for publishing */
+        updateTargetAllocation(allocation: TargetAllocation) {
           this.state.targetAllocation = allocation;
-          return this.facets.manager.incrPolicyVersion();
+          return this.facets.manager.bumpPolicyVersion();
         },
         /** state-only version bump; callers are responsible for publishing */
         bumpPolicyVersion() {
@@ -1191,8 +1374,36 @@ export const preparePortfolioKit = (
             policyVersion: updatedAtPolicyVersion,
           };
         },
-        revokeDelegation(agentId: number) {
-          const { delegations } = this.state;
+        changePermissions(
+          agentId: number,
+          permissions: PortfolioPermissions,
+        ): PortfolioDelegationLifecycleResult {
+          const { delegations, portfolioId } = this.state;
+          delegations?.has(agentId) ||
+            Fail`no delegation found for agent ${agentId}`;
+          const delegation = delegations!.get(agentId);
+          delegation.state === 'active' ||
+            Fail`delegation agent${agentId} is ${delegation.state}`;
+
+          const updatedAtPolicyVersion =
+            this.facets.manager.bumpPolicyVersion();
+          delegations!.set(
+            agentId,
+            harden({
+              ...delegation,
+              permissions,
+              updatedAtPolicyVersion,
+            }),
+          );
+          this.facets.reporter.publishAgents();
+          return harden({
+            portfolioId,
+            policyVersion: updatedAtPolicyVersion,
+            agentId,
+          });
+        },
+        revokeDelegation(agentId: number): PortfolioDelegationLifecycleResult {
+          const { delegations, portfolioId } = this.state;
           if (!delegations) {
             throw Fail`no delegations available`;
           }
@@ -1217,8 +1428,12 @@ export const preparePortfolioKit = (
             this.state.plannerAgentId = undefined;
             this.state.enabledAutoFeatures = undefined;
           }
-          this.facets.reporter.publishStatus();
           this.facets.reporter.publishAgents();
+          return harden({
+            portfolioId,
+            policyVersion: updatedAtPolicyVersion,
+            agentId,
+          });
         },
         /**
          * Sets the pre-validated features settings on the portfolio and
@@ -1296,21 +1511,16 @@ export const preparePortfolioKit = (
               this.facets.reporter.publishStatus();
             }
           } else {
-            policyVersion = this.facets.manager.bumpPolicyVersion();
             if (updateDelegation) {
-              const delegation = this.state.delegations!.get(plannerAgentId!);
-              this.state.delegations!.set(
+              ({ policyVersion } = this.facets.manager.changePermissions(
                 plannerAgentId!,
-                harden({
-                  ...delegation,
-                  permissions,
-                  updatedAtPolicyVersion: policyVersion,
-                }),
-              );
+                permissions,
+              ));
+            } else {
+              policyVersion = this.facets.manager.bumpPolicyVersion();
             }
             this.state.enabledAutoFeatures = mergedAutoFeatures;
             this.facets.reporter.publishStatus();
-            if (updateDelegation) this.facets.reporter.publishAgents();
           }
 
           return { enabledAutoFeatures: mergedAutoFeatures, policyVersion };
@@ -1664,12 +1874,10 @@ export const preparePortfolioKit = (
          */
         grant(grantee: Bech32Address, permissions: PortfolioPermissionsExt) {
           return vowTools.asVow(async () => {
-            mustMatch(permissions, PortfolioPermissionsShape);
             const { portfolioId, sourceAccountId } = this.state;
-            if (!sourceAccountId) {
-              throw Fail`grant requires sourceAccountId to be set (portfolio must be opened from EVM)`;
-            }
-            permissions.allocation === true ||
+            sourceAccountId || Fail`grant requires an EVM portfolio`;
+            mustMatch(permissions, PortfolioPermissionsShape);
+            permissions.allocation ||
               Fail`grant requires allocation permission`;
             await null;
             // grantDelegation bumps policyVersion and publishes the agent
@@ -1695,6 +1903,34 @@ export const preparePortfolioKit = (
             }) satisfies PortfolioGrantResult;
           });
         },
+        changePermissions(
+          agentId: number,
+          permissions: PortfolioPermissionsExt,
+        ) {
+          return vowTools.asVow(() => {
+            const { sourceAccountId } = this.state;
+            sourceAccountId ||
+              Fail`changePermissions requires an EVM portfolio`;
+            mustMatch(permissions, PortfolioPermissionsShape);
+            assertExternalDelegationTarget(this.state, agentId);
+            const result = this.facets.manager.changePermissions(
+              agentId,
+              permissions,
+            );
+            this.facets.reporter.publishStatus();
+            return result;
+          });
+        },
+        revoke(agentId: number) {
+          return vowTools.asVow(() => {
+            const { sourceAccountId } = this.state;
+            sourceAccountId || Fail`revoke requires an EVM portfolio`;
+            assertExternalDelegationTarget(this.state, agentId);
+            const result = this.facets.manager.revokeDelegation(agentId);
+            this.facets.reporter.publishStatus();
+            return result;
+          });
+        },
         /**
          * Set the auto-features for this portfolio.
          *
@@ -1703,11 +1939,9 @@ export const preparePortfolioKit = (
          */
         setAutoFeatures(features: PortfolioAutoFeaturesExt) {
           return vowTools.asVow(async () => {
-            mustMatch(features, PortfolioAutoFeaturesShape);
             const { sourceAccountId } = this.state;
-            if (!sourceAccountId) {
-              throw Fail`setAutoFeatures requires sourceAccountId to be set (portfolio must be opened from EVM)`;
-            }
+            sourceAccountId || Fail`setAutoFeatures requires an EVM portfolio`;
+            mustMatch(features, PortfolioAutoFeaturesShape);
             const { enabledAutoFeatures, policyVersion } =
               await this.facets.manager.setAutoFeatures(features);
             const { portfolioId } = this.state;

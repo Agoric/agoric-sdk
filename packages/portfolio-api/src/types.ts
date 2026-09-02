@@ -366,6 +366,8 @@ export type FundsFlowPlan = {
   order?: FlowStepDependency[];
 };
 
+export type FundsFlow = MovementDesc[] | FundsFlowPlan;
+
 // tx for transactions
 export type TxId = `tx${number}`;
 

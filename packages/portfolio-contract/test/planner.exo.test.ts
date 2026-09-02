@@ -2,6 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
@@ -131,6 +132,216 @@ test('planner exo resolvePlan method', async t => {
       { message: /planner cannot add positions/i },
     );
   }
+});
+
+test('planner rejects delegated plans that fail observation-time validation', async t => {
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone);
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  let delegationClient: PortfolioDelegationClient | undefined;
+  let stepsP: unknown;
+  const makePortfolio = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller: board.getReadonlyMarshaller(),
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    zcf: {
+      makeEmptySeatKit: () => ({ zcfSeat: null }),
+    } as any,
+    executePlan: (_seat, _offerArgs, _kit, _flowDetail, startedFlow) => {
+      if (!startedFlow) throw Error('expected started flow');
+      stepsP = startedFlow.stepsP;
+      return vt.asVow(() => undefined);
+    },
+    offerArgsShapes: makeOfferArgsShapes(USDC),
+    deliverDelegation(client) {
+      delegationClient = client;
+      return Promise.resolve();
+    },
+    ...({} as any),
+  });
+  const portfolio = makePortfolio({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+  portfolio.manager.setTargetAllocation({ Aave_Base: 100n });
+  await portfolio.manager.grantDelegation(
+    'agoric1plannerobservationtest',
+    harden({
+      allocation: { maxVaultShareBps: 100n },
+    }),
+  );
+  await eventLoopIteration();
+  assert(delegationClient);
+  const before = { policyVersion: 2, rebalanceCount: 0 };
+  const flowKey = delegationClient.setTargetAllocation({
+    targetAllocation: { Aave_Base: 100n },
+    syncState: {
+      policyVersion: before.policyVersion,
+      rebalanceCount: before.rebalanceCount,
+    },
+  });
+  const flowId = Number(flowKey.slice('flow'.length));
+  await eventLoopIteration();
+  const afterFlow = await getPortfolioStatus(1);
+  const planner = preparePlanner(zone, {
+    getPortfolioPlanner: () => portfolio.planner,
+    getPlannerDelegation: () => undefined,
+    shapes: makeOfferArgsShapes(USDC),
+  })();
+  const plan: MovementDesc[] = [];
+  const excessive = harden({
+    balances: { Aave_Base: 1_000_000_000_000n },
+    instrumentTvls: {
+      Aave_Base: { tvlUsd: 20_000_000n },
+    },
+  });
+
+  t.notThrows(() =>
+    planner.resolvePlan(
+      1,
+      flowId,
+      plan,
+      afterFlow.policyVersion,
+      afterFlow.rebalanceCount,
+      excessive,
+    ),
+  );
+  await t.throwsAsync(vt.when(stepsP as any), {
+    message: /mandate\.maxVaultShare.*Aave_Base/,
+  });
+  t.is(
+    (await getPortfolioStatus(1)).rebalanceCount,
+    afterFlow.rebalanceCount + 1,
+  );
+
+  const beforeRace = await getPortfolioStatus(1);
+  const racedFlowKey = delegationClient.setTargetAllocation({
+    targetAllocation: { Aave_Base: 100n },
+    syncState: {
+      policyVersion: beforeRace.policyVersion,
+      rebalanceCount: beforeRace.rebalanceCount,
+    },
+  });
+  const racedFlowId = Number(racedFlowKey.slice('flow'.length));
+  await eventLoopIteration();
+  portfolio.manager.setTargetAllocation({ Aave_Base: 100n });
+  const afterPolicyChange = await getPortfolioStatus(1);
+  const sufficient = harden({
+    balances: { Aave_Base: 1_000_000_000_000n },
+    instrumentTvls: {
+      Aave_Base: { tvlUsd: 200_000_000n },
+    },
+  });
+
+  t.notThrows(() =>
+    planner.resolvePlan(
+      1,
+      racedFlowId,
+      plan,
+      afterPolicyChange.policyVersion,
+      afterPolicyChange.rebalanceCount,
+      sufficient,
+    ),
+  );
+  await t.throwsAsync(vt.when(stepsP as any), {
+    message: /mandate\.policyVersion\.changed/,
+  });
+  t.is(
+    (await getPortfolioStatus(1)).rebalanceCount,
+    afterPolicyChange.rebalanceCount + 1,
+  );
+});
+
+test('planner accepts already-committed delegated target allocation after policy race', async t => {
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone);
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  let delegationClient: PortfolioDelegationClient | undefined;
+  let stepsP: unknown;
+  const makePortfolio = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller: board.getReadonlyMarshaller(),
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    zcf: {
+      makeEmptySeatKit: () => ({ zcfSeat: null }),
+    } as any,
+    executePlan: (_seat, _offerArgs, _kit, _flowDetail, startedFlow) => {
+      if (!startedFlow) throw Error('expected started flow');
+      stepsP = startedFlow.stepsP;
+      return vt.asVow(() => undefined);
+    },
+    offerArgsShapes: makeOfferArgsShapes(USDC),
+    deliverDelegation(client) {
+      delegationClient = client;
+      return Promise.resolve();
+    },
+    ...({} as any),
+  });
+  const portfolio = makePortfolio({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+  portfolio.manager.setTargetAllocation({ Aave_Base: 100n });
+  const { policyVersion } = await portfolio.manager.grantDelegation(
+    'agoric1plannerimmediatecommit',
+    harden({
+      allocation: true,
+    }),
+  );
+  await eventLoopIteration();
+  assert(delegationClient);
+  const beforeFlow = await getPortfolioStatus(1);
+  const flowKey = delegationClient.setTargetAllocation({
+    targetAllocation: { Aave_Base: 100n },
+    syncState: {
+      policyVersion,
+      rebalanceCount: beforeFlow.rebalanceCount,
+    },
+  });
+  const flowId = Number(flowKey.slice('flow'.length));
+  await eventLoopIteration();
+
+  const afterCommit = await getPortfolioStatus(1);
+  t.like(afterCommit.flowsRunning?.[flowKey], {
+    initiatingOperation: {
+      type: 'setTargetAllocation',
+      status: 'ok',
+    },
+  });
+
+  portfolio.manager.setTargetAllocation({ Aave_Base: 100n });
+  const afterPolicyChange = await getPortfolioStatus(1);
+  const planner = preparePlanner(zone, {
+    getPortfolioPlanner: () => portfolio.planner,
+    getPlannerDelegation: () => undefined,
+    shapes: makeOfferArgsShapes(USDC),
+  })();
+  const plan: MovementDesc[] = [];
+
+  t.notThrows(() =>
+    planner.resolvePlan(
+      1,
+      flowId,
+      plan,
+      afterPolicyChange.policyVersion,
+      afterPolicyChange.rebalanceCount,
+    ),
+  );
+  t.deepEqual(await vt.when(stepsP as any), plan);
+  t.is(
+    (await getPortfolioStatus(1)).rebalanceCount,
+    afterPolicyChange.rebalanceCount + 1,
+  );
 });
 
 test('planner allows cosmos-based portfolio to withdraw to <Cash> via @chain account', async t => {

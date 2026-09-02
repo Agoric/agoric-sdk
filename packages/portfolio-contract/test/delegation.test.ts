@@ -10,13 +10,19 @@
  */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import {
   defaultSerializer,
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { Bech32Address } from '@agoric/orchestration';
-import type { PortfolioPermissions } from '@agoric/portfolio-api';
+import type {
+  FlowKey,
+  PortfolioPermissions,
+  StatusFor,
+  TargetAllocation,
+} from '@agoric/portfolio-api';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { NameAdmin } from '@agoric/vats';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
@@ -33,8 +39,15 @@ import { contractsMock, evmTrader0PrivateKey } from './mocks.ts';
 import type { PortfolioStatus } from './contract-test-support.ts';
 import { chainInfoWithCCTP } from './supports.ts';
 
+const expectUnhandled = makeExpectUnhandledRejectionMacro({
+  test,
+  importMetaUrl: import.meta.url,
+});
+
 const PETE_AGENT = 'agoric1petesAgent' as const;
+type PortfolioPublishedPath = `ymax${'0' | '1'}.portfolios.portfolio${number}`;
 type Deployed = Awaited<ReturnType<typeof deploy>>;
+type EvmTraderKit = Awaited<ReturnType<typeof makeEvmTraderKit>>;
 type Receiver<R> = ReturnType<typeof makeDepositFacetSpy<R>>;
 type ExpectedDelegationDetails = {
   portfolioId: number;
@@ -57,8 +70,11 @@ const getSyncState = ({
 }: Pick<PortfolioStatus, 'policyVersion' | 'rebalanceCount'>) =>
   harden({ policyVersion, rebalanceCount });
 
-const stripRootStoragePath = (path: string) =>
-  path.replace(new RegExp(`^(${ROOT_STORAGE_PATH}|published)\\.`), '');
+const stripRootStoragePath = (path: string): PortfolioPublishedPath =>
+  path.replace(
+    new RegExp(`^(${ROOT_STORAGE_PATH}|published)\\.`),
+    '',
+  ) as PortfolioPublishedPath;
 
 const snapshotVstorage = (
   t: ExecutionContext,
@@ -161,13 +177,99 @@ const redeemAndCheckDelegation = async ({
   return { invitation, invitationDetails, delegationClient };
 };
 
+const makeDelegate = ({
+  agentId,
+  delegationClient,
+  portfolioPath,
+  readPortfolioStatus,
+  readPublished,
+}: {
+  agentId: number;
+  delegationClient: PortfolioDelegationClient;
+  portfolioPath: PortfolioPublishedPath;
+  readPortfolioStatus: () => Promise<PortfolioStatus>;
+  readPublished: EvmTraderKit['readPublished'];
+}) => {
+  const agentKey = `agent${agentId}` as const;
+  let requestCount = 0;
+  const waitForFlowOutcome = async (
+    flowKey: FlowKey,
+  ): Promise<StatusFor['flow']> => {
+    const status = await readPublished(`${portfolioPath}.flows.${flowKey}`);
+    if (status.state !== 'done' && status.state !== 'fail') {
+      throw new Error(`${flowKey} has not published a terminal outcome`);
+    }
+    return status;
+  };
+
+  return harden({
+    agentKey,
+    async proposeTargetAllocation(targetAllocation: TargetAllocation) {
+      requestCount += 1;
+      const agentMemo = `${agentKey}-request${requestCount}`;
+      const submittedAt = await readPortfolioStatus();
+      const flowKey = await E(delegationClient).setTargetAllocation({
+        targetAllocation,
+        syncState: getSyncState(submittedAt),
+        agentMemo,
+      });
+      const expectAccepted = async (t: ExecutionContext) => {
+        const outcome = await waitForFlowOutcome(flowKey);
+        t.like(outcome, {
+          state: 'done',
+          agent: agentKey,
+          agentMemo,
+          createdAtPolicyVersion: submittedAt.policyVersion,
+          initiatingOperation: {
+            type: 'setTargetAllocation',
+            status: 'ok',
+            result: {
+              policyVersion: submittedAt.policyVersion + 1,
+            },
+          },
+        });
+        return outcome;
+      };
+      const expectRejected = async (t: ExecutionContext, error: string) => {
+        const outcome = await waitForFlowOutcome(flowKey);
+        t.like(outcome, {
+          state: 'fail',
+          step: 0,
+          how: 'await plan',
+          agent: agentKey,
+          agentMemo,
+          createdAtPolicyVersion: submittedAt.policyVersion,
+          initiatingOperation: {
+            type: 'setTargetAllocation',
+            status: 'error',
+            error,
+          },
+          error,
+        });
+        return outcome;
+      };
+      return harden({
+        flowKey,
+        flowId: Number(flowKey.slice('flow'.length)),
+        submittedAt,
+        expectAccepted,
+        expectRejected,
+        expectNoSteps: (t: ExecutionContext) =>
+          t.throwsAsync(
+            readPublished(`${portfolioPath}.flows.${flowKey}.steps`),
+          ),
+      });
+    },
+  });
+};
+
 test('Pete may grant his own portfolio and grantee may rebalance through the redeemed delegation facet', async t => {
   const deployed = await deploy(t);
   const { zoe } = deployed;
   const { receiver, peteKit, peteArbitrum, portfolioId } =
     await openPetePortfolio(deployed);
   const permissions = harden({
-    allocation: true, // TODO(mfig): { maxWeightBps: 7_000n },
+    allocation: { maxWeightBps: 7_000n },
   });
   const grantStatus = await peteArbitrum.grant(PETE_AGENT, permissions);
   const { delegationClient } = await redeemAndCheckDelegation({
@@ -196,7 +298,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
   await eventLoopIteration();
   const portfolioPath = stripRootStoragePath(
     peteKit.evmTrader.getPortfolioPath(),
-  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
+  );
   const portfolioStatus = await peteKit.evmTrader.getPortfolioStatus();
   t.is(portfolioStatus.flowsRunning?.[rebalanceFlowId]?.agent, 'agent1');
   t.is(portfolioStatus.flowsRunning?.[rebalanceFlowId]?.agentMemo, '12345');
@@ -222,6 +324,264 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
     delegationDocOpts,
   );
 });
+
+test('owner-signed grant, full replacement, revoke, and re-grant govern the redeemed facet', async t => {
+  const deployed = await deploy(t);
+  const { zoe } = deployed;
+  const { receiver, peteKit, peteArbitrum, portfolioId } =
+    await openPetePortfolio(deployed);
+  const initialPermissions = harden({
+    allocation: {
+      maxWeightBps: 7_000n,
+      minVaultTvlUsd: 10_000_000n,
+    },
+  });
+  const grantStatus = await peteArbitrum.grant(PETE_AGENT, initialPermissions);
+  const { delegationClient } = await redeemAndCheckDelegation({
+    t,
+    zoe,
+    grantStatus,
+    receiver,
+    expectedDetails: {
+      portfolioId,
+      agentId: 'agent1',
+      permissions: initialPermissions,
+    },
+  });
+
+  const beforeChange = await peteKit.evmTrader.getPortfolioStatus();
+  const replacement = harden({
+    allocation: { maxWeightBps: 5_000n },
+  });
+  const changeStatus = await peteArbitrum.changePermissions(1, replacement);
+  t.is(changeStatus.status, 'ok');
+  await eventLoopIteration();
+
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  );
+  const agentsAfterChange = await peteKit.readPublished(
+    `${portfolioPath}.agents`,
+  );
+  t.deepEqual(agentsAfterChange.agent1, {
+    grantee: PETE_AGENT,
+    permissions: replacement,
+    state: 'active',
+    updatedAtPolicyVersion: beforeChange.policyVersion + 1,
+  });
+  t.false(
+    'minVaultTvlUsd' in
+      (agentsAfterChange.agent1.permissions as any).allocation,
+    'replacement clears an omitted constraint instead of patching it',
+  );
+
+  await t.throwsAsync(
+    E(delegationClient).setTargetAllocation({
+      targetAllocation: {
+        Aave_Arbitrum: 50n,
+        Compound_Arbitrum: 50n,
+      },
+      syncState: getSyncState(beforeChange),
+    }),
+    { message: /expected policyVersion/ },
+  );
+
+  const beforeRevoke = await peteKit.evmTrader.getPortfolioStatus();
+  const revokeStatus = await peteArbitrum.revoke(1);
+  t.is(revokeStatus.status, 'ok');
+  await eventLoopIteration();
+  await t.throwsAsync(
+    E(delegationClient).setTargetAllocation({
+      targetAllocation: {
+        Aave_Arbitrum: 50n,
+        Compound_Arbitrum: 50n,
+      },
+      syncState: getSyncState(beforeRevoke),
+    }),
+    { message: /delegation client is not active for agent1/ },
+  );
+
+  const agentsAfterRevoke = await peteKit.readPublished(
+    `${portfolioPath}.agents`,
+  );
+  t.deepEqual(agentsAfterRevoke.agent1, {
+    grantee: PETE_AGENT,
+    permissions: replacement,
+    state: 'revoked',
+    updatedAtPolicyVersion: beforeRevoke.policyVersion + 1,
+  });
+
+  const regrantStatus = await peteArbitrum.grant(
+    PETE_AGENT,
+    harden({ allocation: true }),
+  );
+  t.is(regrantStatus.status, 'ok');
+  t.is(receiver.getDeliveryCount(), 2);
+  const agentsAfterRegrant = await peteKit.readPublished(
+    `${portfolioPath}.agents`,
+  );
+  t.is(agentsAfterRegrant.agent1.state, 'revoked');
+  t.deepEqual(agentsAfterRegrant.agent2, {
+    grantee: PETE_AGENT,
+    permissions: { allocation: true },
+    state: 'active',
+    updatedAtPolicyVersion: beforeRevoke.policyVersion + 2,
+  });
+});
+
+const testSignedGlobalLimits = async (t: ExecutionContext) => {
+  const deployed = await deploy(t);
+  const { zoe, started } = deployed;
+  const plannerInvitation = await E(
+    started.creatorFacet,
+  ).makePlannerInvitation();
+  const plannerSeat = await E(zoe).offer(plannerInvitation, emptyProposal);
+  const planner = await E(plannerSeat).getOfferResult();
+  const observations = harden({
+    balances: {
+      Aave_Arbitrum: 500_000_000_000n,
+      Compound_Arbitrum: 500_000_000_000n,
+    },
+    instrumentTvls: {
+      Aave_Arbitrum: { tvlUsd: 20_000_000n },
+      Compound_Arbitrum: { tvlUsd: 50_000_000n },
+    },
+  });
+
+  const { receiver, peteKit, peteArbitrum, portfolioId } =
+    await openPetePortfolio(deployed);
+  const permissions = harden({
+    allocation: {
+      maxWeightBps: 5_000n,
+      minVaultTvlUsd: 10_000_000n,
+    },
+  });
+  const grantStatus = await peteArbitrum.grant(PETE_AGENT, permissions);
+  const { delegationClient } = await redeemAndCheckDelegation({
+    t,
+    zoe,
+    grantStatus,
+    receiver,
+    expectedDetails: {
+      portfolioId,
+      agentId: 'agent1',
+      permissions,
+    },
+  });
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  );
+  const peteAgent = makeDelegate({
+    agentId: 1,
+    delegationClient,
+    portfolioPath,
+    readPortfolioStatus: () => peteKit.evmTrader.getPortfolioStatus(),
+    readPublished: peteKit.readPublished,
+  });
+
+  const acceptedRequest = await peteAgent.proposeTargetAllocation({
+    Aave_Arbitrum: 50n,
+    Compound_Arbitrum: 50n,
+  });
+  await eventLoopIteration();
+  const accepted = await peteKit.evmTrader.getPortfolioStatus();
+  t.like(accepted.flowsRunning?.[acceptedRequest.flowKey], {
+    agent: 'agent1',
+    createdAtPolicyVersion: acceptedRequest.submittedAt.policyVersion,
+    initiatingOperation: {
+      type: 'setTargetAllocation',
+      status: 'pending',
+    },
+  });
+  await E(planner).resolvePlan(
+    portfolioId,
+    acceptedRequest.flowId,
+    [],
+    accepted.policyVersion,
+    accepted.rebalanceCount,
+    observations,
+  );
+  await acceptedRequest.expectAccepted(t);
+
+  const tighterWeight = harden({
+    allocation: { maxWeightBps: 4_000n },
+  });
+  t.is((await peteArbitrum.changePermissions(1, tighterWeight)).status, 'ok');
+  const rejectedWeightRequest = await peteAgent.proposeTargetAllocation({
+    Aave_Arbitrum: 50n,
+    Compound_Arbitrum: 50n,
+  });
+  const afterWeightRejection = await peteKit.evmTrader.getPortfolioStatus();
+  t.is(
+    afterWeightRejection.flowCount,
+    rejectedWeightRequest.submittedAt.flowCount + 1,
+  );
+  t.is(
+    afterWeightRejection.policyVersion,
+    rejectedWeightRequest.submittedAt.policyVersion,
+  );
+  t.is(
+    afterWeightRejection.rebalanceCount,
+    rejectedWeightRequest.submittedAt.rebalanceCount,
+  );
+  t.deepEqual(
+    afterWeightRejection.targetAllocation,
+    rejectedWeightRequest.submittedAt.targetAllocation,
+  );
+  await rejectedWeightRequest.expectRejected(
+    t,
+    'mandate.maxWeight:"Aave_Arbitrum"',
+  );
+  await rejectedWeightRequest.expectNoSteps(t);
+
+  const higherTvlMinimum = harden({
+    allocation: { minVaultTvlUsd: 20_000_001n },
+  });
+  t.is(
+    (await peteArbitrum.changePermissions(1, higherTvlMinimum)).status,
+    'ok',
+  );
+  const rejectedTvlRequest = await peteAgent.proposeTargetAllocation({
+    Aave_Arbitrum: 55n,
+    Compound_Arbitrum: 45n,
+  });
+  const awaitingEvidence = await peteKit.evmTrader.getPortfolioStatus();
+  t.is(
+    awaitingEvidence.flowCount,
+    rejectedTvlRequest.submittedAt.flowCount + 1,
+  );
+  await t.notThrowsAsync(
+    E(planner).resolvePlan(
+      portfolioId,
+      rejectedTvlRequest.flowId,
+      [],
+      awaitingEvidence.policyVersion,
+      awaitingEvidence.rebalanceCount,
+      observations,
+    ),
+  );
+  const afterTvlRejection = await peteKit.evmTrader.getPortfolioStatus();
+  t.false(
+    afterTvlRejection.flowsRunning?.[rejectedTvlRequest.flowKey]
+      ?.awaitingSteps ?? false,
+  );
+  t.is(afterTvlRejection.rebalanceCount, awaitingEvidence.rebalanceCount + 1);
+  t.is(afterTvlRejection.policyVersion, awaitingEvidence.policyVersion);
+  t.deepEqual(
+    afterTvlRejection.targetAllocation,
+    rejectedTvlRequest.submittedAt.targetAllocation,
+  );
+  await rejectedTvlRequest.expectRejected(
+    t,
+    'mandate.minVaultTvl:"Aave_Arbitrum"',
+  );
+};
+
+test(
+  'signed global limits govern multiple instruments before installing steps',
+  expectUnhandled(2),
+  testSignedGlobalLimits,
+);
 
 test('Granted rebalance cannot introduce a new instrument', async t => {
   const deployed = await deploy(t);
@@ -325,7 +685,7 @@ test('Delegation is active only while registered on the portfolio', async t => {
 
   const portfolioPath = stripRootStoragePath(
     peteKit.evmTrader.getPortfolioPath(),
-  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
+  );
   const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
   t.deepEqual(agents, {
     agent1: {
@@ -505,7 +865,7 @@ test('Pete may open a portfolio and grant control in a single signed message', a
   });
   const peteArbitrum = peteKit.evmTrader.forChain('Arbitrum');
   const permissions = harden({
-    allocation: true, // TODO(mfig): { maxWeightBps: 7_000n },
+    allocation: { maxWeightBps: 7_000n },
   });
 
   // One user signature: create the portfolio AND grant allocation control to
@@ -544,7 +904,7 @@ test('Pete may open a portfolio and grant control in a single signed message', a
   // The published agents record reflects the delegation.
   const portfolioPath = stripRootStoragePath(
     peteKit.evmTrader.getPortfolioPath(),
-  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
+  );
   const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
   t.deepEqual(agents, {
     agent1: {
