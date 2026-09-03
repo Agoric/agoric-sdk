@@ -36,6 +36,7 @@ import {
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
 import type {
   PortfolioAutoFeatures,
+  PortfolioOpenResult,
   PortfolioPublicInvitationMaker,
   PortfolioContinuingInvitationMaker,
   AxelarChain,
@@ -457,11 +458,16 @@ export const makeEvmTrader = ({
 
           const expectedNonce = nonce;
           await submitMessage(permitMessage);
-          const result = (await getMessageResult(
-            expectedNonce,
-            deadline,
-          )) as string;
-          const parsedId = Number(result.replace(/^portfolio/, ''));
+          const result = (await getMessageResult(expectedNonce, deadline)) as
+            | string
+            | PortfolioOpenResult;
+          // A plain open (no grantee/features) resolves to the bare
+          // `portfolio${number}` string; combining with a grantee and/or
+          // features resolves to a PortfolioOpenResult record instead.
+          const parsedId =
+            typeof result === 'string'
+              ? Number(result.replace(/^portfolio/, ''))
+              : result.portfolioId;
           Number.isInteger(parsedId) ||
             assert.fail('invalid portfolio id result');
           const storagePath = await updatePortfolioPath(parsedId);
