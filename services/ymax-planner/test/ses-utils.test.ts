@@ -3,7 +3,17 @@ import test from 'ava';
 
 import { scaleToNat } from '../src/ses-utils.ts';
 
-test('scaleToNat input validation', t => {
+test('scaleToNat configuration validation', t => {
+  t.throws(() => scaleToNat(0, -10), { message: /fixedPlaces/ });
+  t.throws(() => scaleToNat(0, 2.5), { message: /fixedPlaces/ });
+  t.throws(() => scaleToNat(0, 31), { message: /fixedPlaces/ });
+
+  t.throws(() => scaleToNat(0, 1, -10), { message: /strictness/ });
+  t.throws(() => scaleToNat(0, 1, 2.5), { message: /strictness/ });
+  t.throws(() => scaleToNat(0, 1, 31), { message: /strictness/ });
+});
+
+test('scaleToNat value validation', t => {
   const rejected = { message: /non-negative finite number/ };
   t.throws(() => scaleToNat('0', 6), rejected, 'string');
   t.throws(() => scaleToNat(0n, 6), rejected, 'bigint');

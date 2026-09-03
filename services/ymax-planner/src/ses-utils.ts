@@ -3,7 +3,7 @@
  */
 
 import { Fail, q } from '@endo/errors';
-import { Nat } from '@endo/nat';
+import { isNat, Nat } from '@endo/nat';
 
 const { freeze } = Object;
 
@@ -52,6 +52,11 @@ export const scaleToNat = (
   fixedPlaces: number,
   strictness: number = Infinity,
 ): bigint => {
+  (isNat(fixedPlaces) && fixedPlaces <= 30) ||
+    Fail`internal: scaleToNat fixedPlaces must be a natural number no greater than 30: ${fixedPlaces}`;
+  strictness === Infinity ||
+    (isNat(strictness) && strictness <= 30) ||
+    Fail`internal: scaleToNat strictness must be a natural number no greater than 30: ${strictness}`;
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     throw Fail`scaleToNat requires a non-negative finite number, not ${value}`;
   }
