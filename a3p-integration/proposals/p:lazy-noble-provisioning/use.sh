@@ -3,7 +3,7 @@ set -euo pipefail
 
 source /usr/src/upgrade-test-scripts/env_setup.sh
 
-for key_name in evmHandler planner; do
+for key_name in presleyAgent evmHandler planner; do
   if ! agd keys show "$key_name" --keyring-backend=test >/dev/null 2>&1; then
     agd keys add "$key_name" --keyring-backend=test >/dev/null 2>&1
   fi
