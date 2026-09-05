@@ -16,6 +16,7 @@ import {
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { Bech32Address } from '@agoric/orchestration';
+import type { PortfolioPermissions } from '@agoric/portfolio-api';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { NameAdmin } from '@agoric/vats';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
@@ -38,7 +39,7 @@ type Receiver<R> = ReturnType<typeof makeDepositFacetSpy<R>>;
 type ExpectedDelegationDetails = {
   portfolioId: number;
   agentId: `agent${number}`;
-  permissions: { allocation: true };
+  permissions: PortfolioPermissions;
 };
 
 const emptyProposal = harden({ give: {}, want: {} }) as Proposal;
@@ -165,10 +166,10 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
   const { zoe } = deployed;
   const { receiver, peteKit, peteArbitrum, portfolioId } =
     await openPetePortfolio(deployed);
-  const grantStatus = await peteArbitrum.grant(
-    PETE_AGENT,
-    harden({ allocation: true }),
-  );
+  const permissions = harden({
+    allocation: true, // TODO(mfig): { maxWeightBps: 7_000n },
+  });
+  const grantStatus = await peteArbitrum.grant(PETE_AGENT, permissions);
   const { delegationClient } = await redeemAndCheckDelegation({
     t,
     zoe,
@@ -177,7 +178,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
     expectedDetails: {
       portfolioId,
       agentId: 'agent1',
-      permissions: { allocation: true },
+      permissions,
     },
   });
 
@@ -203,7 +204,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
   t.deepEqual(agents, {
     agent1: {
       grantee: PETE_AGENT,
-      permissions: { allocation: true },
+      permissions,
       state: 'active',
       // the initial deposit/rebalance flow bumps policyVersion to 1, then
       // grant() itself bumps it again
@@ -503,6 +504,9 @@ test('Pete may open a portfolio and grant control in a single signed message', a
     privateKey: evmTrader0PrivateKey,
   });
   const peteArbitrum = peteKit.evmTrader.forChain('Arbitrum');
+  const permissions = harden({
+    allocation: true, // TODO(mfig): { maxWeightBps: 7_000n },
+  });
 
   // One user signature: create the portfolio AND grant allocation control to
   // the agent, replacing the former two-step OpenPortfolio + Grant flow.
@@ -515,7 +519,7 @@ test('Pete may open a portfolio and grant control in a single signed message', a
     {
       grantee: {
         address: PETE_AGENT,
-        permissions: harden({ allocation: true }),
+        permissions,
       },
     },
   );
@@ -533,7 +537,7 @@ test('Pete may open a portfolio and grant control in a single signed message', a
     expectedDetails: {
       portfolioId,
       agentId: 'agent1',
-      permissions: { allocation: true },
+      permissions,
     },
   });
 
@@ -545,7 +549,7 @@ test('Pete may open a portfolio and grant control in a single signed message', a
   t.deepEqual(agents, {
     agent1: {
       grantee: PETE_AGENT,
-      permissions: { allocation: true },
+      permissions,
       state: 'active',
       // grant() runs before the deposit/rebalance flow starts, so this is
       // the portfolio's first policyVersion bump

@@ -134,6 +134,14 @@ const OperationTypes = {
     { name: 'permissions', type: 'PortfolioPermissions' },
     PortfolioIdParam,
   ],
+  /** Atomically replace an external delegation's complete permissions. */
+  ChangePermissions: [
+    { name: 'agentId', type: 'uint256' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+    PortfolioIdParam,
+  ],
+  /** Irreversibly revoke an external delegation. */
+  Revoke: [{ name: 'agentId', type: 'uint256' }, PortfolioIdParam],
   /**
    * Update which auto-features are enabled for a portfolio. The contract will
    * generate a permissioned delegation as necessary and deliver it to the planner.
@@ -162,9 +170,10 @@ const OperationSubTypes = {
   Asset: TokenPermissionsComponents,
   /** @see {@link PortfolioPermissions} */
   PortfolioPermissions: [
-    { name: 'allocation', type: 'bool' },
-    { name: 'rebalance', type: 'bool', optional: true },
-    { name: 'claimRewards', type: 'bool', optional: true },
+    { name: 'allocation', type: 'bool', optional: true },
+    { name: 'maxWeightBps', type: 'uint256', optional: true },
+    { name: 'minVaultTvlUsd', type: 'uint256', optional: true },
+    { name: 'maxVaultShareBps', type: 'uint256', optional: true },
   ],
   DelegationGrantee: [
     { name: 'address', type: 'string' },
@@ -300,15 +309,21 @@ const getYmaxWitnessTypes = <T extends OperationTypeNames>(operation: T) =>
     ...SharedPortfolioTypeParams,
   ]) as YmaxWitnessTypes<T> satisfies TypedData;
 
-const getYmaxStandaloneTypes = <T extends OperationTypeNames>(operation: T) =>
-  ({
+const getYmaxStandaloneTypes = <T extends OperationTypeNames>(
+  operation: T,
+): YmaxStandaloneTypes<T> => {
+  const types = {
     EIP712Domain: StandaloneDomainTypeParams,
     ...getYmaxOperationAndSubTypes(operation, [
       ...OperationTypes[operation],
       ...SharedPortfolioTypeParams,
       ...PortfolioStandaloneTypeParams,
     ]),
-  }) as YmaxStandaloneTypes<T> satisfies TypedData;
+  };
+  // TypeScript cannot preserve the mapped tuple relationship for
+  // `OperationTypes[operation]` through the spreads above.
+  return types as YmaxStandaloneTypes<T> satisfies TypedData;
+};
 
 export const getYmaxOperationTypes = <T extends OperationTypeNames>(
   operation: T,

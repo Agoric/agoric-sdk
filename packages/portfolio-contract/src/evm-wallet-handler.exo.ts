@@ -32,6 +32,7 @@ import {
   type PermitDetails,
   type YmaxOperationDetails,
 } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import { provideLazy, type MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
@@ -400,7 +401,7 @@ export const prepareEVMPortfolioOperationManager = (
               // we don't rely on it for correctness: the string will
               // be looked up in NamesByAddress.
               accountHolder as Bech32Address,
-              permissions,
+              portfolioPermissionsFromEIP712(permissions),
             );
 
             return watch(result, BasicOutcomeWatcher);
@@ -414,9 +415,16 @@ export const prepareEVMPortfolioOperationManager = (
 
             return watch(result, BasicOutcomeWatcher);
           }
-          default:
-            // @ts-expect-error exhaustiveness check
-            Fail`Unsupported operation: ${q(operationDetails.operation)}`;
+          case 'ChangePermissions':
+            throw Fail`ChangePermissions is not implemented`;
+          case 'Revoke':
+            throw Fail`Revoke is not implemented`;
+          default: {
+            const { operation } = operationDetails;
+            // Iff the switch cases are exhaustive, `operation` is `never`.
+            operation satisfies never;
+            Fail`Unsupported operation: ${q(operation)}`;
+          }
         }
       } catch (e) {
         return BasicOutcomeWatcher.onRejected(e);

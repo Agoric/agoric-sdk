@@ -157,6 +157,26 @@ export type OpenPortfolioInitiatingOperation = {
   targetAllocation: TargetAllocation;
 } & OperationOutcome<{ policyVersion: number }>;
 
+/** Planner-attested TVL for an instrument, in whole USD. */
+export type InstrumentTvlObservation = {
+  tvlUsd: bigint;
+};
+
+/**
+ * A location whose USDC contributes to the current portfolio value (i.e., an
+ * AssetPlaceRef that is not a seat or deposit/withdrawal location).
+ */
+export type PortfolioBalancePlaceRef = InstrumentId | InterChainAccountRef;
+
+/**
+ * Off-chain observations used to construct and vet a submitted plan.
+ * Balance values are micro-USDC.
+ */
+export type PlanObservations = {
+  balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
+  instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
+};
+
 export type FlowDetail =
   | {
       type: 'withdraw';
@@ -181,6 +201,8 @@ export type FlowDetail =
       agentMemo?: string;
       /** The operation that initiated this flow, when known. */
       initiatingOperation?: SetTargetAllocationInitiatingOperation;
+      /** Policy version current when this flow was requested. */
+      createdAtPolicyVersion?: number;
     }
   | {
       type: 'claimRewards';
@@ -378,6 +400,9 @@ export type PortfolioGrantResult = {
   policyVersion: number;
   agentId: number;
 };
+
+/** Result of an owner-signed external delegation lifecycle operation. */
+export type PortfolioDelegationLifecycleResult = PortfolioGrantResult;
 
 /** Result of a `SetAutoFeatures` operation, referencing the resulting policyVersion. */
 export type PortfolioSetAutoFeaturesResult = {

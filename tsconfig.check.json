@@ -21,6 +21,8 @@
         "a3p-integration", // vendored package problems
         "multichain-testing", // not relevant for coding loop (and noble-usdn-lab.ts is very slow)
         "packages/swingset-runner", // TODO not yet type-clean (~64 errors); also lacks a lint:types script
+        "packages/xsnap/moddable",
+        "packages/xsnap/xsnap-native",
         "**/build",
         "**/bundles",
         "**/coverage",
