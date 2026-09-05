@@ -154,13 +154,13 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
     };
 
     (provider as any).emit(filter, mockLog);
-  }, 3010);
+  }, 1000);
 
   await t.notThrowsAsync(async () => {
     await handlePendingTx(makeAccountTx, {
       ...opts,
       log: logger,
-      timeoutMs: 3000,
+      timeoutMs: 300,
     });
   });
 
@@ -168,7 +168,7 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
     `[${txId}] Subscribed with subId=mock-subscription-id to ${factoryAddress}`,
-    `[${txId}] [WALLET_TX_NOT_FOUND] ✗ No wallet creation found for expectedAddr ${expectedWalletAddr} within 0.05 minutes`,
+    `[${txId}] [WALLET_TX_NOT_FOUND] ✗ No wallet creation found for expectedAddr ${expectedWalletAddr} within 0.005 minutes`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=0x123abc block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);

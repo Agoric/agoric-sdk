@@ -448,6 +448,7 @@ const fakePortfolioKit = async ({
     isDryRun: true,
     depositBrand,
     feeBrand,
+    instrumentTvls: {},
     vstoragePathPrefixes: { portfoliosPathPrefix },
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
@@ -1149,6 +1150,12 @@ const testSettlement = test.macro(
         portfolioStatus.rebalanceCount,
       ],
     };
+    if (flow.agent && 'expectedPlan' in config) {
+      expectedInvocation.args.push({
+        balances: {},
+        instrumentTvls: powers.instrumentTvls,
+      });
+    }
 
     const vstorageEventDetail = makeVstorageEventDetail(
       blockHeight,
@@ -1190,6 +1197,31 @@ const testSettlement = test.macro(
 
 test('no-step flows resolve with an empty plan', testSettlement, {
   flow: { type: 'rebalance' },
+  expectedPlan: [],
+});
+
+test('delegated plans include current observations', testSettlement, {
+  mutatePortfolioKit: kit => {
+    kit.powers.instrumentTvls = {
+      USDN: { tvlUsd: 10_000_000n },
+    };
+  },
+  flow: { type: 'rebalance', agent: 'agent1', createdAtPolicyVersion: 1 },
+  expectedPlan: [],
+});
+
+test('delegated plans use the flow proposed target', testSettlement, {
+  portfolioStatusOverrides: { targetAllocation: { USDN: 0n } },
+  flow: {
+    type: 'rebalance',
+    agent: 'agent1',
+    createdAtPolicyVersion: 1,
+    initiatingOperation: {
+      type: 'setTargetAllocation',
+      targetAllocation: { USDN: 1n },
+      status: 'pending',
+    },
+  },
   expectedPlan: [],
 });
 
