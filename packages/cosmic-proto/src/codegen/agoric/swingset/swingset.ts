@@ -1,6 +1,11 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
+import {
+  Coin,
+  type CoinSDKType,
+  DecCoin,
+  type DecCoinSDKType,
+} from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
@@ -203,6 +208,26 @@ export interface Params {
    * The maximum size of a bundle or artifact chunk (0 implies default 490000 bytes)
    */
   chunkSizeLimitBytes: bigint;
+  /**
+   * Per-message-type bean price menu, keyed by proto type URL.
+   */
+  msgTypeBeansPerUnit: MsgTypeBeans[];
+  /**
+   * Disposition of collected bean fees: burn fraction by denom.
+   */
+  beanFeeBurnFraction: DecCoin[];
+  /**
+   * Module account receiving the unburned bean-fee remainder.
+   */
+  beanFeeCollector: string;
+  /**
+   * Consensus minimum gas price used to translate bean fees into gas.
+   */
+  minGasPrice: DecCoin[];
+  /**
+   * Complete substitute prices, in descending preference after fee_unit_price.
+   */
+  feeUnitPriceAlternatives: FeeUnitPriceAlternative[];
 }
 export interface ParamsProtoMsg {
   typeUrl: '/agoric.swingset.Params';
@@ -225,6 +250,11 @@ export interface ParamsSDKType {
   installation_deadline_seconds: bigint;
   bundle_uncompressed_size_limit_bytes: bigint;
   chunk_size_limit_bytes: bigint;
+  msg_type_beans_per_unit: MsgTypeBeansSDKType[];
+  bean_fee_burn_fraction: DecCoinSDKType[];
+  bean_fee_collector: string;
+  min_gas_price: DecCoinSDKType[];
+  fee_unit_price_alternatives: FeeUnitPriceAlternativeSDKType[];
 }
 /**
  * The current state of the module.
@@ -296,6 +326,52 @@ export interface StringBeansProtoMsg {
 export interface StringBeansSDKType {
   key: string;
   beans: string;
+}
+/**
+ * Per-message-type bean price menu.
+ * @name MsgTypeBeans
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgTypeBeans
+ */
+export interface MsgTypeBeans {
+  msgTypeUrl: string;
+  beans: StringBeans[];
+}
+export interface MsgTypeBeansProtoMsg {
+  typeUrl: '/agoric.swingset.MsgTypeBeans';
+  value: Uint8Array;
+}
+/**
+ * Per-message-type bean price menu.
+ * @name MsgTypeBeansSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgTypeBeans
+ */
+export interface MsgTypeBeansSDKType {
+  msg_type_url: string;
+  beans: StringBeansSDKType[];
+}
+/**
+ * A complete substitute price for one fee quantum.
+ * @name FeeUnitPriceAlternative
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.FeeUnitPriceAlternative
+ */
+export interface FeeUnitPriceAlternative {
+  price: Coin[];
+}
+export interface FeeUnitPriceAlternativeProtoMsg {
+  typeUrl: '/agoric.swingset.FeeUnitPriceAlternative';
+  value: Uint8Array;
+}
+/**
+ * A complete substitute price for one fee quantum.
+ * @name FeeUnitPriceAlternativeSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.FeeUnitPriceAlternative
+ */
+export interface FeeUnitPriceAlternativeSDKType {
+  price: CoinSDKType[];
 }
 /**
  * Map a provisioning power flag to its corresponding fee.
@@ -795,6 +871,11 @@ function createBaseParams(): Params {
     installationDeadlineSeconds: BigInt(0),
     bundleUncompressedSizeLimitBytes: BigInt(0),
     chunkSizeLimitBytes: BigInt(0),
+    msgTypeBeansPerUnit: [],
+    beanFeeBurnFraction: [],
+    beanFeeCollector: '',
+    minGasPrice: [],
+    feeUnitPriceAlternatives: [],
   };
 }
 /**
@@ -824,7 +905,19 @@ export const Params = {
           typeof o.installationDeadlineBlocks === 'bigint' &&
           typeof o.installationDeadlineSeconds === 'bigint' &&
           typeof o.bundleUncompressedSizeLimitBytes === 'bigint' &&
-          typeof o.chunkSizeLimitBytes === 'bigint'))
+          typeof o.chunkSizeLimitBytes === 'bigint' &&
+          Array.isArray(o.msgTypeBeansPerUnit) &&
+          (!o.msgTypeBeansPerUnit.length ||
+            MsgTypeBeans.is(o.msgTypeBeansPerUnit[0])) &&
+          Array.isArray(o.beanFeeBurnFraction) &&
+          (!o.beanFeeBurnFraction.length ||
+            DecCoin.is(o.beanFeeBurnFraction[0])) &&
+          typeof o.beanFeeCollector === 'string' &&
+          Array.isArray(o.minGasPrice) &&
+          (!o.minGasPrice.length || DecCoin.is(o.minGasPrice[0])) &&
+          Array.isArray(o.feeUnitPriceAlternatives) &&
+          (!o.feeUnitPriceAlternatives.length ||
+            FeeUnitPriceAlternative.is(o.feeUnitPriceAlternatives[0]))))
     );
   },
   isSDK(o: any): o is ParamsSDKType {
@@ -848,7 +941,19 @@ export const Params = {
           typeof o.installation_deadline_blocks === 'bigint' &&
           typeof o.installation_deadline_seconds === 'bigint' &&
           typeof o.bundle_uncompressed_size_limit_bytes === 'bigint' &&
-          typeof o.chunk_size_limit_bytes === 'bigint'))
+          typeof o.chunk_size_limit_bytes === 'bigint' &&
+          Array.isArray(o.msg_type_beans_per_unit) &&
+          (!o.msg_type_beans_per_unit.length ||
+            MsgTypeBeans.isSDK(o.msg_type_beans_per_unit[0])) &&
+          Array.isArray(o.bean_fee_burn_fraction) &&
+          (!o.bean_fee_burn_fraction.length ||
+            DecCoin.isSDK(o.bean_fee_burn_fraction[0])) &&
+          typeof o.bean_fee_collector === 'string' &&
+          Array.isArray(o.min_gas_price) &&
+          (!o.min_gas_price.length || DecCoin.isSDK(o.min_gas_price[0])) &&
+          Array.isArray(o.fee_unit_price_alternatives) &&
+          (!o.fee_unit_price_alternatives.length ||
+            FeeUnitPriceAlternative.isSDK(o.fee_unit_price_alternatives[0]))))
     );
   },
   encode(
@@ -884,6 +989,21 @@ export const Params = {
     }
     if (message.chunkSizeLimitBytes !== BigInt(0)) {
       writer.uint32(80).int64(message.chunkSizeLimitBytes);
+    }
+    for (const v of message.msgTypeBeansPerUnit) {
+      MsgTypeBeans.encode(v!, writer.uint32(90).fork()).ldelim();
+    }
+    for (const v of message.beanFeeBurnFraction) {
+      DecCoin.encode(v!, writer.uint32(98).fork()).ldelim();
+    }
+    if (message.beanFeeCollector !== '') {
+      writer.uint32(106).string(message.beanFeeCollector);
+    }
+    for (const v of message.minGasPrice) {
+      DecCoin.encode(v!, writer.uint32(114).fork()).ldelim();
+    }
+    for (const v of message.feeUnitPriceAlternatives) {
+      FeeUnitPriceAlternative.encode(v!, writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -931,6 +1051,27 @@ export const Params = {
         case 10:
           message.chunkSizeLimitBytes = reader.int64();
           break;
+        case 11:
+          message.msgTypeBeansPerUnit.push(
+            MsgTypeBeans.decode(reader, reader.uint32()),
+          );
+          break;
+        case 12:
+          message.beanFeeBurnFraction.push(
+            DecCoin.decode(reader, reader.uint32()),
+          );
+          break;
+        case 13:
+          message.beanFeeCollector = reader.string();
+          break;
+        case 14:
+          message.minGasPrice.push(DecCoin.decode(reader, reader.uint32()));
+          break;
+        case 15:
+          message.feeUnitPriceAlternatives.push(
+            FeeUnitPriceAlternative.decode(reader, reader.uint32()),
+          );
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -972,6 +1113,23 @@ export const Params = {
       chunkSizeLimitBytes: isSet(object.chunkSizeLimitBytes)
         ? BigInt(object.chunkSizeLimitBytes.toString())
         : BigInt(0),
+      msgTypeBeansPerUnit: Array.isArray(object?.msgTypeBeansPerUnit)
+        ? object.msgTypeBeansPerUnit.map((e: any) => MsgTypeBeans.fromJSON(e))
+        : [],
+      beanFeeBurnFraction: Array.isArray(object?.beanFeeBurnFraction)
+        ? object.beanFeeBurnFraction.map((e: any) => DecCoin.fromJSON(e))
+        : [],
+      beanFeeCollector: isSet(object.beanFeeCollector)
+        ? String(object.beanFeeCollector)
+        : '',
+      minGasPrice: Array.isArray(object?.minGasPrice)
+        ? object.minGasPrice.map((e: any) => DecCoin.fromJSON(e))
+        : [],
+      feeUnitPriceAlternatives: Array.isArray(object?.feeUnitPriceAlternatives)
+        ? object.feeUnitPriceAlternatives.map((e: any) =>
+            FeeUnitPriceAlternative.fromJSON(e),
+          )
+        : [],
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
@@ -1029,6 +1187,36 @@ export const Params = {
       (obj.chunkSizeLimitBytes = (
         message.chunkSizeLimitBytes || BigInt(0)
       ).toString());
+    if (message.msgTypeBeansPerUnit) {
+      obj.msgTypeBeansPerUnit = message.msgTypeBeansPerUnit.map(e =>
+        e ? MsgTypeBeans.toJSON(e) : undefined,
+      );
+    } else {
+      obj.msgTypeBeansPerUnit = [];
+    }
+    if (message.beanFeeBurnFraction) {
+      obj.beanFeeBurnFraction = message.beanFeeBurnFraction.map(e =>
+        e ? DecCoin.toJSON(e) : undefined,
+      );
+    } else {
+      obj.beanFeeBurnFraction = [];
+    }
+    message.beanFeeCollector !== undefined &&
+      (obj.beanFeeCollector = message.beanFeeCollector);
+    if (message.minGasPrice) {
+      obj.minGasPrice = message.minGasPrice.map(e =>
+        e ? DecCoin.toJSON(e) : undefined,
+      );
+    } else {
+      obj.minGasPrice = [];
+    }
+    if (message.feeUnitPriceAlternatives) {
+      obj.feeUnitPriceAlternatives = message.feeUnitPriceAlternatives.map(e =>
+        e ? FeeUnitPriceAlternative.toJSON(e) : undefined,
+      );
+    } else {
+      obj.feeUnitPriceAlternatives = [];
+    }
     return obj;
   },
   fromPartial(object: Partial<Params>): Params {
@@ -1064,6 +1252,17 @@ export const Params = {
       object.chunkSizeLimitBytes !== null
         ? BigInt(object.chunkSizeLimitBytes.toString())
         : BigInt(0);
+    message.msgTypeBeansPerUnit =
+      object.msgTypeBeansPerUnit?.map(e => MsgTypeBeans.fromPartial(e)) || [];
+    message.beanFeeBurnFraction =
+      object.beanFeeBurnFraction?.map(e => DecCoin.fromPartial(e)) || [];
+    message.beanFeeCollector = object.beanFeeCollector ?? '';
+    message.minGasPrice =
+      object.minGasPrice?.map(e => DecCoin.fromPartial(e)) || [];
+    message.feeUnitPriceAlternatives =
+      object.feeUnitPriceAlternatives?.map(e =>
+        FeeUnitPriceAlternative.fromPartial(e),
+      ) || [];
     return message;
   },
   fromProtoMsg(message: ParamsProtoMsg): Params {
@@ -1327,6 +1526,207 @@ export const StringBeans = {
     return {
       typeUrl: '/agoric.swingset.StringBeans',
       value: StringBeans.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgTypeBeans(): MsgTypeBeans {
+  return {
+    msgTypeUrl: '',
+    beans: [],
+  };
+}
+/**
+ * Per-message-type bean price menu.
+ * @name MsgTypeBeans
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgTypeBeans
+ */
+export const MsgTypeBeans = {
+  typeUrl: '/agoric.swingset.MsgTypeBeans' as const,
+  is(o: any): o is MsgTypeBeans {
+    return (
+      o &&
+      (o.$typeUrl === MsgTypeBeans.typeUrl ||
+        (typeof o.msgTypeUrl === 'string' &&
+          Array.isArray(o.beans) &&
+          (!o.beans.length || StringBeans.is(o.beans[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgTypeBeansSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgTypeBeans.typeUrl ||
+        (typeof o.msg_type_url === 'string' &&
+          Array.isArray(o.beans) &&
+          (!o.beans.length || StringBeans.isSDK(o.beans[0]))))
+    );
+  },
+  encode(
+    message: MsgTypeBeans,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.msgTypeUrl !== '') {
+      writer.uint32(10).string(message.msgTypeUrl);
+    }
+    for (const v of message.beans) {
+      StringBeans.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgTypeBeans {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgTypeBeans();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.msgTypeUrl = reader.string();
+          break;
+        case 2:
+          message.beans.push(StringBeans.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgTypeBeans {
+    return {
+      msgTypeUrl: isSet(object.msgTypeUrl) ? String(object.msgTypeUrl) : '',
+      beans: Array.isArray(object?.beans)
+        ? object.beans.map((e: any) => StringBeans.fromJSON(e))
+        : [],
+    };
+  },
+  toJSON(message: MsgTypeBeans): JsonSafe<MsgTypeBeans> {
+    const obj: any = {};
+    message.msgTypeUrl !== undefined && (obj.msgTypeUrl = message.msgTypeUrl);
+    if (message.beans) {
+      obj.beans = message.beans.map(e =>
+        e ? StringBeans.toJSON(e) : undefined,
+      );
+    } else {
+      obj.beans = [];
+    }
+    return obj;
+  },
+  fromPartial(object: Partial<MsgTypeBeans>): MsgTypeBeans {
+    const message = createBaseMsgTypeBeans();
+    message.msgTypeUrl = object.msgTypeUrl ?? '';
+    message.beans = object.beans?.map(e => StringBeans.fromPartial(e)) || [];
+    return message;
+  },
+  fromProtoMsg(message: MsgTypeBeansProtoMsg): MsgTypeBeans {
+    return MsgTypeBeans.decode(message.value);
+  },
+  toProto(message: MsgTypeBeans): Uint8Array {
+    return MsgTypeBeans.encode(message).finish();
+  },
+  toProtoMsg(message: MsgTypeBeans): MsgTypeBeansProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.MsgTypeBeans',
+      value: MsgTypeBeans.encode(message).finish(),
+    };
+  },
+};
+function createBaseFeeUnitPriceAlternative(): FeeUnitPriceAlternative {
+  return {
+    price: [],
+  };
+}
+/**
+ * A complete substitute price for one fee quantum.
+ * @name FeeUnitPriceAlternative
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.FeeUnitPriceAlternative
+ */
+export const FeeUnitPriceAlternative = {
+  typeUrl: '/agoric.swingset.FeeUnitPriceAlternative' as const,
+  is(o: any): o is FeeUnitPriceAlternative {
+    return (
+      o &&
+      (o.$typeUrl === FeeUnitPriceAlternative.typeUrl ||
+        (Array.isArray(o.price) && (!o.price.length || Coin.is(o.price[0]))))
+    );
+  },
+  isSDK(o: any): o is FeeUnitPriceAlternativeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === FeeUnitPriceAlternative.typeUrl ||
+        (Array.isArray(o.price) && (!o.price.length || Coin.isSDK(o.price[0]))))
+    );
+  },
+  encode(
+    message: FeeUnitPriceAlternative,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    for (const v of message.price) {
+      Coin.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): FeeUnitPriceAlternative {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFeeUnitPriceAlternative();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.price.push(Coin.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): FeeUnitPriceAlternative {
+    return {
+      price: Array.isArray(object?.price)
+        ? object.price.map((e: any) => Coin.fromJSON(e))
+        : [],
+    };
+  },
+  toJSON(message: FeeUnitPriceAlternative): JsonSafe<FeeUnitPriceAlternative> {
+    const obj: any = {};
+    if (message.price) {
+      obj.price = message.price.map(e => (e ? Coin.toJSON(e) : undefined));
+    } else {
+      obj.price = [];
+    }
+    return obj;
+  },
+  fromPartial(
+    object: Partial<FeeUnitPriceAlternative>,
+  ): FeeUnitPriceAlternative {
+    const message = createBaseFeeUnitPriceAlternative();
+    message.price = object.price?.map(e => Coin.fromPartial(e)) || [];
+    return message;
+  },
+  fromProtoMsg(
+    message: FeeUnitPriceAlternativeProtoMsg,
+  ): FeeUnitPriceAlternative {
+    return FeeUnitPriceAlternative.decode(message.value);
+  },
+  toProto(message: FeeUnitPriceAlternative): Uint8Array {
+    return FeeUnitPriceAlternative.encode(message).finish();
+  },
+  toProtoMsg(
+    message: FeeUnitPriceAlternative,
+  ): FeeUnitPriceAlternativeProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.FeeUnitPriceAlternative',
+      value: FeeUnitPriceAlternative.encode(message).finish(),
     };
   },
 };
