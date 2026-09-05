@@ -25,6 +25,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -32,6 +33,7 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
+	vbankkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/keeper"
 	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 
 	vstorage "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
@@ -104,7 +106,7 @@ func initVbankFixtures(t *testing.T) VbankFixtures {
 	}
 
 	newCtx := sdk.NewContext(cms, cmtproto.Header{}, true, logger)
-	authority := authtypes.NewModuleAddress("gov")
+	authority := authtypes.NewModuleAddress(govtypes.ModuleName)
 
 	maccPerms := map[string][]string{
 		minttypes.ModuleName:         {authtypes.Minter},
@@ -170,6 +172,7 @@ func initVbankFixtures(t *testing.T) VbankFixtures {
 		accountKeeper,
 		bankKeeper,
 		authtypes.FeeCollectorName,
+		authority.String(),
 		swingSetKeeper.PushAction,
 	)
 
@@ -205,8 +208,8 @@ func initVbankFixtures(t *testing.T) VbankFixtures {
 	sdkCtx := sdk.UnwrapSDKContext(integrationApp.Context())
 
 	// Register message and query servers
-	vbanktypes.RegisterMsgServer(integrationApp.MsgServiceRouter(), vbanktypes.UnimplementedMsgServer{})
-	vbanktypes.RegisterQueryServer(integrationApp.QueryHelper(), &vbanktypes.UnimplementedQueryServer{})
+	vbanktypes.RegisterMsgServer(integrationApp.MsgServiceRouter(), vbankkeeper.NewMsgServerImpl(vbankKeeper))
+	vbanktypes.RegisterQueryServer(integrationApp.QueryHelper(), vbankKeeper)
 
 	return VbankFixtures{
 		ctx:         sdkCtx,
