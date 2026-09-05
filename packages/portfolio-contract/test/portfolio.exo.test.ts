@@ -1085,6 +1085,30 @@ test('evmHandler grant rejects an unrecognized permission key', async t => {
   );
 });
 
+test('evmHandler validates the portfolio before grant and feature arguments', async t => {
+  const { makePortfolioKit, vowTools } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({ portfolioId: 15 });
+
+  await t.throwsAsync(
+    vowTools.when(
+      evmHandler.grant('agoric1delegate', {
+        allocation: true,
+        unexpected: true,
+      } as any),
+    ),
+    { message: 'grant requires an EVM portfolio' },
+  );
+  await t.throwsAsync(
+    vowTools.when(
+      evmHandler.setAutoFeatures({
+        rebalance: true,
+        unexpected: true,
+      } as any),
+    ),
+    { message: 'setAutoFeatures requires an EVM portfolio' },
+  );
+});
+
 test('evmHandler grant allocates sequential agent ids', async t => {
   const ownerAddress = '0x3434343434343434343434343434343434343434' as const;
   const { makePortfolioKit, getCallLog, vowTools } = makeTestSetup();
@@ -1135,6 +1159,55 @@ test('evmHandler grant returns the resulting agent id', async t => {
   t.like(result2, { portfolioId: 23, policyVersion: 2, agentId: 2 });
 });
 
+test('rejected external lifecycle changes do not advance policyVersion', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
+    storage,
+  });
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 25,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+
+  const granted = await vowTools.when(
+    evmHandler.grant('agoric1delegate', { allocation: true }),
+  );
+
+  const assertRejectedWithoutPolicyChange = async (
+    attempt: () => Promise<unknown>,
+    message: RegExp,
+  ) => {
+    const before = await getPortfolioStatus!(25);
+    await t.throwsAsync(attempt(), { message });
+    const after = await getPortfolioStatus!(25);
+    t.is(after.policyVersion, before.policyVersion);
+  };
+
+  await assertRejectedWithoutPolicyChange(
+    () => vowTools.when(evmHandler.changePermissions(99, { allocation: true })),
+    /no delegation found for agent 99/,
+  );
+
+  await manager.setAutoFeatures({ rebalance: true });
+  await assertRejectedWithoutPolicyChange(
+    () => vowTools.when(evmHandler.changePermissions(2, { allocation: true })),
+    /planner delegation cannot be changed or revoked externally/,
+  );
+  await assertRejectedWithoutPolicyChange(
+    () => vowTools.when(evmHandler.revoke(2)),
+    /planner delegation cannot be changed or revoked externally/,
+  );
+
+  await vowTools.when(evmHandler.revoke(granted.agentId));
+  await assertRejectedWithoutPolicyChange(
+    () =>
+      vowTools.when(
+        evmHandler.changePermissions(granted.agentId, { allocation: true }),
+      ),
+    /delegation agent1 cannot be changed or revoked while .*revoked/,
+  );
+});
+
 test('delegation rebalance creates flow and calls executePlan', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
   const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
@@ -1166,6 +1239,37 @@ test('delegation rebalance creates flow and calls executePlan', async t => {
   t.like(getCallLog()[1], ['executePlan', , {}, , undefined, { flowId: 1 }]);
   t.like(await getPortfolioStatus!(20), {
     flowsRunning: { flow1: { type: 'rebalance' } },
+  });
+});
+
+test('delegation rebalance rejects a current target outside its mandate', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus, vowTools } =
+    makeTestSetup({ storage });
+  const { manager } = makePortfolioKit({ portfolioId: 26 });
+
+  manager.setTargetAllocation({ Aave_Base: 60n, Compound_Arbitrum: 40n });
+  await manager.grantDelegation('agoric1delegate', {
+    allocation: { maxWeightBps: 5_000n },
+    rebalance: true,
+  });
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.is(
+    client.rebalance({ syncState: { policyVersion: 2, rebalanceCount: 0 } }),
+    'flow1',
+  );
+  const startedFlow = getCallLog()[1][5] as {
+    stepsP: Parameters<typeof vowTools.when>[0];
+  };
+  await t.throwsAsync(vowTools.when(startedFlow.stepsP), {
+    message: /mandate\.maxWeight:"Aave_Base"/,
+  });
+  t.like(await getPortfolioStatus!(26), {
+    flowsRunning: { flow1: { type: 'rebalance', awaitingSteps: false } },
   });
 });
 
@@ -1554,8 +1658,12 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
 
   // rejectFlowPlan also publishes status immediately
   const { flowId: flowId3, stepsP } = manager.startFlow({
-    type: 'withdraw',
-    amount,
+    type: 'rebalance',
+    initiatingOperation: {
+      type: 'setTargetAllocation',
+      targetAllocation: { USDN: 100n },
+      status: 'pending',
+    },
   });
 
   {
@@ -1576,6 +1684,14 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
       false,
       'awaitingSteps is false after rejectFlowPlan',
     );
+    t.like(flowsRunning[`flow${flowId3}`], {
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { USDN: 100n },
+        status: 'error',
+        error: 'insufficient funds',
+      },
+    });
   }
 
   await t.throwsAsync(vowTools.when(stepsP), { message: 'insufficient funds' });

@@ -36,6 +36,8 @@ import {
   type AssetPlaceRef,
   type FlowDetail,
   type OpenPortfolioInitiatingOperation,
+  type PlanObservations,
+  type PortfolioBalancePlaceRef,
   type PortfolioAgentStatus,
   type PortfolioPublishedPathTypes,
   type ProposalType,
@@ -139,6 +141,19 @@ export const TargetAllocationShape: TypedPattern<TargetAllocation> = M.recordOf(
 
 export const TargetAllocationShapeExt: TypedPattern<Record<string, NatValue>> =
   M.recordOf(PoolKeyShapeExt, M.nat());
+
+/** Extensible keys for instrument positions and chain-account balances. */
+export const PortfolioBalancePlaceRefShapeExt: TypedPattern<PortfolioBalancePlaceRef> =
+  M.string();
+
+export const PlanObservationsShape: TypedPattern<PlanObservations> =
+  M.splitRecord({
+    balances: M.recordOf(PortfolioBalancePlaceRefShapeExt, M.nat()),
+    instrumentTvls: M.recordOf(
+      PoolKeyShapeExt,
+      M.splitRecord({ tvlUsd: M.nat() }),
+    ),
+  });
 
 // #endregion
 
@@ -271,6 +286,7 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
     {
       agent: PortfolioAgentKeyShape,
       initiatingOperation: SetTargetAllocationInitiatingOperationShape,
+      createdAtPolicyVersion: M.number(),
     },
   ),
   M.splitRecord(

@@ -105,7 +105,10 @@ export const preparePortfolioDelegationKit = (
         isActive(): boolean {
           const { portfolioAccess, agentId } = this.state;
           try {
-            portfolioAccess.assertActive(this.facets.client, agentId);
+            portfolioAccess.getAuthorizedDelegation(
+              this.facets.client,
+              agentId,
+            );
             return true;
           } catch {
             return false;

@@ -50,6 +50,13 @@ import type { PortfolioKit } from './portfolio.exo.ts';
 const trace = makeTracer('PEWH');
 
 const MAX_DEADLINE_OFFSET = 60n * 60n * 24n; // 1 day in seconds
+const MAX_SAFE_AGENT_ID = BigInt(Number.MAX_SAFE_INTEGER);
+
+const agentIdFromEIP712 = (agentId: bigint): number => {
+  (agentId > 0n && agentId <= MAX_SAFE_AGENT_ID) ||
+    Fail`invalid delegation agent id ${agentId}`;
+  return Number(agentId);
+};
 
 type EIP712Data = WithSignature<
   YmaxStandaloneOperationData | YmaxPermitWitnessTransferFromData
@@ -406,6 +413,23 @@ export const prepareEVMPortfolioOperationManager = (
 
             return watch(result, BasicOutcomeWatcher);
           }
+          case 'ChangePermissions': {
+            const {
+              data: { agentId, permissions },
+            } = operationDetails;
+            const result = E(portfolio!).changePermissions(
+              agentIdFromEIP712(agentId),
+              portfolioPermissionsFromEIP712(permissions),
+            );
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'Revoke': {
+            const {
+              data: { agentId },
+            } = operationDetails;
+            const result = E(portfolio!).revoke(agentIdFromEIP712(agentId));
+            return watch(result, BasicOutcomeWatcher);
+          }
           case 'SetAutoFeatures': {
             const {
               data: { features },
@@ -415,10 +439,6 @@ export const prepareEVMPortfolioOperationManager = (
 
             return watch(result, BasicOutcomeWatcher);
           }
-          case 'ChangePermissions':
-            throw Fail`ChangePermissions is not implemented`;
-          case 'Revoke':
-            throw Fail`Revoke is not implemented`;
           default: {
             const { operation } = operationDetails;
             // Iff the switch cases are exhaustive, `operation` is `never`.

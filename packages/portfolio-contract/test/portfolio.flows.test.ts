@@ -3121,6 +3121,7 @@ const doDeposit = async ({
   orch,
   ctx,
   expectedFlowOutcome = 'done',
+  planSteps,
 }: Pick<Mocks, 'txResolver' | 'storage'> & {
   t: Assertions;
   kit: GuestInterface<PortfolioKit>;
@@ -3128,6 +3129,7 @@ const doDeposit = async ({
   ctx: PortfolioInstanceContext;
   permitDetails: PermitDetails;
   expectedFlowOutcome?: 'done' | 'fail';
+  planSteps?: MovementDesc[];
 }) => {
   const fromChain = 'Arbitrum';
   // XXX: Support arbistrary chain
@@ -3155,7 +3157,7 @@ const doDeposit = async ({
   const { getFlowStatus } = makeStorageTools(storage);
 
   const fee = make(BLD, 100n);
-  const steps: MovementDesc[] = [
+  const steps: MovementDesc[] = planSteps ?? [
     {
       src: `+${fromChain}`,
       dest: `@${fromChain}`,
@@ -3169,7 +3171,39 @@ const doDeposit = async ({
 
   const flowStatus = await getFlowStatus(portfolioId, flowNum);
   t.is(flowStatus?.state, expectedFlowOutcome);
+  return flowStatus;
 };
+
+test('evmHandler.deposit via Permit2 rejects an empty plan', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  const permitDetails = makePermitDetails();
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+  const flowStatus = await doDeposit({
+    t,
+    kit,
+    orch,
+    ctx,
+    storage,
+    txResolver,
+    permitDetails,
+    expectedFlowOutcome: 'fail',
+    planSteps: [],
+  });
+  if (!flowStatus || !('error' in flowStatus)) {
+    throw t.fail('expected failed flow status with an error');
+  }
+  t.regex(flowStatus.error, /permit2 step missing/);
+
+  const { accountIdByChain } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  t.deepEqual(Object.keys(accountIdByChain), ['agoric']);
+});
 
 test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t => {
   const { orch, ctx, storage, txResolver } = mocks({}, {});
