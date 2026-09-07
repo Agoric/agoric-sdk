@@ -136,13 +136,17 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
     sourceAddress,
   };
 
-  setTimeout(() => {
+  // A short timeout keeps the test fast. The exact value is only used to build
+  // the expected "within N minutes" message below, so it stays in sync.
+  const timeoutMs = 300;
+
+  const emitWalletCreated = () => {
     const mockLog = createSmartWalletCreatedLog(
       expectedWalletAddr,
       walletOwner,
       'agoric-3',
     );
-    // Add metadata for mock WebSocket simulation (though this arrives after timeout)
+    // Add metadata for mock WebSocket simulation (arrives after the timeout).
     (mockLog as any).expectedWalletAddress = expectedWalletAddr;
 
     const filter = {
@@ -154,21 +158,36 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
     };
 
     (provider as any).emit(filter, mockLog);
-  }, 3010);
+  };
+
+  // This test exercises the path where the timeout warning fires first and the
+  // matching event arrives afterwards (still resolving the watcher). Racing a
+  // fixed emit delay against the timeout was flaky: with only a ~10ms margin,
+  // CI timer jitter routinely let the event's SUCCESS resolve `done` before the
+  // timeout callback ran, dropping the WALLET_TX_NOT_FOUND log. Instead, emit
+  // the event only *after* observing the timeout warning, so the ordering is
+  // deterministic regardless of scheduling jitter.
+  const emitAfterTimeoutP = (async () => {
+    while (!logMessages.some(m => m.includes('[WALLET_TX_NOT_FOUND]'))) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    emitWalletCreated();
+  })();
 
   await t.notThrowsAsync(async () => {
     await handlePendingTx(makeAccountTx, {
       ...opts,
       log: logger,
-      timeoutMs: 3000,
+      timeoutMs,
     });
   });
+  await emitAfterTimeoutP;
 
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
     `[${txId}] Subscribed with subId=mock-subscription-id to ${factoryAddress}`,
-    `[${txId}] [WALLET_TX_NOT_FOUND] ✗ No wallet creation found for expectedAddr ${expectedWalletAddr} within 0.05 minutes`,
+    `[${txId}] [WALLET_TX_NOT_FOUND] ✗ No wallet creation found for expectedAddr ${expectedWalletAddr} within ${timeoutMs / 60000} minutes`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=0x123abc block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
