@@ -117,13 +117,13 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
     };
 
     (provider as any).emit(filter, mockLog);
-  }, 700);
+  }, 1000);
 
   await t.notThrowsAsync(async () => {
     await handlePendingTx(gmpTx, {
       ...opts,
       log: logger,
-      timeoutMs: 600,
+      timeoutMs: 300,
     });
   });
 
@@ -131,7 +131,7 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching transaction status for contract ${contractAddress}`,
     `[${txId}] Subscribed with subId=mock-subscription-id for contract ${contractAddress}`,
-    `[${txId}] [GMP_TX_NOT_FOUND] ✗ No transaction status found within 0.01 minutes`,
+    `[${txId}] [GMP_TX_NOT_FOUND] ✗ No transaction status found within 0.005 minutes`,
     `[${txId}] ✅ SUCCESS: txHash=0x123abc block=18500000`,
     `[${txId}] GMP tx resolved`,
   ]);
