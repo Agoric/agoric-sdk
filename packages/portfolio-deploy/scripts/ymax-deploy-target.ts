@@ -1224,6 +1224,9 @@ const formatAgdSignCommand = ({
   signedTxAssetName: string;
 }) => {
   const download = `gh release download ${shQuote(releaseTag)} --pattern ${shQuote(unsignedTxAssetName)} --clobber`;
+  const upload = (assetName: string) =>
+    `gh release upload ${shQuote(releaseTag)} ${shQuote(assetName)} --clobber`;
+  const chainCommands = (commands: string[]) => commands.join(' &&\n  ');
   const authInfo = AuthInfo.decode(
     Buffer.from(request.authInfoBytesBase64, 'base64'),
   );
@@ -1237,7 +1240,7 @@ const formatAgdSignCommand = ({
       encodeJsonPublicKey(granteePubkey),
     );
     const signatureAssetName = `${detachedSignatureAssetPrefix(target)}<your-name>.json`;
-    return [
+    return chainCommands([
       download,
       `agd keys add ${shQuote(multisigName)} --pubkey=${shQuote(multisigPubkeyJson)}`,
       [
@@ -1258,11 +1261,11 @@ const formatAgdSignCommand = ({
         '--output-document',
         shQuote(signatureAssetName),
       ].join(' '),
-      `gh release upload ${shQuote(releaseTag)} ${shQuote(signatureAssetName)} --clobber`,
-    ].join('\n');
+      upload(signatureAssetName),
+    ]);
   }
   const signerAddress = request.grantee || request.controlAddress;
-  return [
+  return chainCommands([
     download,
     [
       'agd tx sign',
@@ -1281,8 +1284,8 @@ const formatAgdSignCommand = ({
       '--output-document',
       shQuote(signedTxAssetName),
     ].join(' '),
-    `gh release upload ${shQuote(releaseTag)} ${shQuote(signedTxAssetName)} --clobber`,
-  ].join('\n');
+    upload(signedTxAssetName),
+  ]);
 };
 
 /**
