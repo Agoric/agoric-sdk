@@ -11,14 +11,41 @@ runs:
   steps:
     - id: slack
       name: Send GitHub trigger payload
-      uses: slackapi/slack-github-action@v3.0.3
-      with:
-        webhook: ${{ inputs.webhook }}
-        webhook-type: incoming-webhook
-        payload: |
-          {
-            "text": "Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{ github.repository }} status ${{ job.status }}\nDetails at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-            "username": "GitHub"
-          }
+      shell: bash
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.webhook }}
+        GITHUB_JOB_NAME: ${{ github.job }}
+        GITHUB_WORKFLOW_NAME: ${{ github.workflow }}
+        GITHUB_REPOSITORY_NAME: ${{ github.repository }}
+        GITHUB_SERVER_URL: ${{ github.server_url }}
+        GITHUB_RUN_ID_VALUE: ${{ github.run_id }}
+        JOB_STATUS_VALUE: ${{ job.status }}
+      run: |
+        set -euo pipefail
+
+        python3 <<'PY' | curl --fail --silent --show-error \
+          --request POST \
+          --header 'Content-Type: application/json' \
+          --data @- \
+          "$SLACK_WEBHOOK_URL"
+        import json
+        import os
+
+        details_url = (
+            f"{os.environ['GITHUB_SERVER_URL']}/"
+            f"{os.environ['GITHUB_REPOSITORY_NAME']}/actions/runs/"
+            f"{os.environ['GITHUB_RUN_ID_VALUE']}"
+        )
+        payload = {
+            "text": (
+                f"Job {os.environ['GITHUB_JOB_NAME']} in workflow "
+                f"{os.environ['GITHUB_WORKFLOW_NAME']} of "
+                f"{os.environ['GITHUB_REPOSITORY_NAME']} status "
+                f"{os.environ['JOB_STATUS_VALUE']}\nDetails at {details_url}"
+            ),
+            "username": "GitHub",
+        }
+        print(json.dumps(payload))
+        PY
 
   using: composite
