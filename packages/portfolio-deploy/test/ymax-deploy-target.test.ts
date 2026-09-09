@@ -8,6 +8,7 @@ import {
   serializeSignDoc,
 } from '@cosmjs/amino';
 import { Secp256k1, Secp256k1Signature, sha256 } from '@cosmjs/crypto';
+import bundleSource from '@endo/bundle-source';
 
 import {
   canonicalizePrivateArgs,
@@ -23,6 +24,11 @@ import {
   makeGraph,
   validateUpgradePrecondition,
 } from '../scripts/ymax-deploy-target.ts';
+
+const bundle = await bundleSource(
+  new URL('./fixtures/ymax-fake-bundle-source.js', import.meta.url).pathname,
+);
+const bundleId = `b1-${bundle.endoZipBase64Sha512}`;
 
 test('policy prerequisite checks are enforced', t => {
   const e = new Set<string>();
@@ -73,7 +79,7 @@ test('policy evidence validation checks are enforced', t => {
       validateNamedInstallRecord(
         new Set(['ymax0-devnet-install.json']),
         'ymax0-devnet',
-        'b1-abc123',
+        bundleId,
         {
           ...examples.install.devnet0,
           releaseTag: undefined,
@@ -84,7 +90,7 @@ test('policy evidence validation checks are enforced', t => {
           installBlockTime: '2026-04-16T12:00:00.000Z',
         } as any,
       ),
-    { message: 'expected bundleId=b1-abc123, got b1-wrong' },
+    { message: `expected bundleId=${bundleId}, got b1-wrong` },
     'install evidence must match bundleId',
   );
   t.throws(
@@ -92,7 +98,7 @@ test('policy evidence validation checks are enforced', t => {
       validateNamedInstallRecord(
         new Set(['ymax0-main-install.json']),
         'ymax0-main',
-        'b1-abc123',
+        bundleId,
         {
           ...examples.install.main0,
           confirmedInBundles: false,
@@ -106,7 +112,7 @@ test('policy evidence validation checks are enforced', t => {
       validateNamedUpgradeRecord(
         new Set(['ymax0-main-upgrade.json']),
         'ymax0-main',
-        'b1-abc123',
+        bundleId,
         {
           ...examples.upgrade.main0,
           privateArgsOverridesPath: 'overrides.json',
@@ -124,7 +130,7 @@ test('policy pending upgrade validation checks are enforced', t => {
       validateNamedPendingUpgradeRecord(
         new Set(['ymax0-main-upgrade-pending.json']),
         'ymax0-main',
-        'b1-abc123',
+        bundleId,
         {
           ...examples.install.main0,
           privateArgsOverridesPath: expectedOverridesAssetName(
@@ -144,7 +150,7 @@ test('policy pending upgrade validation checks are enforced', t => {
       validateNamedPendingUpgradeRecord(
         new Set(['ymax0-main-upgrade-pending.json']),
         'ymax0-main',
-        'b1-abc123',
+        bundleId,
         {
           ...examples.install.main0,
           privateArgsOverridesPath: 'wrong.json',
@@ -165,7 +171,7 @@ test('policy pending upgrade validation checks are enforced', t => {
       validateNamedPendingUpgradeRecord(
         new Set(['ymax0-main-upgrade-pending.json']),
         'ymax0-main',
-        'b1-abc123',
+        bundleId,
         {
           ...examples.install.main0,
           privateArgsOverridesPath: 'wrong.json',
@@ -182,7 +188,7 @@ test('policy pending upgrade validation checks are enforced', t => {
       validateNamedPendingUpgradeRecord(
         new Set(['ymax0-main-upgrade-pending.json']),
         'ymax0-main',
-        'b1-abc123',
+        bundleId,
         {
           ...examples.install.main0,
           privateArgsOverridesPath: expectedOverridesAssetName(
@@ -289,10 +295,7 @@ const mockDeployPackage = (repoRoot = '/agoric-sdk') => {
   const bundleFile = resolvePath(
     'packages/portfolio-deploy/dist/bundle-ymax0.json',
   );
-  files.set(
-    bundleFile,
-    `${JSON.stringify({ endoZipBase64Sha512: 'abc123' }, null, 2)}\n`,
-  );
+  files.set(bundleFile, jsonText(bundle));
 
   const fsp = {
     mkdir: async (_there: string, _opts?: unknown) => undefined,
@@ -343,7 +346,7 @@ const makePlanReader = (
 
 const makeUpgradeLogsNdjson = ({
   contract,
-  bundleId,
+  bundleId: logBundleId,
   incarnationNumber,
   vatID = 'v1',
 }: {
@@ -362,7 +365,7 @@ const makeUpgradeLogsNdjson = ({
           state: 'delivery',
           vatID,
           level: 'info',
-          args: ['----- CCtrl,1 ', contract, 'upgrade', bundleId],
+          args: ['----- CCtrl,1 ', contract, 'upgrade', logBundleId],
         },
         attributes: {
           'process.uptime': 3537.123,
@@ -396,7 +399,7 @@ const makeUpgradeLogsNdjson = ({
     .concat('\n');
 
 const examples = {
-  bundle: { endoZipBase64Sha512: 'abc123' },
+  bundle,
   install: {
     devnet0: {
       target: 'ymax0-devnet',
@@ -405,7 +408,7 @@ const examples = {
       contract: 'ymax0',
       network: 'devnet',
       chainId: 'agoricdev-25',
-      bundleId: 'b1-abc123',
+      bundleId,
       installTxHash: 'TXDEV',
       installBlockHeight: 70,
       installBlockTime: '2026-04-16T11:00:00.000Z',
@@ -418,7 +421,7 @@ const examples = {
       contract: 'ymax0',
       network: 'main',
       chainId: 'agoric-3',
-      bundleId: 'b1-abc123',
+      bundleId,
       installTxHash: 'TXMAIN',
       installBlockHeight: 77,
       installBlockTime: '2026-04-16T12:00:00.000Z',
@@ -431,7 +434,7 @@ const examples = {
       contract: 'ymax0',
       network: 'devnet',
       chainId: 'agoricdev-25',
-      bundleId: 'b1-abc123',
+      bundleId,
       upgradeTxHash: 'UPDEV',
       upgradeBlockHeight: 71,
       upgradeBlockTime: '2026-04-16T11:05:00.000Z',
@@ -448,7 +451,7 @@ const examples = {
       contract: 'ymax0',
       network: 'main',
       chainId: 'agoric-3',
-      bundleId: 'b1-abc123',
+      bundleId,
       upgradeTxHash: 'UPMAIN0',
       upgradeBlockHeight: 78,
       upgradeBlockTime: '2026-04-16T12:05:00.000Z',
@@ -462,7 +465,7 @@ const examples = {
   },
 };
 
-test('pending upgrade evidence suppresses submit but still requires confirm', t => {
+test('pending upgrade evidence suppresses submit but still requires confirm', async t => {
   const releaseTag = happyPathReleaseTag;
   const privateArgs = '{"oracle":"value"}';
   const pending = {
@@ -475,7 +478,7 @@ test('pending upgrade evidence suppresses submit but still requires confirm', t 
     invocationId: 'invocation-1',
     submitTime: '2026-04-16T12:05:00.000Z',
   };
-  const plan = makeReleasePlan({
+  const plan = await makeReleasePlan({
     bundleIdArg: '',
     mode: 'deploy',
     privateArgs,
@@ -494,7 +497,7 @@ test('pending upgrade evidence suppresses submit but still requires confirm', t 
     target: 'ymax0-main',
     releaseTag,
     releaseExists: true,
-    bundleId: 'b1-abc123',
+    bundleId,
     needBundleBuild: false,
     needPreUpgrade: false,
     needUpgradeSubmit: false,
@@ -503,9 +506,9 @@ test('pending upgrade evidence suppresses submit but still requires confirm', t 
   });
 });
 
-test('ymax1-main never needs pre-upgrade, even with no ymax1-main-install.json', t => {
+test('ymax1-main never needs pre-upgrade, even with no ymax1-main-install.json', async t => {
   const releaseTag = happyPathReleaseTag;
-  const plan = makeReleasePlan({
+  const plan = await makeReleasePlan({
     bundleIdArg: '',
     mode: 'deploy',
     privateArgs: '',
@@ -681,7 +684,7 @@ const fakeUpgradeLogs = (
   opts?: ExecOpts,
   {
     contract = 'ymax0',
-    bundleId = 'b1-abc123',
+    bundleId: upgradeBundleId = bundleId,
     incarnationNumber = 58,
   }: {
     contract?: string;
@@ -695,7 +698,7 @@ const fakeUpgradeLogs = (
   const event = makeExecEvent(normalize, cmd, args, opts as ExecOpts);
   const stdout = makeUpgradeLogsNdjson({
     contract,
-    bundleId,
+    bundleId: upgradeBundleId,
     incarnationNumber,
   });
   event.stdout = normalize(stdout) as string;
@@ -716,6 +719,8 @@ const makeScenario = (repoRoot = '/agoric-sdk') => {
   const normalize = (value: unknown): unknown =>
     typeof value === 'string'
       ? value
+          .replaceAll(bundle.endoZipBase64, '<endoZipBase64>')
+          .replaceAll(bundle.endoZipBase64Sha512, '<bundle-sha512>')
           .replaceAll(repoRoot, '<repo>')
           .replace(
             /upgrade\.(ymax[01]-(?:devnet|main))\.\d{4}-\d{2}-\d{2}T[^ \n"]+/g,
@@ -865,7 +870,7 @@ const makeScenario = (repoRoot = '/agoric-sdk') => {
             txHash: 'TX123',
             blockHeight: 77,
             blockTime: '2026-04-16T12:00:00.000Z',
-            bundleId: 'b1-abc123',
+            bundleId,
           }),
         };
       } else {
@@ -1084,7 +1089,7 @@ test('ymax0-devnet phase-upgrade-submit does not require local bundle', async t 
     }
     const logResult = fakeUpgradeLogs(execs, normalize, cmd, args, opts, {
       contract: 'ymax0',
-      bundleId: 'b1-abc123',
+      bundleId,
       incarnationNumber: examples.upgrade.devnet0.incarnationNumber,
     });
     if (logResult) {
@@ -1163,7 +1168,7 @@ test('phase-upgrade-submit rejects install evidence for a different release bund
         PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
       },
     ),
-    { message: 'expected bundleId=b1-abc123, got b1-attacker' },
+    { message: `expected bundleId=${bundleId}, got b1-attacker` },
   );
   t.false(
     execs.some(
@@ -1242,12 +1247,7 @@ test('reject ymax1-main upgrade without ymax0-main upgrade evidence', async t =>
 
   releases.set('v0.3.2604-beta1', {
     url: 'https://example.invalid/releases/v0.3.2604-beta1',
-    assets: new Map([
-      [
-        'bundle-ymax0.json',
-        `${JSON.stringify({ endoZipBase64Sha512: 'abc123' }, null, 2)}\n`,
-      ],
-    ]),
+    assets: new Map([['bundle-ymax0.json', jsonText(bundle)]]),
   });
 
   await t.throwsAsync(
@@ -1282,18 +1282,17 @@ test('reject ymax1-main upgrade without ymax0-main upgrade evidence', async t =>
   );
 
   const releaseTag = happyPathReleaseTag;
-  t.throws(
-    () =>
-      makeReleasePlan({
-        bundleIdArg: '',
-        mode: 'deploy',
-        privateArgs: '',
-        reader: makePlanReader({
-          'bundle-ymax0.json': jsonText(examples.bundle),
-        }),
-        releaseTag,
-        target: 'ymax1-main',
+  await t.throwsAsync(
+    makeReleasePlan({
+      bundleIdArg: '',
+      mode: 'deploy',
+      privateArgs: '',
+      reader: makePlanReader({
+        'bundle-ymax0.json': jsonText(examples.bundle),
       }),
+      releaseTag,
+      target: 'ymax1-main',
+    }),
     { message: 'missing required release asset ymax0-main-install.json' },
   );
 });
@@ -1327,7 +1326,7 @@ test.serial('deploy ymax0-main', async t => {
       opts,
       {
         contract: 'ymax0',
-        bundleId: 'b1-abc123',
+        bundleId,
         incarnationNumber: examples.upgrade.main0.incarnationNumber,
       },
     );
@@ -1444,7 +1443,7 @@ test('existing invalid step record fails hard instead of being overwritten', asy
       contract: 'ymax0',
       network: 'devnet',
       chainId: 'agoricdev-25',
-      bundleId: 'b1-abc123',
+      bundleId,
       installTxHash: 'TX123',
       installBlockHeight: 77,
       installBlockTime: '2026-04-16T12:00:00.000Z',
@@ -1457,10 +1456,7 @@ test('existing invalid step record fails hard instead of being overwritten', asy
   releases.set('v0.3.2604-beta1', {
     url: 'https://example.invalid/releases/v0.3.2604-beta1',
     assets: new Map([
-      [
-        'bundle-ymax0.json',
-        `${JSON.stringify({ endoZipBase64Sha512: 'abc123' }, null, 2)}\n`,
-      ],
+      ['bundle-ymax0.json', jsonText(bundle)],
       ['ymax0-devnet-install.json', badInstallRecord],
     ]),
   });
@@ -1523,7 +1519,7 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
       opts,
       {
         contract: 'ymax0',
-        bundleId: 'b1-abc123',
+        bundleId,
         incarnationNumber: examples.upgrade.main0.incarnationNumber,
       },
     );
@@ -1625,7 +1621,12 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
   t.falsy(assets?.get('ymax0-main-upgrade-pending.json'));
   t.truthy(assets?.get('ymax0-main-authz-unsigned-tx.json'));
   t.snapshot(
-    JSON.parse(assets?.get('ymax0-main-authz-unsigned-tx.json') || 'null'),
+    JSON.parse(
+      JSON.stringify(
+        JSON.parse(assets?.get('ymax0-main-authz-unsigned-tx.json') || 'null'),
+        (_key, value) => ctx.normalize(value),
+      ),
+    ),
     'ymax0-main authz unsigned tx',
   );
   t.false(
@@ -1648,7 +1649,7 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
       ].join('\n'),
       unsignedTxAssetName: 'ymax0-main-authz-unsigned-tx.json',
       pending: {
-        bundleId: 'b1-abc123',
+        bundleId,
       },
     },
   });
@@ -1703,7 +1704,7 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
   t.is(submitReport.target, 'ymax0-main');
   t.is(submitReport.phase, 'upgrade-submit');
   t.is(submitReport.record, 'ymax0-main-upgrade-pending.json');
-  t.is(submitReport.detail.bundleId, 'b1-abc123');
+  t.is(submitReport.detail.bundleId, bundleId);
   t.is(
     submitReport.detail.invocationId,
     'upgrade.ymax0-main.2026-04-16T10:00:00.000Z',
@@ -1745,7 +1746,7 @@ test('phase-upgrade-submit records the invocationId embedded in the detached tx,
       opts,
       {
         contract: 'ymax0',
-        bundleId: 'b1-abc123',
+        bundleId,
         incarnationNumber: examples.upgrade.main0.incarnationNumber,
       },
     );
@@ -2221,7 +2222,7 @@ test('detached direct-sign path generates and broadcasts for ymax0-main without 
       opts,
       {
         contract: 'ymax0',
-        bundleId: 'b1-abc123',
+        bundleId,
         incarnationNumber: examples.upgrade.main0.incarnationNumber,
       },
     );
@@ -2313,7 +2314,7 @@ test('detached direct-sign path generates and broadcasts for ymax0-main without 
       ].join('\n'),
       unsignedTxAssetName: 'ymax0-main-unsigned-tx.json',
       pending: {
-        bundleId: 'b1-abc123',
+        bundleId,
       },
     },
   });
@@ -2364,7 +2365,7 @@ test('detached direct-sign path generates and broadcasts for ymax0-main without 
   t.is(submitReport.target, 'ymax0-main');
   t.is(submitReport.phase, 'upgrade-submit');
   t.is(submitReport.record, 'ymax0-main-upgrade-pending.json');
-  t.is(submitReport.detail.bundleId, 'b1-abc123');
+  t.is(submitReport.detail.bundleId, bundleId);
   t.truthy(assets?.get('ymax0-main-upgrade-pending.json'));
   t.falsy(assets?.has('ymax0-main-upgrade-submit.json'));
   t.falsy(assets?.has('ymax0-main-upgrade.json'));
@@ -2403,7 +2404,7 @@ test('operator must remove upgrade artifact to change privateArgsOverrides', asy
     }
     const logResult = fakeUpgradeLogs(execs, normalize, cmd, args, opts, {
       contract: 'ymax0',
-      bundleId: 'b1-abc123',
+      bundleId,
       incarnationNumber: examples.upgrade.main0.incarnationNumber,
     });
     if (logResult) {
@@ -2788,7 +2789,7 @@ test.serial('deploy ymax1-main', async t => {
             upgradeTxHash: 'UPMAIN1',
             upgradeBlockHeight: 81,
             upgradeBlockTime: '2026-04-16T12:10:00.000Z',
-            bundleId: 'b1-abc123',
+            bundleId,
             healthBlocks: [
               { height: 82, hash: 'h82', time: 't82' },
               { height: 83, hash: 'h83', time: 't83' },
@@ -2813,7 +2814,7 @@ test.serial('deploy ymax1-main', async t => {
       opts,
       {
         contract: 'ymax1',
-        bundleId: 'b1-abc123',
+        bundleId,
         incarnationNumber: 60,
       },
     );
@@ -2896,10 +2897,7 @@ test('ymax1-main upgrade requires ymax0-main upgrade evidence', async t => {
   releases.set('v0.3.2604-beta1', {
     url: 'https://example.invalid/releases/v0.3.2604-beta1',
     assets: new Map([
-      [
-        'bundle-ymax0.json',
-        `${JSON.stringify({ endoZipBase64Sha512: 'abc123' }, null, 2)}\n`,
-      ],
+      ['bundle-ymax0.json', jsonText(bundle)],
       [
         'ymax0-main-install.json',
         `${JSON.stringify(
@@ -2908,7 +2906,7 @@ test('ymax1-main upgrade requires ymax0-main upgrade evidence', async t => {
             contract: 'ymax0',
             network: 'main',
             chainId: 'agoric-3',
-            bundleId: 'b1-abc123',
+            bundleId,
             installTxHash: 'TX123',
             installBlockHeight: 77,
             installBlockTime: '2026-04-16T12:00:00.000Z',
@@ -2962,7 +2960,7 @@ test('phase-upgrade-submit materializes default overrides', async t => {
     }
     const logResult = fakeUpgradeLogs(execs, normalize, cmd, args, opts, {
       contract: 'ymax0',
-      bundleId: 'b1-abc123',
+      bundleId,
       incarnationNumber: examples.upgrade.main0.incarnationNumber,
     });
     if (logResult) {

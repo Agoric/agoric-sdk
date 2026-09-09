@@ -5,6 +5,8 @@
  */
 
 import { createHash } from 'node:crypto';
+import { decodeBase64 } from '@endo/base64/decode.js';
+import { parseArchive } from '@endo/compartment-mapper/import-archive.js';
 
 export const targetInfo = {
   'ymax0-devnet': {
@@ -61,17 +63,37 @@ export const expectedOverridesAssetName = (target, specimen) => {
   return `${overridesAssetPrefix(target)}${digest}.json`;
 };
 
-export const bundleIdFromBundleRecord = (
+/** @param {Uint8Array} bytes */
+const computeSha512 = bytes => createHash('sha512').update(bytes).digest('hex');
+
+export const bundleIdFromBundleRecord = async (
   bundle,
   sourceDescription = 'bundle-ymax0.json',
 ) => {
-  if (!bundle?.endoZipBase64Sha512) {
+  if (bundle?.moduleFormat !== 'endoZipBase64') {
+    throw Error(`${sourceDescription} missing moduleFormat endoZipBase64`);
+  }
+  if (typeof bundle.endoZipBase64 !== 'string') {
+    throw Error(`${sourceDescription} missing endoZipBase64`);
+  }
+  if (typeof bundle.endoZipBase64Sha512 !== 'string') {
     throw Error(`${sourceDescription} missing endoZipBase64Sha512`);
   }
-  return `b1-${bundle.endoZipBase64Sha512}`;
+  const { sha512 } = await parseArchive(
+    decodeBase64(bundle.endoZipBase64),
+    sourceDescription,
+    {
+      computeSha512,
+      expectedSha512: bundle.endoZipBase64Sha512,
+    },
+  );
+  if (sha512 === undefined) {
+    throw Error(`${sourceDescription} missing verified sha512`);
+  }
+  return `b1-${sha512}`;
 };
 
-export const bundleIdFromBundleText = (
+export const bundleIdFromBundleText = async (
   text,
   sourceDescription = 'bundle-ymax0.json',
 ) => bundleIdFromBundleRecord(JSON.parse(text), sourceDescription);
@@ -343,7 +365,7 @@ const planUpgrade = (
 /**
  * @param {ReleasePlanOptions} options
  */
-export const makeReleasePlan = ({
+export const makeReleasePlan = async ({
   bundleIdArg,
   mode,
   privateArgs,
@@ -355,15 +377,15 @@ export const makeReleasePlan = ({
   if (!['bundle-only', 'deploy'].includes(mode)) {
     throw Error(`unsupported --mode: ${mode}`);
   }
+  await null;
 
   const { assetNames, getAssetText, release } = reader;
   const needBundleBuild =
     target === 'ymax0-devnet' && !assetNames.has('bundle-ymax0.json');
-  const bundleId =
-    bundleIdArg ||
-    (assetNames.has('bundle-ymax0.json')
-      ? bundleIdFromBundleText(getAssetText('bundle-ymax0.json'))
-      : '');
+  let bundleId = bundleIdArg;
+  if (!bundleId && assetNames.has('bundle-ymax0.json')) {
+    bundleId = await bundleIdFromBundleText(getAssetText('bundle-ymax0.json'));
+  }
 
   const basePlan = {
     mode,
