@@ -21,8 +21,8 @@ import {
 } from '../src/support.ts';
 import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
+  makeProcessInitialPendingTransactions,
   processPendingTxEvents,
-  processInitialPendingTransactions,
   startPendingTxIfCurrent,
 } from '../src/engine.ts';
 import {
@@ -265,6 +265,8 @@ test('processPendingTxEvents does not cache `setup` status', async t => {
 });
 
 test('live resolution before historical pending skips startup watcher', async t => {
+  const processInitialPendingTransactions =
+    makeProcessInitialPendingTransactions();
   const opts = createMockPendingTxOpts();
   const handledTxs: PendingTx[] = [];
   const resolvedTx = createMockPendingTxData({
@@ -318,6 +320,8 @@ test('live resolution before historical pending skips startup watcher', async t 
 });
 
 test('historical pending starts one watcher and live completion aborts it', async t => {
+  const processInitialPendingTransactions =
+    makeProcessInitialPendingTransactions();
   const opts = createMockPendingTxOpts();
   const txId = 'tx1136' as TxId;
   const pendingTx = createMockPendingTxData({
@@ -374,14 +378,16 @@ test('historical pending starts one watcher and live completion aborts it', asyn
   t.false(opts.pendingTxAbortControllers.has(txId));
 });
 
-test('live and historical pending for the same txId start only one watcher', async t => {
+test('live and historical pending for the same txId supplement with lookback', async t => {
+  const processInitialPendingTransactions =
+    makeProcessInitialPendingTransactions();
   const opts = createMockPendingTxOpts();
   const txId = 'tx1137' as TxId;
   const pendingTx = createMockPendingTxData({
     type: TxType.GMP,
     status: TxStatus.PENDING,
   });
-  const calls: PendingTx[] = [];
+  const calls: Array<{ tx: PendingTx; opts: any }> = [];
   const { promise: releaseP, resolve: release } = makePromiseKit<void>();
 
   await processPendingTxEvents(
@@ -395,8 +401,8 @@ test('live and historical pending for the same txId start only one watcher', asy
         ),
       ),
     ],
-    async tx => {
-      calls.push(tx);
+    async (tx, handleOpts) => {
+      calls.push({ tx, opts: handleOpts });
       await releaseP;
     },
     opts,
@@ -412,12 +418,56 @@ test('live and historical pending for the same txId start only one watcher', asy
         }),
       } as any,
     },
-    async tx => {
-      calls.push(tx);
+    async (tx, handleOpts) => {
+      calls.push({ tx, opts: handleOpts });
     },
   );
 
-  t.is(calls.length, 1);
+  t.is(calls.length, 2);
+  t.is(calls[1].opts.txTimestampMs, 0);
+  t.is(calls[1].opts.signal, calls[0].opts.signal);
+  release();
+  await releaseP;
+});
+
+test('historical pending supplements active live watcher with lookback', async t => {
+  const opts = createMockPendingTxOpts();
+  const txId = 'tx1139' as TxId;
+  const tx = {
+    txId,
+    ...createMockPendingTxData({
+      type: TxType.GMP,
+      status: TxStatus.PENDING,
+    }),
+  };
+  const calls: Array<{ opts: any }> = [];
+  const { promise: releaseP, resolve: release } = makePromiseKit<void>();
+
+  t.true(
+    startPendingTxIfCurrent(tx, 'event', opts, async (_tx, handleOpts) => {
+      calls.push({ opts: handleOpts });
+      await releaseP;
+    }),
+  );
+  await new Promise(resolve => setImmediate(resolve));
+
+  t.false(
+    startPendingTxIfCurrent(
+      tx,
+      'startup',
+      opts,
+      async (_tx, handleOpts) => {
+        calls.push({ opts: handleOpts });
+      },
+      { txTimestampMs: 123 },
+    ),
+  );
+  await new Promise(resolve => setImmediate(resolve));
+
+  t.is(calls.length, 2);
+  t.is(calls[1].opts.txTimestampMs, 123);
+  t.is(calls[1].opts.signal, calls[0].opts.signal);
+
   release();
   await releaseP;
 });
@@ -444,6 +494,39 @@ test('startPendingTxIfCurrent observes watcher rejection', async t => {
         error: (...args) => errors.push(args),
       },
       async () => {
+        throw err;
+      },
+    ),
+  );
+  await new Promise(resolve => setImmediate(resolve));
+
+  t.is(errors.length, 1);
+  t.is(errors[0].at(-1), err);
+  t.false(opts.pendingTxAbortControllers.has(txId));
+});
+
+test('startPendingTxIfCurrent cleans up after synchronous watcher throw', async t => {
+  const opts = createMockPendingTxOpts();
+  const errors: Array<unknown[]> = [];
+  const txId = 'tx1140' as TxId;
+  const tx = {
+    txId,
+    ...createMockPendingTxData({
+      type: TxType.CCTP_TO_EVM,
+      status: TxStatus.PENDING,
+    }),
+  };
+  const err = Error('sync boom');
+
+  t.true(
+    startPendingTxIfCurrent(
+      tx,
+      'event',
+      {
+        ...opts,
+        error: (...args) => errors.push(args),
+      },
+      () => {
         throw err;
       },
     ),
@@ -961,6 +1044,8 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
 // --- Tests for processInitialPendingTransactions ---
 
 test('processInitialPendingTransactions handles transactions with lookback', async t => {
+  const processInitialPendingTransactions =
+    makeProcessInitialPendingTransactions();
   const handledCalls: Array<{ tx: any; opts: any }> = [];
   const txId: TxId = 'tx1';
 
@@ -1023,6 +1108,8 @@ test('processInitialPendingTransactions handles transactions with lookback', asy
 });
 
 test('processInitialPendingTransactions handles transactions with age < 20min in lookback mode', async t => {
+  const processInitialPendingTransactions =
+    makeProcessInitialPendingTransactions();
   const handledCalls: Array<{ tx: any; opts: any }> = [];
   const txId: TxId = 'tx2';
   const logs: string[] = [];
@@ -1081,6 +1168,42 @@ test('processInitialPendingTransactions handles transactions with age < 20min in
     'Recovered pending tx [object Object]',
     'Processing old tx',
   ]);
+});
+
+test('makeProcessInitialPendingTransactions reuses block timestamp cache', async t => {
+  const processInitialTx = makeProcessInitialPendingTransactions();
+  const opts = createMockPendingTxOpts();
+  const handledTxs: PendingTx[] = [];
+  let blockRequests = 0;
+  const txData = createMockPendingTxData({
+    type: TxType.GMP,
+    status: TxStatus.PENDING,
+  });
+
+  await processInitialTx(
+    [
+      { blockHeight: 1000n, tx: { txId: 'tx1141' as TxId, ...txData } },
+      { blockHeight: 1000n, tx: { txId: 'tx1142' as TxId, ...txData } },
+    ],
+    {
+      ...opts,
+      cosmosRpc: {
+        request: async () => {
+          blockRequests += 1;
+          return {
+            block: { header: { time: new Date(0).toISOString() } },
+          };
+        },
+      } as any,
+    },
+    async tx => {
+      handledTxs.push(tx);
+    },
+  );
+  await new Promise(resolve => setImmediate(resolve));
+
+  t.is(blockRequests, 1);
+  t.deepEqual(handledTxs.map(tx => tx.txId).sort(), ['tx1141', 'tx1142']);
 });
 
 test('GMP monitor does not resolve transaction twice when live mode completes before lookback', async t => {

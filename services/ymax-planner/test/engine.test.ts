@@ -609,6 +609,7 @@ test('startEngine consumes live subscription while startup pending tx scan is bl
   const { promise: stopSubscriptionP, resolve: stopSubscription } =
     makePromiseKit<IteratorResult<any>>();
   let nextCalls = 0;
+  let returnCalls = 0;
   const rpc = {
     subscribeAll: () => ({
       next: async () => {
@@ -618,6 +619,10 @@ test('startEngine consumes live subscription while startup pending tx scan is bl
           secondNextCalled();
           return stopSubscriptionP;
         }
+        return { done: true, value: undefined };
+      },
+      return: async () => {
+        returnCalls += 1;
         return { done: true, value: undefined };
       },
     }),
@@ -649,6 +654,7 @@ test('startEngine consumes live subscription while startup pending tx scan is bl
   releaseDataRead();
   stopSubscription({ done: true, value: undefined });
   await t.throwsAsync(engineP, { message: /rpc\.subscribeAll finished/ });
+  t.is(returnCalls, 1, 'subscription iterator is closed on engine exit');
 });
 
 // #region processPortfolioEvents
