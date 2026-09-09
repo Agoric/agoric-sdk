@@ -33,6 +33,7 @@ import assert from 'node:assert/strict';
 import {
   encodeAuthInfoBytes,
   encodeJsonPublicKey,
+  encodeTxBodyBytes,
   makeAgdUnsignedTx,
   parseSignedTxBytes,
 } from '../src/ymax-authz-msgs.ts';
@@ -1567,18 +1568,76 @@ const findUnsignedTx = async (
   return { unsignedTxAssetName: name };
 };
 
+type SignedTxRecord = {
+  signedTxAssetName: string;
+  txBytes: Uint8Array;
+  bodyBytes: Uint8Array;
+  authInfoBytes: Uint8Array;
+};
+
 const findSignedTx = async (
   name: string,
   asset: AssetRd,
   release: ReleaseInfo,
-) => {
+): Promise<SignedTxRecord> => {
   if (!hasAsset(release, name)) {
     throw Error(`missing required release asset ${name}`);
   }
+  const text = await asset.readText();
+  const specimen = JSON.parse(text) as any;
+  if (
+    !specimen?.body ||
+    !specimen?.auth_info ||
+    !Array.isArray(specimen?.signatures)
+  ) {
+    throw Error('not signed tx JSON');
+  }
   return {
     signedTxAssetName: name,
-    txBytes: parseSignedTxBytes(await asset.readText()),
+    txBytes: parseSignedTxBytes(text),
+    bodyBytes: encodeTxBodyBytes(specimen.body),
+    authInfoBytes: encodeAuthInfoBytes(specimen.auth_info),
   };
+};
+
+const requireMatchingDetachedSignedTx = async (
+  upgradeTarget: Target,
+  signedTx: SignedTxRecord,
+  {
+    release,
+    grantee,
+  }: {
+    release: ReleaseRW;
+    grantee: string | undefined;
+  },
+) => {
+  const unsignedTxAssetName = detachedUnsignedTxAssetName(
+    upgradeTarget,
+    grantee,
+  );
+  const unsignedTx = (await release.join(unsignedTxAssetName).readJSON()) as {
+    body?: unknown;
+    auth_info?: unknown;
+  };
+  if (!unsignedTx.body || !unsignedTx.auth_info) {
+    throw Error(`${unsignedTxAssetName} is not unsigned tx JSON`);
+  }
+  const unsignedBodyBytes = encodeTxBodyBytes(unsignedTx.body);
+  const unsignedAuthInfoBytes = encodeAuthInfoBytes(unsignedTx.auth_info);
+  if (!Buffer.from(signedTx.bodyBytes).equals(Buffer.from(unsignedBodyBytes))) {
+    throw Error(
+      `${signedTx.signedTxAssetName} body does not match ${unsignedTxAssetName}`,
+    );
+  }
+  if (
+    !Buffer.from(signedTx.authInfoBytes).equals(
+      Buffer.from(unsignedAuthInfoBytes),
+    )
+  ) {
+    throw Error(
+      `${signedTx.signedTxAssetName} auth_info does not match ${unsignedTxAssetName}`,
+    );
+  }
 };
 
 const confirmUpgradeContract = async (
@@ -1973,9 +2032,14 @@ export const makeGraph = (
             { cause, privateArgs, ...tools },
           );
           await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
+          await requireMatchingDetachedSignedTx(
+            'ymax0-devnet',
+            signedTx as SignedTxRecord,
+            tools,
+          );
           await submitAuthzOperatorUpgrade(
             'ymax0-devnet',
-            (signedTx as { txBytes: Uint8Array }).txBytes,
+            (signedTx as SignedTxRecord).txBytes,
             { connectRpc: connectTargetRpc },
           );
           return pending;
@@ -2053,9 +2117,14 @@ export const makeGraph = (
             { cause, privateArgs, ...tools },
           );
           await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
+          await requireMatchingDetachedSignedTx(
+            'ymax0-main',
+            signedTx as SignedTxRecord,
+            tools,
+          );
           await submitAuthzOperatorUpgrade(
             'ymax0-main',
-            (signedTx as { txBytes: Uint8Array }).txBytes,
+            (signedTx as SignedTxRecord).txBytes,
             { connectRpc: connectTargetRpc },
           );
           return pending;
@@ -2131,9 +2200,14 @@ export const makeGraph = (
             { cause, privateArgs, ...tools },
           );
           await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
+          await requireMatchingDetachedSignedTx(
+            'ymax1-main',
+            signedTx as SignedTxRecord,
+            tools,
+          );
           await submitAuthzOperatorUpgrade(
             'ymax1-main',
-            (signedTx as { txBytes: Uint8Array }).txBytes,
+            (signedTx as SignedTxRecord).txBytes,
             { connectRpc: connectTargetRpc },
           );
           return pending;
