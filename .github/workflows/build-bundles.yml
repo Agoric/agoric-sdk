@@ -34,6 +34,8 @@ on:
 
 jobs:
   build-bundle:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       artifact-name: ${{ steps.outputs.outputs.artifact-name }}
@@ -45,6 +47,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch }}
+          persist-credentials: false
 
       - name: Clean repository
         run: git clean -xdf
