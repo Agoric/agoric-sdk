@@ -1943,7 +1943,7 @@ test('authz operator-sign path embeds a multisig grantee pubkey resolved from ch
     JSON.parse(ctx.stdoutChunks[0]!).detail.agdSignCommand,
     [
       "gh release download 'v0.3.2604-beta1' --pattern 'ymax0-main-authz-unsigned-tx.json' --clobber &&",
-      '  agd keys add \'ymax-grantee-00000000\' --pubkey=\'{"@type":"/cosmos.crypto.multisig.LegacyAminoPubKey","threshold":2,"public_keys":[{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3"},{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl"}]}\'',
+      '  agd keys add \'ymax-grantee-00000000\' --pubkey=\'{"@type":"/cosmos.crypto.multisig.LegacyAminoPubKey","threshold":2,"public_keys":[{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3"},{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl"}]}\' &&',
       "  agd tx sign 'ymax0-main-authz-unsigned-tx.json' --offline --sign-mode amino-json --multisig=ymax-grantee-00000000 --from <your-key-name> --account-number 12 --sequence 34 --chain-id 'agoric-3' --overwrite --output-document 'ymax0-main-authz-signature-<your-name>.json' &&",
       "  gh release upload 'v0.3.2604-beta1' 'ymax0-main-authz-signature-<your-name>.json' --clobber",
     ].join('\n'),
@@ -2335,6 +2335,183 @@ test('detached direct-sign path generates and broadcasts for ymax0-main without 
         event.command.includes('/wallet-admin.ts'),
     ),
   );
+});
+
+const makeDetachedDirectSignAssets = async () => {
+  const ctx = makeScenario();
+  const releaseTag = happyPathReleaseTag;
+  const broadcastCalls: Uint8Array[] = [];
+
+  seedRelease(ctx.releases, releaseTag, {
+    'bundle-ymax0.json': jsonText(examples.bundle),
+    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+    'ymax0-main-install.json': jsonText(examples.install.main0),
+  });
+
+  const connectRpc = (async (_rpcAddr: string) => ({
+    getAccount: async () => ({
+      accountNumber: 12,
+      sequence: 34,
+      pubkey: null,
+    }),
+    broadcastTx: async (txBytes: Uint8Array) => {
+      broadcastCalls.push(txBytes);
+      return {
+        transactionHash: 'DIRECTSUBMIT123',
+        height: 91,
+      };
+    },
+  })) as unknown as typeof import('@cosmjs/stargate').StargateClient.connect;
+  const makeWalletKit = async () =>
+    ({
+      marshaller: {
+        toCapData: (specimen: unknown) => ({
+          body: `#${JSON.stringify(specimen)}`,
+          slots: [],
+        }),
+      },
+      agoricNames: {
+        instance: {
+          postalService: 'board0371',
+        },
+      },
+    }) as unknown as Awaited<
+      ReturnType<typeof import('@agoric/client-utils').makeSmartWalletKit>
+    >;
+
+  await runPhase(
+    {
+      agoricSdk: ctx.agoricSdk,
+      execFile: ctx.execFile,
+      fetchFn: ctx.fetchFn,
+      connectRpc,
+      makeWalletKit,
+      stdout: ctx.stdout,
+    },
+    'phase-upgrade-generate',
+    { target: 'ymax0-main', tag: releaseTag },
+    {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE: undefined,
+      PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+    },
+  );
+
+  const assets = ctx.releases.get(releaseTag)?.assets;
+  const unsignedTx = JSON.parse(
+    assets?.get('ymax0-main-unsigned-tx.json') || 'null',
+  );
+  const signedTx = {
+    ...unsignedTx,
+    auth_info: {
+      ...unsignedTx.auth_info,
+      signer_infos: [
+        {
+          ...unsignedTx.auth_info.signer_infos[0],
+          public_key: {
+            '@type': '/cosmos.crypto.secp256k1.PubKey',
+            key: Buffer.from([2, 3, 4]).toString('base64'),
+          },
+        },
+      ],
+    },
+    signatures: [Buffer.from([7, 8, 9]).toString('base64')],
+  };
+  clearTrace(ctx);
+
+  return {
+    ...ctx,
+    assets,
+    broadcastCalls,
+    connectRpc,
+    makeWalletKit,
+    releaseTag,
+    signedTx,
+    unsignedTx,
+  };
+};
+
+test('detached direct-sign submit rejects signed tx with mismatched body', async t => {
+  const ctx = await makeDetachedDirectSignAssets();
+  const signedTx = {
+    ...ctx.signedTx,
+    body: {
+      ...ctx.signedTx.body,
+      memo: 'changed after signing instructions were generated',
+    },
+  };
+  ctx.assets?.set('ymax0-main-signed-tx.json', jsonText(signedTx));
+
+  await t.throwsAsync(
+    runPhase(
+      {
+        agoricSdk: ctx.agoricSdk,
+        execFile: ctx.execFile,
+        fetchFn: ctx.fetchFn,
+        connectRpc: ctx.connectRpc,
+        makeWalletKit: ctx.makeWalletKit,
+        stdout: ctx.stdout,
+      },
+      'phase-upgrade-submit',
+      { target: 'ymax0-main', tag: ctx.releaseTag },
+      {
+        ...ctx.env,
+        MNEMONIC: undefined,
+        GRANTEE: undefined,
+        PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+      },
+    ),
+    {
+      message:
+        'ymax0-main-signed-tx.json body does not match ymax0-main-unsigned-tx.json',
+    },
+  );
+  t.deepEqual(ctx.broadcastCalls, []);
+  t.falsy(ctx.assets?.get('ymax0-main-upgrade-pending.json'));
+});
+
+test('detached direct-sign submit rejects signed tx with mismatched auth info', async t => {
+  const ctx = await makeDetachedDirectSignAssets();
+  const signedTx = {
+    ...ctx.signedTx,
+    auth_info: {
+      ...ctx.signedTx.auth_info,
+      fee: {
+        ...ctx.signedTx.auth_info.fee,
+        gas_limit: '9000000',
+      },
+    },
+  };
+  ctx.assets?.set('ymax0-main-signed-tx.json', jsonText(signedTx));
+
+  await t.throwsAsync(
+    runPhase(
+      {
+        agoricSdk: ctx.agoricSdk,
+        execFile: ctx.execFile,
+        fetchFn: ctx.fetchFn,
+        connectRpc: ctx.connectRpc,
+        makeWalletKit: ctx.makeWalletKit,
+        stdout: ctx.stdout,
+      },
+      'phase-upgrade-submit',
+      { target: 'ymax0-main', tag: ctx.releaseTag },
+      {
+        ...ctx.env,
+        MNEMONIC: undefined,
+        GRANTEE: undefined,
+        PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+      },
+    ),
+    {
+      message:
+        'ymax0-main-signed-tx.json auth_info does not match ymax0-main-unsigned-tx.json',
+    },
+  );
+  t.deepEqual(ctx.broadcastCalls, []);
+  t.falsy(ctx.assets?.get('ymax0-main-upgrade-pending.json'));
 });
 
 test('operator must remove upgrade artifact to change privateArgsOverrides', async t => {

@@ -1572,7 +1572,7 @@ type SignedTxRecord = {
   signedTxAssetName: string;
   txBytes: Uint8Array;
   bodyBytes: Uint8Array;
-  authInfoBytes: Uint8Array;
+  authInfo: unknown;
 };
 
 const findSignedTx = async (
@@ -1596,8 +1596,28 @@ const findSignedTx = async (
     signedTxAssetName: name,
     txBytes: parseSignedTxBytes(text),
     bodyBytes: encodeTxBodyBytes(specimen.body),
-    authInfoBytes: encodeAuthInfoBytes(specimen.auth_info),
+    authInfo: specimen.auth_info,
   };
+};
+
+const normalizeSignedAuthInfo = (
+  signedAuthInfo: any,
+  unsignedAuthInfo: any,
+) => {
+  const comparableAuthInfo = JSON.parse(JSON.stringify(signedAuthInfo));
+  for (const [index, signerInfo] of (
+    comparableAuthInfo.signer_infos || []
+  ).entries()) {
+    const unsignedSignerInfo = unsignedAuthInfo.signer_infos?.[index];
+    if (
+      unsignedSignerInfo &&
+      !('public_key' in unsignedSignerInfo) &&
+      'public_key' in signerInfo
+    ) {
+      delete signerInfo.public_key;
+    }
+  }
+  return comparableAuthInfo;
 };
 
 const requireMatchingDetachedSignedTx = async (
@@ -1629,10 +1649,11 @@ const requireMatchingDetachedSignedTx = async (
       `${signedTx.signedTxAssetName} body does not match ${unsignedTxAssetName}`,
     );
   }
+  const signedAuthInfoBytes = encodeAuthInfoBytes(
+    normalizeSignedAuthInfo(signedTx.authInfo, unsignedTx.auth_info),
+  );
   if (
-    !Buffer.from(signedTx.authInfoBytes).equals(
-      Buffer.from(unsignedAuthInfoBytes),
-    )
+    !Buffer.from(signedAuthInfoBytes).equals(Buffer.from(unsignedAuthInfoBytes))
   ) {
     throw Error(
       `${signedTx.signedTxAssetName} auth_info does not match ${unsignedTxAssetName}`,
@@ -2031,12 +2052,12 @@ export const makeGraph = (
             install as InstallRecord,
             { cause, privateArgs, ...tools },
           );
-          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await requireMatchingDetachedSignedTx(
             'ymax0-devnet',
             signedTx as SignedTxRecord,
             tools,
           );
+          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await submitAuthzOperatorUpgrade(
             'ymax0-devnet',
             (signedTx as SignedTxRecord).txBytes,
@@ -2116,12 +2137,12 @@ export const makeGraph = (
             install as InstallRecord,
             { cause, privateArgs, ...tools },
           );
-          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await requireMatchingDetachedSignedTx(
             'ymax0-main',
             signedTx as SignedTxRecord,
             tools,
           );
+          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await submitAuthzOperatorUpgrade(
             'ymax0-main',
             (signedTx as SignedTxRecord).txBytes,
@@ -2199,12 +2220,12 @@ export const makeGraph = (
             install as InstallRecord,
             { cause, privateArgs, ...tools },
           );
-          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await requireMatchingDetachedSignedTx(
             'ymax1-main',
             signedTx as SignedTxRecord,
             tools,
           );
+          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await submitAuthzOperatorUpgrade(
             'ymax1-main',
             (signedTx as SignedTxRecord).txBytes,
