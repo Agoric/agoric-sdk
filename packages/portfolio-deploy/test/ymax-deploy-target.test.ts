@@ -1135,6 +1135,46 @@ test('ymax0-devnet phase-upgrade-submit does not require local bundle', async t 
   );
 });
 
+test('phase-upgrade-submit rejects install evidence for a different release bundle', async t => {
+  const { agoricSdk, releases, stdout, env, execs, fetchFn, execFile } =
+    makeScenario();
+  const releaseTag = 'v0.3.2604-beta1';
+  seedRelease(releases, releaseTag, {
+    'bundle-ymax0.json': jsonText(examples.bundle),
+    'ymax0-devnet-install.json': jsonText({
+      ...examples.install.devnet0,
+      bundleId: 'b1-attacker',
+    }),
+  });
+
+  await t.throwsAsync(
+    runPhase(
+      {
+        agoricSdk,
+        execFile,
+        fetchFn,
+        stdout,
+      },
+      'phase-upgrade-submit',
+      { target: 'ymax0-devnet', tag: releaseTag },
+      {
+        ...env,
+        AGORIC_NET: 'devnet',
+        PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+      },
+    ),
+    { message: 'expected bundleId=b1-abc123, got b1-attacker' },
+  );
+  t.false(
+    execs.some(
+      event =>
+        typeof event.command === 'string' &&
+        event.command.includes('/wallet-admin.ts'),
+    ),
+    'mismatched release evidence must be rejected before submitting an upgrade',
+  );
+});
+
 test('ymax0-devnet pre-upgrade requires local bundle even if release asset exists', async t => {
   const {
     agoricSdk,

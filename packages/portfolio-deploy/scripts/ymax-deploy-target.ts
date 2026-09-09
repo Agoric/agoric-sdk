@@ -967,11 +967,17 @@ const findInstall = async (
   target: Extract<Target, 'ymax0-devnet' | 'ymax0-main'>,
   asset: AssetRd,
   release: ReleaseInfo,
+  bundle: Pick<AssetRd, 'readJSON'> | FileRd,
 ) => {
   const assetNames = new Set(release.assets.map(({ name }) => name));
   requireAsset(assetNames, `${target}-install.json`);
   const record = (await asset.readJSON()) as InstallRecord;
-  validateNamedInstallRecord(assetNames, target, record.bundleId, record);
+  validateNamedInstallRecord(
+    assetNames,
+    target,
+    await bundleIdFromBundle(bundle),
+    record,
+  );
   return record;
 };
 
@@ -1838,8 +1844,13 @@ export const makeGraph = (
 
     'ymax0-devnet-install.json': {
       deps: { release: 'release', bundle: 'bundle-ymax0.json' },
-      find: (asset, { release: relInfo }) =>
-        findInstall('ymax0-devnet', asset, relInfo as ReleaseInfo),
+      find: (asset, { release: relInfo, bundle }) =>
+        findInstall(
+          'ymax0-devnet',
+          asset,
+          relInfo as ReleaseInfo,
+          bundle as AssetRd | FileRd,
+        ),
       create: async (_a, asset, cause) =>
         recordBundleInstall(
           'ymax0-devnet',
@@ -1854,8 +1865,13 @@ export const makeGraph = (
     },
     'ymax0-main-install.json': {
       deps: { release: 'release', bundle: 'bundle-ymax0.json' },
-      find: (asset, { release: relInfo }) =>
-        findInstall('ymax0-main', asset, relInfo as ReleaseInfo),
+      find: (asset, { release: relInfo, bundle }) =>
+        findInstall(
+          'ymax0-main',
+          asset,
+          relInfo as ReleaseInfo,
+          bundle as AssetRd | FileRd,
+        ),
       create: ({ bundle }, asset, cause) =>
         recordBundleInstall('ymax0-main', bundle as AssetRd, {
           asset: asset!,
