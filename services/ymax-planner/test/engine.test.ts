@@ -6,6 +6,7 @@ import type { ExecutionContext } from 'ava';
 import type { DeliverTxResponse } from '@cosmjs/stargate';
 
 import { Fail, q } from '@endo/errors';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import type {
   FlowDetail,
@@ -13,6 +14,11 @@ import type {
   StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+import {
+  TxStatus,
+  TxType,
+} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import {
   makeSigningSmartWalletKitFromClient,
   makeSmartWalletKitFromVstorageKit,
@@ -54,6 +60,7 @@ import {
   makeVstorageEvent,
   pickBalance,
   processPortfolioEvents,
+  startEngine,
 } from '../src/engine.ts';
 import type {
   Powers,
@@ -532,6 +539,116 @@ test('ignore additional balances', t => {
 
   const actual = pickBalance(balances, depositAsset);
   t.deepEqual(actual, { brand: depositBrand, value: 50n });
+});
+
+test('startEngine consumes live subscription while startup pending tx scan is blocked', async t => {
+  const {
+    signingSmartWalletKit,
+    powers: { updateVstorage },
+  } = await fakeSigningSmartWalletKit({ marshaller: defaultMarshaller });
+  const contractInstance = 'ymax1';
+  const pendingTxPath = `published.${contractInstance}.pendingTxs.tx1135`;
+  updateVstorage('published.agoricNames.vbankAsset', 'set', {
+    object: [
+      [
+        depositAsset.denom,
+        {
+          brand: depositBrand,
+          denom: depositAsset.denom,
+          displayInfo: depositAsset.displayInfo,
+          issuerName: 'USDC',
+        },
+      ],
+      [
+        'fee-denom',
+        {
+          brand: feeBrand,
+          denom: 'fee-denom',
+          displayInfo: depositAsset.displayInfo,
+          issuerName: 'Fee',
+        },
+      ],
+    ],
+    wrap: true,
+  });
+  updateVstorage(pendingTxPath, 'set', {
+    object: createMockPendingTxData({
+      type: TxType.IBC_FROM_AGORIC,
+      status: TxStatus.PENDING,
+    }),
+    wrap: true,
+  });
+
+  const { promise: dataReadStartedP, resolve: dataReadStarted } =
+    makePromiseKit<void>();
+  const { promise: releaseDataReadP, resolve: releaseDataRead } =
+    makePromiseKit<void>();
+  const originalReadStorageMeta =
+    signingSmartWalletKit.query.vstorage.readStorageMeta.bind(
+      signingSmartWalletKit.query.vstorage,
+    );
+  const wrappedSigningSmartWalletKit: SigningSmartWalletKit = {
+    ...signingSmartWalletKit,
+    query: {
+      ...signingSmartWalletKit.query,
+      vstorage: {
+        ...signingSmartWalletKit.query.vstorage,
+        readStorageMeta: async (path, opts) => {
+          if (path === pendingTxPath && opts?.kind === 'data') {
+            dataReadStarted();
+            await releaseDataReadP;
+          }
+          return originalReadStorageMeta(path, opts);
+        },
+      },
+    },
+  };
+
+  const { promise: secondNextCalledP, resolve: secondNextCalled } =
+    makePromiseKit<void>();
+  const { promise: stopSubscriptionP, resolve: stopSubscription } =
+    makePromiseKit<IteratorResult<any>>();
+  let nextCalls = 0;
+  const rpc = {
+    subscribeAll: () => ({
+      next: async () => {
+        nextCalls += 1;
+        if (nextCalls === 1) return { done: false, value: undefined };
+        if (nextCalls === 2) {
+          secondNextCalled();
+          return stopSubscriptionP;
+        }
+        return { done: true, value: undefined };
+      },
+    }),
+    request: async () => {
+      throw Error('unexpected block lookup');
+    },
+    closed: async () => undefined,
+  };
+
+  const engineP = startEngine(
+    {
+      ...createMockEnginePowers(),
+      evmCtx: { ...mockEvmCtx, kvStore: mockEvmCtx.kvStore },
+      rpc: rpc as any,
+      signingSmartWalletKit: wrappedSigningSmartWalletKit,
+      now: () => 0,
+    },
+    {
+      contractInstance,
+      depositBrandName: 'USDC',
+      feeBrandName: 'Fee',
+    },
+  );
+
+  await dataReadStartedP;
+  await secondNextCalledP;
+  t.is(nextCalls, 2, 'live subscription read starts before history read ends');
+
+  releaseDataRead();
+  stopSubscription({ done: true, value: undefined });
+  await t.throwsAsync(engineP, { message: /rpc\.subscribeAll finished/ });
 });
 
 // #region processPortfolioEvents

@@ -23,6 +23,7 @@ import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
   processPendingTxEvents,
   processInitialPendingTransactions,
+  startPendingTxIfCurrent,
 } from '../src/engine.ts';
 import {
   getDerivedOutcome,
@@ -261,6 +262,197 @@ test('processPendingTxEvents does not cache `setup` status', async t => {
 
   t.is(handledTxs.length, 0);
   t.is(getResolvedTx(opts.kvStore, 'tx100'), undefined);
+});
+
+test('live resolution before historical pending skips startup watcher', async t => {
+  const opts = createMockPendingTxOpts();
+  const handledTxs: PendingTx[] = [];
+  const resolvedTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    status: TxStatus.SUCCESS,
+  });
+  const pendingTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    status: TxStatus.PENDING,
+  });
+
+  await processPendingTxEvents(
+    [
+      createMockPendingTxEvent(
+        'tx1135',
+        JSON.stringify(
+          createMockStreamCell([
+            JSON.stringify(marshaller.toCapData(resolvedTx)),
+          ]),
+        ),
+      ),
+    ],
+    async tx => {
+      handledTxs.push(tx);
+    },
+    opts,
+  );
+
+  await processInitialPendingTransactions(
+    [
+      {
+        blockHeight: 1000n,
+        tx: { txId: 'tx1135' as TxId, ...pendingTx },
+      },
+    ],
+    {
+      ...opts,
+      cosmosRpc: {
+        request: async () => ({
+          block: { header: { time: new Date(0).toISOString() } },
+        }),
+      } as any,
+    },
+    async tx => {
+      handledTxs.push(tx);
+    },
+  );
+
+  t.deepEqual(handledTxs, []);
+  t.is(getResolvedTx(opts.kvStore, 'tx1135'), TxStatus.SUCCESS);
+});
+
+test('historical pending starts one watcher and live completion aborts it', async t => {
+  const opts = createMockPendingTxOpts();
+  const txId = 'tx1136' as TxId;
+  const pendingTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    status: TxStatus.PENDING,
+  });
+  const resolvedTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    status: TxStatus.FAILED,
+  });
+  const calls: PendingTx[] = [];
+  const { promise: abortedP, resolve: aborted } = makePromiseKit<void>();
+
+  await processInitialPendingTransactions(
+    [{ blockHeight: 1000n, tx: { txId, ...pendingTx } }],
+    {
+      ...opts,
+      cosmosRpc: {
+        request: async () => ({
+          block: { header: { time: new Date(0).toISOString() } },
+        }),
+      } as any,
+    },
+    async (tx, handleOpts) => {
+      calls.push(tx);
+      assert(handleOpts.signal);
+      handleOpts.signal.addEventListener('abort', () => aborted());
+      await abortedP;
+    },
+  );
+
+  t.is(calls.length, 1);
+  t.true(opts.pendingTxAbortControllers.has(txId));
+
+  await processPendingTxEvents(
+    [
+      createMockPendingTxEvent(
+        txId,
+        JSON.stringify(
+          createMockStreamCell([
+            JSON.stringify(marshaller.toCapData(resolvedTx)),
+          ]),
+        ),
+      ),
+    ],
+    async () => {
+      t.fail('live completion must not start a watcher');
+    },
+    opts,
+  );
+  await abortedP;
+
+  t.is(getResolvedTx(opts.kvStore, txId), TxStatus.FAILED);
+  t.false(opts.pendingTxAbortControllers.has(txId));
+});
+
+test('live and historical pending for the same txId start only one watcher', async t => {
+  const opts = createMockPendingTxOpts();
+  const txId = 'tx1137' as TxId;
+  const pendingTx = createMockPendingTxData({
+    type: TxType.GMP,
+    status: TxStatus.PENDING,
+  });
+  const calls: PendingTx[] = [];
+  const { promise: releaseP, resolve: release } = makePromiseKit<void>();
+
+  await processPendingTxEvents(
+    [
+      createMockPendingTxEvent(
+        txId,
+        JSON.stringify(
+          createMockStreamCell([
+            JSON.stringify(marshaller.toCapData(pendingTx)),
+          ]),
+        ),
+      ),
+    ],
+    async tx => {
+      calls.push(tx);
+      await releaseP;
+    },
+    opts,
+  );
+
+  await processInitialPendingTransactions(
+    [{ blockHeight: 1000n, tx: { txId, ...pendingTx } }],
+    {
+      ...opts,
+      cosmosRpc: {
+        request: async () => ({
+          block: { header: { time: new Date(0).toISOString() } },
+        }),
+      } as any,
+    },
+    async tx => {
+      calls.push(tx);
+    },
+  );
+
+  t.is(calls.length, 1);
+  release();
+  await releaseP;
+});
+
+test('startPendingTxIfCurrent observes watcher rejection', async t => {
+  const opts = createMockPendingTxOpts();
+  const errors: Array<unknown[]> = [];
+  const txId = 'tx1138' as TxId;
+  const tx = {
+    txId,
+    ...createMockPendingTxData({
+      type: TxType.CCTP_TO_EVM,
+      status: TxStatus.PENDING,
+    }),
+  };
+  const err = Error('boom');
+
+  t.true(
+    startPendingTxIfCurrent(
+      tx,
+      'event',
+      {
+        ...opts,
+        error: (...args) => errors.push(args),
+      },
+      async () => {
+        throw err;
+      },
+    ),
+  );
+  await new Promise(resolve => setImmediate(resolve));
+
+  t.is(errors.length, 1);
+  t.is(errors[0].at(-1), err);
+  t.false(opts.pendingTxAbortControllers.has(txId));
 });
 
 // --- Unit tests for handlePendingTx ---
@@ -825,6 +1017,7 @@ test('processInitialPendingTransactions handles transactions with lookback', asy
   t.deepEqual(logs, [
     'Processing 1 pending transactions',
     `Processing pending tx ${txId} with lookback`,
+    'Recovered pending tx [object Object]',
     'Processing old tx',
   ]);
 });
@@ -885,6 +1078,7 @@ test('processInitialPendingTransactions handles transactions with age < 20min in
   t.deepEqual(logs, [
     'Processing 1 pending transactions',
     `Processing pending tx ${txId} with lookback`,
+    'Recovered pending tx [object Object]',
     'Processing old tx',
   ]);
 });

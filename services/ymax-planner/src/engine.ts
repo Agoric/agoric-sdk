@@ -153,6 +153,7 @@ export type VstorageEventDetail = {
 };
 
 type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
+type PendingTxSource = 'event' | 'startup';
 
 const RESOLVER_SUPPORTED_TRANSACTIONS: TxType[] = [
   TxType.CCTP_TO_EVM,
@@ -931,32 +932,67 @@ export const processPendingTxEvents = async (
 
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
-
-      // Skip if a watcher is already running for this txId.
-      if (pendingTxAbortControllers.has(txId)) {
-        log(`Watcher already active for ${txId}, skipping`);
-        continue;
-      }
-
-      log('New pending tx', tx);
-
-      const abortController = provideLazyMap(
-        pendingTxAbortControllers,
-        txId,
-        () => txPowers.makeAbortController(),
-      );
-
-      // Tx resolution is non-blocking.
-      void handlePendingTxFn(tx, {
-        ...txPowers,
-        signal: abortController.signal,
-      }).finally(() => {
-        pendingTxAbortControllers.delete(txId);
-      });
+      startPendingTxIfCurrent(tx, 'event', txPowers, handlePendingTxFn);
     } catch (err) {
       error(errLabel, data, err);
     }
   }
+};
+
+/**
+ * Synchronously claim a txId before starting any asynchronous watcher work.
+ *
+ * Startup history and live subscription processing both route through this
+ * function so one path cannot start a duplicate watcher after the other path
+ * has already observed resolution, ignored status, or an active watcher.
+ */
+export const startPendingTxIfCurrent = (
+  tx: PendingTx,
+  source: PendingTxSource,
+  txPowers: HandlePendingTxOpts,
+  handlePendingTxFn = handlePendingTx,
+  handleOpts: Partial<HandlePendingTxOpts> = {},
+) => {
+  const {
+    error = () => {},
+    kvStore,
+    log = () => {},
+    pendingTxAbortControllers,
+  } = txPowers;
+  const { txId } = tx;
+
+  if (getResolvedTx(kvStore, txId) !== undefined) {
+    log(`Skipping ${source} pending tx ${txId}: already resolved`);
+    return false;
+  }
+  if (getIgnoredTx(kvStore, txId) !== undefined) {
+    log(`Skipping ${source} pending tx ${txId}: ignored type`);
+    return false;
+  }
+  if (pendingTxAbortControllers.has(txId)) {
+    log(`Watcher already active for ${txId}, skipping ${source}`);
+    return false;
+  }
+
+  const abortController = txPowers.makeAbortController();
+  pendingTxAbortControllers.set(txId, abortController);
+  log(source === 'event' ? 'New pending tx' : 'Recovered pending tx', tx);
+
+  // Tx resolution is non-blocking, but its rejection must still be observed.
+  void handlePendingTxFn(tx, {
+    ...txPowers,
+    ...handleOpts,
+    signal: abortController.signal,
+  })
+    .catch(err => {
+      error(`🚨 Failed to handle ${source} pending tx ${txId}`, tx, err);
+    })
+    .finally(() => {
+      if (pendingTxAbortControllers.get(txId) === abortController) {
+        pendingTxAbortControllers.delete(txId);
+      }
+    });
+  return true;
 };
 
 export const pickBalance = (
@@ -984,11 +1020,7 @@ export const processInitialPendingTransactions = async (
   handlePendingTxFn = handlePendingTx,
 ) => {
   const { cosmosRpc, ...txPowers } = powers;
-  const {
-    error = () => {},
-    log = () => {},
-    pendingTxAbortControllers,
-  } = txPowers;
+  const { error = () => {}, log = () => {} } = txPowers;
 
   log(`Processing ${initialPendingTxData.length} pending transactions`);
 
@@ -1020,21 +1052,11 @@ export const processInitialPendingTransactions = async (
 
     log(`Processing pending tx ${tx.txId} with lookback`);
 
-    const abortController = provideLazyMap(
-      pendingTxAbortControllers,
-      tx.txId,
-      () => txPowers.makeAbortController(),
-    );
-
     // XXX: This should optimize blockchain scanning by reusing state across
     // transactions. For details, see
     // https://github.com/Agoric/agoric-sdk/issues/11945
-    void handlePendingTxFn(tx, {
-      ...txPowers,
+    startPendingTxIfCurrent(tx, 'startup', txPowers, handlePendingTxFn, {
       txTimestampMs: timestampMs,
-      signal: abortController.signal,
-    }).finally(() => {
-      pendingTxAbortControllers.delete(tx.txId);
     });
   }).done;
 };
@@ -1279,7 +1301,6 @@ export const startEngine = async (
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
-  const initialPendingTxData: PendingTxRecord[] = [];
   const capacity = 10;
   // Filter out cache hits up front so they don't consume rate-limiter slots
   const pendingTxKeysToRead = (pendingTxKeys as TxId[]).filter(
@@ -1297,10 +1318,16 @@ export const startEngine = async (
     source: pendingTxKeysToRead,
   });
 
-  await makeWorkPool(
+  const historyScanP = makeWorkPool(
     throttledPendingTxKeys,
     { capacity },
     async (txId: TxId) => {
+      if (
+        getResolvedTx(kvStore, txId) !== undefined ||
+        getIgnoredTx(kvStore, txId) !== undefined
+      ) {
+        return;
+      }
       const path = `${pendingTxPathPrefix}.${txId}`;
       await null;
       let streamCellJson;
@@ -1332,27 +1359,49 @@ export const startEngine = async (
           return;
         }
         mustMatch(harden(data), PublishedTxShape, path);
-        initialPendingTxData.push({
-          blockHeight: BigInt(streamCell.blockHeight),
-          tx: { txId, ...data },
-        });
+        await processInitialPendingTransactions(
+          [
+            {
+              blockHeight: BigInt(streamCell.blockHeight),
+              tx: { txId, ...data },
+            },
+          ],
+          {
+            ...txPowers,
+            cosmosRpc: rpc,
+          },
+        );
       } catch (err) {
         const errLabel = `🚨 Failed to read old pending tx ${path}`;
         console.error(errLabel, data || streamCellJson, err);
       }
     },
   ).done;
-
-  if (initialPendingTxData.length > 0) {
-    // Process initial transactions in lookback mode upon planner startup
-    await processInitialPendingTransactions(initialPendingTxData, {
-      ...txPowers,
-      cosmosRpc: rpc,
-    });
-  }
+  let historyScanFailed: unknown;
+  let historyScanComplete = false;
+  const historyScanDoneP = historyScanP.then(undefined, err => {
+    historyScanFailed = err;
+  });
 
   // console.warn('consuming events');
-  for await (const respContainer of responses) {
+  let responseNextP = responses.next();
+  for (;;) {
+    const nextResult = await (historyScanComplete
+      ? responseNextP.then(result => ({ type: 'response' as const, result }))
+      : Promise.race([
+          responseNextP.then(result => ({ type: 'response' as const, result })),
+          historyScanDoneP.then(() => ({ type: 'history' as const })),
+        ]));
+    if (nextResult.type === 'history') {
+      historyScanComplete = true;
+      if (historyScanFailed) {
+        throw historyScanFailed;
+      }
+      continue;
+    }
+    if (nextResult.result.done) break;
+    const respContainer = nextResult.result.value;
+    responseNextP = responses.next();
     const { query: _query, data: resp, events: eventRollups } = respContainer;
     const { type: respType, value: respData } = resp;
     if (!eventRollups) {
@@ -1423,6 +1472,9 @@ export const startEngine = async (
       ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
     ]);
+    if (historyScanFailed) {
+      throw historyScanFailed;
+    }
 
     console.log(
       inspectForStdout({
@@ -1434,6 +1486,10 @@ export const startEngine = async (
   }
 
   // We expect to run forever, but the server can terminate our connection.
+  await historyScanDoneP;
+  if (historyScanFailed) {
+    throw historyScanFailed;
+  }
   await null;
   const closeEvent = await Promise.race([rpc.closed(), Promise.resolve()]);
   if (closeEvent) {
