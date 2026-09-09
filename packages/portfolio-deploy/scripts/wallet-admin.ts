@@ -50,7 +50,9 @@ export const main = async (
     now = Date.now,
     cwd = process.cwd,
     // KLUDGE! avoid flaky load-balanced setup
-    rpcAddrMainGood = 'https://rpc.agoric-main-eu1.ccvalidators.com:443',
+    rpcAddrMainGood = env.AGORIC_NET === 'main'
+      ? 'https://rpc.agoric-main-eu1.ccvalidators.com:443'
+      : undefined,
   } = {},
 ) => {
   const fresh = () => new Date(now()).toISOString();
@@ -58,13 +60,9 @@ export const main = async (
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
 
   const networkConfig0 = await fetchEnvNetworkConfig({ env, fetch });
-  const networkConfig =
-    !env.AGORIC_NET || env.AGORIC_NET === 'local' || env.AGORIC_NET === 'devnet'
-      ? networkConfig0
-      : {
-          ...networkConfig0,
-          rpcAddrs: [rpcAddrMainGood],
-        };
+  const networkConfig = rpcAddrMainGood
+    ? { ...networkConfig0, rpcAddrs: [rpcAddrMainGood] }
+    : networkConfig0;
   const walletKit = await makeSmartWalletKit({ fetch, delay }, networkConfig);
 
   const storeOpts = {
