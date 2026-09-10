@@ -59,7 +59,7 @@ export const assertMandateForPlanObservations = (
   );
 
   for (const [instrument, portion = 0n] of Object.entries(targetAllocation)) {
-    if (isInterChainAccountRef(instrument)) continue;
+    if (isInterChainAccountRef(instrument) || portion === 0n) continue;
 
     const status = observations.instrumentTvls[instrument];
     status || Fail`mandate.instrumentData.missing:${instrument}`;
