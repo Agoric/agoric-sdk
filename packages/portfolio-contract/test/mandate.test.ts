@@ -127,6 +127,21 @@ test('cash is exempt from observation-dependent limits', t => {
   );
 });
 
+test('zero-weight vaults are exempt from observation-dependent limits', t => {
+  t.notThrows(() =>
+    assertMandateForPlanObservations(
+      harden({
+        allocation: { minVaultTvlUsd: 30_000_000n, maxVaultShareBps: 0n },
+      }),
+      harden({ '@Base': 100n, Aave_Base: 0n, Compound_Base: 0n }),
+      harden({
+        balances: { '@Base': 1_000_000n },
+        instrumentTvls: { Aave_Base: { tvlUsd: 20_000_000n } },
+      }),
+    ),
+  );
+});
+
 test('global minimum TVL rejects a later applicable instrument', t => {
   t.throws(
     () =>
