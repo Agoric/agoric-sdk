@@ -57,7 +57,7 @@ on:
 
 permissions:
   actions: read
-  contents: write
+  contents: read
 
 concurrency:
   group: deploy-ymax-release-${{ inputs.releaseTag }}
@@ -100,6 +100,8 @@ jobs:
       branch: ${{ inputs.branch }}
 
   pre-upgrade:
+    permissions:
+      contents: write
     needs: [plan, build-bundle]
     # Opt out of GitHub's implicit success() so a skipped build-bundle job
     # does not skip pre-upgrade for non-devnet targets.
@@ -144,6 +146,8 @@ jobs:
   # prompts for approval — approval is reserved for upgrade-submit, and only
   # requested once there's actually something to broadcast.
   upgrade-prepare:
+    permissions:
+      contents: write
     needs: [plan, pre-upgrade]
     if: |
       always() &&
@@ -262,6 +266,8 @@ jobs:
   # environment approval — and only runs (so only ever prompts) once
   # upgrade-prepare reports a signed tx is actually ready to send.
   upgrade-submit:
+    permissions:
+      contents: write
     needs: [plan, pre-upgrade, upgrade-prepare]
     if: |
       always() &&
@@ -302,6 +308,8 @@ jobs:
           echo "upgrade_submitted=true" >> "$GITHUB_OUTPUT"
 
   upgrade-confirm:
+    permissions:
+      contents: write
     needs: [plan, pre-upgrade, upgrade-submit]
     if: |
       always() &&
