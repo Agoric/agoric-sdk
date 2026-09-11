@@ -10,6 +10,7 @@ import type {
   SigningStargateClient,
   StdFee,
 } from '@cosmjs/stargate';
+import { GasPrice } from '@cosmjs/stargate';
 import { makeSigningSmartWalletKit } from '../dist/signing-smart-wallet-kit.js';
 import { LOCAL_CONFIG } from '../src/network-config.js';
 import { makeSmartWalletKit } from '../src/smart-wallet-kit.js';
@@ -22,6 +23,14 @@ const mockSigner = () => {
     async () => {
       // @ts-expect-error incomplete mock
       return {
+        async simulate(
+          signerAddress: string,
+          messages: readonly EncodeObject[],
+          memo?: string,
+        ) {
+          signCalls.push({ signerAddress, messages, fee: 'simulate', memo });
+          return 200_000;
+        },
         async signAndBroadcast(
           signerAddress: string,
           messages: readonly EncodeObject[],
@@ -64,6 +73,7 @@ const notImplemented = () => {
 
 const mnemonic =
   'cause eight cattle slot course mail more aware vapor slab hobby match';
+const gasPrices = GasPrice.fromString('0.01ubld');
 
 test('sendBridgeAction handles simple action', async t => {
   const { calls, connectWithSigner } = mockSigner();
@@ -74,7 +84,7 @@ test('sendBridgeAction handles simple action', async t => {
   );
 
   const signing = await makeSigningSmartWalletKit(
-    { connectWithSigner, walletUtils },
+    { connectWithSigner, walletUtils, gasPrices },
     mnemonic,
   );
 
@@ -98,7 +108,7 @@ test('sendBridgeAction handles simple action', async t => {
         },
       },
     ],
-    fee: { amount: [{ denom: 'ubld', amount: '10000' }], gas: '400000' },
+    fee: 'auto',
   });
 });
 
@@ -111,7 +121,7 @@ test('sendBridgeAction supports fee param', async t => {
   );
 
   const signing = await makeSigningSmartWalletKit(
-    { connectWithSigner, walletUtils },
+    { connectWithSigner, walletUtils, gasPrices },
     mnemonic,
   );
 
@@ -139,7 +149,7 @@ test('sendBridgeAction uses explicit signing when signerData provided', async t 
   );
 
   const signing = await makeSigningSmartWalletKit(
-    { connectWithSigner, walletUtils },
+    { connectWithSigner, walletUtils, gasPrices },
     mnemonic,
   );
 
@@ -159,10 +169,10 @@ test('sendBridgeAction uses explicit signing when signerData provided', async t 
   // Should use explicit signing path, not signAndBroadcast
   t.deepEqual(actual, { code: 43 });
   t.is(calls.length, 0, 'signAndBroadcast should not be called');
-  t.is(signCalls.length, 1, 'sign should be called once');
+  t.is(signCalls.length, 2, 'simulate and sign should be called once each');
   t.is(broadcastCalls.length, 1, 'broadcastTx should be called once');
 
-  t.like(signCalls[0], {
+  t.like(signCalls[1], {
     signerAddress: 'agoric1yupasge4528pgkszg9v328x4faxtkldsnygwjl',
     messages: [
       {
@@ -176,7 +186,7 @@ test('sendBridgeAction uses explicit signing when signerData provided', async t 
         },
       },
     ],
-    fee: { amount: [{ denom: 'ubld', amount: '10000' }], gas: '400000' },
+    fee: { amount: [{ denom: 'ubld', amount: '2400' }], gas: '240000' },
     memo: 'test memo',
     signerData,
   });
@@ -193,7 +203,7 @@ test('sendBridgeAction with signerData supports custom fee', async t => {
   );
 
   const signing = await makeSigningSmartWalletKit(
-    { connectWithSigner, walletUtils },
+    { connectWithSigner, walletUtils, gasPrices },
     mnemonic,
   );
 
