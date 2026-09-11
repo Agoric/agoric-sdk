@@ -32,6 +32,7 @@ shared:
   pr_queue_rebase_conditions: &pr-queue-rebase-conditions
     - base=master
     - label=automerge:rebase
+    - label!=dependencies:major
     - or:
         - '#commits-behind>0'
         - linear-history
