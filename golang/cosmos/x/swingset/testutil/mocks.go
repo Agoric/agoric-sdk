@@ -122,6 +122,20 @@ func (mr *MockBankKeeperMockRecorder) GetAllBalances(ctx, addr any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllBalances", reflect.TypeOf((*MockBankKeeper)(nil).GetAllBalances), ctx, addr)
 }
 
+// GetBalance mocks base method.
+func (m *MockBankKeeper) GetBalance(ctx context.Context, addr types1.AccAddress, denom string) types1.Coin {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBalance", ctx, addr, denom)
+	ret0, _ := ret[0].(types1.Coin)
+	return ret0
+}
+
+// GetBalance indicates an expected call of GetBalance.
+func (mr *MockBankKeeperMockRecorder) GetBalance(ctx, addr, denom any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBalance", reflect.TypeOf((*MockBankKeeper)(nil).GetBalance), ctx, addr, denom)
+}
+
 // SendCoinsFromAccountToModule mocks base method.
 func (m *MockBankKeeper) SendCoinsFromAccountToModule(ctx context.Context, senderAddr types1.AccAddress, recipientModule string, amt types1.Coins) error {
 	m.ctrl.T.Helper()

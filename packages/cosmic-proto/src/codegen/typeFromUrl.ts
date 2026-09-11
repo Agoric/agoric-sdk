@@ -286,6 +286,8 @@ export type TypeFromUrl = {
   '/agoric.swingset.CoreEval': _$agoric$swingset$swingset_js.CoreEval;
   '/agoric.swingset.CoreEvalProposal': _$agoric$swingset$swingset_js.CoreEvalProposal;
   '/agoric.swingset.Egress': _$agoric$swingset$swingset_js.Egress;
+  '/agoric.swingset.FeeUnitPriceAlternative': _$agoric$swingset$swingset_js.FeeUnitPriceAlternative;
+  '/agoric.swingset.MsgTypeBeans': _$agoric$swingset$swingset_js.MsgTypeBeans;
   '/agoric.swingset.Params': _$agoric$swingset$swingset_js.Params;
   '/agoric.swingset.PowerFlagFee': _$agoric$swingset$swingset_js.PowerFlagFee;
   '/agoric.swingset.QueueSize': _$agoric$swingset$swingset_js.QueueSize;
