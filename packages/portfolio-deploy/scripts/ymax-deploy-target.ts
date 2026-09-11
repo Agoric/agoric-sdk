@@ -80,6 +80,10 @@ type AssetRW = AssetRd & {
   writeText: (text: string) => Promise<void>;
   readOnly: () => AssetRd;
 };
+type BundleEvidence = {
+  bundleFile: AssetRd | FileRd;
+  bundleId: string;
+};
 type CmdRunner = ReturnType<typeof makeCmdRunner>;
 export type BaseRecord = {
   target: Target;
@@ -270,6 +274,13 @@ const bundleIdFromBundle = async (
     throw problem;
   }
 };
+
+const makeBundleEvidence = async (
+  bundleFile: AssetRd | FileRd,
+): Promise<BundleEvidence> => ({
+  bundleFile,
+  bundleId: await bundleIdFromBundle(bundleFile),
+});
 
 const makeReleaseRW = (
   tag: string,
@@ -888,11 +899,10 @@ const requireLocalBundle = async (
 ) => {
   const localBundle = deployPackage.bundleFile.readOnly();
   try {
-    await bundleIdFromBundle(localBundle);
+    return await makeBundleEvidence(localBundle);
   } catch (problem) {
     throw Error('missing local bundle-ymax0.json', { cause: problem });
   }
-  return localBundle;
 };
 
 const checkBundle = async (
@@ -902,8 +912,7 @@ const checkBundle = async (
   deployPackage: ReturnType<typeof makeDeployPackage>,
 ) => {
   if (hasAsset(release, 'bundle-ymax0.json')) {
-    await bundleIdFromBundle(asset);
-    return asset;
+    return makeBundleEvidence(asset);
   }
   if (target !== 'ymax0-devnet') {
     throw { problem: Error('missing bundle-ymax0.json') };
@@ -916,7 +925,7 @@ const checkBundle = async (
 
 const recordBundleInstall = async (
   installTarget: Extract<Target, 'ymax0-devnet' | 'ymax0-main'>,
-  bundleFile: FileRd | AssetRd,
+  bundle: BundleEvidence,
   {
     asset,
     installBundle,
@@ -937,6 +946,7 @@ const recordBundleInstall = async (
   if (target !== installTarget) {
     throw Error(`missing required release asset ${installTarget}-install.json`);
   }
+  const bundleFile = bundle.bundleFile;
   const localBundleFile =
     'copyTo' in bundleFile
       ? (await bundleFile.copyTo(deployPackage.bundleFile),
@@ -956,7 +966,7 @@ const recordBundleInstall = async (
     installTarget,
     releaseTag,
     commit,
-    await bundleIdFromBundle(localBundleFile),
+    bundle.bundleId,
     result,
   );
   await asset.writeText(`${JSON.stringify(record, null, 2)}\n`);
@@ -967,11 +977,12 @@ const findInstall = async (
   target: Extract<Target, 'ymax0-devnet' | 'ymax0-main'>,
   asset: AssetRd,
   release: ReleaseInfo,
+  bundle: BundleEvidence,
 ) => {
   const assetNames = new Set(release.assets.map(({ name }) => name));
   requireAsset(assetNames, `${target}-install.json`);
   const record = (await asset.readJSON()) as InstallRecord;
-  validateNamedInstallRecord(assetNames, target, record.bundleId, record);
+  validateNamedInstallRecord(assetNames, target, bundle.bundleId, record);
   return record;
 };
 
@@ -1829,17 +1840,24 @@ export const makeGraph = (
       find: (asset, { release: relInfo }) =>
         checkBundle(target, asset, relInfo as ReleaseInfo, deployPackage),
       create: async (_deps, asset, cause) => {
-        const it = cause as { problem: unknown } | { localBundle: FileRd };
+        const it = cause as
+          | { problem: unknown }
+          | { localBundle: BundleEvidence };
         if ('problem' in it) throw it.problem;
-        await asset!.copyFrom(it.localBundle);
+        await asset!.copyFrom(it.localBundle.bundleFile as FileRd);
         return it.localBundle;
       },
     },
 
     'ymax0-devnet-install.json': {
       deps: { release: 'release', bundle: 'bundle-ymax0.json' },
-      find: (asset, { release: relInfo }) =>
-        findInstall('ymax0-devnet', asset, relInfo as ReleaseInfo),
+      find: (asset, { release: relInfo, bundle }) =>
+        findInstall(
+          'ymax0-devnet',
+          asset,
+          relInfo as ReleaseInfo,
+          bundle as BundleEvidence,
+        ),
       create: async (_a, asset, cause) =>
         recordBundleInstall(
           'ymax0-devnet',
@@ -1854,10 +1872,15 @@ export const makeGraph = (
     },
     'ymax0-main-install.json': {
       deps: { release: 'release', bundle: 'bundle-ymax0.json' },
-      find: (asset, { release: relInfo }) =>
-        findInstall('ymax0-main', asset, relInfo as ReleaseInfo),
+      find: (asset, { release: relInfo, bundle }) =>
+        findInstall(
+          'ymax0-main',
+          asset,
+          relInfo as ReleaseInfo,
+          bundle as BundleEvidence,
+        ),
       create: ({ bundle }, asset, cause) =>
-        recordBundleInstall('ymax0-main', bundle as AssetRd, {
+        recordBundleInstall('ymax0-main', bundle as BundleEvidence, {
           asset: asset!,
           cause,
           installBundle,
