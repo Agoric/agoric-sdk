@@ -13,6 +13,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 type msgServer struct {
@@ -340,6 +341,20 @@ func (k msgServer) CoreEval(goCtx context.Context, msg *types.MsgCoreEval) (*typ
 	}
 
 	return &types.MsgCoreEvalResponse{}, nil
+}
+
+func (k msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if msg.Authority != k.authority {
+		return nil, sdkioerrors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
+	}
+	if err := msg.Params.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	k.SetParams(ctx, msg.Params)
+	return &types.MsgUpdateParamsResponse{}, nil
 }
 
 func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk) (*types.MsgSendChunkResponse, error) {

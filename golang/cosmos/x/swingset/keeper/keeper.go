@@ -54,9 +54,9 @@ const (
 
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeService corestore.KVStoreService
-	cdc          codec.Codec
-	paramSpace   paramtypes.Subspace
+	storeService   corestore.KVStoreService
+	cdc            codec.Codec
+	legacySubspace paramtypes.Subspace
 
 	accountKeeper    types.AccountKeeper
 	bankKeeper       types.BankKeeper
@@ -80,16 +80,10 @@ func NewKeeper(
 	vstorageKeeper types.VstorageKeeper, feeCollectorName string, authority string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
-
-	// set KeyTable if it has not already been set
-	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
-	}
-
 	return Keeper{
 		cdc:              cdc,
 		storeService:     storeService,
-		paramSpace:       paramSpace,
+		legacySubspace:   paramSpace,
 		accountKeeper:    accountKeeper,
 		bankKeeper:       bankKeeper,
 		vstorageKeeper:   vstorageKeeper,
@@ -97,6 +91,10 @@ func NewKeeper(
 		callToController: callToController,
 		authority:        authority,
 	}
+}
+
+func (k Keeper) GetAuthority() string {
+	return k.authority
 }
 
 func populateAction(ctx sdk.Context, action vm.Action) (vm.Action, error) {
@@ -250,16 +248,24 @@ func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Action) (string, error) 
 	return k.callToController(ctx, string(bz))
 }
 
-func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
-	// Note the use of "IfExists"...
-	// migration fills in missing data with defaults,
-	// so it is the only consumer that should ever see a nil pair.
-	k.paramSpace.GetParamSetIfExists(ctx, &params)
+func (k Keeper) GetParams(ctx sdk.Context) types.Params {
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	bz := store.Get(types.ParamsKey)
+	if bz == nil {
+		return types.DefaultParams()
+	}
+
+	var params types.Params
+	k.cdc.MustUnmarshal(bz, &params)
 	return params
 }
 
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	k.paramSpace.SetParamSet(ctx, &params)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	bz := k.cdc.MustMarshal(&params)
+	store.Set(types.ParamsKey, bz)
 }
 
 func (k Keeper) GetState(ctx sdk.Context) types.State {

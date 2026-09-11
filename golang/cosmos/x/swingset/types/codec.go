@@ -35,6 +35,8 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgWalletAction{}, ModuleName+"/WalletAction")
 	legacy.RegisterAminoMsg(cdc, &MsgWalletSpendAction{}, ModuleName+"/WalletSpendAction")
 	legacy.RegisterAminoMsg(cdc, &MsgInstallBundle{}, ModuleName+"/InstallBundle")
+	legacy.RegisterAminoMsg(cdc, &MsgCoreEval{}, ModuleName+"/CoreEval")
+	legacy.RegisterAminoMsg(cdc, &MsgUpdateParams{}, ModuleName+"/UpdateParams")
 	cdc.RegisterConcrete(&CoreEvalProposal{}, ModuleName+"/CoreEvalProposal", nil)
 }
 
@@ -46,6 +48,8 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgWalletAction{},
 		&MsgWalletSpendAction{},
 		&MsgInstallBundle{},
+		&MsgCoreEval{},
+		&MsgUpdateParams{},
 	)
 	registry.RegisterInterface(
 		"cosmos.gov.v1beta1.Content",

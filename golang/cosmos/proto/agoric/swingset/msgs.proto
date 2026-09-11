@@ -26,6 +26,8 @@ service Msg {
   rpc Provision(MsgProvision) returns (MsgProvisionResponse);
   // Execute a core evaluation.
   rpc CoreEval(MsgCoreEval) returns (MsgCoreEvalResponse);
+  // Update params.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 }
 
 // MsgDeliverInbound defines an SDK message for delivering an eventual send
@@ -175,7 +177,7 @@ message MsgInstallBundle {
 // MsgCoreEval defines an SDK message for a core eval.
 message MsgCoreEval {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name)           = "cosmos-sdk/x/swingset/MsgCoreEval";
+  option (amino.name)           = "swingset/CoreEval";
 
   // authority is the address that controls the module (defaults to x/gov unless overwritten).
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
@@ -193,6 +195,21 @@ message MsgCoreEvalResponse {
   // The result of the core eval.
   string result = 1 [(gogoproto.moretags) = "yaml:\"result\""];
 }
+
+// MsgUpdateParams defines an SDK message for updating swingset params.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "swingset/UpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the parameters to update.
+  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateParamsResponse is an empty reply.
+message MsgUpdateParamsResponse {}
 
 // MsgInstallBundleResponse is either an empty acknowledgement that a bundle
 // installation message has been queued for the SwingSet kernel's
