@@ -1,6 +1,7 @@
 {
   "name": "@agoric/xsnap",
   "version": "0.14.2",
+  "DEFAULT_XSNAP_BINARY_VERSION": "0.14.2",
   "description": "Snapshotting VM worker based on Moddable's XS Javascript engine",
   "repository": {
     "type": "git",

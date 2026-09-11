@@ -222,10 +222,25 @@ const main = async () => {
     return;
   }
 
-  const version = env.XSNAP_BINARY_VERSION || env.npm_package_version;
+  await null;
+  let version = env.XSNAP_BINARY_VERSION;
+  const packageJsonPath = env.npm_package_json;
+  if (!version && packageJsonPath) {
+    try {
+      const packageJsonContents = await fsTop.promises.readFile(
+        packageJsonPath,
+        { encoding: 'utf8' },
+      );
+      const packageJson = JSON.parse(packageJsonContents);
+      version = packageJson.DEFAULT_XSNAP_BINARY_VERSION || packageJson.version;
+    } catch (e) {
+      throw Error(`Cannot parse ${packageJsonPath}: ${e}`);
+    }
+  }
+
   if (!version) {
     throw Error(
-      'Missing XSNAP_BINARY_VERSION and npm_package_version; cannot resolve prebuilt release',
+      'Missing $XSNAP_BINARY_VERSION, packageJson.DEFAULT_XSNAP_BINARY_VERSION, and packageJson.version; cannot resolve prebuilt release',
     );
   }
 
