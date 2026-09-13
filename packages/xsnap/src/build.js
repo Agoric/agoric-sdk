@@ -7,7 +7,6 @@ import osTop from 'node:os';
 
 /**
  * @import {ChildProcess} from 'node:child_process';
- * @import {promises} from 'node:fs';
  */
 
 const { freeze } = Object;
@@ -40,7 +39,7 @@ const ModdableSDK = {
  *
  * @param {string} command
  * @param {{
- *   spawn: typeof import('node:child_process').spawn,
+ *   spawn: typeof childProcessTop.spawn,
  * }} io
  */
 function makeCLI(command, { spawn }) {
@@ -209,8 +208,8 @@ const showEnv = async (
 /**
  * @param {SourceDescriptor[]} sources
  * @param {{
- *   fs: Pick<typeof import('fs'), 'existsSync'> &
- *     Pick<typeof promises, 'mkdir' | 'rm' | 'readFile' | 'writeFile' | 'rename'>,
+ *   fs: Pick<typeof fsTop, 'existsSync'> &
+ *     Pick<typeof fsTop.promises, 'mkdir' | 'rm' | 'readFile' | 'writeFile' | 'rename'>,
  *   curl: ReturnType<typeof makeCLI>,
  *   tar: ReturnType<typeof makeCLI>,
  * }} io
@@ -268,8 +267,8 @@ const updateSources = async (sources, { fs, curl, tar }) => {
  * @param {ModdablePlatform} platform
  * @param {boolean} force
  * @param {{
- *   fs: Pick<typeof import('fs'), 'existsSync'> &
- *     Pick<typeof promises, 'readFile' | 'writeFile'>,
+ *   fs: Pick<typeof fsTop, 'existsSync'> &
+ *     Pick<typeof fsTop.promises, 'readFile' | 'writeFile'>,
  *   make: ReturnType<typeof makeCLI>,
  * }} io
  */
@@ -317,9 +316,9 @@ const buildXsnap = async (pkg, platform, force, { fs, make }) => {
  * @param {{
  *   env: Record<string, string | undefined>,
  *   stdout: typeof process.stdout,
- *   spawn: typeof import('node:child_process').spawn,
+ *   spawn: typeof childProcessTop.spawn,
  *   fs: Pick<typeof import('fs'), 'existsSync'> &
- *     Pick<typeof promises, 'readFile' | 'writeFile' | 'mkdir' | 'rm' | 'rename'>,
+ *     Pick<typeof fsTop.promises, 'readFile' | 'writeFile' | 'mkdir' | 'rm' | 'rename'>,
  *   os: Pick<typeof import('os'), 'type'>,
  * }} io
  */
@@ -414,7 +413,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
    * @returns {Promise<boolean>} whether the source needs to be refreshed from
    *   its archive URL based on whether the existing source stamp matches the
    *   expected URL and commit hash
-   * @throws if the source stamp exists but cannot be read or parsed
+   * @throws {Error} if the source stamp exists but cannot be read or parsed
    */
   const needsSourceRefresh = async source => {
     await null;
