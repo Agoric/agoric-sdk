@@ -11,14 +11,32 @@ runs:
   steps:
     - id: slack
       name: Send GitHub trigger payload
-      uses: slackapi/slack-github-action@v3.0.3
+      uses: actions/github-script@v8
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.webhook }}
+        STATUS: ${{ job.status }}
       with:
-        webhook: ${{ inputs.webhook }}
-        webhook-type: incoming-webhook
-        payload: |
-          {
-            "text": "Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{ github.repository }} status ${{ job.status }}\nDetails at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-            "username": "GitHub"
+        script: |
+          const webhook = process.env.SLACK_WEBHOOK_URL;
+          core.setSecret(webhook);
+
+          const detailsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          const payload = {
+            text: `Job ${context.job} in workflow ${context.workflow} of ${context.repo.owner}/${context.repo.repo} status ${process.env.STATUS}\nDetails at ${detailsUrl}`,
+            username: 'GitHub',
+          };
+
+          const response = await fetch(webhook, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`Slack webhook request failed with ${response.status}: ${body}`);
           }
 
   using: composite
