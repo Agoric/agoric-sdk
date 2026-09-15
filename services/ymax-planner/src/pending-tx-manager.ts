@@ -141,8 +141,7 @@ export const settleWatcherResult = async (
     return;
   }
 
-  let settlementP: Promise<void>;
-  settlementP = (async () => {
+  const settlementP = (async () => {
     setDerivedOutcome(ctx.kvStore, txId, { status, txHash: result.txHash });
 
     const submitted = await withRetriesForAlerting(

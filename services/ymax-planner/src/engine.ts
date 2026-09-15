@@ -1352,8 +1352,8 @@ export const startEngine = async (
   });
   const startupDispatchPs = new Set<Promise<void>>();
   const enqueueStartupPendingTx = (record: PendingTxRecord) => {
-    let startupDispatchP: Promise<void> | undefined;
-    startupDispatchP = (async () => {
+    const startupDispatch: { promise?: Promise<void> } = {};
+    startupDispatch.promise = (async () => {
       await null;
       try {
         await processStartupPendingTx([record], {
@@ -1361,12 +1361,12 @@ export const startEngine = async (
           cosmosRpc: rpc,
         });
       } finally {
-        if (startupDispatchP) {
-          startupDispatchPs.delete(startupDispatchP);
+        if (startupDispatch.promise) {
+          startupDispatchPs.delete(startupDispatch.promise);
         }
       }
     })();
-    startupDispatchPs.add(startupDispatchP);
+    startupDispatchPs.add(startupDispatch.promise);
   };
 
   const historyScanReadP = makeWorkPool(
