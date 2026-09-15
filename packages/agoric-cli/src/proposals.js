@@ -213,13 +213,13 @@ const runInProcess = async ({
     resolvedBuilderPath,
     cwd,
   );
-  if (materialized) {
-    return materialized;
+  if (!materialized) {
+    throw Error(
+      `No core-eval proposal materials were emitted by ${resolvedBuilderPath}`,
+    );
   }
 
-  throw Error(
-    `No core-eval proposal materials were emitted by ${resolvedBuilderPath}`,
-  );
+  return materialized;
 };
 
 /**
