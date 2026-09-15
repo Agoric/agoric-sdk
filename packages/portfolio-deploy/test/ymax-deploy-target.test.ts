@@ -1180,7 +1180,7 @@ test('phase-upgrade-submit rejects install evidence for a different release bund
   );
 });
 
-test('ymax0-devnet pre-upgrade requires local bundle even if release asset exists', async t => {
+test('ymax0-devnet pre-upgrade installs the validated release bundle', async t => {
   const {
     agoricSdk,
     files,
@@ -1202,23 +1202,20 @@ test('ymax0-devnet pre-upgrade requires local bundle even if release asset exist
     'bundle-ymax0.json': jsonText(examples.bundle),
   });
 
-  await t.throwsAsync(
-    runPhase(
-      {
-        agoricSdk,
-        execFile,
-        fetchFn,
-        stdout,
-      },
-      'phase-pre-upgrade',
-      {
-        target: 'ymax0-devnet',
-        tag: releaseTag,
-        branch: 'master',
-      },
-      { ...env, AGORIC_NET: 'devnet' },
-    ),
-    { message: 'missing local bundle-ymax0.json' },
+  await runPhase(
+    {
+      agoricSdk,
+      execFile,
+      fetchFn,
+      stdout,
+    },
+    'phase-pre-upgrade',
+    {
+      target: 'ymax0-devnet',
+      tag: releaseTag,
+      branch: 'master',
+    },
+    { ...env, AGORIC_NET: 'devnet' },
   );
 
   t.false(
@@ -1229,8 +1226,37 @@ test('ymax0-devnet pre-upgrade requires local bundle even if release asset exist
         event.command.includes('#bundle-ymax0.json'),
     ),
   );
-  t.falsy(releases.get(releaseTag)?.assets.has('ymax0-devnet-install.json'));
-  t.deepEqual(stdoutChunks, []);
+  t.true(
+    execs.some(
+      event =>
+        typeof event.command === 'string' &&
+        event.command.includes('/install-bundle.ts') &&
+        event.command.includes(
+          '<repo>/packages/portfolio-deploy/dist/bundle-ymax0.json',
+        ),
+    ),
+  );
+  t.truthy(releases.get(releaseTag)?.assets.has('ymax0-devnet-install.json'));
+  t.deepEqual(JSON.parse(stdoutChunks[0]), {
+    phase: 'pre-upgrade',
+    target: 'ymax0-devnet',
+    detail: {
+      url: `https://example.invalid/releases/${releaseTag}`,
+      ...examples.install.devnet0,
+      releaseTag,
+      installTxHash: 'TX123',
+      installBlockHeight: 77,
+      installBlockTime: '2026-04-16T12:00:00.000Z',
+    },
+  });
+  t.is(
+    files.get(
+      agoricSdk
+        .join('packages/portfolio-deploy/dist/bundle-ymax0.json')
+        .toString(),
+    ),
+    jsonText(examples.bundle),
+  );
 });
 
 test('reject ymax1-main upgrade without ymax0-main upgrade evidence', async t => {
@@ -1282,17 +1308,18 @@ test('reject ymax1-main upgrade without ymax0-main upgrade evidence', async t =>
   );
 
   const releaseTag = happyPathReleaseTag;
-  await t.throwsAsync(
-    makeReleasePlan({
-      bundleIdArg: '',
-      mode: 'deploy',
-      privateArgs: '',
-      reader: makePlanReader({
-        'bundle-ymax0.json': jsonText(examples.bundle),
+  t.throws(
+    () =>
+      makeReleasePlan({
+        bundleIdArg: '',
+        mode: 'deploy',
+        privateArgs: '',
+        reader: makePlanReader({
+          'bundle-ymax0.json': jsonText(examples.bundle),
+        }),
+        releaseTag,
+        target: 'ymax1-main',
       }),
-      releaseTag,
-      target: 'ymax1-main',
-    }),
     { message: 'missing required release asset ymax0-main-install.json' },
   );
 });

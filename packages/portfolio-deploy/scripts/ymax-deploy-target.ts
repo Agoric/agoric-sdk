@@ -962,11 +962,12 @@ const recordBundleInstall = async (
     blockTime: string;
     bundleId: string;
   };
+  const installedBundleId = await bundleIdFromBundle(localBundleFile);
   const record = await makeInstallRecord(
     installTarget,
     releaseTag,
     commit,
-    bundle.bundleId,
+    installedBundleId,
     result,
   );
   await asset.writeText(`${JSON.stringify(record, null, 2)}\n`);
@@ -1843,7 +1844,9 @@ export const makeGraph = (
         const it = cause as
           | { problem: unknown }
           | { localBundle: BundleEvidence };
+        if (typeof it !== 'object' || it === null) throw cause;
         if ('problem' in it) throw it.problem;
+        if (!('localBundle' in it)) throw cause;
         await asset!.copyFrom(it.localBundle.bundleFile as FileRd);
         return it.localBundle;
       },
@@ -1858,17 +1861,13 @@ export const makeGraph = (
           relInfo as ReleaseInfo,
           bundle as BundleEvidence,
         ),
-      create: async (_a, asset, cause) =>
-        recordBundleInstall(
-          'ymax0-devnet',
-          await requireLocalBundle(deployPackage),
-          {
-            asset: asset!,
-            installBundle,
-            cause,
-            ...tools,
-          },
-        ),
+      create: async ({ bundle }, asset, cause) =>
+        recordBundleInstall('ymax0-devnet', bundle as BundleEvidence, {
+          asset: asset!,
+          installBundle,
+          cause,
+          ...tools,
+        }),
     },
     'ymax0-main-install.json': {
       deps: { release: 'release', bundle: 'bundle-ymax0.json' },
