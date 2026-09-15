@@ -322,6 +322,30 @@ jobs:
         shell: bash
         run: scripts/verify-codegen-idempotence.mjs
 
+  # Verify that every AVA snapshot's human-readable `.md` report still
+  # matches its binary `.snap` (the only thing AVA actually asserts
+  # against). A normal test run touches neither file, and even
+  # `--update-snapshots` only ever writes them together, so the two can
+  # only drift apart via a hand-edit or a mis-resolved merge/rebase on the
+  # `.md` -- something a plain `yarn test` will never catch. This
+  # regenerates the `.md` from the `.snap` and relies on the restore-node
+  # action's post-job git-status check to fail if anything changed.
+  test-snapshot-docs:
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-test-snapshot-docs
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: 'node-new'
+
+      - name: Regenerate snapshot .md reports from .snap binaries
+        run: scripts/regenerate-snapshot-docs.mjs
+
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
