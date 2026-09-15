@@ -651,9 +651,20 @@ test('startEngine consumes live subscription while startup pending tx scan is bl
   await secondNextCalledP;
   t.is(nextCalls, 2, 'live subscription read starts before history read ends');
 
-  releaseDataRead();
   stopSubscription({ done: true, value: undefined });
-  await t.throwsAsync(engineP, { message: /rpc\.subscribeAll finished/ });
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const engineExitP = Promise.race([
+    engineP,
+    new Promise<never>((_resolve, reject) => {
+      timeoutId = setTimeout(
+        () => reject(Error('timed out waiting for subscription exit')),
+        100,
+      );
+    }),
+  ]);
+  await t.throwsAsync(engineExitP, { message: /rpc\.subscribeAll finished/ });
+  if (timeoutId) clearTimeout(timeoutId);
+  releaseDataRead();
   t.is(returnCalls, 1, 'subscription iterator is closed on engine exit');
 });
 

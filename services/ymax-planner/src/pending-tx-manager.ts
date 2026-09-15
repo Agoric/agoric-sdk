@@ -19,6 +19,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
   deleteDerivedOutcome,
   getDerivedOutcome,
+  getResolvedTx,
   setDerivedOutcome,
   setResolvedTx,
 } from './kv-store.ts';
@@ -72,6 +73,7 @@ export type EvmContext = {
   makeAbortController: MakeAbortController;
   axelarApiUrl: string;
   ydsNotifier?: YdsNotifier;
+  pendingTxSettlementPromises?: Map<TxId, Promise<void>>;
 };
 
 export type GmpTransfer = {
@@ -127,33 +129,55 @@ export const settleWatcherResult = async (
 
   const logPrefix = `[${txId}]`;
   const status = result.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
-
-  setDerivedOutcome(ctx.kvStore, txId, { status, txHash: result.txHash });
-
-  const submitted = await withRetriesForAlerting(
-    `${logPrefix} ${label} settlement`,
-    () =>
-      resolvePendingTx({
-        signingSmartWalletKit: ctx.signingSmartWalletKit,
-        makeNonce: ctx.makeNonce,
-        txId,
-        status,
-      }),
-    {
-      log,
-      setTimeout: ctx.setTimeout,
-      now: ctx.now,
-      alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
-      signal,
-    },
-  );
-  if (submitted !== undefined) {
-    setResolvedTx(ctx.kvStore, txId, status);
-    deleteDerivedOutcome(ctx.kvStore, txId);
+  if (getResolvedTx(ctx.kvStore, txId) !== undefined) {
+    log(`${logPrefix} ${label} settlement already resolved; skipping`);
+    return;
+  }
+  const { pendingTxSettlementPromises } = ctx;
+  const existingSettlementP = pendingTxSettlementPromises?.get(txId);
+  if (existingSettlementP) {
+    log(`${logPrefix} ${label} settlement already in progress; skipping`);
+    await existingSettlementP;
+    return;
   }
 
-  if (result.txHash) {
-    await ctx.ydsNotifier?.notifySettlement(txId, result.txHash);
+  let settlementP: Promise<void>;
+  settlementP = (async () => {
+    setDerivedOutcome(ctx.kvStore, txId, { status, txHash: result.txHash });
+
+    const submitted = await withRetriesForAlerting(
+      `${logPrefix} ${label} settlement`,
+      () =>
+        resolvePendingTx({
+          signingSmartWalletKit: ctx.signingSmartWalletKit,
+          makeNonce: ctx.makeNonce,
+          txId,
+          status,
+        }),
+      {
+        log,
+        setTimeout: ctx.setTimeout,
+        now: ctx.now,
+        alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
+        signal,
+      },
+    );
+    if (submitted !== undefined) {
+      setResolvedTx(ctx.kvStore, txId, status);
+      deleteDerivedOutcome(ctx.kvStore, txId);
+    }
+
+    if (result.txHash) {
+      await ctx.ydsNotifier?.notifySettlement(txId, result.txHash);
+    }
+  })();
+  pendingTxSettlementPromises?.set(txId, settlementP);
+  try {
+    await settlementP;
+  } finally {
+    if (pendingTxSettlementPromises?.get(txId) === settlementP) {
+      pendingTxSettlementPromises.delete(txId);
+    }
   }
 };
 

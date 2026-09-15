@@ -13,7 +13,11 @@ import type {
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 import type { CaipChainId } from '@agoric/orchestration';
-import { handlePendingTx, watchWithRetry } from '../src/pending-tx-manager.ts';
+import {
+  handlePendingTx,
+  settleWatcherResult,
+  watchWithRetry,
+} from '../src/pending-tx-manager.ts';
 import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';
 import {
   prepareAbortController,
@@ -601,6 +605,75 @@ test('handlePendingTx fast-paths a cached derivedOutcome and skips the watcher',
   t.is(submittedOffers[0].offerArgs.status, TxStatus.SUCCESS);
   // After successful settlement the cache is promoted derivedOutcome→resolved.
   t.is(getDerivedOutcome(opts.kvStore, txId), undefined);
+  t.is(getResolvedTx(opts.kvStore, txId), TxStatus.SUCCESS);
+});
+
+test('handlePendingTx submits one resolver offer for concurrent settlements', async t => {
+  const opts = createMockPendingTxOpts();
+  const { promise: offerStartedP, resolve: offerStarted } =
+    makePromiseKit<void>();
+  const { promise: releaseOfferP, resolve: releaseOffer } =
+    makePromiseKit<void>();
+  const submittedOffers: any[] = [];
+  const originalExecuteOffer = opts.signingSmartWalletKit.executeOffer;
+  (opts.signingSmartWalletKit as any).executeOffer = async (
+    offerSpec: any,
+    fee: any,
+  ) => {
+    submittedOffers.push(offerSpec);
+    offerStarted();
+    await releaseOfferP;
+    return originalExecuteOffer(offerSpec, fee);
+  };
+
+  const txId = 'tx43' as TxId;
+  setDerivedOutcome(opts.kvStore, txId, {
+    status: TxStatus.SUCCESS,
+    txHash: '0xcafef00d',
+  });
+  const fakeTx = {
+    txId,
+    type: TxType.CCTP_TO_EVM,
+    status: TxStatus.PENDING,
+    amount: 1n,
+    destinationAddress: 'eip155:1:0x0000000000000000000000000000000000000000',
+  } as unknown as PendingTx;
+
+  const firstP = handlePendingTx(fakeTx, opts);
+  await offerStartedP;
+  const secondP = handlePendingTx(fakeTx, opts);
+  await new Promise(resolve => setImmediate(resolve));
+
+  t.is(submittedOffers.length, 1, 'second settlement joined the first');
+
+  releaseOffer();
+  await Promise.all([firstP, secondP]);
+  t.is(getDerivedOutcome(opts.kvStore, txId), undefined);
+  t.is(getResolvedTx(opts.kvStore, txId), TxStatus.SUCCESS);
+});
+
+test('settleWatcherResult skips already resolved settlements', async t => {
+  const opts = createMockPendingTxOpts();
+  const submittedOffers: any[] = [];
+  const originalExecuteOffer = opts.signingSmartWalletKit.executeOffer;
+  (opts.signingSmartWalletKit as any).executeOffer = async (
+    offerSpec: any,
+    fee: any,
+  ) => {
+    submittedOffers.push(offerSpec);
+    return originalExecuteOffer(offerSpec, fee);
+  };
+
+  const txId = 'tx44' as TxId;
+  const result = {
+    settled: true,
+    success: true,
+    txHash: '0xcafef00d',
+  };
+  await settleWatcherResult(opts, txId, result, 'first', () => {});
+  await settleWatcherResult(opts, txId, result, 'second', () => {});
+
+  t.is(submittedOffers.length, 1);
   t.is(getResolvedTx(opts.kvStore, txId), TxStatus.SUCCESS);
 });
 

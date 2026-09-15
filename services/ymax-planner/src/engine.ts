@@ -1317,6 +1317,7 @@ export const startEngine = async (
   // Map to track AbortControllers for each pending transaction
   // This allows aborting watchers when transactions are manually resolved
   const pendingTxAbortControllers = new Map<TxId, AbortController>();
+  const pendingTxSettlementPromises = new Map<TxId, Promise<void>>();
   const processStartupPendingTx = makeProcessInitialPendingTransactions();
 
   const txPowers: HandlePendingTxOpts = Object.freeze({
@@ -1329,6 +1330,7 @@ export const startEngine = async (
     makeNonce,
     vstoragePathPrefixes,
     pendingTxAbortControllers,
+    pendingTxSettlementPromises,
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
@@ -1348,8 +1350,26 @@ export const startEngine = async (
     powers: { now, setTimeout: powers.setTimeout },
     source: pendingTxKeysToRead,
   });
+  const startupDispatchPs = new Set<Promise<void>>();
+  const enqueueStartupPendingTx = (record: PendingTxRecord) => {
+    let startupDispatchP: Promise<void> | undefined;
+    startupDispatchP = (async () => {
+      await null;
+      try {
+        await processStartupPendingTx([record], {
+          ...txPowers,
+          cosmosRpc: rpc,
+        });
+      } finally {
+        if (startupDispatchP) {
+          startupDispatchPs.delete(startupDispatchP);
+        }
+      }
+    })();
+    startupDispatchPs.add(startupDispatchP);
+  };
 
-  const historyScanP = makeWorkPool(
+  const historyScanReadP = makeWorkPool(
     throttledPendingTxKeys,
     { capacity },
     async (txId: TxId) => {
@@ -1390,24 +1410,19 @@ export const startEngine = async (
           return;
         }
         mustMatch(harden(data), PublishedTxShape, path);
-        await processStartupPendingTx(
-          [
-            {
-              blockHeight: BigInt(streamCell.blockHeight),
-              tx: { txId, ...data },
-            },
-          ],
-          {
-            ...txPowers,
-            cosmosRpc: rpc,
-          },
-        );
+        enqueueStartupPendingTx({
+          blockHeight: BigInt(streamCell.blockHeight),
+          tx: { txId, ...data },
+        });
       } catch (err) {
         const errLabel = `🚨 Failed to read old pending tx ${path}`;
         console.error(errLabel, data || streamCellJson, err);
       }
     },
   ).done;
+  const historyScanP = historyScanReadP.then(async () => {
+    await Promise.all([...startupDispatchPs]);
+  });
   let historyScanFailed: unknown;
   let historyScanComplete = false;
   const historyScanDoneP = historyScanP.then(undefined, err => {
@@ -1531,7 +1546,6 @@ export const startEngine = async (
   }
 
   // We expect to run forever, but the server can terminate our connection.
-  await historyScanDoneP;
   if (historyScanFailed) {
     throw historyScanFailed;
   }
