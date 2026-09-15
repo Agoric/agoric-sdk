@@ -73,6 +73,8 @@ jobs:
       need_upgrade_confirm: ${{ steps.plan.outputs.need_upgrade_confirm }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v5
         with:
@@ -115,6 +117,8 @@ jobs:
       name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-agoric-sdk-build
 
@@ -159,6 +163,8 @@ jobs:
       ready_to_broadcast: ${{ steps.prepare.outputs.ready_to_broadcast }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-agoric-sdk-build
 
@@ -267,7 +273,7 @@ jobs:
   # upgrade-prepare reports a signed tx is actually ready to send.
   upgrade-submit:
     permissions:
-      contents: write
+      contents: read
     needs: [plan, pre-upgrade, upgrade-prepare]
     if: |
       always() &&
@@ -283,6 +289,8 @@ jobs:
       name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-agoric-sdk-build
 
@@ -321,6 +329,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-agoric-sdk-build
 
