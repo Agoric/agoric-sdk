@@ -9,8 +9,13 @@ import test from 'ava';
 import { buildCoreEvalProposal } from '../src/proposals.js';
 
 test('in-process core eval builder ignores stale plan files', async t => {
-  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'agoric-proposals-'));
-  t.teardown(() => fs.rm(tmp, { recursive: true, force: true }));
+  const tmpParent = await fs.mkdtemp(
+    path.join(os.tmpdir(), 'agoric-proposals-'),
+  );
+  t.teardown(() => fs.rm(tmpParent, { recursive: true, force: true }));
+
+  const tmp = path.join(tmpParent, 'build');
+  await fs.mkdir(tmp);
 
   const builderPath = path.join(tmp, 'builder.js');
   await fs.writeFile(builderPath, 'export const main = async () => {};\n');
