@@ -1241,9 +1241,13 @@ const formatAgdSignCommand = ({
       encodeJsonPublicKey(granteePubkey),
     );
     const signatureAssetName = `${detachedSignatureAssetPrefix(target)}<your-name>.json`;
+    const importMultisigKey = [
+      `test "$(agd keys show ${shQuote(multisigName)} --pubkey 2>/dev/null)" = ${shQuote(multisigPubkeyJson)}`,
+      `agd keys add ${shQuote(multisigName)} --pubkey=${shQuote(multisigPubkeyJson)}`,
+    ].join(' || ');
     return chainCommands([
       download,
-      `agd keys add ${shQuote(multisigName)} --pubkey=${shQuote(multisigPubkeyJson)}`,
+      importMultisigKey,
       [
         'agd tx sign',
         shQuote(unsignedTxAssetName),
@@ -1609,6 +1613,22 @@ const normalizeSignedAuthInfo = (
     comparableAuthInfo.signer_infos || []
   ).entries()) {
     const unsignedSignerInfo = unsignedAuthInfo.signer_infos?.[index];
+    const unsignedModeInfo = unsignedSignerInfo?.mode_info;
+    const signedModeInfo = signerInfo.mode_info;
+    const unsignedPublicKey = unsignedSignerInfo?.public_key;
+    if (
+      unsignedPublicKey?.['@type'] === LegacyAminoPubKey.typeUrl &&
+      unsignedModeInfo?.single?.mode === 'SIGN_MODE_DIRECT' &&
+      signedModeInfo?.multi?.bitarray &&
+      signedModeInfo.multi.mode_infos?.length ===
+        unsignedPublicKey.public_keys?.length &&
+      signedModeInfo.multi.mode_infos.every(
+        (modeInfo: any) =>
+          modeInfo?.single?.mode === 'SIGN_MODE_LEGACY_AMINO_JSON',
+      )
+    ) {
+      signerInfo.mode_info = unsignedModeInfo;
+    }
     if (
       unsignedSignerInfo &&
       !('public_key' in unsignedSignerInfo) &&

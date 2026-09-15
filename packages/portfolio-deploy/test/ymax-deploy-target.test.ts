@@ -1943,7 +1943,7 @@ test('authz operator-sign path embeds a multisig grantee pubkey resolved from ch
     JSON.parse(ctx.stdoutChunks[0]!).detail.agdSignCommand,
     [
       "gh release download 'v0.3.2604-beta1' --pattern 'ymax0-main-authz-unsigned-tx.json' --clobber &&",
-      '  agd keys add \'ymax-grantee-00000000\' --pubkey=\'{"@type":"/cosmos.crypto.multisig.LegacyAminoPubKey","threshold":2,"public_keys":[{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3"},{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl"}]}\' &&',
+      '  test "$(agd keys show \'ymax-grantee-00000000\' --pubkey 2>/dev/null)" = \'{"@type":"/cosmos.crypto.multisig.LegacyAminoPubKey","threshold":2,"public_keys":[{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3"},{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl"}]}\' || agd keys add \'ymax-grantee-00000000\' --pubkey=\'{"@type":"/cosmos.crypto.multisig.LegacyAminoPubKey","threshold":2,"public_keys":[{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3"},{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl"}]}\' &&',
       "  agd tx sign 'ymax0-main-authz-unsigned-tx.json' --offline --sign-mode amino-json --multisig=ymax-grantee-00000000 --from <your-key-name> --account-number 12 --sequence 34 --chain-id 'agoric-3' --overwrite --output-document 'ymax0-main-authz-signature-<your-name>.json' &&",
       "  gh release upload 'v0.3.2604-beta1' 'ymax0-main-authz-signature-<your-name>.json' --clobber",
     ].join('\n'),
@@ -1953,6 +1953,7 @@ test('authz operator-sign path embeds a multisig grantee pubkey resolved from ch
 test('phase-upgrade-generate combines detached-grantee signature files into the signed tx', async t => {
   const ctx = makeScenario();
   const releaseTag = happyPathReleaseTag;
+  const broadcastCalls: Uint8Array[] = [];
 
   // Two synthetic member keys (not real agd-managed keys) so the test can
   // sign for them directly; ymax-multisign-agd.test.ts already proves the
@@ -2005,6 +2006,13 @@ test('phase-upgrade-generate combines detached-grantee signature files into the 
       sequence,
       pubkey: granteePubkeyAmino,
     }),
+    broadcastTx: async (txBytes: Uint8Array) => {
+      broadcastCalls.push(txBytes);
+      return {
+        transactionHash: 'MULTISIGSUBMIT123',
+        height: 91,
+      };
+    },
   })) as unknown as typeof import('@cosmjs/stargate').StargateClient.connect;
   const makeWalletKit = async () =>
     ({
@@ -2128,6 +2136,40 @@ test('phase-upgrade-generate combines detached-grantee signature files into the 
   const signedTx = JSON.parse(signedTxText!);
   t.is(signedTx.signatures.length, 1);
   t.deepEqual(signedTx.body, unsignedTx.body);
+  t.deepEqual(
+    signedTx.auth_info.signer_infos[0].mode_info.multi.mode_infos.map(
+      (modeInfo: any) => modeInfo.single.mode,
+    ),
+    ['SIGN_MODE_LEGACY_AMINO_JSON', 'SIGN_MODE_LEGACY_AMINO_JSON'],
+  );
+  clearTrace(ctx);
+
+  await runPhase(
+    {
+      agoricSdk: ctx.agoricSdk,
+      execFile: ctx.execFile,
+      fetchFn: ctx.fetchFn,
+      connectRpc,
+      makeWalletKit,
+      stdout: ctx.stdout,
+    },
+    'phase-upgrade-submit',
+    { target: 'ymax0-main', tag: releaseTag },
+    {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE: grantee,
+      PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+    },
+  );
+
+  t.is(broadcastCalls.length, 1);
+  t.like(JSON.parse(ctx.stdoutChunks[0]), {
+    target: 'ymax0-main',
+    phase: 'upgrade-submit',
+    record: 'ymax0-main-upgrade-pending.json',
+    detail: { bundleId: 'b1-abc123' },
+  });
 });
 
 test('detached direct-sign path generates and broadcasts for ymax0-main without authz', async t => {
