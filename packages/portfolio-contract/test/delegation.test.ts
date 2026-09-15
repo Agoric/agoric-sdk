@@ -16,6 +16,7 @@ import {
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
 import type { Bech32Address } from '@agoric/orchestration';
 import type {
   FlowKey,
@@ -70,17 +71,15 @@ const getSyncState = ({
 }: Pick<PortfolioStatus, 'policyVersion' | 'rebalanceCount'>) =>
   harden({ policyVersion, rebalanceCount });
 
+/** The wallet's published status for its most recently submitted message. */
+const getWalletStatus = (evmTraderKit: EvmTraderKit) =>
+  evmTraderKit.readPublished(`evmWallets.${evmTraderKit.evmAccount.address}`);
+
 const stripRootStoragePath = (path: string): PortfolioPublishedPath =>
   path.replace(
     new RegExp(`^(${ROOT_STORAGE_PATH}|published)\\.`),
     '',
   ) as PortfolioPublishedPath;
-
-const snapshotVstorage = (
-  t: ExecutionContext,
-  value: unknown,
-  message: string,
-) => t.snapshot(value, message);
 
 const readPublishedSubtree = (
   storage: Deployed['common']['bootstrap']['storage'],
@@ -271,6 +270,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
   const permissions = harden({
     allocation: { maxWeightBps: 7_000n },
   });
+  const openWalletStatus = await getWalletStatus(peteKit);
   const grantStatus = await peteArbitrum.grant(PETE_AGENT, permissions);
   const { delegationClient } = await redeemAndCheckDelegation({
     t,
@@ -323,6 +323,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
     deployed.common.bootstrap.storage,
     delegationDocOpts,
   );
+  t.snapshot({ open: openWalletStatus, grant: grantStatus }, 'wallet outcomes');
 });
 
 test('owner-signed grant, full replacement, revoke, and re-grant govern the redeemed facet', async t => {
@@ -818,6 +819,7 @@ test('Grant delivery failure is surfaced in wallet vstorage without publishing a
     ],
     10_000_000n,
   );
+  const openWalletStatus = await getWalletStatus(peteKit);
 
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
@@ -831,20 +833,15 @@ test('Grant delivery failure is surfaced in wallet vstorage without publishing a
   }
   t.regex(grantStatus.error || '', /"nameKey" not found: "agoric1petesAgent"/);
 
-  const walletStatusPath = `ymax0.evmWallets.${peteKit.evmAccount.address}`;
-  const walletStatus = await peteKit.readPublished(
-    walletStatusPath.replace(/^ymax0\./, ''),
-  );
   const portfolioPath = peteKit.evmTrader.getPortfolioPath();
   const portfolioSubtree = readPublishedSubtree(
     deployed.common.bootstrap.storage,
     portfolioPath,
   );
 
-  snapshotVstorage(
-    t,
+  t.snapshot(
     harden({
-      [walletStatusPath]: walletStatus,
+      walletOutcomes: { open: openWalletStatus, grant: grantStatus },
       ...portfolioSubtree,
     }),
     'grant delivery failure vstorage',
@@ -884,6 +881,7 @@ test('Pete may open a portfolio and grant control in a single signed message', a
     },
   );
   await eventLoopIteration();
+  const openAndGrantWalletStatus = await getWalletStatus(peteKit);
 
   // The combined operation delivered the delegation as part of the same call.
   // (openPortfolioWithGrant only resolves once the contract's
@@ -937,6 +935,90 @@ test('Pete may open a portfolio and grant control in a single signed message', a
     Aave_Arbitrum: 50n,
     Compound_Arbitrum: 50n,
   });
+
+  t.snapshot(
+    harden({
+      portfolioStatus: after,
+      agents,
+      walletOutcomes: { openAndGrant: openAndGrantWalletStatus },
+    }),
+    'open+grant vstorage',
+  );
+});
+
+test('Pete enables auto-features, granting the planner a delegation', async t => {
+  const deployed = await deploy(t);
+  const { peteKit, peteArbitrum } = await openPetePortfolio(deployed);
+  const openWalletStatus = await getWalletStatus(peteKit);
+
+  const setAutoFeaturesStatus = await peteArbitrum.setAutoFeatures({
+    rebalance: true,
+  });
+  t.is(setAutoFeaturesStatus.status, 'ok');
+
+  await eventLoopIteration();
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
+  const portfolioStatus = await peteKit.evmTrader.getPortfolioStatus();
+  t.like(portfolioStatus, { enabledAutoFeatures: { rebalance: true } });
+  const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
+  t.like(agents, {
+    agent1: { grantee: PortfolioPlannerAgent, state: 'active' },
+  });
+
+  t.snapshot(
+    harden({
+      portfolioStatus,
+      agents,
+      walletOutcomes: {
+        open: openWalletStatus,
+        setAutoFeatures: setAutoFeaturesStatus,
+      },
+    }),
+    'setAutoFeatures vstorage',
+  );
+});
+
+test('Pete may open a portfolio and enable auto-features in a single signed message', async t => {
+  const deployed = await deploy(t);
+  const peteKit = await makeEvmTraderKit(deployed, {
+    privateKey: evmTrader0PrivateKey,
+  });
+  const peteArbitrum = peteKit.evmTrader.forChain('Arbitrum');
+
+  // One user signature: create the portfolio AND enable auto-features,
+  // matching the combined open+grant form above but for the
+  // `features` field instead of `grantee`.
+  await peteArbitrum.openPortfolio(
+    [
+      { instrument: 'Aave_Arbitrum', portion: 60n },
+      { instrument: 'Compound_Arbitrum', portion: 40n },
+    ],
+    10_000_000n,
+    { features: { rebalance: true, claimRewards: false } },
+  );
+  await eventLoopIteration();
+  const openWithFeaturesStatus = await getWalletStatus(peteKit);
+
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
+  const portfolioStatus = await peteKit.evmTrader.getPortfolioStatus();
+  t.like(portfolioStatus, { enabledAutoFeatures: { rebalance: true } });
+  const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
+  t.like(agents, {
+    agent1: { grantee: PortfolioPlannerAgent, state: 'active' },
+  });
+
+  t.snapshot(
+    harden({
+      portfolioStatus,
+      agents,
+      walletOutcomes: { openWithFeatures: openWithFeaturesStatus },
+    }),
+    'open+autoFeatures vstorage',
+  );
 });
 
 test('open+grant with an unregistered grantee aborts before portfolio creation', async t => {
