@@ -46,7 +46,7 @@ const escapeRegExp = (text: string) =>
   // Use the native helper when available; keep the fallback for Node.js v22.
   RegExp.escape?.(text) || text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
 const TMPDIR_PATT = RegExp(
-  `(?:/[^/\\s]+)*/${escapeRegExp(TMPDIR_PREFIX)}[^/\\s]*`,
+  `(?:/[^\\s]+)*/${escapeRegExp(TMPDIR_PREFIX)}[^/\\s]*`,
   'g',
 );
 type MultiSigTool = {

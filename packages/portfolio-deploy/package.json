@@ -61,6 +61,7 @@
     "@agoric/client-utils": "workspace:*",
     "@agoric/portfolio-api": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
+    "@endo/bundle-source": "^4.3.2",
     "@noble/hashes": "~1.5.0",
     "ava": "^8.0.1",
     "c8": "^10.1.3",
