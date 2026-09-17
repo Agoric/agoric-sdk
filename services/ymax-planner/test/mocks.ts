@@ -518,6 +518,7 @@ export const createMockPendingTxOpts = (
     makeAbortController,
     axelarApiUrl: mockAxelarApiAddress,
     pendingTxAbortControllers: new Map(),
+    pendingTxSettlementPromises: new Map(),
   };
 };
 
