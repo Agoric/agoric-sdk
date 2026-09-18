@@ -1,0 +1,41 @@
+packages/vow/src/watch-utils.js:76:         * @template {readonly unknown[]} S
+packages/vow/src/watch-utils.js:86:         * @template {readonly unknown[]} S
+packages/vow/src/watch-utils.js:134:         * @param {readonly unknown[]} specimens
+packages/vow/src/tools.js:53:   * @template {readonly unknown[]} TS
+packages/vow/src/tools.js:61:   * @template {readonly unknown[]} TS
+packages/vow/src/tools.js:73:   * @template {readonly unknown[]} TS
+packages/vow/src/types.ts:138:  all: <TS extends readonly unknown[]>(
+packages/vow/src/types.ts:150:  allSettled: <TS extends readonly unknown[]>(
+packages/vow/src/types.ts:158:  allVows: <TS extends readonly unknown[]>(
+packages/internal/src/testing-utils.js:75: * @param {readonly TestStep<Input>[]} allSteps
+packages/internal/src/testing-utils.js:88:   * @param {readonly TestStep<Input>[]} steps
+packages/internal/src/testing-utils.js:113:   *   remainingSteps: readonly TestStep<Input>[];
+packages/internal/src/ses-utils.js:197: * @param {readonly (T | PromiseLike<T>)[]} items
+packages/internal/src/types.ts:19:  Types extends readonly unknown[],
+packages/telemetry/src/make-slog-sender.js:19: * @param {readonly T[]} arr
+packages/portfolio-contract/test/evm-wallet-handler.test.ts:106:  portfolios: Array<readonly [number, PortfolioEVMFacet]> = [],
+packages/portfolio-contract/src/evm-facade.ts:86:  > extends readonly unknown[]
+packages/portfolio-contract/src/evm-facade.ts:88:    : readonly unknown[];
+packages/portfolio-contract/src/portfolio.exo.ts:732:          allocations?: readonly EIP712Allocation[] | undefined,
+packages/fast-usdc-contract/src/utils/settlement-matcher.ts:39:  pending: readonly PendingTx[],
+packages/orchestration/test/types.test-d.ts:393:    <TUS extends readonly (keyof TypeFromUrl | unknown)[]>(
+packages/orchestration/test/staking-ops.test.ts:113:    const calls = [] as Array<{ msgs: readonly AnyJson[] }>;
+packages/orchestration/src/utils/exo-helpers.js:46:       * @template {readonly unknown[]} T
+packages/orchestration/src/utils/exo-helpers.js:146:     * @template {readonly string[]} F
+packages/orchestration/src/utils/exo-helpers.js:147:     * @template {readonly string[]} M
+packages/orchestration/src/utils/exo-helpers.js:176:     * @template {readonly string[]} F
+packages/orchestration/src/utils/exo-helpers.js:177:     * @template {readonly string[]} M
+packages/orchestration/src/utils/exo-helpers.js:218:     * @template {readonly string[]} W
+packages/orchestration/src/utils/exo-helpers.js:230:     * @template {readonly string[]} W
+packages/orchestration/src/utils/permit2/signatureTransfer.ts:76:  permitted: readonly TokenPermissions[];
+packages/orchestration/src/utils/viem-utils/hashTypedData.ts:19:  types: Record<string, readonly MessageTypeProperty[]>;
+packages/orchestration/src/utils/viem-utils/hashTypedData.ts:41:    types: Record<string, readonly MessageTypeProperty[]>;
+packages/orchestration/src/exos/cosmos-orchestration-account.js:799:         * @param {readonly MsgUndelegateResponseType[]} responses
+packages/orchestration/src/exos/cosmos-orchestration-account.js:843:         * @template {readonly (keyof TypeFromUrl | unknown)[]} [TUS=(keyof TypeFromUrl)[]]
+packages/orchestration/src/exos/cosmos-orchestration-account.js:1548:         * @template {readonly (keyof TypeFromUrl | unknown)[]} TUS
+packages/orchestration/src/cosmos-api.ts:340:    msgs: readonly AnyJson[],
+packages/orchestration/src/cosmos-api.ts:405:  executeTxProto3: <TUS extends readonly (keyof TypeFromUrl | unknown)[]>(
+packages/orchestration/src/cosmos-api.ts:425:    msgs: readonly AnyJson[],
+packages/orchestration/src/vendor/viem/viem-typedData.d.ts:16:    types: Record<string, readonly MessageTypeProperty[]>;
+packages/client-utils/test/signing-smart-wallet-kit.test.ts:25:          messages: readonly EncodeObject[],
+packages/client-utils/test/signing-smart-wallet-kit.test.ts:36:          messages: readonly EncodeObject[],
