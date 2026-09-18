@@ -20,9 +20,11 @@ runs:
           const webhook = process.env.SLACK_WEBHOOK_URL;
           core.setSecret(webhook);
 
-          const detailsUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          const repoLabel = `${context.repo.owner}/${context.repo.repo}`;
+          const detailsUrl =
+            `${context.serverUrl}/${repoLabel}/actions/runs/${context.runId}`;
           const payload = {
-            text: `Job ${context.job} in workflow ${context.workflow} of ${context.repo.owner}/${context.repo.repo} status ${process.env.STATUS}\nDetails at ${detailsUrl}`,
+            text: `Job ${context.job} in workflow ${context.workflow} of ${repoLabel} status ${process.env.STATUS}\nDetails at ${detailsUrl}`,
             username: 'GitHub',
           };
 
