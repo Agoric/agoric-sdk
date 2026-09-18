@@ -7,6 +7,7 @@ export * from './network-config.js';
 export * from './rpc.js';
 export * from './sequence-manager.js';
 export * from './signing-client.js';
+export * from './signing-fees.js';
 export * from './signing-smart-wallet-kit.js';
 export * from './smart-wallet-kit.js';
 export * from './smart-wallet-with-sequence.js';
