@@ -152,65 +152,6 @@ const materializeFromRecords = (records, resolvedBuilderPath, cwd) => {
 };
 
 /**
- * @param {typeof FsPromises} fs
- * @param {string} outputDir
- * @param {string} resolvedBuilderPath
- */
-const readProposalMaterialsFromPlans = async (
-  fs,
-  outputDir,
-  resolvedBuilderPath,
-) => {
-  const files = await fs.readdir(outputDir);
-  const planFiles = files.filter(f => f.endsWith('-plan.json')).sort();
-
-  // TODO: Replace this with metadata capture during writeCoreEval execution.
-  if (!planFiles.length) {
-    throw Error(`No core-eval plan files found in ${outputDir}`);
-  }
-
-  const dependencySet = new Set([resolvedBuilderPath]);
-
-  /** @type {CoreEvalSDKType[]} */
-  const evals = [];
-  /** @type {EndoZipBase64Bundle[]} */
-  const bundles = [];
-
-  for (const planFile of planFiles) {
-    /**
-     * @type {{
-     *   permit: string;
-     *   script: string;
-     *   bundles: Array<{ entrypoint: string; fileName: string }>;
-     * }}
-     */
-    const plan = await readJSONFile(fs, path.join(outputDir, planFile));
-
-    const [jsonPermits, jsCode] = await Promise.all([
-      readTextFromCwd(fs, outputDir, plan.permit),
-      readTextFromCwd(fs, outputDir, plan.script),
-    ]);
-    evals.push({ json_permits: jsonPermits, js_code: jsCode });
-
-    for (const bundleInfo of plan.bundles) {
-      bundles.push(await readJSONFromCwd(fs, outputDir, bundleInfo.fileName));
-
-      const resolvedEntrypoint = resolveModuleSpecifier(bundleInfo.entrypoint, [
-        path.dirname(resolvedBuilderPath),
-        outputDir,
-      ]);
-      dependencySet.add(resolvedEntrypoint);
-    }
-  }
-
-  return harden({
-    evals,
-    bundles,
-    dependencies: [...dependencySet].sort(),
-  });
-};
-
-/**
  * @param {{ fs: typeof FsPromises; cwd: string; }} param0
  */
 const makeScopedWriteFile = ({ fs, cwd }) => {
@@ -276,7 +217,9 @@ const runInProcess = async ({
     return materialized;
   }
 
-  return readProposalMaterialsFromPlans(fs, cwd, resolvedBuilderPath);
+  throw Error(
+    `No core-eval proposal materials were emitted by ${resolvedBuilderPath}`,
+  );
 };
 
 /**
