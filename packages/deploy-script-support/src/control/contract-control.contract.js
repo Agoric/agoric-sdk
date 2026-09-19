@@ -142,7 +142,7 @@ export const prepareContractControl = (zone, svcs) => {
         /**
          * Start the contract; publish the instance to (the board and) agoricNames.
          *
-         * @throws if already running
+         * @throws {Error} if already running
          * @param {object} opts
          * @param {Installation<SF>} opts.installation
          * @param {IssuerKeywordRecord} [opts.issuers]
@@ -383,4 +383,7 @@ const maker = /** @type {MakeContractControl} */ (
 );
 harden(maker);
 
-/** @template {ContractStartFunction} [SF=ContractStartFunction] @typedef {ReturnType<typeof maker<SF>>} ContractControl */
+/**
+ * @template {ContractStartFunction} [SF=ContractStartFunction]
+ * @typedef {ReturnType<typeof maker<SF>>} ContractControl
+ */

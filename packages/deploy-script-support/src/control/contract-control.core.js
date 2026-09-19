@@ -27,8 +27,99 @@ import { prepareContractControl } from './contract-control.contract.js';
  */
 
 /**
- * @typedef {PromiseSpaceOf<{ deliverContractControl: DeliverContractControl}>} ContractControlPowers
+ * @typedef {string} ControlAddress
+ * @typedef {string} ContractName
+ * @typedef {(match?: { contractName?: ContractName, controlAddress?: ControlAddress }) => void} RevokeContractControl
  */
+
+/**
+ * @typedef {PromiseSpaceOf<{
+ *   deliverContractControl: DeliverContractControl;
+ *   _contractRevokerMapForAddress: Map<ControlAddress, Map<ContractName, Set<{ revoke(): void }>>>;
+ *   _controlAddressesForContractName: Map<ContractName, Set<ControlAddress>>;
+ *   revokeContractControl: RevokeContractControl;
+ * }>} ContractControlPowers
+ */
+
+/**
+ * @param {ContractControlPowers} permitted
+ */
+export const produceRevokeContractControl = async permitted => {
+  // eslint-disable-next-line no-underscore-dangle
+  permitted.produce._contractRevokerMapForAddress.resolve(new Map());
+  // eslint-disable-next-line no-underscore-dangle
+  permitted.produce._controlAddressesForContractName.resolve(new Map());
+
+  const revokeContractControl = async match => {
+    const {
+      consume: {
+        _contractRevokerMapForAddress,
+        _controlAddressesForContractName,
+      },
+    } = permitted;
+    const revokerMapForAddress = await _contractRevokerMapForAddress;
+    const addressesForContract = await _controlAddressesForContractName;
+
+    const contractName = match?.contractName;
+    const controlAddress = match?.controlAddress;
+    if (contractName !== undefined && controlAddress !== undefined) {
+      typeof contractName === 'string' || Fail`contractName must be a string`;
+      typeof controlAddress === 'string' ||
+        Fail`controlAddress must be a string`;
+    }
+
+    /** @type {[ControlAddress, ContractName][]} */
+    const matched = [];
+    if (contractName !== undefined) {
+      const addresses = addressesForContract.get(contractName);
+      for (const address of addresses?.keys() ?? []) {
+        if (controlAddress !== undefined && address !== controlAddress) {
+          continue;
+        }
+        if (revokerMapForAddress.get(address)?.has(contractName)) {
+          matched.push([address, contractName]);
+        }
+      }
+    } else if (controlAddress !== undefined) {
+      const revokersForAddress = revokerMapForAddress.get(controlAddress);
+      for (const name of revokersForAddress?.keys() ?? []) {
+        matched.push([controlAddress, name]);
+      }
+    } else {
+      for (const [address, revokersForAddress] of revokerMapForAddress) {
+        for (const name of revokersForAddress.keys()) {
+          matched.push([address, name]);
+        }
+      }
+    }
+
+    for (const [address, name] of matched) {
+      const revokersForAddress = revokerMapForAddress.get(address);
+      const revokers = revokersForAddress?.get(name);
+      for (const revoker of revokers?.keys() ?? []) {
+        revokers?.delete(revoker);
+        await E(revoker)
+          .revoke()
+          .catch(() => {});
+      }
+
+      if (!revokers?.size) {
+        revokersForAddress?.delete(name);
+        const addresses = addressesForContract.get(name);
+        addresses?.delete(address);
+        if (!addresses?.size) {
+          addressesForContract.delete(name);
+        }
+      }
+      if (!revokersForAddress?.size) {
+        revokerMapForAddress.delete(address);
+      }
+    }
+  };
+  harden(revokeContractControl);
+  permitted.produce.revokeContractControl.reset();
+  permitted.produce.revokeContractControl.resolve(revokeContractControl);
+};
 
 /**
  * @param {BootstrapPowers &
@@ -39,6 +130,10 @@ import { prepareContractControl } from './contract-control.contract.js';
  * } permitted
  */
 export const produceDeliverContractControl = async permitted => {
+  // eslint-disable-next-line no-underscore-dangle
+  permitted.produce._contractRevokerMapForAddress.resolve(new Map());
+  // eslint-disable-next-line no-underscore-dangle
+  permitted.produce._controlAddressesForContractName.resolve(new Map());
   permitted.produce.deliverContractControl.reset();
   await null;
 
@@ -89,6 +184,39 @@ export const produceDeliverContractControl = async permitted => {
       ...opts,
     });
 
+    {
+      const {
+        consume: {
+          _contractRevokerMapForAddress,
+          _controlAddressesForContractName,
+        },
+      } = permitted;
+      const revokerMapForAddress = await _contractRevokerMapForAddress;
+      const addressesForContract = await _controlAddressesForContractName;
+
+      let revokersForAddress = revokerMapForAddress.get(controlAddress);
+      if (!revokersForAddress) {
+        revokersForAddress = new Map();
+        revokerMapForAddress.set(controlAddress, revokersForAddress);
+      }
+      let revokers = revokersForAddress.get(contractName);
+      if (!revokers) {
+        revokers = new Set();
+        revokersForAddress.set(contractName, revokers);
+      }
+
+      // Save the "revoker" for later. Scare quotes, because the contractControl
+      // has no revoker facet, so we need to store the full-powered object.
+      revokers.add(contractControl);
+
+      let addresses = addressesForContract.get(contractName);
+      if (!addresses) {
+        addresses = new Set();
+        addressesForContract.set(contractName, addresses);
+      }
+      addresses.add(controlAddress);
+    }
+
     trace('reserving', controlAddress);
     // This can block if the wallet is not provisioned
     await E(getDepositFacet)(controlAddress);
@@ -113,8 +241,21 @@ export const produceDeliverContractControl = async permitted => {
 
 export const getManifestForDeliverContractControl = () => ({
   manifest: {
+    [produceRevokeContractControl.name]: {
+      consume: {
+        _contractRevokerMapForAddress: true,
+        _controlAddressesForContractName: true,
+      },
+      produce: {
+        _contractRevokerMapForAddress: true,
+        _controlAddressesForContractName: true,
+        revokeContractControl: true,
+      },
+    },
     [produceDeliverContractControl.name]: {
       consume: {
+        _contractRevokerMapForAddress: true,
+        _controlAddressesForContractName: true,
         agoricNamesAdmin: true,
         board: true,
         chainStorage: true,
@@ -124,6 +265,8 @@ export const getManifestForDeliverContractControl = () => ({
         zoe: true,
       },
       produce: {
+        _contractRevokerMapForAddress: true,
+        _controlAddressesForContractName: true,
         deliverContractControl: true,
       },
       instance: {
