@@ -81,21 +81,23 @@ export const produceRevokeContractControl = async permitted => {
         }
       }
     } else if (controlAddress !== undefined) {
-      const revokersForAddress = revokerMapForAddress.get(controlAddress);
-      for (const name of revokersForAddress?.keys() ?? []) {
+      const revokersForContract = revokerMapForAddress.get(controlAddress);
+      for (const name of revokersForContract?.keys() ?? []) {
         matched.push([controlAddress, name]);
       }
-    } else {
-      for (const [address, revokersForAddress] of revokerMapForAddress) {
-        for (const name of revokersForAddress.keys()) {
+    } else if (!match) {
+      for (const [address, revokersForContract] of revokerMapForAddress) {
+        for (const name of revokersForContract.keys()) {
           matched.push([address, name]);
         }
       }
+    } else {
+      Fail`match object cannot be empty; got ${match}`;
     }
 
     for (const [address, name] of matched) {
-      const revokersForAddress = revokerMapForAddress.get(address);
-      const revokers = revokersForAddress?.get(name);
+      const revokersForContract = revokerMapForAddress.get(address);
+      const revokers = revokersForContract?.get(name);
       for (const revoker of revokers?.keys() ?? []) {
         revokers?.delete(revoker);
         await E(revoker)
@@ -104,14 +106,14 @@ export const produceRevokeContractControl = async permitted => {
       }
 
       if (!revokers?.size) {
-        revokersForAddress?.delete(name);
+        revokersForContract?.delete(name);
         const addresses = addressesForContract.get(name);
         addresses?.delete(address);
         if (!addresses?.size) {
           addressesForContract.delete(name);
         }
       }
-      if (!revokersForAddress?.size) {
+      if (!revokersForContract?.size) {
         revokerMapForAddress.delete(address);
       }
     }
@@ -194,15 +196,15 @@ export const produceDeliverContractControl = async permitted => {
       const revokerMapForAddress = await _contractRevokerMapForAddress;
       const addressesForContract = await _controlAddressesForContractName;
 
-      let revokersForAddress = revokerMapForAddress.get(controlAddress);
-      if (!revokersForAddress) {
-        revokersForAddress = new Map();
-        revokerMapForAddress.set(controlAddress, revokersForAddress);
+      let revokersForContract = revokerMapForAddress.get(controlAddress);
+      if (!revokersForContract) {
+        revokersForContract = new Map();
+        revokerMapForAddress.set(controlAddress, revokersForContract);
       }
-      let revokers = revokersForAddress.get(contractName);
+      let revokers = revokersForContract.get(contractName);
       if (!revokers) {
         revokers = new Set();
-        revokersForAddress.set(contractName, revokers);
+        revokersForContract.set(contractName, revokers);
       }
 
       // Save the "revoker" for later. Scare quotes, because the contractControl
