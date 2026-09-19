@@ -196,8 +196,12 @@ export const makeExpectUnhandledRejection = ({
           });
 
           ps.on('close', code => {
-            t.is(code, 0, `got exit code ${code}, expected 0 for ${name}`);
-            resolve();
+            try {
+              t.is(code, 0, `got exit code ${code}, expected 0 for ${name}`);
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
           });
           ps.on('error', reject);
         }),
