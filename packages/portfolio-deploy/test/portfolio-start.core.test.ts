@@ -15,6 +15,7 @@ import {
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
@@ -29,11 +30,15 @@ import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
-import type { TestFn } from 'ava';
+import type { ExecutionContext, TestFn } from 'ava';
 import { produceAttenuatedDeposit } from '@agoric/deploy-script-support/src/control/attenuated-deposit.core.js';
 import type { ChainInfoPowers } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
 import { deployPostalService } from '@agoric/deploy-script-support/src/control/postal-service.core.js';
-import { produceDeliverContractControl } from '@agoric/deploy-script-support/src/control/contract-control.core.js';
+import {
+  produceDeliverContractControl,
+  produceRevokeContractControl,
+  type ContractControlPowers,
+} from '@agoric/deploy-script-support/src/control/contract-control.core.js';
 import { produceGetUpgradeKit } from '@agoric/deploy-script-support/src/control/get-upgrade-kit.core.js';
 import { axelarConfig } from '../src/axelar-configs.js';
 import { toExternalConfig } from '../src/config-marshal.js';
@@ -94,7 +99,10 @@ const makeBootstrap = async t => {
     produce,
     consume,
     ...wk,
-  } as unknown as BootstrapPowers & PortfolioBootPowers & ChainInfoPowers;
+  } as unknown as BootstrapPowers &
+    PortfolioBootPowers &
+    ChainInfoPowers &
+    ContractControlPowers;
   // XXX type of zoe from setUpZoeForTest is any???
   const { zoe: zoeAny, bundleAndInstall } = await setUpZoeForTest();
   const zoe: ZoeService = zoeAny;
@@ -169,6 +177,11 @@ const ymaxOptions = toExternalConfig(
 
 const test: TestFn<Awaited<ReturnType<typeof makeBootstrap>>> = anyTest;
 
+const expectUnhandled = makeExpectUnhandledRejection({
+  test,
+  importMetaUrl: import.meta.url,
+});
+
 test.before(async t => {
   t.context = await makeBootstrap(t);
 });
@@ -196,10 +209,18 @@ test.serial(
   },
 );
 
-test.serial('coreEval code without swingset', async t => {
-  const { common, powers, zoe, bundleAndInstall } = t.context;
-  const { bootstrap, utils } = common;
-  const { usdc, bld, poc26 } = common.brands;
+const ensurePortfolioStarted = async (
+  t: ExecutionContext<Awaited<ReturnType<typeof makeBootstrap>>>,
+) => {
+  const { powers, bundleAndInstall } = t.context;
+
+  const started = await Promise.race([
+    (powers as PortfolioBootPowers).consume.ymax0Kit,
+    false,
+  ]);
+  if (started) {
+    return;
+  }
 
   // script from agoric run does this step
   t.log('produce installation using test bundle');
@@ -214,6 +235,14 @@ test.serial('coreEval code without swingset', async t => {
 
   t.log('invoke coreEval');
   await t.notThrowsAsync(startPortfolio(powers, { options: ymaxOptions }));
+};
+
+test.serial('coreEval code without swingset', async t => {
+  await ensurePortfolioStarted(t);
+
+  const { common, zoe } = t.context;
+  const { bootstrap, utils } = common;
+  const { usdc, bld, poc26 } = common.brands;
 
   common.mocks.ibcBridge.setAddressPrefix('noble');
   for (const { msg, ack } of Object.values(
@@ -275,18 +304,13 @@ test.serial('coreEval code without swingset', async t => {
 });
 
 test.serial('delegate ymax control; invite planner; submit plan', async t => {
+  await ensurePortfolioStarted(t);
+
   const { common, powers, zoe, bundleAndInstall, provisionSmartWallet } =
     t.context;
 
   t.log('produce getDepositFacet');
   await produceAttenuatedDeposit(powers as any);
-
-  t.log('terminate ymax0 as in 103');
-  {
-    const { adminFacet } = await (powers as PortfolioBootPowers).consume
-      .ymax0Kit;
-    await E(adminFacet).terminateContract(Error('as in 103'));
-  }
 
   // script from agoric run does this step
   const pContractName = 'postalService';
@@ -305,6 +329,8 @@ test.serial('delegate ymax control; invite planner; submit plan', async t => {
   t.log('deployPostalService done');
   t.log('produce deliverContractControl');
   await produceDeliverContractControl(powers as any);
+  t.log('produce revokeContractControl');
+  await produceRevokeContractControl(powers as any);
   t.log('produce getUpgradeKit');
   await produceGetUpgradeKit(powers as any);
   const { agoricNames } = common.bootstrap;
@@ -462,4 +488,123 @@ test.serial('delegate ymax control; invite planner; submit plan', async t => {
   });
 
   await depositP;
+});
+
+test.serial(expectUnhandled(1), 'revoke a delivered ymax control', async t => {
+  await ensurePortfolioStarted(t);
+
+  const { common, powers, zoe, bundleAndInstall, provisionSmartWallet } =
+    t.context;
+
+  t.log('produce getDepositFacet');
+  await produceAttenuatedDeposit(powers as any);
+
+  t.log('terminate ymax0 as in 103');
+  {
+    const { adminFacet } = await (powers as PortfolioBootPowers).consume
+      .ymax0Kit;
+    await E(adminFacet).terminateContract(Error('as in 103'));
+  }
+
+  // script from agoric run does this step
+  const pContractName = 'postalService';
+  {
+    t.log('produce postalService installation using test bundle');
+    const postalInstall = await bundleAndInstall(postalServiceExports);
+    powers.installation.produce[pContractName].resolve(postalInstall);
+    const { agoricNamesAdmin } = common.bootstrap;
+    await E(E(agoricNamesAdmin).lookupAdmin('installation')).update(
+      pContractName,
+      postalInstall,
+    );
+  }
+  console.log('awaited namesByAddress');
+  await deployPostalService(powers as any);
+  t.log('deployPostalService done');
+  t.log('produce deliverContractControl');
+  await produceDeliverContractControl(powers as any);
+  t.log('produce revokeContractControl');
+  await produceRevokeContractControl(powers as any);
+  t.log('produce getUpgradeKit');
+  await produceGetUpgradeKit(powers as any);
+  const { agoricNames } = common.bootstrap;
+  const pInst = await E(agoricNames).lookup('instance', pContractName);
+  t.is(passStyleOf(pInst), 'remotable');
+  const pPub = await E(zoe).getPublicFacet(pInst);
+  t.is(passStyleOf(pPub), 'remotable');
+
+  const addrCtrl = 'agoric1ymaxcontrol';
+  const [walletCtrl] = await provisionSmartWallet(addrCtrl);
+
+  await delegatePortfolioContract(
+    // @ts-expect-error mock
+    powers,
+    { options: { ymaxControlAddress: addrCtrl, contractName: 'ymax0' } },
+  );
+  await eventLoopIteration(); // core eval doesn't block on delivery
+
+  t.log('redeem ymaxControl invitation');
+  await E(E(walletCtrl).getOffersFacet()).executeOffer({
+    id: 0,
+    invitationSpec: {
+      source: 'purse',
+      description: 'deliver ymaxControl',
+      instance: pInst,
+    },
+    proposal: {},
+    saveResult: { name: 'ymaxControl' },
+  });
+
+  t.log('delegate ymaxControl again');
+  const addrCtrl2 = 'agoric1ymaxcontrol2';
+  const [walletCtrl2] = await provisionSmartWallet(addrCtrl2);
+  await delegatePortfolioContract(
+    // @ts-expect-error mock
+    powers,
+    { options: { ymaxControlAddress: addrCtrl2, contractName: 'ymax0' } },
+  );
+  await eventLoopIteration(); // core eval doesn't block on delivery
+
+  await E(E(walletCtrl2).getOffersFacet()).executeOffer({
+    id: 0,
+    invitationSpec: {
+      source: 'purse',
+      description: 'deliver ymaxControl',
+      instance: pInst,
+    },
+    proposal: {},
+    saveResult: { name: 'ymaxControl' },
+  });
+
+  t.log('original ymax control still works');
+  await t.notThrowsAsync(
+    E(E(walletCtrl).getInvokeFacet()).invokeEntry({
+      targetName: 'ymaxControl',
+      method: 'getCreatorFacet',
+      args: [],
+    }),
+  );
+
+  t.log('revoke original ymax control');
+  await E(powers.consume.revokeContractControl)({
+    contractName: 'ymax0',
+    controlAddress: addrCtrl,
+  });
+  await eventLoopIteration(); // core eval doesn't block on delivery
+
+  t.log('second still works');
+  await E(E(walletCtrl2).getInvokeFacet()).invokeEntry({
+    targetName: 'ymaxControl',
+    method: 'getCreatorFacet',
+    args: [],
+  });
+  await eventLoopIteration();
+
+  t.log('now original is revoked');
+  await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
+    targetName: 'ymaxControl',
+    method: 'getCreatorFacet',
+    args: [],
+  });
+  // await eventLoopIteration();
 });
