@@ -366,7 +366,8 @@ test.serial('create from kit', async t => {
 
   const cf = await E(cc).getCreatorFacet();
   t.log('creatorFacet', cf);
-  t.is(cf, kit.creatorFacet);
+  t.is(passStyleOf(cf), 'remotable');
+  t.not(cf, kit.creatorFacet);
 });
 
 test.serial('terminate with revoke', async t => {

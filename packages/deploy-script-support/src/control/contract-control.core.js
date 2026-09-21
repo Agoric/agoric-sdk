@@ -29,7 +29,7 @@ import { prepareContractControl } from './contract-control.contract.js';
 /**
  * @typedef {string} ControlAddress
  * @typedef {string} ContractName
- * @typedef {(match?: { contractName?: ContractName, controlAddress?: ControlAddress }) => void} RevokeContractControl
+ * @typedef {(match?: { contractName?: ContractName, controlAddress?: ControlAddress }) => Promise<void>} RevokeContractControl
  */
 
 /**
@@ -50,20 +50,28 @@ export const produceRevokeContractControl = async permitted => {
   // eslint-disable-next-line no-underscore-dangle
   permitted.produce._controlAddressesForContractName.resolve(new Map());
 
+  const {
+    consume: {
+      _contractRevokerMapForAddress,
+      _controlAddressesForContractName,
+    },
+  } = permitted;
+  const revokerMapForAddress = await _contractRevokerMapForAddress;
+  const addressesForContract = await _controlAddressesForContractName;
+
   const revokeContractControl = async match => {
-    const {
-      consume: {
-        _contractRevokerMapForAddress,
-        _controlAddressesForContractName,
-      },
-    } = permitted;
-    const revokerMapForAddress = await _contractRevokerMapForAddress;
-    const addressesForContract = await _controlAddressesForContractName;
+    await null;
+
+    if (match !== undefined && (match === null || typeof match !== 'object')) {
+      Fail`match must be an object or undefined; got ${match}`;
+    }
 
     const contractName = match?.contractName;
     const controlAddress = match?.controlAddress;
-    if (contractName !== undefined && controlAddress !== undefined) {
+    if (contractName !== undefined) {
       typeof contractName === 'string' || Fail`contractName must be a string`;
+    }
+    if (controlAddress !== undefined) {
       typeof controlAddress === 'string' ||
         Fail`controlAddress must be a string`;
     }
@@ -85,7 +93,7 @@ export const produceRevokeContractControl = async permitted => {
       for (const name of revokersForContract?.keys() ?? []) {
         matched.push([controlAddress, name]);
       }
-    } else if (!match) {
+    } else if (match === undefined) {
       for (const [address, revokersForContract] of revokerMapForAddress) {
         for (const name of revokersForContract.keys()) {
           matched.push([address, name]);
@@ -140,14 +148,23 @@ export const produceDeliverContractControl = async permitted => {
   await null;
 
   const { consume } = permitted;
+  const {
+    _contractRevokerMapForAddress,
+    _controlAddressesForContractName,
+    agoricNamesAdmin,
+    board,
+    chainStorage,
+    getDepositFacet,
+    instancePrivateArgs: instancePrivateArgsP,
+    startUpgradable,
+    zoe,
+  } = consume;
 
-  const { chainStorage, getDepositFacet, zoe } = consume;
+  const instancePrivateArgs = await instancePrivateArgsP;
 
-  const instancePrivateArgs = await consume.instancePrivateArgs;
-
-  const postalSvcPub = E.when(
-    permitted.instance.consume.postalService,
-    instance => E(zoe).getPublicFacet(instance),
+  const { postalService } = permitted.instance.consume;
+  const postalSvcPub = E.when(postalService, instance =>
+    E(zoe).getPublicFacet(instance),
   );
 
   /** @type {UpdatePrivateArgs} */
@@ -161,12 +178,14 @@ export const produceDeliverContractControl = async permitted => {
   // Use a heap zone to avoid entanglement with old liveslots
   const zone = makeHeapZone();
   const makeContractControl = prepareContractControl(zone, {
-    agoricNamesAdmin: await consume.agoricNamesAdmin,
-    board: await consume.board,
-    startUpgradable: await consume.startUpgradable,
+    agoricNamesAdmin: await agoricNamesAdmin,
+    board: await board,
+    startUpgradable: await startUpgradable,
     updatePrivateArgs,
     zoe: await zoe,
   });
+  const revokerMapForAddress = await _contractRevokerMapForAddress;
+  const addressesForContract = await _controlAddressesForContractName;
 
   /** @type {DeliverContractControl} */
   const deliverContractControl = async ({
@@ -187,15 +206,6 @@ export const produceDeliverContractControl = async permitted => {
     });
 
     {
-      const {
-        consume: {
-          _contractRevokerMapForAddress,
-          _controlAddressesForContractName,
-        },
-      } = permitted;
-      const revokerMapForAddress = await _contractRevokerMapForAddress;
-      const addressesForContract = await _controlAddressesForContractName;
-
       let revokersForContract = revokerMapForAddress.get(controlAddress);
       if (!revokersForContract) {
         revokersForContract = new Map();

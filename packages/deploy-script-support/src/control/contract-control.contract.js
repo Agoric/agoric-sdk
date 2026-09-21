@@ -5,7 +5,7 @@
 
 import { makeTracer } from '@agoric/internal/src/debug.js';
 import { Fail, q } from '@endo/errors';
-import { E, passStyleOf } from '@endo/far';
+import { E, Far, passStyleOf } from '@endo/far';
 import { M, objectMap } from '@endo/patterns';
 
 const trace = makeTracer('CCtrl');
@@ -120,6 +120,10 @@ export const prepareContractControl = (zone, svcs) => {
         initialPrivateArgs:
           initial.initialPrivateArgs || initial.kit?.privateArgs,
         kit: undefined,
+        creatorFacet:
+          /** @type {StartResult<SF>['creatorFacet'] | undefined} */ (
+            undefined
+          ),
         ...initial,
         revoked: false,
       }),
@@ -214,11 +218,41 @@ export const prepareContractControl = (zone, svcs) => {
 
         /** @returns {StartResult<SF>['creatorFacet']} */
         getCreatorFacet() {
-          const { name, revoked, kit } = this.state;
+          const { name, revoked, kit, creatorFacet } = this.state;
           trace(name, 'getCreatorFacet');
           !revoked || Fail`revoked`;
           if (!kit) throw Fail`${q(name)}: no StartedInstanceKit`;
-          return kit.creatorFacet;
+          if (creatorFacet) {
+            return creatorFacet;
+          }
+          const state = this.state;
+          const forwardingMethods = {};
+          const revocableCreatorFacet =
+            /** @type {StartResult<SF>['creatorFacet']} */ (
+              Far(
+                `${name} creatorFacet`,
+                new Proxy(forwardingMethods, {
+                  get(target, prop, receiver) {
+                    if (prop in target) {
+                      return Reflect.get(target, prop, receiver);
+                    }
+                    if (prop === 'then' || typeof prop !== 'string') {
+                      return undefined;
+                    }
+                    return (...args) => {
+                      !state.revoked || Fail`revoked`;
+                      const { kit: currentKit } = state;
+                      if (!currentKit) {
+                        throw Fail`${q(name)}: no StartedInstanceKit`;
+                      }
+                      return E(currentKit.creatorFacet)[prop](...args);
+                    };
+                  },
+                }),
+              )
+            );
+          state.creatorFacet = revocableCreatorFacet;
+          return revocableCreatorFacet;
         },
 
         /** @param {string | {bundleId: string; privateArgsOverrides?: Partial<Parameters<SF>[1]>; }} opts */
@@ -281,6 +315,7 @@ export const prepareContractControl = (zone, svcs) => {
             console.error('terminateContract failed; forgetting kit', err);
           }
           this.state.kit = undefined;
+          this.state.creatorFacet = undefined;
           if (revoke) {
             trace(name, 'revoked');
             this.state.revoked = true;

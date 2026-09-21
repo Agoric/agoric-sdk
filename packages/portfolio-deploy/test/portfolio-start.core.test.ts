@@ -490,7 +490,7 @@ test.serial('delegate ymax control; invite planner; submit plan', async t => {
   await depositP;
 });
 
-test.serial(expectUnhandled(1), 'revoke a delivered ymax control', async t => {
+test.serial(expectUnhandled(2), 'revoke a delivered ymax control', async t => {
   await ensurePortfolioStarted(t);
 
   const { common, powers, zoe, bundleAndInstall, provisionSmartWallet } =
@@ -582,6 +582,7 @@ test.serial(expectUnhandled(1), 'revoke a delivered ymax control', async t => {
       targetName: 'ymaxControl',
       method: 'getCreatorFacet',
       args: [],
+      saveResult: { name: 'ymaxCreatorFacet' },
     }),
   );
 
@@ -606,5 +607,11 @@ test.serial(expectUnhandled(1), 'revoke a delivered ymax control', async t => {
     method: 'getCreatorFacet',
     args: [],
   });
-  // await eventLoopIteration();
+
+  t.log('now derived creator facet is revoked');
+  await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
+    targetName: 'ymaxCreatorFacet',
+    method: 'deliverPlannerInvitation',
+    args: ['agoric1plannerrevoked', pInst],
+  });
 });
