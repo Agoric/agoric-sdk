@@ -65,7 +65,13 @@ export const bundleIdFromBundleRecord = (
   bundle,
   sourceDescription = 'bundle-ymax0.json',
 ) => {
-  if (!bundle?.endoZipBase64Sha512) {
+  if (bundle?.moduleFormat !== 'endoZipBase64') {
+    throw Error(`${sourceDescription} missing moduleFormat endoZipBase64`);
+  }
+  if (typeof bundle.endoZipBase64 !== 'string') {
+    throw Error(`${sourceDescription} missing endoZipBase64`);
+  }
+  if (typeof bundle.endoZipBase64Sha512 !== 'string') {
     throw Error(`${sourceDescription} missing endoZipBase64Sha512`);
   }
   return `b1-${bundle.endoZipBase64Sha512}`;
@@ -359,11 +365,10 @@ export const makeReleasePlan = ({
   const { assetNames, getAssetText, release } = reader;
   const needBundleBuild =
     target === 'ymax0-devnet' && !assetNames.has('bundle-ymax0.json');
-  const bundleId =
-    bundleIdArg ||
-    (assetNames.has('bundle-ymax0.json')
-      ? bundleIdFromBundleText(getAssetText('bundle-ymax0.json'))
-      : '');
+  let bundleId = bundleIdArg;
+  if (!bundleId && assetNames.has('bundle-ymax0.json')) {
+    bundleId = bundleIdFromBundleText(getAssetText('bundle-ymax0.json'));
+  }
 
   const basePlan = {
     mode,
