@@ -242,9 +242,9 @@ sequenceDiagram
   D-->>D: allocate nonce543
   note right of MM: EIP-712 signTypedData
   note right of D: chainId in domain determines<br/>destination chain
-  D->>MM: Withdraw712(500 USDC,nonce543,deadline)<br/>domain.chainId=42161
+  D-->>MM: Withdraw712(500 USDC,nonce543,deadline)<br/>domain.chainId=42161
   MM-->>U: Withdraw712(500 USDC,nonce543,deadline) ok?
-  U->>MM: ok
+  U-->>MM: ok
   MM-->>D: signature
   D-->>U: stand by...
   D -->> EMS: Withdraw712, signature,<br>address
@@ -259,7 +259,7 @@ sequenceDiagram
   EMH -->> D: portfolio123<br/>flow2
   D -->> U: dashboard
   note over YC: NOT SHOWN:<br/>Orchestration<br/>to @Arbitrum
-  YC->> A: @Arbitrum.transfer(500, `-Arbitrum`)
+  YC-->> A: @Arbitrum.transfer(500, `-Arbitrum`)
   YC-->> D: flow2 done
   D -->> U: withdrawal complete
 ```
