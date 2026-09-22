@@ -66,7 +66,7 @@ const makeRemoteAccount = (viz: Recorder, chain: AxelarChain) => {
   const source = `@${chain}` as `@${AxelarChain}`;
   const transfers: RemoteAccountTransfer[] = [];
   return harden({
-    transfer(from: 'YC', amount: bigint, destination: `+${AxelarChain}`) {
+    transfer(from: 'YC', amount: bigint, destination: `-${AxelarChain}`) {
       node.consequence(
         from,
         `${source}.transfer(${amount}, \`${destination}\`)`,

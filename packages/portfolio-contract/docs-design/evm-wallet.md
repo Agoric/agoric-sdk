@@ -259,7 +259,7 @@ sequenceDiagram
   EMH -->> D: portfolio123<br/>flow2
   D -->> U: dashboard
   note over YC: NOT SHOWN:<br/>Orchestration<br/>to @Arbitrum
-  YC->> A: @Arbitrum.transfer(500, `+Arbitrum`)
+  YC->> A: @Arbitrum.transfer(500, `-Arbitrum`)
   YC-->> D: flow2 done
   D -->> U: withdrawal complete
 ```
