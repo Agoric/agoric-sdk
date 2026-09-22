@@ -21,6 +21,7 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { makeWalletActionBuilder } from '@aglocal/portfolio-deploy/src/ymax-authz-msgs.js';
+import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 
 import { config as opsConfig } from '../scripts/make-test-multisig.js';
 
@@ -32,6 +33,7 @@ import { config as opsConfig } from '../scripts/make-test-multisig.js';
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {PromiseKit} from '@endo/promise-kit';
  * @import {ContractControl} from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
+ * @import {WalletStoreEntryProxy} from '@agoric/client-utils/src/wallet-store.ts';
  */
 
 // The ymax-v0.3.2605-beta1 release bundle installed by g:ymax1. Using the
@@ -402,6 +404,82 @@ const makeOpsWalletKit = ({ $$, opsAcct, vsc, address }) => {
 };
 /** @typedef {ReturnType<typeof makeOpsWalletKit>} OpsWalletKit */
 
+/**
+ * @param {{
+ *   $$: ExecaScriptMethod,
+ *   vsc: VstorageKit,
+ *   keyName: string,
+ *   address: string,
+ * }} access
+ */
+const makeDirectWalletKit = ({ $$, vsc, keyName, address }) =>
+  harden({
+    sendBridgeAction: async action => {
+      const capData = vsc.marshaller.toCapData(harden(action));
+      return fromJson(
+        $$`agd tx swingset wallet-action --allow-spend ${JSON.stringify(capData)} ${flags(
+          {
+            from: keyName,
+            ...localChain,
+            ...blockBroadcast,
+            ...mediumFee,
+            ...testKeys,
+            ...outputJson,
+            yes: true,
+          },
+        )}`,
+      );
+    },
+    query: {
+      getLastUpdate: () => vsc.readPublished(`wallet.${address}`),
+    },
+  });
+
+test.serial(
+  'old ymax1 control can no longer perform manager actions',
+  async t => {
+    const { $$, vsc, now } = t.context;
+    const keyName = 'ymax1Control';
+    const { address } = await fromJson(
+      $$`agd keys show ${keyName} ${outj} ${flags(testKeys)}`,
+    );
+    const signer = makeDirectWalletKit({ $$, vsc, keyName, address });
+    const { ymaxControl: oldYmaxControl, walletStore } =
+      makeYmaxControlKitForSynthetic(
+        { setTimeout, now },
+        {
+          signer,
+          log: () => {},
+          makeNonce: () => String(now()),
+        },
+      );
+
+    await oldYmaxControl.getCreatorFacet.once({
+      saveAs: 'creatorFacet',
+      overwrite: true,
+    })();
+    /**
+     * @type {WalletStoreEntryProxy<{
+     *   makePlannerInvitation: () => unknown,
+     * }>}
+     */
+    const oldCreatorFacet = walletStore.get('creatorFacet');
+    await oldYmaxControl.getPublicFacet.once({
+      saveAs: 'creatorFacet',
+      overwrite: true,
+    })();
+
+    await oldYmaxControl.revoke();
+    await t.throwsAsync(oldCreatorFacet.makePlannerInvitation(), {
+      message: /makePlannerInvitation/,
+    });
+    await t.throwsAsync(
+      oldYmaxControl.upgrade({ bundleId, privateArgsOverrides: {} }),
+      { message: /revoked/ },
+    );
+  },
+);
+
 test.serial('redeem ymaxControl invitation', async t => {
   const { $$, vsc, now, opsAcctPK } = t.context;
   const opsAcct = await opsAcctPK.promise;
@@ -441,7 +519,6 @@ test.serial('ops multisig can upgrade the contract', async t => {
 });
 
 test.todo('uses ymax1 rather than ymax0');
-test.todo('old ymax1 control can no longer perform manager actions');
 test.todo(
   'existing invitations and wallet state remain usable after control transfer',
 );
