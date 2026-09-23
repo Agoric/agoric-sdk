@@ -16,6 +16,7 @@ import type {
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
+import type { RunLimitedByKey } from './concurrency-limiter.ts';
 import {
   deleteDerivedOutcome,
   getDerivedOutcome,
@@ -43,6 +44,8 @@ import {
 } from './watchers/operation-watcher.ts';
 import { WatcherTransportError } from './watchers/watcher-utils.ts';
 import type { YdsNotifier } from './yds-notifier.ts';
+
+export const LOOKBACK_RPC_CONCURRENCY = 6;
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -74,6 +77,7 @@ export type EvmContext = {
   axelarApiUrl: string;
   ydsNotifier?: YdsNotifier;
   pendingTxSettlementPromises?: Map<TxId, Promise<void>>;
+  runLookbackScan: RunLimitedByKey<EvmRpc>;
 };
 
 export type GmpTransfer = {
@@ -254,14 +258,18 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
       const currentBlock = await rpc.getBlockNumber();
       await waitForBlock(rpc, currentBlock + 1);
 
-      transferResult = await lookBackCctp({
-        ...watchArgs,
-        publishTimeMs: opts.publishTimeMs,
-        setTimeout: ctx.setTimeout,
-        signal: abortController.signal,
-        kvStore: ctx.kvStore,
-        txId,
-      });
+      transferResult = await ctx.runLookbackScan(rpc, () =>
+        abortController.signal.aborted
+          ? Promise.resolve({ settled: false })
+          : lookBackCctp({
+              ...watchArgs,
+              publishTimeMs: opts.publishTimeMs,
+              setTimeout: ctx.setTimeout,
+              signal: abortController.signal,
+              kvStore: ctx.kvStore,
+              txId,
+            }),
+      );
 
       if (transferResult.settled) {
         finish(`${logPrefix} Lookback found transaction`);
@@ -364,15 +372,19 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
       const currentBlock = await rpc.getBlockNumber();
       await waitForBlock(rpc, currentBlock + 1);
 
-      transferResult = await lookBackGmp({
-        ...watchArgs,
-        publishTimeMs: opts.publishTimeMs,
-        chainId: caipId,
-        setTimeout: ctx.setTimeout,
-        signal: abortController.signal,
-        kvStore: ctx.kvStore,
-        makeAbortController: ctx.makeAbortController,
-      });
+      transferResult = await ctx.runLookbackScan(rpc, () =>
+        abortController.signal.aborted
+          ? Promise.resolve({ settled: false })
+          : lookBackGmp({
+              ...watchArgs,
+              publishTimeMs: opts.publishTimeMs,
+              chainId: caipId,
+              setTimeout: ctx.setTimeout,
+              signal: abortController.signal,
+              kvStore: ctx.kvStore,
+              makeAbortController: ctx.makeAbortController,
+            }),
+      );
 
       if (transferResult.settled) {
         finish(`${logPrefix} Lookback found transaction`);
@@ -493,16 +505,20 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
       const currentBlock = await rpc.getBlockNumber();
       await waitForBlock(rpc, currentBlock + 1);
 
-      walletResult = await lookBackSmartWalletTx({
-        ...watchArgs,
-        kvStore: ctx.kvStore,
-        txId,
-        publishTimeMs: opts.publishTimeMs,
-        chainId: caipId,
-        setTimeout: ctx.setTimeout,
-        signal: abortController.signal,
-        makeAbortController: ctx.makeAbortController,
-      });
+      walletResult = await ctx.runLookbackScan(rpc, () =>
+        abortController.signal.aborted
+          ? Promise.resolve({ settled: false })
+          : lookBackSmartWalletTx({
+              ...watchArgs,
+              kvStore: ctx.kvStore,
+              txId,
+              publishTimeMs: opts.publishTimeMs,
+              chainId: caipId,
+              setTimeout: ctx.setTimeout,
+              signal: abortController.signal,
+              makeAbortController: ctx.makeAbortController,
+            }),
+      );
 
       if (walletResult.settled) {
         finish(`${logPrefix} Lookback found wallet creation`);
@@ -607,13 +623,17 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
       const currentBlock = await rpc.getBlockNumber();
       await waitForBlock(rpc, currentBlock + 1);
 
-      transferResult = await lookBackOperationResult({
-        ...watchArgs,
-        publishTimeMs: opts.publishTimeMs,
-        signal: abortController.signal,
-        setTimeout: ctx.setTimeout,
-        makeAbortController: ctx.makeAbortController,
-      });
+      transferResult = await ctx.runLookbackScan(rpc, () =>
+        abortController.signal.aborted
+          ? Promise.resolve({ settled: false })
+          : lookBackOperationResult({
+              ...watchArgs,
+              publishTimeMs: opts.publishTimeMs,
+              signal: abortController.signal,
+              setTimeout: ctx.setTimeout,
+              makeAbortController: ctx.makeAbortController,
+            }),
+      );
 
       if (transferResult.settled) {
         finish(`${logPrefix} Lookback found transaction`);

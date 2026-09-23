@@ -519,6 +519,7 @@ export const createMockPendingTxOpts = (
     axelarApiUrl: mockAxelarApiAddress,
     pendingTxAbortControllers: new Map(),
     pendingTxSettlementPromises: new Map(),
+    runLookbackScan: (_endpoint, task) => task(),
   };
 };
 
