@@ -64,8 +64,10 @@ import type {
   PortfolioKey,
   SupportedChain,
 } from '@agoric/portfolio-api';
+import type { AnyIterable } from '@agoric/internal/src/types.js';
 
 import type { EvmAddress } from '@agoric/fast-usdc';
+import { makeKeyedConcurrencyLimiter } from './concurrency-limiter.ts';
 import {
   pickAutoClaimSources,
   checkAutoRebalance,
@@ -87,7 +89,10 @@ import type {
   EvmContext,
   HandlePendingTxOpts,
 } from './pending-tx-manager.ts';
-import { handlePendingTx } from './pending-tx-manager.ts';
+import {
+  handlePendingTx,
+  LOOKBACK_RPC_CONCURRENCY,
+} from './pending-tx-manager.ts';
 import rateLimitedSource from './rate-limited-source.ts';
 import type { BalanceQueryPowers } from './plan-deposit.ts';
 import {
@@ -219,7 +224,10 @@ export const makeVstorageEvent = (
 export type Powers = {
   console?: Pick<Console, 'debug' | 'info' | 'log' | 'warn' | 'error'>;
   // TODO(AGO-512): Derive EvmContext from Powers rather than embedding it.
-  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'makeNonce' | 'fetch'>;
+  evmCtx: Omit<
+    EvmContext,
+    'signingSmartWalletKit' | 'makeNonce' | 'fetch' | 'runLookbackScan'
+  >;
   rpc: CosmosRPCClient;
   setTimeout: typeof globalThis.setTimeout;
   spectrumBlockchain: SpectrumBlockchainSdk;
@@ -895,6 +903,7 @@ export const processPendingTxEvents = async (
     pendingTxAbortControllers,
     kvStore,
   } = txPowers;
+  await null;
   for (const { path, value: cellJson } of events) {
     const errLabel = `🚨 Failed to process pending tx ${path}`;
     let data;
@@ -932,7 +941,13 @@ export const processPendingTxEvents = async (
 
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
-      startPendingTxIfCurrent(tx, 'event', txPowers, handlePendingTxFn);
+      // Don't bound the event concurrency.
+      void startPendingTxIfCurrent(
+        tx,
+        'event',
+        txPowers,
+        handlePendingTxFn,
+      ).catch(err => error(errLabel, data, err));
     } catch (err) {
       error(errLabel, data, err);
     }
@@ -946,28 +961,23 @@ export const processPendingTxEvents = async (
  * function so one path cannot start a duplicate watcher after the other path
  * has already observed resolution, ignored status, or an active watcher.
  */
-export const startPendingTxIfCurrent = (
+export const startPendingTxIfCurrent = async (
   tx: PendingTx,
   source: PendingTxSource,
   txPowers: HandlePendingTxOpts,
   handlePendingTxFn = handlePendingTx,
   handleOpts: Partial<HandlePendingTxOpts> = {},
 ) => {
-  const {
-    error = () => {},
-    kvStore,
-    log = () => {},
-    pendingTxAbortControllers,
-  } = txPowers;
+  const { kvStore, log = () => {}, pendingTxAbortControllers } = txPowers;
   const { txId } = tx;
 
   if (getResolvedTx(kvStore, txId) !== undefined) {
     log(`Skipping ${source} pending tx ${txId}: already resolved`);
-    return false;
+    return;
   }
   if (getIgnoredTx(kvStore, txId) !== undefined) {
     log(`Skipping ${source} pending tx ${txId}: ignored type`);
-    return false;
+    return;
   }
   if (pendingTxAbortControllers.has(txId)) {
     const abortController = pendingTxAbortControllers.get(txId);
@@ -977,45 +987,32 @@ export const startPendingTxIfCurrent = (
       abortController
     ) {
       log(`Supplementing active watcher for ${txId} with startup lookback`);
-      void (async () => {
-        await null;
-        try {
-          await handlePendingTxFn(tx, {
-            ...txPowers,
-            ...handleOpts,
-            signal: abortController.signal,
-          });
-        } catch (err) {
-          error(`🚨 Failed to handle ${source} pending tx ${txId}`, tx, err);
-        }
-      })();
+      return handlePendingTxFn(tx, {
+        ...txPowers,
+        ...handleOpts,
+        signal: abortController.signal,
+      });
     }
     log(`Watcher already active for ${txId}, skipping ${source}`);
-    return false;
+    return;
   }
 
   const abortController = txPowers.makeAbortController();
   pendingTxAbortControllers.set(txId, abortController);
   log(source === 'event' ? 'New pending tx' : 'Recovered pending tx', tx);
 
-  // Tx resolution is non-blocking, but its rejection must still be observed.
-  void (async () => {
-    await null;
-    try {
-      await handlePendingTxFn(tx, {
-        ...txPowers,
-        ...handleOpts,
-        signal: abortController.signal,
-      });
-    } catch (err) {
-      error(`🚨 Failed to handle ${source} pending tx ${txId}`, tx, err);
-    } finally {
-      if (pendingTxAbortControllers.get(txId) === abortController) {
-        pendingTxAbortControllers.delete(txId);
-      }
+  await null;
+  try {
+    await handlePendingTxFn(tx, {
+      ...txPowers,
+      ...handleOpts,
+      signal: abortController.signal,
+    });
+  } finally {
+    if (pendingTxAbortControllers.get(txId) === abortController) {
+      pendingTxAbortControllers.delete(txId);
     }
-  })();
-  return true;
+  }
 };
 
 export const pickBalance = (
@@ -1037,58 +1034,64 @@ export const pickBalance = (
  * Process each initially-present pending transaction based on its age (i.e.,
  * scanning EVM logs if the transaction is old).
  */
-export const makeProcessInitialPendingTransactions = () => {
+export const makeStartupPendingTxProcessor = (
+  initialPendingTxData: AnyIterable<PendingTxRecord | null>,
+  powers: HandlePendingTxOpts & { cosmosRpc: CosmosRPCClient },
+  handlePendingTxFn = handlePendingTx,
+) => {
   // Cache timestamps for block heights to avoid duplicate RPC calls.
   const blockHeightToTimestamp = new Map<bigint, Promise<number>>();
 
-  const processInitialPendingTransactions = async (
-    initialPendingTxData: PendingTxRecord[],
-    powers: HandlePendingTxOpts & { cosmosRpc: CosmosRPCClient },
-    handlePendingTxFn = handlePendingTx,
-  ) => {
-    const { cosmosRpc, ...txPowers } = powers;
-    const { error = () => {}, log = () => {} } = txPowers;
+  const { cosmosRpc, ...txPowers } = powers;
+  const { error = () => {}, log = () => {} } = txPowers;
 
-    log(`Processing ${initialPendingTxData.length} pending transactions`);
+  return makeWorkPool(
+    initialPendingTxData,
+    undefined,
+    async pendingTxRecord => {
+      if (pendingTxRecord == null) {
+        return;
+      }
+      const { blockHeight, tx } = pendingTxRecord;
 
-    await makeWorkPool(
-      initialPendingTxData,
-      undefined,
-      async pendingTxRecord => {
-        const { blockHeight, tx } = pendingTxRecord;
+      if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(tx.type)) return;
 
-        if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(tx.type)) return;
+      const timestampMs = await provideLazyMap(
+        blockHeightToTimestamp,
+        blockHeight,
+        async () => {
+          const resp = await cosmosRpc.request('block', {
+            height: `${blockHeight}`,
+          });
+          const date = new Date(resp.block.header.time);
+          return date.getTime();
+        },
+      ).catch(err => {
+        const msg = `🚨 Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
+        error(msg, err);
+      });
 
-        const timestampMs = await provideLazyMap(
-          blockHeightToTimestamp,
-          blockHeight,
-          async () => {
-            const resp = await cosmosRpc.request('block', {
-              height: `${blockHeight}`,
-            });
-            const date = new Date(resp.block.header.time);
-            return date.getTime();
-          },
-        ).catch(err => {
-          const msg = `🚨 Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
-          error(msg, err);
-        });
+      if (timestampMs === undefined) return;
 
-        if (timestampMs === undefined) return;
+      log(`Processing pending tx ${tx.txId} with lookback`);
 
-        log(`Processing pending tx ${tx.txId} with lookback`);
+      // XXX: This should optimize blockchain scanning by reusing state across
+      // transactions. For details, see
+      // https://github.com/Agoric/agoric-sdk/issues/11945
 
-        // XXX: This should optimize blockchain scanning by reusing state across
-        // transactions. For details, see
-        // https://github.com/Agoric/agoric-sdk/issues/11945
-        startPendingTxIfCurrent(tx, 'startup', txPowers, handlePendingTxFn, {
-          txTimestampMs: timestampMs,
-        });
-      },
-    ).done;
-  };
-
-  return processInitialPendingTransactions;
+      // Bound timestamp lookup and dispatch, not the lifetime of the watcher.
+      const watcherP = startPendingTxIfCurrent(
+        tx,
+        'startup',
+        txPowers,
+        handlePendingTxFn,
+        { txTimestampMs: timestampMs },
+      );
+      void watcherP.catch(err => {
+        error(`🚨 Failed to handle startup pending tx ${tx.txId}`, tx, err);
+      });
+    },
+  );
 };
 
 export const startEngine = async (
@@ -1258,6 +1261,7 @@ export const startEngine = async (
     "tm.event = 'NewBlock'",
   ];
   const responses = rpc.subscribeAll(subscriptionFilters);
+
   const readyResult = await responses.next();
   if (readyResult.done !== false || readyResult.value !== undefined) {
     console.error('🚨 Unexpected non-undefined ready signal', readyResult);
@@ -1294,31 +1298,29 @@ export const startEngine = async (
     evmProviders: evmCtx.evmProviders,
     ...ydsPowers(),
   });
-  await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
-    const { streamCellJson, event } = makeVstorageEvent(
-      0n,
-      portfoliosPathPrefix,
-      harden({ addPortfolio: portfolioKey }) as StatusFor['portfolios'],
-      marshaller,
-    );
-    const eventRecord: EventRecord = {
-      blockHeight: initialBlockHeight,
-      type: 'kvstore',
-      event,
-    };
-    await processPortfolioEvents(
-      [{ path: portfoliosPathPrefix, value: streamCellJson, eventRecord }],
-      initialBlockHeight,
-      portfoliosMemory,
-      processPortfolioPowers,
-    );
-  }).done;
-
-  // Map to track AbortControllers for each pending transaction
-  // This allows aborting watchers when transactions are manually resolved
-  const pendingTxAbortControllers = new Map<TxId, AbortController>();
-  const pendingTxSettlementPromises = new Map<TxId, Promise<void>>();
-  const processStartupPendingTx = makeProcessInitialPendingTransactions();
+  const portfolioScanner = makeWorkPool(
+    portfolioKeys,
+    undefined,
+    async portfolioKey => {
+      const { streamCellJson, event } = makeVstorageEvent(
+        0n,
+        portfoliosPathPrefix,
+        harden({ addPortfolio: portfolioKey }) as StatusFor['portfolios'],
+        marshaller,
+      );
+      const eventRecord: EventRecord = {
+        blockHeight: initialBlockHeight,
+        type: 'kvstore',
+        event,
+      };
+      await processPortfolioEvents(
+        [{ path: portfoliosPathPrefix, value: streamCellJson, eventRecord }],
+        initialBlockHeight,
+        portfoliosMemory,
+        processPortfolioPowers,
+      );
+    },
+  );
 
   const txPowers: HandlePendingTxOpts = Object.freeze({
     ...evmCtx,
@@ -1329,8 +1331,11 @@ export const startEngine = async (
     signingSmartWalletKit,
     makeNonce,
     vstoragePathPrefixes,
-    pendingTxAbortControllers,
-    pendingTxSettlementPromises,
+    // Map to track AbortControllers for each pending transaction
+    // This allows aborting watchers when transactions are manually resolved
+    pendingTxAbortControllers: new Map<TxId, AbortController>(),
+    pendingTxSettlementPromises: new Map<TxId, Promise<void>>(),
+    runLookbackScan: makeKeyedConcurrencyLimiter(LOOKBACK_RPC_CONCURRENCY),
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
@@ -1350,26 +1355,8 @@ export const startEngine = async (
     powers: { now, setTimeout: powers.setTimeout },
     source: pendingTxKeysToRead,
   });
-  const startupDispatchPs = new Set<Promise<void>>();
-  const enqueueStartupPendingTx = (record: PendingTxRecord) => {
-    const startupDispatch: { promise?: Promise<void> } = {};
-    startupDispatch.promise = (async () => {
-      await null;
-      try {
-        await processStartupPendingTx([record], {
-          ...txPowers,
-          cosmosRpc: rpc,
-        });
-      } finally {
-        if (startupDispatch.promise) {
-          startupDispatchPs.delete(startupDispatch.promise);
-        }
-      }
-    })();
-    startupDispatchPs.add(startupDispatch.promise);
-  };
 
-  const historyScanReadP = makeWorkPool(
+  const historyScanReader = makeWorkPool(
     throttledPendingTxKeys,
     { capacity },
     async (txId: TxId) => {
@@ -1377,7 +1364,7 @@ export const startEngine = async (
         getResolvedTx(kvStore, txId) !== undefined ||
         getIgnoredTx(kvStore, txId) !== undefined
       ) {
-        return;
+        return null;
       }
       const path = `${pendingTxPathPrefix}.${txId}`;
       await null;
@@ -1403,154 +1390,123 @@ export const startEngine = async (
             setResolvedTx(kvStore, txId, data.status);
             deleteDerivedOutcome(kvStore, txId);
           }
-          return;
+          return null;
         }
         if (RESOLVER_IGNORED_PENDINGTX_TYPES.includes(data.type)) {
           setIgnoredTx(kvStore, txId, data.type);
-          return;
+          return null;
         }
         mustMatch(harden(data), PublishedTxShape, path);
-        enqueueStartupPendingTx({
+        const record: PendingTxRecord = {
           blockHeight: BigInt(streamCell.blockHeight),
           tx: { txId, ...data },
-        });
+        };
+        return record;
       } catch (err) {
         const errLabel = `🚨 Failed to read old pending tx ${path}`;
         console.error(errLabel, data || streamCellJson, err);
       }
+      return null;
     },
-  ).done;
-  const historyScanP = historyScanReadP.then(async () => {
-    await Promise.all([...startupDispatchPs]);
-  });
-  let historyScanFailed: unknown;
-  let historyScanComplete = false;
-  const historyScanDoneP = historyScanP.then(undefined, err => {
-    historyScanFailed = err;
-  });
+  );
+
+  const pendingTxRecords = (async function* () {
+    for await (const [record, _nonce] of historyScanReader) yield record;
+  })();
+  const startupPendingTxProcessor = makeStartupPendingTxProcessor(
+    pendingTxRecords,
+    { ...txPowers, cosmosRpc: rpc },
+  );
+
+  // Propagate tx processing failures into the subscription we're about to consume.
+  void startupPendingTxProcessor.done.catch(err => responses.throw(err));
+
+  // Process all existing portfolios before consuming new-block events.
+  await portfolioScanner.done;
 
   // console.warn('consuming events');
-  let responseNextP = responses.next();
-  try {
-    for (;;) {
-      const nextResult = await (historyScanComplete
-        ? responseNextP.then(result => ({ type: 'response' as const, result }))
-        : Promise.race([
-            responseNextP.then(result => ({
-              type: 'response' as const,
-              result,
-            })),
-            historyScanDoneP.then(() => ({ type: 'history' as const })),
-          ]));
-      if (nextResult.type === 'history') {
-        historyScanComplete = true;
-        if (historyScanFailed) {
-          throw historyScanFailed;
-        }
-        continue;
-      }
-      if (nextResult.result.done) break;
-      const respContainer = nextResult.result.value;
-      responseNextP = responses.next();
-      const { query: _query, data: resp, events: eventRollups } = respContainer;
-      const { type: respType, value: respData } = resp;
-      if (!eventRollups) {
-        console.warn('missing event rollups', respType);
-        continue;
-      }
-
-      const respHeight = blockHeightFromSubscriptionResponse(resp);
-
-      // Capture vstorage updates.
-      const oldEventRecords = deferrals.splice(0).filter(deferral => {
-        if (deferral.type === 'kvstore') return true;
-        deferrals.push(deferral);
-        return false;
-      }) as Array<EventRecord & { type: 'kvstore' }>;
-      const newEvents = typedEntries(respData).flatMap(([key, value]) => {
-        // We care about result_begin_block/result_end_block/etc.
-        if (!key.startsWith('result_')) return [];
-        const events = (value as any)?.events;
-        if (!events) console.warn('missing events', respType, key);
-        return events ?? [];
-      }) as CosmosEvent[];
-      const eventRecords = [
-        ...oldEventRecords,
-        ...newEvents.map(event => ({
-          blockHeight: respHeight,
-          type: 'kvstore' as const,
-          event,
-        })),
-      ];
-      const portfolioEvents = [] as VstorageEventDetail[];
-      const pendingTxEvents = [] as VstorageEventDetail[];
-      for (const eventRecord of eventRecords) {
-        const { event } = eventRecord;
-
-        // Filter for vstorage state_change events.
-        // cf. golang/cosmos/types/events.go
-        if (event.type !== 'state_change') continue;
-
-        const vstorageEntry = tryNow(
-          () => vstorageEntryFromCosmosEvent(event),
-          // prettier-ignore
-          err => console.error('🚨 invalid vstorage state_change', event.attributes, err),
-        );
-        if (!vstorageEntry) continue;
-        const { path, value } = vstorageEntry;
-        if (vstoragePathIsAncestorOf(portfoliosPathPrefix, path)) {
-          portfolioEvents.push({ path, value, eventRecord });
-        } else if (vstoragePathIsAncestorOf(pendingTxPathPrefix, path)) {
-          pendingTxEvents.push({ path, value, eventRecord });
-        }
-      }
-
-      // Process portfolio events in (blockHeight, vstoragePath) order.
-      portfolioEvents.sort(
-        (a, b) =>
-          compareBigints(
-            a.eventRecord.blockHeight,
-            b.eventRecord.blockHeight,
-          ) || naturalCompare(a.path, b.path),
-      );
-      // Pending tx watchers must subscribe to EVM events ASAP to avoid missing
-      // transactions, so process them concurrently with portfolio events.
-      await Promise.all([
-        Promise.all([refreshYdsState(), updatePortfolioBalances()]).then(() =>
-          processPortfolioEvents(
-            portfolioEvents,
-            respHeight,
-            portfoliosMemory,
-            {
-              ...processPortfolioPowers,
-              ...ydsPowers(),
-            },
-          ),
-        ),
-        processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
-      ]);
-      if (historyScanFailed) {
-        throw historyScanFailed;
-      }
-
-      console.log(
-        inspectForStdout({
-          blockHeight: respHeight,
-          portfolioEvents,
-          pendingTxEvents,
-        }),
-      );
+  for await (const respContainer of responses) {
+    const { query: _query, data: resp, events: eventRollups } = respContainer;
+    const { type: respType, value: respData } = resp;
+    if (!eventRollups) {
+      console.warn('missing event rollups', respType);
+      continue;
     }
-  } finally {
-    await responses.return?.({ done: true, value: undefined });
+
+    const respHeight = blockHeightFromSubscriptionResponse(resp);
+
+    // Capture vstorage updates.
+    const oldEventRecords = deferrals.splice(0).filter(deferral => {
+      if (deferral.type === 'kvstore') return true;
+      deferrals.push(deferral);
+      return false;
+    }) as Array<EventRecord & { type: 'kvstore' }>;
+    const newEvents = typedEntries(respData).flatMap(([key, value]) => {
+      // We care about result_begin_block/result_end_block/etc.
+      if (!key.startsWith('result_')) return [];
+      const events = (value as any)?.events;
+      if (!events) console.warn('missing events', respType, key);
+      return events ?? [];
+    }) as CosmosEvent[];
+    const eventRecords = [
+      ...oldEventRecords,
+      ...newEvents.map(event => ({
+        blockHeight: respHeight,
+        type: 'kvstore' as const,
+        event,
+      })),
+    ];
+    const portfolioEvents = [] as VstorageEventDetail[];
+    const pendingTxEvents = [] as VstorageEventDetail[];
+    for (const eventRecord of eventRecords) {
+      const { event } = eventRecord;
+
+      // Filter for vstorage state_change events.
+      // cf. golang/cosmos/types/events.go
+      if (event.type !== 'state_change') continue;
+
+      const vstorageEntry = tryNow(
+        () => vstorageEntryFromCosmosEvent(event),
+        // prettier-ignore
+        err => console.error('🚨 invalid vstorage state_change', event.attributes, err),
+      );
+      if (!vstorageEntry) continue;
+      const { path, value } = vstorageEntry;
+      if (vstoragePathIsAncestorOf(portfoliosPathPrefix, path)) {
+        portfolioEvents.push({ path, value, eventRecord });
+      } else if (vstoragePathIsAncestorOf(pendingTxPathPrefix, path)) {
+        pendingTxEvents.push({ path, value, eventRecord });
+      }
+    }
+
+    // Process portfolio events in (blockHeight, vstoragePath) order.
+    portfolioEvents.sort(
+      (a, b) =>
+        compareBigints(a.eventRecord.blockHeight, b.eventRecord.blockHeight) ||
+        naturalCompare(a.path, b.path),
+    );
+    // Pending tx watchers must subscribe to EVM events ASAP to avoid missing
+    // transactions, so process them concurrently with portfolio events.
+    await Promise.all([
+      Promise.all([refreshYdsState(), updatePortfolioBalances()]).then(() =>
+        processPortfolioEvents(portfolioEvents, respHeight, portfoliosMemory, {
+          ...processPortfolioPowers,
+          ...ydsPowers(),
+        }),
+      ),
+      processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
+    ]);
+    console.log(
+      inspectForStdout({
+        blockHeight: respHeight,
+        portfolioEvents,
+        pendingTxEvents,
+      }),
+    );
   }
 
   // We expect to run forever, but the server can terminate our connection.
-  if (historyScanFailed) {
-    throw historyScanFailed;
-  }
-  await null;
-  const closeEvent = await Promise.race([rpc.closed(), Promise.resolve()]);
+  const closeEvent = await Promise.race([rpc.closed(), null]);
   if (closeEvent) {
     const { code, reason, wasClean } = closeEvent;
     const cleanly = q(wasClean ? 'cleanly' : 'not cleanly');

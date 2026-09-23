@@ -25,6 +25,7 @@ import {
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 import type { CaipChainId } from '@agoric/orchestration';
+import { makeKeyedConcurrencyLimiter } from '../src/concurrency-limiter.ts';
 import { loadConfig } from '../src/config.ts';
 import { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import { createEVMContext, prepareAbortController } from '../src/support.ts';
@@ -32,7 +33,10 @@ import { makeEvmRpc, type EvmRpc } from '../src/evm-scanner.ts';
 import type { SimplePowers } from '../src/main.ts';
 import { makeSQLiteKeyValueStore } from '../src/kv-store.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import {
+  handlePendingTx,
+  LOOKBACK_RPC_CONCURRENCY,
+} from '../src/pending-tx-manager.ts';
 import { makeNowISO } from '../src/utils.ts';
 import {
   parseStreamCell,
@@ -200,6 +204,7 @@ export const processTx = async (
         vstoragePathPrefixes,
         axelarApiUrl: config.axelar.apiUrl,
         pendingTxAbortControllers: new Map(),
+        runLookbackScan: makeKeyedConcurrencyLimiter(LOOKBACK_RPC_CONCURRENCY),
       });
 
       // Get the block timestamp for lookback mode
