@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.43.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.43.0-u23.1...@agoric/cosmic-swingset@0.43.0) (2026-09-23)
+
+### Bug Fixes
+
+* **cosmic-swingset:** tolerate non-JSON object uppgrade info ([cc25a29](https://github.com/Agoric/agoric-sdk/commit/cc25a298dc15a17a1f7af6bbafbc45a706f7804e))
+
 ## [0.43.0-u23.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.43.0-u23.0...@agoric/cosmic-swingset@0.43.0-u23.1) (2026-07-15)
 
 ### Features

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pola-io",
-  "version": "0.3.0-u23.1",
+  "version": "0.3.0",
   "description": "Least Authority I/O utilities",
   "repository": {
     "type": "git",

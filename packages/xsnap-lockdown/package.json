@@ -1,6 +1,6 @@
 {
   "name": "@agoric/xsnap-lockdown",
-  "version": "0.14.2-u23.0",
+  "version": "0.14.2",
   "description": "Endo/lockdown initialization bundle for xsnap workers",
   "repository": {
     "type": "git",

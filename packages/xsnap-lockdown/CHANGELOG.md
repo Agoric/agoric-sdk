@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.14.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap-lockdown@0.14.2-u23.0...@agoric/xsnap-lockdown@0.14.2) (2026-09-23)
+
+**Note:** Version bump only for package @agoric/xsnap-lockdown
+
 ## [0.14.2-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap-lockdown@0.14.0...@agoric/xsnap-lockdown@0.14.2-u23.0) (2026-04-27)
 
 ### Bug Fixes

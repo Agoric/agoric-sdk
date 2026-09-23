@@ -1,6 +1,6 @@
 {
   "name": "@agoric/portfolio-api",
-  "version": "0.3.0-u23.1",
+  "version": "0.3.0",
   "description": "API for Portfolio management",
   "repository": {
     "type": "git",

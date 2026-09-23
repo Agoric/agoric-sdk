@@ -1,6 +1,6 @@
 {
   "name": "@agoric/smart-wallet",
-  "version": "0.7.0-u23.1",
+  "version": "0.7.0",
   "description": "Wallet contract",
   "repository": {
     "type": "git",

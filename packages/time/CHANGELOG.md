@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/time@0.5.0-u23.0...@agoric/time@0.5.0) (2026-09-23)
+
+**Note:** Version bump only for package @agoric/time
+
 ## [0.5.0-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/time@0.3.2...@agoric/time@0.5.0-u23.0) (2026-04-27)
 
 ### Features

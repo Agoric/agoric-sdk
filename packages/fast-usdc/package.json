@@ -1,6 +1,6 @@
 {
   "name": "@agoric/fast-usdc",
-  "version": "0.3.0-u23.1",
+  "version": "0.3.0",
   "description": "CLI and library for Fast USDC product",
   "repository": {
     "type": "git",

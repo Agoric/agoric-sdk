@@ -1,6 +1,6 @@
 {
   "name": "@agoric/orchestration",
-  "version": "0.3.0-u23.1",
+  "version": "0.3.0",
   "description": "Chain abstraction for Agoric's orchestration clients",
   "type": "module",
   "main": "index.js",
