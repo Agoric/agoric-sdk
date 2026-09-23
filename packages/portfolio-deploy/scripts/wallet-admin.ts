@@ -19,6 +19,11 @@ import { E } from '@endo/far';
 import fsp from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import {
+  chooseRpcAddrMainGood,
+  withWalletAdminRpcKludge,
+} from '../src/wallet-admin-rpc.ts';
 import type { RunTools } from '../src/wallet-admin-types.ts';
 
 const Usage = `tool.ts MODULE ...args`;
@@ -50,7 +55,7 @@ export const main = async (
     now = Date.now,
     cwd = process.cwd,
     // KLUDGE! avoid flaky load-balanced setup
-    rpcAddrMainGood = 'https://rpc.agoric-main-eu1.ccvalidators.com:443',
+    rpcAddrMainGood = chooseRpcAddrMainGood(env),
   } = {},
 ) => {
   const fresh = () => new Date(now()).toISOString();
@@ -58,13 +63,10 @@ export const main = async (
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
 
   const networkConfig0 = await fetchEnvNetworkConfig({ env, fetch });
-  const networkConfig =
-    !env.AGORIC_NET || env.AGORIC_NET === 'local' || env.AGORIC_NET === 'devnet'
-      ? networkConfig0
-      : {
-          ...networkConfig0,
-          rpcAddrs: [rpcAddrMainGood],
-        };
+  const networkConfig = withWalletAdminRpcKludge(
+    networkConfig0,
+    rpcAddrMainGood,
+  );
   const walletKit = await makeSmartWalletKit({ fetch, delay }, networkConfig);
 
   const storeOpts = {
@@ -148,8 +150,9 @@ export const main = async (
   await fn(tools);
 };
 
-// TODO: use endo-exec so we can unit test the above
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}
