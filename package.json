@@ -99,10 +99,11 @@
     "readable-stream@npm:3": "npm:4.7.0",
     "readable-stream@npm:3.6.2": "npm:4.7.0",
     "rxjs@npm:^6.4.0": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
-    "rxjs@npm:^7.5.5": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch"
+    "rxjs@npm:^7.5.0": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
+    "better-sqlite3": "~12.10.0"
   },
   "dependenciesMeta": {
-    "better-sqlite3@10.1.0": {
+    "better-sqlite3": {
       "built": true
     },
     "dprint@0.53.0": {

@@ -1044,7 +1044,7 @@ __metadata:
     typescript: "npm:~6.0.1-rc"
     typescript-eslint: "npm:^8.57.1"
   dependenciesMeta:
-    better-sqlite3@10.1.0:
+    better-sqlite3:
       built: true
     dprint@0.53.0:
       built: true
@@ -8127,14 +8127,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"better-sqlite3@npm:^10.1.0":
-  version: 10.1.0
-  resolution: "better-sqlite3@npm:10.1.0"
+"better-sqlite3@npm:~12.10.0":
+  version: 12.10.1
+  resolution: "better-sqlite3@npm:12.10.1"
   dependencies:
     bindings: "npm:^1.5.0"
     node-gyp: "npm:latest"
     prebuild-install: "npm:^7.1.1"
-  checksum: 10c0/3c858214b8b6f0c3f536759a863dfc79b11c52cecd6061525fb7707d950ea2ef369280276d8cc62d504119514b7d32ea4aab134d260f6b5a0419a8119d613a67
+  checksum: 10c0/38c0958ea252ba61e948358a143146aa59c8fb381b286a3064b9756ab4e2f91dfc9261cc5bb12c1afcc79519628543cfb6d62bc5a566eab2b9822403b0aad955
   languageName: node
   linkType: hard
 
@@ -16914,6 +16914,15 @@ __metadata:
   dependencies:
     tslib: "npm:^2.1.0"
   checksum: 10c0/bc84ba51aa1fffb03a2622a406d8a5d5074a543054a60a813302e39b6d3cb485d6738c4aad567e8f2f0c58839a3c3c272a336487951b44013b99eb731a0453bf
+  languageName: node
+  linkType: hard
+
+"rxjs@npm:^7.5.5":
+  version: 7.8.2
+  resolution: "rxjs@npm:7.8.2"
+  dependencies:
+    tslib: "npm:^2.1.0"
+  checksum: 10c0/1fcd33d2066ada98ba8f21fcbbcaee9f0b271de1d38dc7f4e256bfbc6ffcdde68c8bfb69093de7eeb46f24b1fb820620bf0223706cff26b4ab99a7ff7b2e2c45
   languageName: node
   linkType: hard
 
