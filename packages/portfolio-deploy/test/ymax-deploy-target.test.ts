@@ -2236,7 +2236,7 @@ test('phase-upgrade-generate combines detached-grantee signature files into the 
     target: 'ymax0-main',
     phase: 'upgrade-submit',
     record: 'ymax0-main-upgrade-pending.json',
-    detail: { bundleId: 'b1-abc123' },
+    detail: { bundleId },
   });
 });
 
