@@ -6,6 +6,10 @@ import type { CastedPattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
 import type { VStorageKey } from './lib-chainStorage.js';
 
+export type AnyIterable<T, TReturn = any, TNext = any> =
+  | Iterable<T, TReturn, TNext>
+  | AsyncIterable<T, TReturn, TNext>;
+
 /**
  * A mapping of a tuple type (as from `Parameters<...>`) into a corresponding
  * object type with named fields.
