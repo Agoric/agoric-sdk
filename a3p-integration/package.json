@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "agoricSyntheticChain": {
-    "fromTag": "use-upgrade-22"
+    "fromTag": "use-upgrade-23"
   },
   "scripts": {
     "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain",
