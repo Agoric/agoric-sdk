@@ -19,6 +19,9 @@ wire formats. Human speech and actions remain prose, and replies show results.
 
 Andrew starts with USDC on Base and asks his agent to manage any supported
 Morpho2 vault, subject to a 60% maximum allocation to any one vault.
+The activation link carries a conceptual `plan=1` field that selects the
+agent-driven planning flow; ymax.app must parse and present that mode for review
+before Andrew signs.
 
 ```mermaid
 sequenceDiagram
@@ -34,13 +37,16 @@ sequenceDiagram
 
   U->>UI: visit('/agentic-trading')
   UI-->>U: instructions to give the page to his agent
-  U-->>A: Here's the /agentic-trading page—help me set up YMax
-  A-->>MCP: readSetupResources()
-  MCP-->>A: setupGuide
-  A-->>U: Connect the MCP and start a new session
-  U-->>A: Use supported Morpho2 vaults—never put over 60% in one
-  A-->>U: activation link for the proposed delegation
-  U-->>UI: openActivationLink()
+  U->>A: Here's the /agentic-trading page—help me set up YMax
+  Note over A,MCP: Andrew follows the setup guidance<br/>The new agent session connects to and initializes YMax MCP
+  A-->>MCP: resources/read({ uri: 'ymax-portfolio-management' })
+  MCP-->>A: portfolioManagementGuide
+  A-->>U: How should I manage your capital?
+  U->>A: Use supported Morpho2 vaults—never put over 60% in one
+  A-->>U: activation link: ymax.app/deposit-funds?plan=1&maxWeightPercent=60
+  U-->>UI: open('ymax.app/deposit-funds?plan=1&maxWeightPercent=60')
+  UI-->>UI: activation = parseActivationLink({ plan: '1', maxWeightPercent: '60' })
+  UI-->>UI: mandate = { plan: true, allocation: { maxWeightBps: 6000n } }
   UI-->>U: supported vaults and 60% limit for review
   U-->>UI: signCreateAndDelegate(200 USDC)
   UI-->>C: createPortfolioAndDelegate(200 USDC, mandate)
@@ -124,7 +130,7 @@ sequenceDiagram
   participant C as YMax contract
   participant API as YMax API
 
-  Note over O,C: C is configured with O's address
+  Note over O,C: YMax contract is configured with YMax oracle's address
 
   A->>A: wake()
   A-->>M: GET /hot-stuff

@@ -1,5 +1,5 @@
 /**
- * @file Actor simulation synchronized with the prompt-injection rejection in
+ * @file Actor simulations synchronized with the journeys in
  *   `docs-design/agentic-planning.md`.
  *
  * The simulation checks call/result labels, message participants, causal arrow
@@ -20,6 +20,7 @@ import {
   type TargetAllocation,
 } from '@agoric/portfolio-api';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { Fail } from '@endo/errors';
 import { readFile } from 'node:fs/promises';
 
 import { assertMandateForAllocation } from '../src/mandate.js';
@@ -34,6 +35,153 @@ const designDoc = new URL(
   '../docs-design/agentic-planning.md',
   import.meta.url,
 );
+
+/** Proposed external-interface changes exposed by this simulation. */
+const AGENT_PLANNING_FIELD = 'plan' as const; // TODO AGO-1293
+type AgentPlanningPortfolioPermissions = PortfolioPermissions & {
+  [AGENT_PLANNING_FIELD]?: boolean;
+};
+
+const makeYMaxUI = (
+  viz: SequenceRecorder,
+  contract: Pick<PortfolioContract, 'createPortfolioAndDelegate'>,
+) => {
+  const node = viz.node('UI');
+  let reviewedActivation:
+    | {
+        mandate: AgentPlanningPortfolioPermissions;
+      }
+    | undefined;
+
+  return harden({
+    visit(from: 'U', path: '/agentic-trading') {
+      node.call(from, `visit('${path}')`);
+      return 'instructions to give the page to his agent';
+    },
+    open(from: 'U', href: string) {
+      node.consequence(from, `open('${href}')`);
+      const url = new URL(href, 'https://ymax.app');
+      const plan = url.searchParams.get(AGENT_PLANNING_FIELD);
+      const maxWeightPercent = Number(url.searchParams.get('maxWeightPercent'));
+      assert.equal(plan, '1', 'link not supported');
+      assert(Number.isSafeInteger(maxWeightPercent), 'link not supported');
+      node.consequence(
+        'UI',
+        `activation = parseActivationLink({ plan: '${plan}', maxWeightPercent: '${maxWeightPercent}' })`,
+      );
+      const maxWeightBps = BigInt(maxWeightPercent * 100);
+      const mandate: AgentPlanningPortfolioPermissions = harden({
+        [AGENT_PLANNING_FIELD]: true,
+        allocation: { maxWeightBps },
+      });
+      node.consequence(
+        'UI',
+        `mandate = { ${AGENT_PLANNING_FIELD}: true, allocation: { maxWeightBps: ${String(maxWeightBps)}n } }`,
+      );
+      reviewedActivation = harden({ mandate });
+      return `supported vaults and ${maxWeightPercent}% limit for review`;
+    },
+    signCreateAndDelegate(from: 'U', depositUsdc: number) {
+      node.consequence(from, `signCreateAndDelegate(${depositUsdc} USDC)`);
+      const activation = reviewedActivation;
+      assert(activation, 'open first');
+      const activity = contract.createPortfolioAndDelegate(
+        'UI',
+        depositUsdc,
+        activation.mandate,
+      );
+      node.consequence(
+        'C',
+        `{ activityId: '${activity.activityId}', status: '${activity.status}' }`,
+      );
+      return 'portfolio with deposit activity in progress';
+    },
+  });
+};
+
+type YMaxUI = ReturnType<typeof makeYMaxUI>;
+
+const makeYMaxMCP = (viz: SequenceRecorder) => {
+  const node = viz.node('MCP');
+  return harden({
+    readResource(from: 'A', uri: 'ymax-portfolio-management') {
+      node.consequence(from, `resources/read({ uri: '${uri}' })`);
+      return 'portfolioManagementGuide';
+    },
+  });
+};
+
+type YMaxMCP = ReturnType<typeof makeYMaxMCP>;
+
+const makeAndrewAgent = (viz: SequenceRecorder, mcp: YMaxMCP) => {
+  const node = viz.node('A');
+  let setupComplete = false;
+  return harden({
+    prompt(text: string): string {
+      node.call('U', text);
+      if (text === "Here's the /agentic-trading page—help me set up YMax") {
+        const portfolioManagementGuide = mcp.readResource(
+          'A',
+          'ymax-portfolio-management',
+        );
+        node.consequence('MCP', portfolioManagementGuide);
+        setupComplete = true;
+        return 'How should I manage your capital?';
+      }
+      if (text === 'Use supported Morpho2 vaults—never put over 60% in one') {
+        setupComplete || Fail`YMax MCP setup is incomplete`;
+        return `ymax.app/deposit-funds?${AGENT_PLANNING_FIELD}=1&maxWeightPercent=60`;
+      }
+      throw Error(`unexpected prompt: ${text}`);
+    },
+  });
+};
+
+type AndrewAgent = ReturnType<typeof makeAndrewAgent>;
+
+const makeAndrew = (
+  viz: SequenceRecorder,
+  powers: { ui: YMaxUI; agent: AndrewAgent },
+) => {
+  const node = viz.node('U');
+  return harden({
+    activateAgentPlanning() {
+      const instructions = powers.ui.visit('U', '/agentic-trading');
+      node.consequence('UI', instructions);
+      const question = powers.agent.prompt(
+        "Here's the /agentic-trading page—help me set up YMax",
+      );
+      node.consequence('A', question);
+      const activationLink = powers.agent.prompt(
+        'Use supported Morpho2 vaults—never put over 60% in one',
+      );
+      node.consequence('A', `activation link: ${activationLink}`);
+      const review = powers.ui.open('U', activationLink);
+      node.consequence('UI', review);
+      const portfolio = powers.ui.signCreateAndDelegate('U', 200);
+      node.consequence('UI', portfolio);
+    },
+  });
+};
+
+test('activation trace exposes the agent-planning link field', async t => {
+  const lines = await readFile(designDoc, 'utf8').then(s => s.split('\n'));
+  const section = md.skipToH(2, 'Activate agent-driven planning')(lines);
+  const diagram = md.eachFence('mermaid', section).next().value;
+  if (!diagram) throw Error('activation Mermaid block not found');
+  const documented = mmd.extractArrows(diagram);
+
+  const viz = makeSequenceRecorder();
+  const contract = makePortfolioContract(viz);
+  const ui = makeYMaxUI(viz, contract);
+  const mcp = makeYMaxMCP(viz);
+  const agent = makeAndrewAgent(viz, mcp);
+  const andrew = makeAndrew(viz, { ui, agent });
+
+  andrew.activateAgentPlanning();
+
+  t.deepEqual(documented, viz.snapshot());
+});
 
 const storyInstrument = (name: string): InstrumentId => {
   if (!isInstrumentId(name)) throw Error(`invalid instrument name: ${name}`);
@@ -105,7 +253,7 @@ const allocationAfter = (
 
 const makePortfolioContract = (
   viz: SequenceRecorder,
-  observationVerifier: ObservationVerifier,
+  observationVerifier?: ObservationVerifier,
 ) => {
   const node = viz.node('C');
   type FailedFlowStatus = { state: 'fail'; error: string };
@@ -113,6 +261,24 @@ const makePortfolioContract = (
     PortfolioKey,
     Map<FlowKey, FailedFlowStatus>
   >();
+
+  const createPortfolioAndDelegate = (
+    from: 'UI',
+    depositUsdc: number,
+    mandate: AgentPlanningPortfolioPermissions,
+  ) => {
+    node.consequence(
+      from,
+      `createPortfolioAndDelegate(${depositUsdc} USDC, mandate)`,
+    );
+    mandate[AGENT_PLANNING_FIELD] || Fail`agent planning is not enabled`;
+    const { allocation } = mandate;
+    if (typeof allocation !== 'object') {
+      throw Error('allocation is not limited');
+    }
+    allocation.maxWeightBps === 6_000n || Fail`unexpected maximum weight`;
+    return harden({ activityId: '351-1', status: 'in-progress' as const });
+  };
 
   const makePortfolio = (config: {
     portfolioId: PortfolioKey;
@@ -145,6 +311,9 @@ const makePortfolioContract = (
         const flowKey: FlowKey = `flow${flowCount}`;
         queueMicrotask(() => {
           try {
+            if (!observationVerifier) {
+              throw Error('observation verifier is not configured');
+            }
             const observations = observationVerifier.unseal(signedObservations);
             node.consequence('C', 'observations = verify(signedObservations)');
             const targetAllocation = allocationAfter(plan, observations);
@@ -176,7 +345,7 @@ const makePortfolioContract = (
     },
   });
 
-  return harden({ makePortfolio, vstorage });
+  return harden({ createPortfolioAndDelegate, makePortfolio, vstorage });
 };
 
 type PortfolioContract = ReturnType<typeof makePortfolioContract>;
@@ -310,11 +479,8 @@ const makeAgent = (
 };
 
 test('prompt-injection rejection trace matches diagram', async t => {
-  const text = await readFile(designDoc, 'utf8');
-  const section = md.skipToH(
-    2,
-    'Reject a prompt-injected plan',
-  )(text.split('\n'));
+  const lines = await readFile(designDoc, 'utf8').then(s => s.split('\n'));
+  const section = md.skipToH(2, 'Reject a prompt-injected plan')(lines);
   const diagram = md.eachFence('mermaid', section).next().value;
   if (!diagram) throw Error('prompt-injection Mermaid block not found');
   const documented = mmd.extractArrows(diagram);
