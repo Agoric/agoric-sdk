@@ -9,6 +9,7 @@ import {
   writeFile,
   copyFile,
   mkdir,
+  rename,
 } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -105,9 +106,22 @@ test('pack and install xsnap', async t => {
   if (!address || typeof address === 'string') {
     throw Error('Failed to get test server address');
   }
+  const workspaceDeps = ['internal', 'xsnap-lockdown', 'base-zone', 'store'];
   const filename = join(tmp, 'package.tgz');
+  for (const dep of workspaceDeps) {
+    await $({ cwd: `../${dep}` })`yarn pack --out ${filename}`;
+    await $({ cwd: tmp })`tar xvf ${resolve(filename)}`;
+    await rename(join(tmp, 'package'), join(tmp, `package-${dep}`));
+  }
+
+  const agoricDir = join(tmp, 'package', 'node_modules', '@agoric');
+
   await $`yarn pack --out ${filename}`;
   await $({ cwd: tmp })`tar xvf ${resolve(filename)}`;
+  await mkdir(agoricDir, { recursive: true });
+  for (const dep of workspaceDeps) {
+    await rename(join(tmp, `package-${dep}`), join(agoricDir, dep));
+  }
   const { XSNAP_WORKER: _, XSNAP_WORKER_DEBUG: _2, ...envRest } = process.env;
   const env = {
     ...envRest,
@@ -122,7 +136,7 @@ test('pack and install xsnap', async t => {
     await $({
       cwd: join(tmp, 'package'),
       env,
-    })`npm install --ignore-scripts`;
+    })`npm install --ignore-scripts --omit=dev`;
   } catch (err) {
     if (isTransientNetworkIssue(err)) {
       t.log('Skipping install verification due to network restrictions');
