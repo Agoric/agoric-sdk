@@ -304,7 +304,7 @@ to pass and for reviewer approval.
   This will push all the tags created in the above
   ["Generate new SDK version" step](#user-content-generate-sdk-version).
 
-- [ ] (Optional) Publish an NPM distribution tag
+- [ ] <a id="optional-npm-dist-tag"></a>(Optional) Publish an NPM distribution tag
 
   Trusted publishing OIDC credentials cover only `npm publish`, so dist-tag
   updates still use your regular npm login/token as before.
@@ -378,6 +378,64 @@ to pass and for reviewer approval.
   new version in both
   [agoric/chain.json](https://github.com/cosmos/chain-registry/blob/master/agoric/chain.json) and
   [agoric/versions.json](https://github.com/cosmos/chain-registry/blob/master/agoric/versions.json).
+
+## Graduating a Mainnet Release
+
+Once a release has actually been executed as a chain upgrade on mainnet (the
+corresponding `agoric-upgrade-$VERSION` [_**release
+label**_](#assign-release-parameters) proposal has passed and validators are
+running it), graduate its packages to non-prerelease NPM versions and fold
+those versions back into `master`.
+
+### Graduate and publish the release branch
+
+- [ ] Check out the `agoric-upgrade-$VERSION` release branch that was
+  published to mainnet.
+  ```sh
+  git fetch origin agoric-upgrade-$VERSION
+  git switch agoric-upgrade-$VERSION
+  ```
+- [ ] Graduate the package versions on that branch from their prerelease
+  suffixes (e.g. `-pre.$N`, `-u$VERSION.$N`, `-dev.$N`) to plain release
+  versions, committing the result directly to the release branch.
+  ```sh
+  yarn lerna version --no-push --conventional-graduate
+  ```
+  After this step, no package.json version should retain any prerelease
+  suffix.
+- [ ] Push the branch, then publish the graduated versions to NPM as the
+  `latest` release dist-tag using the [Post-merge publishes/checks
+  workflow](https://github.com/Agoric/agoric-sdk/actions/workflows/after-merge.yml),
+  as described in [Publish the Release](#publish-the-release) (branch:
+  `agoric-upgrade-$VERSION`, mode: `release`, tag: `latest`). This runs
+  `yarn lerna publish from-package --concurrency 1 --dist-tag latest` in CI.
+  ```sh
+  git push origin agoric-upgrade-$VERSION
+  ```
+- [ ] Also mark the graduated packages with the `community-dev` and 
+  `agoric-upgrade-$VERSION` dist-tags, following the general case in 
+  [(Optional) Publish an NPM distribution tag](#optional-npm-dist-tag):
+  ```sh
+  ./scripts/npm-dist-tag.sh lerna add agoric-upgrade-$VERSION
+  ./scripts/npm-dist-tag.sh lerna add community-dev
+  ```
+
+### Absorb the graduated versions into `master`
+
+- [ ] Check out `master`.
+  ```sh
+  git switch master
+  ```
+- [ ] Run `scripts/graduate-versions.mjs` to bump every package whose version
+  is behind what was just released on `agoric-upgrade-$VERSION` to a
+  `prepatch` version with a `pre` prerelease identifier. This keeps `master`
+  ahead of the released versions while clearly marking them as unreleased, so
+  they can't be accidentally mistaken for the graduated release.
+  ```sh
+  scripts/graduate-versions.mjs --preid=pre prepatch agoric-upgrade-$VERSION
+  ```
+- [ ] Review and commit the resulting `package.json` changes, then push the
+  branch and open a PR against `master`.
 
 ## More subtlety
 
