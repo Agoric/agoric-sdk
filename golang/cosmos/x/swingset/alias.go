@@ -12,15 +12,17 @@ const (
 )
 
 var (
-	NewKeeper            = keeper.NewKeeper
-	NewMsgDeliverInbound = types.NewMsgDeliverInbound
-	NewMsgProvision      = types.NewMsgProvision
-	NewMailbox           = types.NewMailbox
-	RegisterCodec        = types.RegisterCodec
+	NewKeeper                  = keeper.NewKeeper
+	NewKeeperAndBeanAccountant = keeper.NewKeeperAndBeanAccountant
+	NewMsgDeliverInbound       = types.NewMsgDeliverInbound
+	NewMsgProvision            = types.NewMsgProvision
+	NewMailbox                 = types.NewMailbox
+	RegisterCodec              = types.RegisterCodec
 )
 
 type (
 	Keeper                   = keeper.Keeper
+	BeanAccountant           = keeper.BeanAccountant
 	SwingStoreExportsHandler = keeper.SwingStoreExportsHandler
 	ExtensionSnapshotter     = keeper.ExtensionSnapshotter
 	ActionContext            = types.ActionContext
