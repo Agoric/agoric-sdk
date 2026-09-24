@@ -34,6 +34,7 @@ var (
 	_ sdk.Msg = &MsgWalletAction{}
 	_ sdk.Msg = &MsgWalletSpendAction{}
 	_ sdk.Msg = &MsgCoreEval{}
+	_ sdk.Msg = &MsgUpdateParams{}
 
 	_ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
 	_ vm.ControllerAdmissionMsg = &MsgInstallBundle{}
@@ -42,6 +43,28 @@ var (
 	_ vm.ControllerAdmissionMsg = &MsgWalletAction{}
 	_ vm.ControllerAdmissionMsg = &MsgWalletSpendAction{}
 )
+
+func NewMsgUpdateParams(authority string, params Params) *MsgUpdateParams {
+	return &MsgUpdateParams{
+		Authority: authority,
+		Params:    params,
+	}
+}
+
+func (msg MsgUpdateParams) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Authority); err != nil {
+		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid authority address: %s", err)
+	}
+	return msg.Params.ValidateBasic()
+}
+
+func (msg MsgUpdateParams) GetSigners() []sdk.AccAddress {
+	addr, err := sdk.AccAddressFromBech32(msg.Authority)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{addr}
+}
 
 // Replacing msg.GetSigners() but before we can adopt AddressString.
 // https://github.com/cosmos/cosmos-sdk/issues/20077#issuecomment-2062601533
