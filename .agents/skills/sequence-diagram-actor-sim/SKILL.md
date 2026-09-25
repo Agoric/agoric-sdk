@@ -61,8 +61,6 @@ matters, keep it visible in code, for example `E(target).method(...)` or
 - Choose actors by authority and knowledge boundaries. UI pages, services,
   contracts, people, and external data sources are separate when the story
   depends on the boundary.
-- Keep an actor's internal scheduler or trigger as a self-call rather than a
-  person-like participant.
 - Turn boundary crossings into messages. Use self-messages for important
   internal work or to introduce a diagram-local name for a bulky value. Split
   long journeys at new user actions, scheduled triggers, or materially
@@ -70,8 +68,6 @@ matters, keep it visible in code, for example `E(target).method(...)` or
 - Label software calls as `method(args)` or the actual protocol operation such
   as `GET /path`. Label replies with values. Human-agent conversation stays
   prose; a person's operation on a UI is still a software call.
-- Mark unsettled API names and wire formats as conceptual. Do not let plausible
-  syntax masquerade as a decided interface.
 
 Keep enough surrounding prose to connect the diagram to its source story. The
 diagram becomes simulation input; the story remains the source of design
