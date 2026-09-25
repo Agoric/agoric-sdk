@@ -85,7 +85,7 @@ A durable store can be part of a vat's "estate", to be transferred to that vat's
 
 ## Make+ vs Provide (Durable only)
 
-For durable objects to be communicated across upgrade, from one vat incarnation to the next, they must be reachable from *baggage*. Baggage is rooted in a distinct durable map store, and consists of a tree of durable map stores reachable from that root. The code of the successor vat should generally be written so that it can be a successor to a previous incarnation, restoring itself from baggage that has been filled by that predecesor, but also so that it can be instantiated directly, with empty baggage, as the first vat-incarnation of a new vat.
+For durable objects to be communicated across upgrade, from one vat incarnation to the next, they must be reachable from *baggage*. Baggage is rooted in a distinct durable map store, and consists of a tree of durable map stores reachable from that root. The code of the successor vat should generally be written so that it can be a successor to a previous incarnation, restoring itself from baggage that has been filled by that predecessor, but also so that it can be instantiated directly, with empty baggage, as the first vat-incarnation of a new vat.
 
 To write code that can be used either way, we use the *provide* pattern, supported by a small number of functions specialized for this purpose. Where a `make*` function always makes a new something each time it is called, a `provide*` function uses the one it finds, if there is one there, but otherwise creates a new one while placing it in the baggage at the same place, so that its successor will find it.
 
