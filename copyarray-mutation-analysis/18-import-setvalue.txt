@@ -1,0 +1,4 @@
+packages/ERTP/src/amountMath.js:12: * @import {Amount, AmountValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
+packages/ERTP/src/mathHelpers/setMathHelpers.js:13:/** @import {MathHelpers, SetValue} from '../types.js' */
+packages/ERTP/src/typeGuards.js:8: * @import {NatValue, SetValue} from './types.js';
+packages/zoe/test/unitTests/setupNonFungibleMints.js:9: * @import {SetValue} from '@agoric/ertp';
