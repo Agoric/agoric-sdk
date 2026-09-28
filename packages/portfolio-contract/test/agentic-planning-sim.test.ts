@@ -28,7 +28,7 @@ import {
   md,
   mmd,
   type SequenceRecorder,
-} from '../tools/markdown.js';
+} from '../tools/sequence-diagram-actor-sim.js';
 
 const designDoc = new URL(
   '../docs-design/agentic-planning.md',

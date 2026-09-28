@@ -1,4 +1,4 @@
-/** @file Markdown, Mermaid, and trace helpers for design-document tests. */
+/** @file Helpers for sequence-diagram actor simulations. */
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 export type SequenceArrow = Readonly<{
