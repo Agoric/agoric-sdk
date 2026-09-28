@@ -20,7 +20,6 @@ import {
   type TargetAllocation,
 } from '@agoric/portfolio-api';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { Fail } from '@endo/errors';
 import { readFile } from 'node:fs/promises';
 
 import { assertMandateForAllocation } from '../src/mandate.js';
@@ -35,153 +34,6 @@ const designDoc = new URL(
   '../docs-design/agentic-planning.md',
   import.meta.url,
 );
-
-/** Proposed external-interface changes exposed by this simulation. */
-const AGENT_PLANNING_FIELD = 'plan' as const; // TODO AGO-1293
-type AgentPlanningPortfolioPermissions = PortfolioPermissions & {
-  [AGENT_PLANNING_FIELD]?: boolean;
-};
-
-const makeYMaxUI = (
-  viz: SequenceRecorder,
-  contract: Pick<PortfolioContract, 'createPortfolioAndDelegate'>,
-) => {
-  const node = viz.node('UI');
-  let reviewedActivation:
-    | {
-        mandate: AgentPlanningPortfolioPermissions;
-      }
-    | undefined;
-
-  return harden({
-    visit(from: 'U', path: '/agentic-trading') {
-      node.call(from, `visit('${path}')`);
-      return 'instructions to give the page to his agent';
-    },
-    open(from: 'U', href: string) {
-      node.consequence(from, `open('${href}')`);
-      const url = new URL(href, 'https://ymax.app');
-      const plan = url.searchParams.get(AGENT_PLANNING_FIELD);
-      const maxWeightPercent = Number(url.searchParams.get('maxWeightPercent'));
-      assert.equal(plan, '1', 'link not supported');
-      assert(Number.isSafeInteger(maxWeightPercent), 'link not supported');
-      node.consequence(
-        'UI',
-        `activation = parseActivationLink({ plan: '${plan}', maxWeightPercent: '${maxWeightPercent}' })`,
-      );
-      const maxWeightBps = BigInt(maxWeightPercent * 100);
-      const mandate: AgentPlanningPortfolioPermissions = harden({
-        [AGENT_PLANNING_FIELD]: true,
-        allocation: { maxWeightBps },
-      });
-      node.consequence(
-        'UI',
-        `mandate = { ${AGENT_PLANNING_FIELD}: true, allocation: { maxWeightBps: ${String(maxWeightBps)}n } }`,
-      );
-      reviewedActivation = harden({ mandate });
-      return `supported vaults and ${maxWeightPercent}% limit for review`;
-    },
-    signCreateAndDelegate(from: 'U', depositUsdc: number) {
-      node.consequence(from, `signCreateAndDelegate(${depositUsdc} USDC)`);
-      const activation = reviewedActivation;
-      assert(activation, 'open first');
-      const activity = contract.createPortfolioAndDelegate(
-        'UI',
-        depositUsdc,
-        activation.mandate,
-      );
-      node.consequence(
-        'C',
-        `{ activityId: '${activity.activityId}', status: '${activity.status}' }`,
-      );
-      return 'portfolio with deposit activity in progress';
-    },
-  });
-};
-
-type YMaxUI = ReturnType<typeof makeYMaxUI>;
-
-const makeYMaxMCP = (viz: SequenceRecorder) => {
-  const node = viz.node('MCP');
-  return harden({
-    readResource(from: 'A', uri: 'ymax-portfolio-management') {
-      node.consequence(from, `resources/read({ uri: '${uri}' })`);
-      return 'portfolioManagementGuide';
-    },
-  });
-};
-
-type YMaxMCP = ReturnType<typeof makeYMaxMCP>;
-
-const makeAndrewAgent = (viz: SequenceRecorder, mcp: YMaxMCP) => {
-  const node = viz.node('A');
-  let setupComplete = false;
-  return harden({
-    prompt(text: string): string {
-      node.call('U', text);
-      if (text === "Here's the /agentic-trading page—help me set up YMax") {
-        const portfolioManagementGuide = mcp.readResource(
-          'A',
-          'ymax-portfolio-management',
-        );
-        node.consequence('MCP', portfolioManagementGuide);
-        setupComplete = true;
-        return 'How should I manage your capital?';
-      }
-      if (text === 'Use supported Morpho2 vaults—never put over 60% in one') {
-        setupComplete || Fail`YMax MCP setup is incomplete`;
-        return `ymax.app/deposit-funds?${AGENT_PLANNING_FIELD}=1&maxWeightPercent=60`;
-      }
-      throw Error(`unexpected prompt: ${text}`);
-    },
-  });
-};
-
-type AndrewAgent = ReturnType<typeof makeAndrewAgent>;
-
-const makeAndrew = (
-  viz: SequenceRecorder,
-  powers: { ui: YMaxUI; agent: AndrewAgent },
-) => {
-  const node = viz.node('U');
-  return harden({
-    activateAgentPlanning() {
-      const instructions = powers.ui.visit('U', '/agentic-trading');
-      node.consequence('UI', instructions);
-      const question = powers.agent.prompt(
-        "Here's the /agentic-trading page—help me set up YMax",
-      );
-      node.consequence('A', question);
-      const activationLink = powers.agent.prompt(
-        'Use supported Morpho2 vaults—never put over 60% in one',
-      );
-      node.consequence('A', `activation link: ${activationLink}`);
-      const review = powers.ui.open('U', activationLink);
-      node.consequence('UI', review);
-      const portfolio = powers.ui.signCreateAndDelegate('U', 200);
-      node.consequence('UI', portfolio);
-    },
-  });
-};
-
-test('activation trace exposes the agent-planning link field', async t => {
-  const lines = await readFile(designDoc, 'utf8').then(s => s.split('\n'));
-  const section = md.skipToH(2, 'Activate agent-driven planning')(lines);
-  const diagram = md.eachFence('mermaid', section).next().value;
-  if (!diagram) throw Error('activation Mermaid block not found');
-  const documented = mmd.extractArrows(diagram);
-
-  const viz = makeSequenceRecorder();
-  const contract = makePortfolioContract(viz);
-  const ui = makeYMaxUI(viz, contract);
-  const mcp = makeYMaxMCP(viz);
-  const agent = makeAndrewAgent(viz, mcp);
-  const andrew = makeAndrew(viz, { ui, agent });
-
-  andrew.activateAgentPlanning();
-
-  t.deepEqual(documented, viz.snapshot());
-});
 
 const storyInstrument = (name: string): InstrumentId => {
   if (!isInstrumentId(name)) throw Error(`invalid instrument name: ${name}`);
@@ -227,6 +79,18 @@ type ObservationVerifier = ReturnType<
   typeof makeBrandPair<PlanObservations>
 >['unsealer'];
 
+type AgentSetTargetAllocationParams =
+  | Readonly<{
+      targetAllocation: TargetAllocation;
+      plan?: undefined;
+      signedObservations?: undefined;
+    }>
+  | Readonly<{
+      targetAllocation: TargetAllocation;
+      plan: FundsFlowPlan;
+      signedObservations: SignedObservations;
+    }>;
+
 /** Apply a proposed plan to observed balances to obtain its target allocation. */
 const allocationAfter = (
   plan: FundsFlowPlan,
@@ -251,6 +115,27 @@ const allocationAfter = (
   return harden(Object.fromEntries(balances)) as TargetAllocation;
 };
 
+const assertSameAllocation = (
+  submitted: TargetAllocation,
+  calculated: TargetAllocation,
+) => {
+  const nonZeroEntries = (allocation: TargetAllocation) =>
+    Object.entries(allocation)
+      .filter(([, portion]) => portion !== 0n)
+      .sort(([left], [right]) => left.localeCompare(right));
+  const expected = nonZeroEntries(calculated);
+  const actual = nonZeroEntries(submitted);
+  if (
+    expected.length !== actual.length ||
+    expected.some(
+      ([place, portion], index) =>
+        actual[index]?.[0] !== place || actual[index]?.[1] !== portion,
+    )
+  ) {
+    throw Error('plan does not produce target allocation');
+  }
+};
+
 const makePortfolioContract = (
   viz: SequenceRecorder,
   observationVerifier?: ObservationVerifier,
@@ -261,24 +146,6 @@ const makePortfolioContract = (
     PortfolioKey,
     Map<FlowKey, FailedFlowStatus>
   >();
-
-  const createPortfolioAndDelegate = (
-    from: 'UI',
-    depositUsdc: number,
-    mandate: AgentPlanningPortfolioPermissions,
-  ) => {
-    node.consequence(
-      from,
-      `createPortfolioAndDelegate(${depositUsdc} USDC, mandate)`,
-    );
-    mandate[AGENT_PLANNING_FIELD] || Fail`agent planning is not enabled`;
-    const { allocation } = mandate;
-    if (typeof allocation !== 'object') {
-      throw Error('allocation is not limited');
-    }
-    allocation.maxWeightBps === 6_000n || Fail`unexpected maximum weight`;
-    return harden({ activityId: '351-1', status: 'in-progress' as const });
-  };
 
   const makePortfolio = (config: {
     portfolioId: PortfolioKey;
@@ -301,22 +168,31 @@ const makePortfolioContract = (
     };
 
     return harden({
-      submitPlan(
-        from: 'A',
-        plan: FundsFlowPlan,
-        signedObservations: SignedObservations,
-      ) {
-        node.consequence(from, 'submitPlan(plan, signedObservations)');
+      setTargetAllocation(from: 'A', params: AgentSetTargetAllocationParams) {
+        node.consequence(
+          from,
+          'setTargetAllocation({ targetAllocation, plan, signedObservations })',
+        );
         flowCount += 1;
         const flowKey: FlowKey = `flow${flowCount}`;
         queueMicrotask(() => {
           try {
-            if (!observationVerifier) {
-              throw Error('observation verifier is not configured');
+            const { plan, signedObservations, targetAllocation } = params;
+            if (plan) {
+              if (!observationVerifier) {
+                throw Error('observation verifier is not configured');
+              }
+              const observations =
+                observationVerifier.unseal(signedObservations);
+              node.consequence(
+                'C',
+                'observations = verify(signedObservations)',
+              );
+              assertSameAllocation(
+                targetAllocation,
+                allocationAfter(plan, observations),
+              );
             }
-            const observations = observationVerifier.unseal(signedObservations);
-            node.consequence('C', 'observations = verify(signedObservations)');
-            const targetAllocation = allocationAfter(plan, observations);
             assertMandate(targetAllocation);
           } catch (reason) {
             const error =
@@ -345,7 +221,7 @@ const makePortfolioContract = (
     },
   });
 
-  return harden({ createPortfolioAndDelegate, makePortfolio, vstorage });
+  return harden({ makePortfolio, vstorage });
 };
 
 type PortfolioContract = ReturnType<typeof makePortfolioContract>;
@@ -455,13 +331,24 @@ const makeAgent = (
       });
       node.consequence('A', formatPlan(plan));
 
+      const targetAllocation = harden({
+        [dest]: config.positions.reduce(
+          (total, { amount }) => total + amount.value,
+          0n,
+        ),
+      });
+      node.consequence(
+        'A',
+        'targetAllocation = allocationAfter(currentPositions, plan)',
+      );
+
       const signedObservations = powers.oracle.observeAndAttest('A', plan);
       node.consequence('O', 'signedObservations');
-      const flowKey = powers.portfolio.submitPlan(
-        'A',
+      const flowKey = powers.portfolio.setTargetAllocation('A', {
+        targetAllocation,
         plan,
         signedObservations,
-      );
+      });
       node.consequence('C', flowKey);
 
       await null;
