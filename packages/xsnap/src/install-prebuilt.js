@@ -6,7 +6,6 @@ import osTop from 'node:os';
 import pathTop from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as childProcess from 'node:child_process';
-import { manifestHashes } from './prebuilt-manifest-sha256.js';
 
 /**
  * @import {promises as fsPromises} from 'fs';
@@ -202,17 +201,22 @@ const validateTarball = async (tarballPath, expectedFiles) => {
 };
 
 /**
- * @param {string} version
- * @param {NodeJS.ProcessEnv} env
+ * @param {string} text
+ * @returns {Record<string, string>}
  */
-const getExpectedManifestHash = (version, env) => {
-  const expected = env.XSNAP_BINARY_MANIFEST_SHA256 || manifestHashes[version];
-  if (!expected) {
-    throw Error(
-      `Missing trusted manifest hash for xsnap binary version ${version}; set XSNAP_BINARY_MANIFEST_SHA256 for explicit overrides`,
-    );
+const parseEnvText = text => {
+  /** @type {Record<string, string>} */
+  const envMap = {};
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const index = trimmed.indexOf('=');
+    if (index <= 0) continue;
+    const key = trimmed.slice(0, index);
+    const value = trimmed.slice(index + 1);
+    envMap[key] = value;
   }
-  return expected;
+  return envMap;
 };
 
 const main = async () => {
@@ -222,10 +226,44 @@ const main = async () => {
     return;
   }
 
-  const version = env.XSNAP_BINARY_VERSION || env.npm_package_version;
+  await null;
+
+  const packageJsonPath = env.npm_package_json || asset('../package.json');
+  const buildEnvPath = pathTop.join(
+    pathTop.dirname(packageJsonPath),
+    'build.env',
+  );
+
+  let buildEnv = {};
+  try {
+    const buildEnvContents = await fsTop.promises.readFile(buildEnvPath, {
+      encoding: 'utf8',
+    });
+    buildEnv = parseEnvText(buildEnvContents);
+  } catch (e) {
+    if (e?.code !== 'ENOENT') {
+      throw Error(`Cannot parse ${buildEnvPath}: ${e}`);
+    }
+  }
+
+  const version =
+    env.XSNAP_BINARY_VERSION ||
+    buildEnv.XSNAP_BINARY_VERSION ||
+    env.npm_package_version;
+  const expectedManifestHash =
+    env.XSNAP_BINARY_MANIFEST_SHA256 ||
+    env.XSNAP_BINARY_MANIFEST_HASH ||
+    buildEnv.XSNAP_BINARY_MANIFEST_HASH;
+
   if (!version) {
     throw Error(
-      'Missing XSNAP_BINARY_VERSION and npm_package_version; cannot resolve prebuilt release',
+      'Missing $XSNAP_BINARY_VERSION, build.env $XSNAP_BINARY_VERSION, or npm package version; cannot resolve prebuilt release',
+    );
+  }
+
+  if (!expectedManifestHash) {
+    throw Error(
+      `Missing $XSNAP_BINARY_MANIFEST_SHA256 or build.env $XSNAP_BINARY_MANIFEST_HASH; cannot resolve prebuilt manifest hash`,
     );
   }
 
@@ -249,7 +287,6 @@ const main = async () => {
   const tarballPath = pathTop.join(cacheRoot, tarballName);
   const manifestPath = pathTop.join(cacheRoot, manifestName);
   const extractRoot = pathTop.join(cacheRoot, 'bundle');
-  const expectedManifestHash = getExpectedManifestHash(version, env);
 
   const releaseSrc = pathTop.join(
     extractRoot,
