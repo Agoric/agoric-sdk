@@ -1,504 +1,509 @@
 /**
- * @file Portfolio operations are either in a permit2 witness or standalone,
- * in either case, following EIP-712
+ * @file Schema-driven EIP-712 messages, submitted either standalone or as the
+ * witness of a permit2 `PermitWitnessTransferFrom`.
  *
- * The fields included in the operation differ based on which way they're submitted.
- * In the wrapped case, we don't want to repeat stuff from the permit envelope.
- * {@link OperationTypes}
+ * A {@link EIP712MessageSchema} describes a family of messages sharing an
+ * EIP-712 domain name and version: the set of operations (primary types) and
+ * their fields, plus the sub-types these operations may reference.
+ * {@link makeEIP712MessageKit} derives from it the helpers to author and
+ * validate such messages. The fields included in the message differ based on
+ * which way it's submitted:
  *
- * Currently all types and helpers are built around a hard-coded Ymax product
- * name but with some effort this could be parametrizable
+ * - standalone: the operation is the primary type, the domain is the schema's
+ *   (with a `chainId` and `verifyingContract`), and the operation's fields are
+ *   followed by {@link StandaloneEnvelopeTypeParams} (`nonce` and `deadline`).
+ * - permit2 witness: the domain is fixed by permit2, so the schema's domain
+ *   name and version are instead encoded in the witness type name, and
+ *   `nonce`/`deadline` are those of the permit rather than being repeated in
+ *   the witness.
+ *
+ * @see {@link ./eip712-message-handler.ts} for extracting verified operation
+ * details from such messages.
  */
 
 import type { Address, TypedData, TypedDataDomain } from 'abitype';
 import type { TypedDataDefinition } from 'viem';
-import type {
-  TypedDataParameter,
-  TypedDataToStructType,
-} from '@agoric/orchestration/src/utils/abitype.js';
+import type { TypedDataParameter, TypedDataToStructType } from './abitype.ts';
 import {
   type Witness,
   type getPermitWitnessTransferFromData,
   type getPermitBatchWitnessTransferFromData,
   makeWitness,
-  TokenPermissionsComponents,
-} from '@agoric/orchestration/src/utils/permit2.ts';
-import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
-import { normalizeAndValidateEIP712Data } from '@agoric/orchestration/src/utils/viem-utils/eip712-normalize.ts';
+} from './permit2.ts';
+import { sameEvmAddress } from './address.js';
+import { normalizeAndValidateEIP712Data } from './viem-utils/eip712-normalize.ts';
 
-const YMAX_DOMAIN_NAME = 'Ymax';
-const YMAX_DOMAIN_VERSION = '1';
+type TypedDataRecord = Record<string, readonly TypedDataParameter[]>;
 
-const YMAX_WITNESS_FIELD_NAME_PREFIX = 'ymax';
+/**
+ * Description of a family of EIP-712 messages sharing a domain.
+ */
+export type EIP712MessageSchema = {
+  /** EIP-712 domain name of standalone messages */
+  readonly domainName: string;
+  /**
+   * EIP-712 domain version of standalone messages. Must be a decimal integer
+   * since it's encoded in the witness type name of permit2 messages.
+   */
+  readonly domainVersion: `${number}`;
+  /**
+   * Prefix of the witness field name in permit2 messages, followed by the
+   * operation name. A field named "witness" in the wallet signing UI is...
+   * boring, so it's more relevant to show e.g. "ymaxDeposit".
+   *
+   * If absent, permit2 witness messages are not supported by this schema.
+   */
+  readonly witnessFieldNamePrefix?: string;
+  /** The operations (primary types) and their fields */
+  readonly operationTypes: TypedDataRecord;
+  /** Struct types that may be referenced by operation fields */
+  readonly subTypes: TypedDataRecord;
+};
 
-const StandaloneDomainTypeParams = [
+export const StandaloneDomainTypeParams = [
   { name: 'name', type: 'string' },
   { name: 'version', type: 'string' },
   { name: 'chainId', type: 'uint256' },
   { name: 'verifyingContract', type: 'address' },
 ] as const satisfies TypedDataParameter[];
 
-const YmaxStandaloneDomainBase = {
-  name: YMAX_DOMAIN_NAME,
-  version: YMAX_DOMAIN_VERSION,
-} as const satisfies TypedDataDomain;
-export type YmaxFullDomain = typeof YmaxStandaloneDomainBase & {
-  chainId: bigint;
-  verifyingContract: Address;
-};
-
-// A param to designate the portfolio in operations by its `portfolioId`
-const PortfolioIdParam = {
-  name: 'portfolio',
-  type: 'uint256',
-} as const satisfies TypedDataParameter;
-
-// XXX: Remove
-const SharedPortfolioTypeParams = [] as const satisfies TypedDataParameter[];
-
 /**
  * Fields included in Permit data that we don't want duplicated in witness data,
  * so only included in standalone typed data.
  */
-const PortfolioStandaloneTypeParams = [
+export const StandaloneEnvelopeTypeParams = [
   { name: 'nonce', type: 'uint256' },
   { name: 'deadline', type: 'uint256' },
 ] as const satisfies TypedDataParameter[];
 
-/**
- * The set of portfolio operations supported by EVM Wallets, and their associated params
- */
-const OperationTypes = {
-  /**
-   * Open a portfolio, optionally in the same signed message enabling
-   * auto-features and/or granting portfolio permissions to an automation
-   * agent's Agoric address, now that `features`/`grantee` can be marked
-   * `optional` in the EIP-712 type definition. This is the preferred,
-   * general form of the former separate {@link OpenPortfolioWithAutoFeatures}
-   * / {@link OpenPortfolioWithGrant} operations, which remain supported as
-   * distinct operation types for backward compatibility with existing
-   * clients/messages, but should not be needed for new callers. Granting
-   * delivers the delegation to `grantee.address`, exactly as a standalone
-   * {@link Grant} would; enabling auto-features behaves exactly as a
-   * standalone {@link SetAutoFeatures} would.
-   *
-   * - allocations: initial target allocation across instruments
-   * - features: auto-features to enable on open, if any
-   * - grantee: delegation recipient and encoded portfolio permissions, if any
-   */
-  OpenPortfolio: [
-    { name: 'allocations', type: 'Allocation[]' },
-    { name: 'features', type: 'PortfolioAutoFeatures', optional: true },
-    { name: 'grantee', type: 'DelegationGrantee', optional: true },
-  ],
-  /**
-   * @deprecated prefer {@link OpenPortfolio} with its optional `features`
-   * field. Kept as a distinct operation type for backward compatibility.
-   */
-  OpenPortfolioWithAutoFeatures: [
-    { name: 'allocations', type: 'Allocation[]' },
-    { name: 'features', type: 'PortfolioAutoFeatures' },
-  ],
-  /**
-   * @deprecated prefer {@link OpenPortfolio} with its optional `grantee`
-   * field. Kept as a distinct operation type for backward compatibility.
-   */
-  OpenPortfolioWithGrant: [
-    { name: 'allocations', type: 'Allocation[]' },
-    { name: 'grantee', type: 'DelegationGrantee' },
-  ],
-  Rebalance: [PortfolioIdParam],
-  SetTargetAllocation: [
-    { name: 'allocations', type: 'Allocation[]' },
-    PortfolioIdParam,
-  ],
-  Deposit: [PortfolioIdParam],
-  /**
-   * Withdraw funds from a portfolio to the source EVM account.
-   * The signer of the message must match the portfolio's source EVM account
-   * The destination chain is determined from the domain info (chainId).
-   * - token: ERC-20 token contract address (must be USDC contract on the destination chain)
-   */
-  Withdraw: [{ name: 'withdraw', type: 'Asset' }, PortfolioIdParam],
-  /**
-   * Grant portfolio permissions on a portfolio to another Agoric address
-   * (e.g. an automation agent). The contract delivers an invitation whose
-   * redeemed result can be saved in the grantee's wallet store and used via
-   * wallet invocation.
-   *
-   * - accountHolder: bech32 Agoric address that will receive the invitation
-   * - permissions: encoded portfolio permissions (see PortfolioPermissions)
-   */
-  Grant: [
-    { name: 'accountHolder', type: 'string' },
-    { name: 'permissions', type: 'PortfolioPermissions' },
-    PortfolioIdParam,
-  ],
-  /** Atomically replace an external delegation's complete permissions. */
-  ChangePermissions: [
-    { name: 'agentId', type: 'uint256' },
-    { name: 'permissions', type: 'PortfolioPermissions' },
-    PortfolioIdParam,
-  ],
-  /** Irreversibly revoke an external delegation. */
-  Revoke: [{ name: 'agentId', type: 'uint256' }, PortfolioIdParam],
-  /**
-   * Update which auto-features are enabled for a portfolio. The contract will
-   * generate a permissioned delegation as necessary and deliver it to the planner.
-   */
-  SetAutoFeatures: [
-    { name: 'features', type: 'PortfolioAutoFeatures' },
-    PortfolioIdParam,
-  ],
-  // `satisfies Record<string, readonly TypedDataParameter[]>` rather than
-  // abitype's own `TypedData` (whose `TypedDataParameter` is strictly
-  // `{name, type}`) so struct fields here can carry the repo-local `optional`
-  // marker without tripping excess-property checks on this literal. Downstream
-  // consumption (e.g. `satisfies TypedData` on values derived from `typeof
-  // OperationTypes`) is unaffected: those check a type reference structurally,
-  // and an extra optional `optional?` property doesn't break assignability to
-  // abitype's `TypedData`.
-} as const satisfies Record<string, readonly TypedDataParameter[]>;
-type OperationTypes = typeof OperationTypes;
-export type OperationTypeNames = keyof OperationTypes;
+export type OperationNames<S extends EIP712MessageSchema> =
+  keyof S['operationTypes'] & string;
 
-const OperationSubTypes = {
-  Allocation: [
-    { name: 'instrument', type: 'string' },
-    { name: 'portion', type: 'uint256' },
-  ],
-  Asset: TokenPermissionsComponents,
-  /** @see {@link PortfolioPermissions} */
-  PortfolioPermissions: [
-    { name: 'allocation', type: 'bool', optional: true },
-    { name: 'maxWeightBps', type: 'uint256', optional: true },
-    { name: 'minVaultTvlUsd', type: 'uint256', optional: true },
-    { name: 'maxVaultShareBps', type: 'uint256', optional: true },
-  ],
-  DelegationGrantee: [
-    { name: 'address', type: 'string' },
-    { name: 'permissions', type: 'PortfolioPermissions' },
-  ],
-  /**
-   * @see {@link PortfolioAutoFeatures}
-   *
-   * Both fields are `optional` so a `SetAutoFeatures` message can flip a
-   * single feature while leaving the other at its current on-chain value.
-   */
-  PortfolioAutoFeatures: [
-    { name: 'rebalance', type: 'bool', optional: true },
-    { name: 'claimRewards', type: 'bool', optional: true },
-  ],
-} as const satisfies Record<string, readonly TypedDataParameter[]>;
+export type DomainBase<S extends EIP712MessageSchema> = {
+  readonly name: S['domainName'];
+  readonly version: S['domainVersion'];
+};
+
+export type FullDomain<S extends EIP712MessageSchema> = DomainBase<S> & {
+  chainId: bigint;
+  verifyingContract: Address;
+};
+
+export type OperationType<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S>,
+> = TypedDataToStructType<S['operationTypes'] & S['subTypes'], T>;
 
 /**
- * Target allocation for portfolio positions.
- * Uses 'portion' (not 'basisPoints') to allow flexible ratios.
- * The denominator is implicitly the sum of all portions.
- *
- * Examples:
- * - [{instrument: 'A', portion: 60}, {instrument: 'B', portion: 40}] => 60:40 ratio
- * - [{instrument: 'A', portion: 6}, {instrument: 'B', portion: 4}] => 6:4 ratio (same as 60:40)
+ * In the wrapped case, the domain is fixed by permit2, so we can't choose
+ * name/version there, so we put the schema's domain name and version in the
+ * type name.
  */
-export type TargetAllocation = TypedDataToStructType<
-  typeof OperationSubTypes,
-  'Allocation'
->;
-type YmaxOperationTypesWithSubTypes<
-  T extends string,
-  P extends readonly TypedDataParameter[],
-> = {
-  [K in T]: P;
-} & typeof OperationSubTypes;
+export type WitnessTypeName<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S>,
+> = `${S['domainName']}V${S['domainVersion']}${T}`;
 
-export type PortfolioPermissionsEIP712 = TypedDataToStructType<
-  typeof OperationSubTypes,
-  'PortfolioPermissions'
->;
+export type WitnessFieldName<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S>,
+> = `${NonNullable<S['witnessFieldNamePrefix']>}${T}`;
 
-export type PortfolioAutoFeaturesEIP712 = TypedDataToStructType<
-  typeof OperationSubTypes,
-  'PortfolioAutoFeatures'
->;
-
-/**
- * In the wrapped case, the domain is fixed by permit2, so we can't choose name/version there.
- * so we put the ymax-specifc domain name and version in the type name.
- */
-const getYmaxWitnessTypeName = <T extends OperationTypeNames>(operation: T) =>
-  `${YMAX_DOMAIN_NAME}V${YMAX_DOMAIN_VERSION}${operation}` as const;
-type YmaxWitnessTypeName<T extends OperationTypeNames> = ReturnType<
-  typeof getYmaxWitnessTypeName<T>
->;
-const getYmaxWitnessFieldName = <T extends OperationTypeNames>(operation: T) =>
-  `${YMAX_WITNESS_FIELD_NAME_PREFIX}${operation}` as const;
-type YmaxWitnessFieldName<T extends OperationTypeNames> = ReturnType<
-  typeof getYmaxWitnessFieldName<T>
->;
-export type YmaxWitnessTypeParam<
-  T extends OperationTypeNames = OperationTypeNames,
+export type WitnessTypeParam<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
 > = TypedDataParameter<
-  YmaxWitnessFieldName<T>,
-  Extract<keyof YmaxWitnessOperationTypes<T>, string>
+  WitnessFieldName<S, T>,
+  Extract<keyof WitnessOperationTypes<S, T>, string>
 >;
+
+type WitnessOperationTypes<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
+> = {
+  [K in T as WitnessTypeName<S, K>]: [...S['operationTypes'][K]];
+};
+
+export type WitnessTypes<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
+> = WitnessOperationTypes<S, T> & S['subTypes'];
+
+type StandaloneOperationTypes<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
+> = {
+  [K in T]: [...S['operationTypes'][K], ...typeof StandaloneEnvelopeTypeParams];
+};
+
+export type StandaloneTypes<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
+> = StandaloneOperationTypes<S, T> &
+  S['subTypes'] & {
+    EIP712Domain: typeof StandaloneDomainTypeParams;
+  };
+
+export type WitnessData<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S>,
+> = TypedDataToStructType<WitnessTypes<S, T>, WitnessTypeParam<S, T>['type']>;
+
+export type StandaloneData<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S>,
+> = TypedDataToStructType<StandaloneTypes<S, T>, T>;
+
+export type StandaloneOperationData<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
+> = TypedDataDefinition<StandaloneTypes<S, T>, T, T> & {
+  domain: FullDomain<S>;
+};
 
 /**
- * showing a field named "witness" in the wallet signing UI is... boring
- * so let's put something more relevant like the @{link OperationTypes}: Deposit etc.
+ * `WitnessTypes` narrowed to abitype's `TypedData`, which TypeScript cannot
+ * prove for a generic schema (`TypedData` forbids keys that are Solidity type
+ * names). For any concrete schema this resolves to `WitnessTypes` itself.
  */
-const getYmaxWitnessTypeParam = <T extends OperationTypeNames>(
-  operation: T,
-): YmaxWitnessTypeParam<T> => ({
-  name: getYmaxWitnessFieldName(operation),
-  type: getYmaxWitnessTypeName(operation) as YmaxWitnessTypeParam<T>['type'],
-});
+type WitnessTypedData<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S>,
+> = Extract<WitnessTypes<S, T>, TypedData>;
 
-// TODO: Filter operation types to only those needed for witness/standalone
-type YmaxWitnessOperationTypes<
-  T extends OperationTypeNames = OperationTypeNames,
-> = {
-  [K in T as YmaxWitnessTypeName<K>]: [
-    ...OperationTypes[K],
-    ...typeof SharedPortfolioTypeParams,
-  ];
-};
-type YmaxWitnessTypes<T extends OperationTypeNames = OperationTypeNames> =
-  YmaxWitnessOperationTypes<T> & typeof OperationSubTypes;
-type YmaxStandaloneOperationTypes<
-  T extends OperationTypeNames = OperationTypeNames,
-> = {
-  [K in T]: [
-    ...OperationTypes[K],
-    ...typeof SharedPortfolioTypeParams,
-    ...typeof PortfolioStandaloneTypeParams,
-  ];
-};
-type YmaxStandaloneTypes<T extends OperationTypeNames = OperationTypeNames> =
-  YmaxStandaloneOperationTypes<T> &
-    typeof OperationSubTypes & {
-      EIP712Domain: typeof StandaloneDomainTypeParams;
-    };
-
-export type YmaxOperationType<T extends OperationTypeNames> =
-  TypedDataToStructType<OperationTypes & typeof OperationSubTypes, T>;
-
-type YmaxWitnessData<T extends OperationTypeNames> = TypedDataToStructType<
-  YmaxWitnessTypes<T>,
-  YmaxWitnessTypeParam<T>['type']
->;
-type YmaxStandaloneData<T extends OperationTypeNames> = TypedDataToStructType<
-  YmaxStandaloneTypes<T>,
-  T
+/** `WitnessTypeParam` narrowed to match {@link WitnessTypedData}. */
+type WitnessTypedDataParam<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S>,
+> = Extract<
+  WitnessTypeParam<S, T>,
+  TypedDataParameter<string, Extract<keyof WitnessTypedData<S, T>, string>>
 >;
 
-const getYmaxOperationAndSubTypes = <
-  T extends string,
-  P extends readonly TypedDataParameter[],
->(
-  operation: T,
-  params: P,
-) =>
-  ({
-    [operation]: params,
-    ...OperationSubTypes,
-  }) as YmaxOperationTypesWithSubTypes<T, P> satisfies TypedData;
+export type OperationWitness<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
+> = Witness<WitnessTypedData<S, T>, WitnessTypedDataParam<S, T>>;
 
-const getYmaxWitnessTypes = <T extends OperationTypeNames>(operation: T) =>
-  getYmaxOperationAndSubTypes(getYmaxWitnessTypeName(operation), [
-    ...OperationTypes[operation],
-    ...SharedPortfolioTypeParams,
-  ]) as YmaxWitnessTypes<T> satisfies TypedData;
-
-const getYmaxStandaloneTypes = <T extends OperationTypeNames>(
-  operation: T,
-): YmaxStandaloneTypes<T> => {
-  const types = {
-    EIP712Domain: StandaloneDomainTypeParams,
-    ...getYmaxOperationAndSubTypes(operation, [
-      ...OperationTypes[operation],
-      ...SharedPortfolioTypeParams,
-      ...PortfolioStandaloneTypeParams,
-    ]),
-  };
-  // TypeScript cannot preserve the mapped tuple relationship for
-  // `OperationTypes[operation]` through the spreads above.
-  return types as YmaxStandaloneTypes<T> satisfies TypedData;
-};
-
-export const getYmaxOperationTypes = <T extends OperationTypeNames>(
-  operation: T,
-) =>
-  getYmaxOperationAndSubTypes(operation, OperationTypes[operation]) as {
-    [K in T]: OperationTypes[K];
-  } & typeof OperationSubTypes satisfies TypedData;
-
-export const getYmaxWitness = <T extends OperationTypeNames>(
-  operation: T,
-  data: NoInfer<YmaxWitnessData<T>>,
-): Witness<YmaxWitnessTypes<T>, YmaxWitnessTypeParam<T>> => {
-  const witnessTypeParam = getYmaxWitnessTypeParam(operation);
-  // Normalize away unused `optional` fields (and their now-unreferenced
-  // types) so that e.g. omitting `grantee`/`features` on `OpenPortfolio`
-  // produces a `types`/`message` pair that real EIP-712 hashing can encode.
-  // This is the authoring side, not adversarial input, so extra fields are
-  // dropped rather than rejected.
-  const { message, types } = normalizeAndValidateEIP712Data({
-    message: data as Record<string, unknown>,
-    types: getYmaxWitnessTypes(operation),
-    primaryType: witnessTypeParam.type,
-  });
-  return makeWitness<YmaxWitnessTypes<T>, YmaxWitnessTypeParam<T>>(
-    message as YmaxWitnessData<T>,
-    types as YmaxWitnessTypes<T>,
-    witnessTypeParam,
-  );
-};
-
-export const getYmaxStandaloneDomain = (
-  chainId: bigint | number,
-  verifyingContract: Address,
-): YmaxFullDomain => ({
-  ...YmaxStandaloneDomainBase,
-  chainId: BigInt(chainId),
-  verifyingContract,
-});
-
-export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
-  data: NoInfer<YmaxStandaloneData<T>>,
-  operation: T,
-  chainId: bigint | number,
-  verifyingContract: Address,
-): TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
-  domain: YmaxFullDomain;
-} => {
-  // Normalize away unused `optional` fields (and their now-unreferenced
-  // types) so that e.g. omitting unchanged `features` on `SetAutoFeatures`
-  // produces a `types`/`message` pair that real EIP-712 hashing can encode.
-  // This is the authoring side, not adversarial input, so extra fields are
-  // dropped rather than rejected.
-  const { message, types } = normalizeAndValidateEIP712Data({
-    message: data as Record<string, unknown>,
-    types: getYmaxStandaloneTypes(operation),
-    primaryType: operation,
-  });
-
-  return {
-    domain: getYmaxStandaloneDomain(chainId, verifyingContract),
-    types,
-    primaryType: operation,
-    message: message as TypedDataToStructType<YmaxStandaloneTypes<T>, T>,
-  } as TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
-    domain: YmaxFullDomain;
-  };
-};
-
-export type YmaxStandaloneOperationData<
-  T extends OperationTypeNames = OperationTypeNames,
-> = ReturnType<typeof getYmaxStandaloneOperationData<T>>;
-
-export type YmaxPermitWitnessTransferFromData<
-  T extends OperationTypeNames = OperationTypeNames,
+export type PermitWitnessTransferFromOperationData<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
 > = ReturnType<
   typeof getPermitWitnessTransferFromData<
-    YmaxWitnessTypes<T>,
-    YmaxWitnessTypeParam<T>
+    WitnessTypedData<S, T>,
+    WitnessTypedDataParam<S, T>
   >
 >;
 
-export type YmaxPermitBatchWitnessTransferFromData<
-  T extends OperationTypeNames = OperationTypeNames,
+export type PermitBatchWitnessTransferFromOperationData<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
 > = ReturnType<
   typeof getPermitBatchWitnessTransferFromData<
-    YmaxWitnessTypes<T>,
-    YmaxWitnessTypeParam<T>
+    WitnessTypedData<S, T>,
+    WitnessTypedDataParam<S, T>
   >
 >;
 
-export function validateYmaxDomainBase(
-  domain: TypedDataDomain,
-): asserts domain is typeof YmaxStandaloneDomainBase {
-  if (domain.name !== YMAX_DOMAIN_NAME) {
-    throw new Error(
-      `Invalid Ymax domain name: ${domain.name} (expected ${YMAX_DOMAIN_NAME})`,
-    );
-  }
-  if (domain.version !== YMAX_DOMAIN_VERSION) {
-    throw new Error(
-      `Invalid Ymax domain version: ${domain.version} (expected ${YMAX_DOMAIN_VERSION})`,
-    );
-  }
+/**
+ * Helpers to author and validate EIP-712 messages described by a schema.
+ *
+ * Explicitly declared (rather than inferred from
+ * {@link makeEIP712MessageKit}) so that its assertion methods can be called
+ * through a kit declared with this type, e.g.
+ * `const kit: EIP712MessageKit<typeof schema> = makeEIP712MessageKit(schema)`.
+ */
+export interface EIP712MessageKit<S extends EIP712MessageSchema> {
+  readonly schema: S;
+  /** Whether messages may be submitted as a permit2 witness */
+  readonly supportsPermit2Witness: boolean;
+  /**
+   * The types of an operation's fields (without any standalone envelope
+   * fields), keyed by the operation name, along with all sub-types.
+   */
+  getOperationTypes<T extends OperationNames<S>>(
+    operation: T,
+  ): { [K in T]: S['operationTypes'][K] } & S['subTypes'];
+  /** Make the witness of an operation for a permit2 message. */
+  getWitness<T extends OperationNames<S>>(
+    operation: T,
+    data: NoInfer<WitnessData<S, T>>,
+  ): OperationWitness<S, T>;
+  getStandaloneDomain(
+    chainId: bigint | number,
+    verifyingContract: Address,
+  ): FullDomain<S>;
+  /** Make the typed data of a standalone operation message. */
+  getStandaloneOperationData<T extends OperationNames<S>>(
+    data: NoInfer<StandaloneData<S, T>>,
+    operation: T,
+    chainId: bigint | number,
+    verifyingContract: Address,
+  ): StandaloneOperationData<S, T>;
+  /** Validate the name and version of a domain. */
+  validateDomainBase(domain: TypedDataDomain): asserts domain is DomainBase<S>;
+  /**
+   * Validate a standalone message domain, optionally checking its verifying
+   * contract against the valid contract addresses for its chain ID.
+   */
+  validateDomain(
+    domain: TypedDataDomain,
+    validContractAddresses?:
+      | Partial<Record<number | string, Address>>
+      | undefined,
+  ): asserts domain is FullDomain<S>;
+  validateOperationTypeName<T extends OperationNames<S>>(
+    typeName: string,
+  ): asserts typeName is T;
+  /**
+   * Split the type name of a permit2 witness into the domain and operation
+   * it encodes, validating both.
+   */
+  splitWitnessFieldType<T extends OperationNames<S>>(
+    fieldName: WitnessTypeName<S, T>,
+  ): { domain: DomainBase<S>; primaryType: T };
 }
 
-export function validateYmaxDomain(
-  domain: TypedDataDomain,
-  validContractAddresses?:
-    | Partial<Record<number | string, Address>>
-    | undefined,
-): asserts domain is YmaxFullDomain {
-  // Destructure before narrowing `domain` below, so `chainId`/`verifyingContract`
-  // remain accessible as independent bindings afterward.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { name, version, chainId, verifyingContract, ...extra } = domain;
-  validateYmaxDomainBase(domain);
+/**
+ * Make the helpers to author and validate EIP-712 messages described by
+ * `schema`.
+ *
+ * @param schema
+ */
+export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
+  schema: S,
+): EIP712MessageKit<S> => {
+  const {
+    domainName,
+    domainVersion,
+    witnessFieldNamePrefix,
+    operationTypes,
+    subTypes,
+  } = schema;
+  type Ops = OperationNames<S>;
 
-  if (typeof chainId !== 'bigint' || verifyingContract === undefined) {
-    throw new Error(`Ymax domain must include chain ID and verifying contract`);
-  }
+  const domainBase = {
+    name: domainName,
+    version: domainVersion,
+  } as DomainBase<S> satisfies TypedDataDomain;
 
-  if (validContractAddresses) {
-    const chainIdStr = String(chainId);
+  const getWitnessTypeName = <T extends Ops>(operation: T) =>
+    `${domainName}V${domainVersion}${operation}` as WitnessTypeName<S, T>;
 
-    if (!(chainIdStr in validContractAddresses)) {
-      throw new Error(`Unknown chain ID in Ymax domain: ${chainId}`);
-    }
-
-    if (
-      !sameEvmAddress(verifyingContract, validContractAddresses[chainIdStr])
-    ) {
+  const getWitnessTypeParam = <T extends Ops>(
+    operation: T,
+  ): WitnessTypeParam<S, T> => {
+    if (witnessFieldNamePrefix === undefined) {
       throw new Error(
-        `Invalid verifying contract for chain ID ${chainId}: ${verifyingContract} (expected ${validContractAddresses[chainIdStr]})`,
+        `${domainName} messages do not support permit2 witness data`,
+      );
+    }
+    return {
+      name: `${witnessFieldNamePrefix}${operation}` as WitnessFieldName<S, T>,
+      type: getWitnessTypeName(operation) as WitnessTypeParam<S, T>['type'],
+    };
+  };
+
+  const getOperationAndSubTypes = <P extends readonly TypedDataParameter[]>(
+    typeName: string,
+    params: P,
+  ) =>
+    ({
+      [typeName]: params,
+      ...subTypes,
+    }) as TypedDataRecord;
+
+  const getWitnessTypes = <T extends Ops>(operation: T) =>
+    getOperationAndSubTypes(getWitnessTypeName(operation), [
+      ...operationTypes[operation],
+    ]) as unknown as WitnessTypes<S, T>;
+
+  const getStandaloneTypes = <T extends Ops>(
+    operation: T,
+  ): StandaloneTypes<S, T> => {
+    const types = {
+      EIP712Domain: StandaloneDomainTypeParams,
+      ...getOperationAndSubTypes(operation, [
+        ...operationTypes[operation],
+        ...StandaloneEnvelopeTypeParams,
+      ]),
+    };
+    // TypeScript cannot preserve the mapped tuple relationship for
+    // `operationTypes[operation]` through the spreads above.
+    return types as unknown as StandaloneTypes<S, T>;
+  };
+
+  /**
+   * The types of an operation's fields (without any standalone envelope
+   * fields), keyed by the operation name, along with all sub-types.
+   *
+   * @param operation
+   */
+  const getOperationTypes = <T extends Ops>(operation: T) =>
+    getOperationAndSubTypes(
+      operation,
+      operationTypes[operation],
+    ) as unknown as {
+      [K in T]: S['operationTypes'][K];
+    } & S['subTypes'];
+
+  const getWitness = <T extends Ops>(
+    operation: T,
+    data: NoInfer<WitnessData<S, T>>,
+  ): OperationWitness<S, T> => {
+    const witnessTypeParam = getWitnessTypeParam(operation);
+    // Normalize away unused `optional` fields (and their now-unreferenced
+    // types) so that e.g. omitting an optional struct field produces a
+    // `types`/`message` pair that real EIP-712 hashing can encode.
+    // This is the authoring side, not adversarial input, so extra fields are
+    // dropped rather than rejected.
+    const { message, types } = normalizeAndValidateEIP712Data({
+      message: data as Record<string, unknown>,
+      types: getWitnessTypes(operation),
+      primaryType: witnessTypeParam.type,
+    });
+    return makeWitness<WitnessTypedData<S, T>, WitnessTypedDataParam<S, T>>(
+      message as OperationWitness<S, T>['witness'],
+      types as WitnessTypedData<S, T>,
+      witnessTypeParam as WitnessTypedDataParam<S, T>,
+    );
+  };
+
+  const getStandaloneDomain = (
+    chainId: bigint | number,
+    verifyingContract: Address,
+  ): FullDomain<S> => ({
+    ...domainBase,
+    chainId: BigInt(chainId),
+    verifyingContract,
+  });
+
+  const getStandaloneOperationData = <T extends Ops>(
+    data: NoInfer<StandaloneData<S, T>>,
+    operation: T,
+    chainId: bigint | number,
+    verifyingContract: Address,
+  ): StandaloneOperationData<S, T> => {
+    // Normalize away unused `optional` fields (and their now-unreferenced
+    // types) so that e.g. omitting an optional struct field produces a
+    // `types`/`message` pair that real EIP-712 hashing can encode.
+    // This is the authoring side, not adversarial input, so extra fields are
+    // dropped rather than rejected.
+    const { message, types } = normalizeAndValidateEIP712Data({
+      message: data as Record<string, unknown>,
+      types: getStandaloneTypes(operation),
+      primaryType: operation,
+    });
+
+    return {
+      domain: getStandaloneDomain(chainId, verifyingContract),
+      types,
+      primaryType: operation,
+      message,
+    } as unknown as StandaloneOperationData<S, T>;
+  };
+
+  function validateDomainBase(
+    domain: TypedDataDomain,
+  ): asserts domain is DomainBase<S> {
+    if (domain.name !== domainName) {
+      throw new Error(
+        `Invalid ${domainName} domain name: ${domain.name} (expected ${domainName})`,
+      );
+    }
+    if (domain.version !== domainVersion) {
+      throw new Error(
+        `Invalid ${domainName} domain version: ${domain.version} (expected ${domainVersion})`,
       );
     }
   }
 
-  const extraKeys = Object.keys(extra);
-  if (extraKeys.length) {
-    throw new Error(
-      `Unexpected field(s) in Ymax domain: ${extraKeys.join(', ')}`,
-    );
-  }
-}
+  function validateDomain(
+    domain: TypedDataDomain,
+    validContractAddresses?:
+      | Partial<Record<number | string, Address>>
+      | undefined,
+  ): asserts domain is FullDomain<S> {
+    // Destructure before narrowing `domain` below, so `chainId`/`verifyingContract`
+    // remain accessible as independent bindings afterward.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { name, version, chainId, verifyingContract, ...extra } = domain;
+    validateDomainBase(domain);
 
-export function validateYmaxOperationTypeName<T extends OperationTypeNames>(
-  typeName: string,
-): asserts typeName is T {
-  if (!(typeName in OperationTypes)) {
-    throw new Error(
-      `Unknown Ymax operation type: ${typeName} (expected one of ${Object.keys(OperationTypes).join(', ')})`,
-    );
-  }
-}
+    if (typeof chainId !== 'bigint' || verifyingContract === undefined) {
+      throw new Error(
+        `${domainName} domain must include chain ID and verifying contract`,
+      );
+    }
 
-export const splitWitnessFieldType = <T extends OperationTypeNames>(
-  fieldName: `${typeof YMAX_DOMAIN_NAME}V${typeof YMAX_DOMAIN_VERSION}${T}`,
-) => {
-  const match =
-    fieldName.startsWith(YMAX_DOMAIN_NAME) &&
-    fieldName.substring(YMAX_DOMAIN_NAME.length).match(/^V(\d+)(\w+)$/u);
-  if (!match) {
-    throw new Error(`Invalid witness field type name: ${fieldName}`);
-  }
-  const [, version, operation] = match;
-  const domain = {
-    name: YMAX_DOMAIN_NAME,
-    version,
-  } satisfies TypedDataDomain;
+    if (validContractAddresses) {
+      const chainIdStr = String(chainId);
 
-  validateYmaxDomainBase(domain);
-  validateYmaxOperationTypeName<T>(operation);
+      if (!(chainIdStr in validContractAddresses)) {
+        throw new Error(`Unknown chain ID in ${domainName} domain: ${chainId}`);
+      }
+
+      if (
+        !sameEvmAddress(verifyingContract, validContractAddresses[chainIdStr])
+      ) {
+        throw new Error(
+          `Invalid verifying contract for chain ID ${chainId}: ${verifyingContract} (expected ${validContractAddresses[chainIdStr]})`,
+        );
+      }
+    }
+
+    const extraKeys = Object.keys(extra);
+    if (extraKeys.length) {
+      throw new Error(
+        `Unexpected field(s) in ${domainName} domain: ${extraKeys.join(', ')}`,
+      );
+    }
+  }
+
+  function validateOperationTypeName<T extends Ops>(
+    typeName: string,
+  ): asserts typeName is T {
+    if (!(typeName in operationTypes)) {
+      throw new Error(
+        `Unknown ${domainName} operation type: ${typeName} (expected one of ${Object.keys(operationTypes).join(', ')})`,
+      );
+    }
+  }
+
+  const splitWitnessFieldType = <T extends Ops>(
+    fieldName: WitnessTypeName<S, T>,
+  ) => {
+    const match =
+      fieldName.startsWith(domainName) &&
+      fieldName.substring(domainName.length).match(/^V(\d+)(\w+)$/u);
+    if (!match) {
+      throw new Error(`Invalid witness field type name: ${fieldName}`);
+    }
+    const [, version, operation] = match;
+    const domain = {
+      name: domainName,
+      version,
+    } satisfies TypedDataDomain;
+
+    validateDomainBase(domain);
+    validateOperationTypeName<T>(operation);
+
+    return {
+      domain,
+      primaryType: operation,
+    };
+  };
 
   return {
-    domain,
-    primaryType: operation,
+    schema,
+    supportsPermit2Witness: witnessFieldNamePrefix !== undefined,
+    getOperationTypes,
+    getWitness,
+    getStandaloneDomain,
+    getStandaloneOperationData,
+    validateDomainBase,
+    validateDomain,
+    validateOperationTypeName,
+    splitWitnessFieldType,
   };
 };

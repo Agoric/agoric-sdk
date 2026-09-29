@@ -1,12 +1,13 @@
 /**
- * @file Helpers to handle portfolio EIP-712 messages, extracting operation and
- * deposit permit details, as well as verifying the signature.
+ * @file Helpers to handle EIP-712 messages described by an
+ * {@link EIP712MessageSchema}, extracting operation and deposit permit
+ * details, as well as verifying the signature.
  *
  * The viem runtime dependency is expected as a power to make this usable both
  * on chain and in off-chain services.
  */
 
-import type { AbiParameterToPrimitiveType, Address } from 'abitype';
+import type { Address, TypedData, TypedDataDomain } from 'abitype';
 import type { getTypesForEIP712Domain } from 'viem';
 import type {
   hashStruct,
@@ -14,12 +15,10 @@ import type {
   recoverTypedDataAddress,
   RecoverTypedDataAddressParameters,
 } from 'viem/utils';
-import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
-import { normalizeAndValidateEIP712Data } from '@agoric/orchestration/src/utils/viem-utils/eip712-normalize.ts';
-import type {
-  encodeType,
-  WithSignature,
-} from '@agoric/orchestration/src/utils/viem.js';
+import type { TypedDataParameter } from './abitype.ts';
+import { sameEvmAddress } from './address.js';
+import { normalizeAndValidateEIP712Data } from './viem-utils/eip712-normalize.ts';
+import type { encodeType, WithSignature } from './viem.ts';
 import {
   extractWitnessFieldFromTypes,
   isPermit2MessageType,
@@ -27,43 +26,42 @@ import {
   validatePermit2Domain,
   validateTokenPermissionsType,
   type Permit2Domain,
-  type PermitWitnessTransferFromInputComponents,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+  type PermitTransferFrom,
+  PermitTransferFromTypeParams,
+  TokenPermissionTypeParams,
+  type PermitWitnessTransferFromPayload,
+} from './permit2.ts';
 import {
-  type OperationTypeNames,
-  type YmaxStandaloneOperationData,
-  type YmaxPermitWitnessTransferFromData,
-  type YmaxOperationType,
-  splitWitnessFieldType,
-  validateYmaxDomain,
-  validateYmaxOperationTypeName,
-  getYmaxOperationTypes,
-  type YmaxFullDomain,
+  makeEIP712MessageKit,
+  type EIP712MessageKit,
+  type EIP712MessageSchema,
+  type FullDomain,
+  type OperationNames,
+  type OperationType,
+  type PermitWitnessTransferFromOperationData,
+  type StandaloneOperationData,
+  type WitnessTypeName,
 } from './eip712-messages.ts';
 
-export type YmaxOperationDetails<
-  T extends OperationTypeNames = OperationTypeNames,
+export type OperationDetails<
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
 > = {
   [P in T]: {
     operation: P;
-    domain: YmaxFullDomain;
+    domain: FullDomain<S>;
     /**
      * A *lower bound* on the runtime shape, not an exact description: since
      * `extractOperationDetailsFromStandaloneData` /
      * `extractOperationDetailsFromPermit2WitnessData` keep (rather than
      * drop) genuinely-signed fields this version doesn't recognize, `data`
-     * can carry extra properties beyond `YmaxOperationType<P>` at runtime.
+     * can carry extra properties beyond `OperationType<S, P>` at runtime.
      * Consumers that must reject such fields (e.g. permission records)
      * need to validate that themselves against a closed shape.
      */
-    data: YmaxOperationType<P>;
+    data: OperationType<S, P>;
   };
 }[T];
-
-export type PermitWitnessTransferFromPayload = AbiParameterToPrimitiveType<{
-  type: 'tuple';
-  components: typeof PermitWitnessTransferFromInputComponents;
-}>;
 
 export type PermitDetails = {
   chainId: bigint;
@@ -74,8 +72,9 @@ export type PermitDetails = {
 };
 
 export type FullMessageDetails<
-  T extends OperationTypeNames = OperationTypeNames,
-> = YmaxOperationDetails<T> & {
+  S extends EIP712MessageSchema,
+  T extends OperationNames<S> = OperationNames<S>,
+> = OperationDetails<S, T> & {
   permitDetails?: PermitDetails;
   evmWalletAddress: Address;
   nonce: bigint;
@@ -83,17 +82,56 @@ export type FullMessageDetails<
 };
 
 /**
- * EVM Message handler utils that depend on 'viem' utils for their
- * implementation. Since on-chain we cannot directly import from 'viem',
- * use a maker pattern to create these utils.
+ * Valid contract addresses, keyed by chain ID.
  */
-export const makeEVMHandlerUtils = (viemUtils: {
+export type ContractAddresses = Partial<Record<number | string, Address>>;
+
+export type EIP712ViemUtils = {
   isHex: typeof isHex;
   hashStruct: typeof hashStruct;
   recoverTypedDataAddress: typeof recoverTypedDataAddress;
   encodeType: typeof encodeType;
   getTypesForEIP712Domain: typeof getTypesForEIP712Domain;
-}) => {
+};
+
+/**
+ * EIP-712 message handler utils for messages described by `schema`. They
+ * depend on 'viem' utils for their implementation. Since on-chain we cannot
+ * directly import from 'viem', use a maker pattern to create these utils.
+ *
+ * @param viemUtils
+ * @param schema describes the domain and operations of accepted messages.
+ *   Messages of any other domain or operation are rejected.
+ */
+export const makeEIP712MessageHandlerUtils = <
+  const S extends EIP712MessageSchema,
+>(
+  viemUtils: EIP712ViemUtils,
+  schema: S,
+) => {
+  type Ops = OperationNames<S>;
+  type PermitData<T extends Ops = Ops> = PermitWitnessTransferFromOperationData<
+    S,
+    T
+  >;
+  type StandaloneData<T extends Ops = Ops> = StandaloneOperationData<S, T>;
+  /**
+   * Schema-agnostic shape of permit2 witness data, since TypeScript cannot
+   * resolve the precise `PermitData` of a generic schema.
+   */
+  type AnyPermitData = {
+    domain: Permit2Domain;
+    primaryType: 'PermitWitnessTransferFrom';
+    types: {
+      PermitWitnessTransferFrom: readonly [
+        ...typeof PermitTransferFromTypeParams,
+        TypedDataParameter,
+      ];
+      TokenPermissions: typeof TokenPermissionTypeParams;
+    } & TypedData;
+    message: PermitTransferFrom & Record<string, unknown>;
+  };
+
   const {
     isHex,
     hashStruct,
@@ -114,12 +152,16 @@ export const makeEVMHandlerUtils = (viemUtils: {
     }
   }
 
+  // Explicitly typed, as required to call its assertion methods.
+  const messageKit: EIP712MessageKit<S> = makeEIP712MessageKit(schema);
+  const { domainName } = schema;
+
   const getPermit2WitnessTypeString = makeWitnessTypeStringExtractor({
     encodeType,
   });
 
   /**
-   * Extract operation type name and data from an EIP-712 standalone Ymax typed data.
+   * Extract operation type name and data from an EIP-712 standalone typed data.
    *
    * By the time this is called, `data.message` has already been through the
    * "reject anything unsigned" normalize pass (see
@@ -130,7 +172,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * whether it's actually present in the message, but *keeps* rather than
    * drops fields the signer's client signed that this version doesn't know
    * about yet: dropping them would let a permissions-bearing field silently
-   * disappear (e.g. a not-yet-understood attenuation on a `Grant`), turning
+   * disappear (e.g. a not-yet-understood attenuation on a grant), turning
    * an attenuated grant into an unconstrained one. The returned `data` can
    * therefore be a superset of the expected shape; it is guaranteed to
    * satisfy the expected types (required fields present, values of the
@@ -138,19 +180,18 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * (e.g. permission records) need to validate that themselves against a
    * closed shape.
    *
-   * Assumes the domain has the expected shape of a Ymax domain.
+   * Assumes the domain has the expected shape of the schema's domain.
    *
    * @param data - The EIP-712 typed data of a standalone message
+   * @param validContractAddresses
    * @returns The operation type name and associated data
    */
-  const extractOperationDetailsFromStandaloneData = <
-    T extends OperationTypeNames,
-  >(
-    data: Omit<YmaxStandaloneOperationData<T>, 'domain'> & {
-      domain: YmaxFullDomain;
+  const extractOperationDetailsFromStandaloneData = <T extends Ops>(
+    data: Omit<StandaloneData<T>, 'domain'> & {
+      domain: FullDomain<S>;
     },
     validContractAddresses?: undefined,
-  ): YmaxOperationDetails<T> => {
+  ): OperationDetails<S, T> => {
     const { domain, ...standaloneData } = data;
 
     if (validContractAddresses) {
@@ -159,17 +200,16 @@ export const makeEVMHandlerUtils = (viemUtils: {
       );
     }
 
-    validateYmaxOperationTypeName<T>(standaloneData.primaryType);
+    messageKit.validateOperationTypeName<T>(standaloneData.primaryType);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { nonce, deadline, ..._operationData } =
-      standaloneData.message as YmaxStandaloneOperationData['message'];
-    const operationData = _operationData as unknown as YmaxOperationType<T>;
+    const { nonce, deadline, ...operationData } =
+      standaloneData.message as Record<string, unknown>;
     const operation = standaloneData.primaryType;
     const { message: normalizedData } = normalizeAndValidateEIP712Data(
       {
-        message: operationData as Record<string, unknown>,
-        types: getYmaxOperationTypes(operation),
+        message: operationData,
+        types: messageKit.getOperationTypes(operation),
         primaryType: operation,
       },
       { onExtraField: 'keep' },
@@ -177,8 +217,8 @@ export const makeEVMHandlerUtils = (viemUtils: {
     return {
       operation,
       domain,
-      data: normalizedData as YmaxOperationType<T>,
-    };
+      data: normalizedData as OperationType<S, T>,
+    } as OperationDetails<S, T>;
   };
 
   /**
@@ -193,14 +233,8 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * version of the code expects for the operation, resolving any `optional`
    * field based on whether it's actually present in the witness data, but
    * *keeps* rather than drops fields the signer's client signed that this
-   * version doesn't know about yet: dropping them would let a
-   * permissions-bearing field silently disappear (e.g. a not-yet-understood
-   * attenuation on a `Grant`), turning an attenuated grant into an
-   * unconstrained one. The returned `data` can therefore be a superset of
-   * the expected shape; it is guaranteed to satisfy the expected types
-   * (required fields present, values of the right shape/range), but
-   * consumers that must reject unrecognized fields (e.g. permission
-   * records) need to validate that themselves against a closed shape.
+   * version doesn't know about yet (see
+   * `extractOperationDetailsFromStandaloneData`).
    *
    * Assumes the message has already been validated against the types from the data.
    * Assumes the domain has the expected shape of a permit2 domain.
@@ -208,28 +242,34 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * @param data - The EIP-712 typed data of a Permit2 witness message
    * @returns The operation type name and associated data
    */
-  const extractOperationDetailsFromPermit2WitnessData = <
-    T extends OperationTypeNames,
-  >(
-    data: Omit<YmaxPermitWitnessTransferFromData<T>, 'domain'> & {
+  const extractOperationDetailsFromPermit2WitnessData = <T extends Ops>(
+    data: Omit<PermitData<T>, 'domain'> & {
       domain: Permit2Domain;
     },
-  ): YmaxOperationDetails<T> => {
-    // @ts-expect-error generic/union type compatibility
-    const permitData: YmaxPermitWitnessTransferFromData = data;
+  ): OperationDetails<S, T> => {
+    const permitData = data as unknown as AnyPermitData;
+
+    if (!messageKit.supportsPermit2Witness) {
+      throw new Error(
+        `${domainName} messages do not support permit2 witness data`,
+      );
+    }
 
     const witnessField = extractWitnessFieldFromTypes(permitData.types);
-    const witnessData = permitData.message[
-      witnessField.name
-    ] as unknown as YmaxOperationType<T>;
-    const { primaryType, domain } = splitWitnessFieldType(witnessField.type);
+    const witnessData = permitData.message[witnessField.name] as Record<
+      string,
+      unknown
+    >;
+    const { primaryType, domain } = messageKit.splitWitnessFieldType(
+      witnessField.type as WitnessTypeName<S, Ops>,
+    );
     const chainId = BigInt(data.domain.chainId);
     const operation = primaryType as T;
 
     const { message: normalizedWitnessData } = normalizeAndValidateEIP712Data(
       {
-        message: witnessData as Record<string, unknown>,
-        types: getYmaxOperationTypes(operation),
+        message: witnessData,
+        types: messageKit.getOperationTypes(operation),
         primaryType: operation,
       },
       { onExtraField: 'keep' },
@@ -238,20 +278,20 @@ export const makeEVMHandlerUtils = (viemUtils: {
     return {
       operation,
       domain: { ...domain, chainId, verifyingContract: spender },
-      data: normalizedWitnessData as YmaxOperationType<T>,
-    };
+      data: normalizedWitnessData as OperationType<S, T>,
+    } as OperationDetails<S, T>;
   };
 
   type ExtractPermitDetails = {
-    <T extends OperationTypeNames>(
-      data: Omit<YmaxPermitWitnessTransferFromData<T>, 'domain'> & {
+    <T extends Ops>(
+      data: Omit<PermitData<T>, 'domain'> & {
         domain: Permit2Domain;
         address: Address;
         signature: WithSignature<object>['signature'];
       },
     ): PermitDetails;
-    <T extends OperationTypeNames>(
-      data: Omit<YmaxPermitWitnessTransferFromData<T>, 'domain'> & {
+    <T extends Ops>(
+      data: Omit<PermitData<T>, 'domain'> & {
         domain: Permit2Domain;
       },
       owner: Address,
@@ -275,10 +315,8 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * @param owner address of the permit2 message signer
    * @param signature signature of the permit2 message
    */
-  const extractPermitDetails: ExtractPermitDetails = <
-    T extends OperationTypeNames,
-  >(
-    data: Omit<YmaxPermitWitnessTransferFromData<T>, 'domain'> & {
+  const extractPermitDetails: ExtractPermitDetails = <T extends Ops>(
+    data: Omit<PermitData<T>, 'domain'> & {
       domain: Permit2Domain;
       address?: Address;
       signature?: WithSignature<object>['signature'];
@@ -286,8 +324,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
     owner = data.address,
     signature = data.signature,
   ) => {
-    // @ts-expect-error generic/union type compatibility
-    const permitData: YmaxPermitWitnessTransferFromData = data;
+    const permitData = data as unknown as AnyPermitData;
 
     if (!isHex(signature)) {
       throw new Error(`Invalid signature format: ${signature}`);
@@ -301,15 +338,16 @@ export const makeEVMHandlerUtils = (viemUtils: {
     const witnessField = extractWitnessFieldFromTypes(permitData.types);
     validateTokenPermissionsType(permitData.types);
 
-    const { [witnessField.name]: witnessData, ...permit } = permitData.message;
+    const { message } = permitData;
     const witness = hashStruct({
       primaryType: witnessField.type,
       types: permitData.types,
-      data: witnessData,
+      data: message[witnessField.name] as Record<string, unknown>,
     });
     const witnessTypeString = getPermit2WitnessTypeString(permitData.types);
 
-    const { spender, ...permitStruct } = permit;
+    const { permitted, spender, nonce, deadline } = message;
+    const permitStruct = { permitted, nonce, deadline };
 
     const permit2Payload: Omit<
       PermitWitnessTransferFromPayload,
@@ -326,8 +364,8 @@ export const makeEVMHandlerUtils = (viemUtils: {
 
     const details: PermitDetails = {
       chainId,
-      token: permit.permitted.token,
-      amount: permit.permitted.amount,
+      token: permitted.token,
+      amount: permitted.amount,
       permit2Payload,
       spender,
     };
@@ -336,8 +374,8 @@ export const makeEVMHandlerUtils = (viemUtils: {
   };
 
   /**
-   * Extract all details sufficient to handle any EIP-712 portfolio message,
-   * optionally with permit data.
+   * Extract all details sufficient to handle any EIP-712 message of the
+   * schema, optionally with permit data.
    *
    * This does not verify the signature of permit2 based messages; that is
    * expected to be done by the caller.
@@ -359,7 +397,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * `extractOperationDetailsFromStandaloneData` /
    * `extractOperationDetailsFromPermit2WitnessData`) keeps -- rather than
    * rejects -- fields that were genuinely signed but aren't supported by
-   * this version's generated operation types: they were legitimately
+   * this version's schema operation types: they were legitimately
    * signed, merely not (yet) understood by this version. They are not
    * dropped, because a permissions-bearing field this version doesn't
    * understand yet must not silently vanish and be treated as absent (that
@@ -370,28 +408,28 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * @param data The operation data with an `address` field of the signing owner.
    * @param contractAddresses Optionally, a set of valid contract addresses to validate against
    * @param contractAddresses.permit2 If provided, validates a permit2 based message's verifying contract
-   * @param contractAddresses.standalone If provided, validates a standalone message's verifying contract or permit2 spender
+   * @param contractAddresses.verifyingContract If provided, validates a standalone message's verifying contract or permit2 spender
    */
-  const extractOperationDetailsFromDataWithAddress = <
-    T extends OperationTypeNames = OperationTypeNames,
-  >(
-    data: (
-      | WithSignature<YmaxPermitWitnessTransferFromData<T>>
-      | YmaxStandaloneOperationData<T>
-    ) & { address: Address },
+  const extractOperationDetailsFromDataWithAddress = <T extends Ops = Ops>(
+    data: (WithSignature<PermitData<T>> | StandaloneData<T>) & {
+      address: Address;
+    },
     contractAddresses: {
-      permit2?: Partial<Record<number | string, Address>>;
-      ymaxRepresentative?: Partial<Record<number | string, Address>>;
+      permit2?: ContractAddresses;
+      verifyingContract?: ContractAddresses;
     } = {},
-  ): FullMessageDetails<T> => {
+  ): FullMessageDetails<S, T> => {
     const {
       address: tokenOwner,
       domain,
       ...otherData
-    } = data as unknown as (
-      | WithSignature<YmaxPermitWitnessTransferFromData>
-      | YmaxStandaloneOperationData
-    ) & { address: Address };
+    } = data as unknown as {
+      address: Address;
+      domain?: TypedDataDomain;
+      message: Record<string, unknown>;
+      types: Record<string, readonly TypedDataParameter[]>;
+      primaryType: string;
+    };
 
     if (!domain) {
       throw new Error(`Missing domain in typed data`);
@@ -412,14 +450,16 @@ export const makeEVMHandlerUtils = (viemUtils: {
       message: signedMessage,
       types: signedTypes,
     };
-    const { nonce, deadline } =
-      signedMessage as YmaxStandaloneOperationData['message'];
+    const { nonce, deadline } = signedMessage as {
+      nonce: bigint;
+      deadline: bigint;
+    };
 
     // Do not trust type definitions coming from the message for the domain;
     // derive them from `domain`'s own shape instead, then validate `domain`
     // against that (e.g. `chainId` range, `verifyingContract` shape).
     // Domain-specific checks (name/version/contract match) happen later, in
-    // `validateYmaxDomain`/`validatePermit2Domain`.
+    // `validateDomain`/`validatePermit2Domain`.
     normalizeAndValidateEIP712Data({
       message: domain as Record<string, unknown>,
       types: { EIP712Domain: getTypesForEIP712Domain({ domain }) },
@@ -427,8 +467,14 @@ export const makeEVMHandlerUtils = (viemUtils: {
     });
 
     if (isPermit2MessageType(data.primaryType)) {
+      if (!messageKit.supportsPermit2Witness) {
+        throw new Error(
+          `${domainName} messages do not support permit2 witness data`,
+        );
+      }
+
       const { signature, ...permit2Data } = signedData as unknown as Omit<
-        WithSignature<YmaxPermitWitnessTransferFromData<T>>,
+        WithSignature<PermitData<T>>,
         'domain'
       >;
 
@@ -445,12 +491,12 @@ export const makeEVMHandlerUtils = (viemUtils: {
       const operationDetails = extractOperationDetailsFromPermit2WitnessData(
         permit2DataWithDomain,
       );
-      // If we have standalone representative addresses, validate the extracted
-      // spender against them.
-      if (contractAddresses.ymaxRepresentative) {
-        validateYmaxDomain(
+      // If we have standalone verifying contract addresses, validate the
+      // extracted spender against them.
+      if (contractAddresses.verifyingContract) {
+        messageKit.validateDomain(
           operationDetails.domain,
-          contractAddresses.ymaxRepresentative,
+          contractAddresses.verifyingContract,
         );
       }
 
@@ -463,11 +509,11 @@ export const makeEVMHandlerUtils = (viemUtils: {
       };
     } else {
       const standaloneData = signedData as unknown as Omit<
-        YmaxStandaloneOperationData<T>,
+        StandaloneData<T>,
         'domain'
       >;
 
-      validateYmaxDomain(domain, contractAddresses.ymaxRepresentative);
+      messageKit.validateDomain(domain, contractAddresses.verifyingContract);
 
       const operationDetails = extractOperationDetailsFromStandaloneData({
         ...standaloneData,
@@ -484,8 +530,8 @@ export const makeEVMHandlerUtils = (viemUtils: {
   };
 
   /**
-   * Extract all details sufficient to handle any EIP-712 portfolio message,
-   * optionally with permit data.
+   * Extract all details sufficient to handle any EIP-712 message of the
+   * schema, optionally with permit data.
    *
    * This expects an ECDSA signature and recovers the signer address from it.
    * If an address field is present, the recovered address must match the
@@ -495,18 +541,14 @@ export const makeEVMHandlerUtils = (viemUtils: {
    * performing signature verification separately.
    *
    * @param signedData
-   * @param validYmaxRepresentativeContractAddresses
+   * @param validVerifyingContractAddresses
    */
-  const extractOperationDetailsFromSignedData = async <
-    T extends OperationTypeNames = OperationTypeNames,
-  >(
-    signedData: WithSignature<
-      YmaxPermitWitnessTransferFromData<T> | YmaxStandaloneOperationData<T>
-    > & { address?: Address },
-    validYmaxRepresentativeContractAddresses?: Partial<
-      Record<number | string, Address>
-    >,
-  ): Promise<FullMessageDetails<T>> => {
+  const extractOperationDetailsFromSignedData = async <T extends Ops = Ops>(
+    signedData: WithSignature<PermitData<T> | StandaloneData<T>> & {
+      address?: Address;
+    },
+    validVerifyingContractAddresses?: ContractAddresses,
+  ): Promise<FullMessageDetails<S, T>> => {
     const tokenOwner = await recoverTypedDataAddress(
       signedData as RecoverTypedDataAddressParameters,
     );
@@ -520,7 +562,7 @@ export const makeEVMHandlerUtils = (viemUtils: {
     return extractOperationDetailsFromDataWithAddress(
       { ...signedData, address: tokenOwner },
       {
-        ymaxRepresentative: validYmaxRepresentativeContractAddresses,
+        verifyingContract: validVerifyingContractAddresses,
       },
     );
   };
@@ -533,3 +575,6 @@ export const makeEVMHandlerUtils = (viemUtils: {
     extractOperationDetailsFromSignedData,
   };
 };
+
+export type EIP712MessageHandlerUtils<S extends EIP712MessageSchema> =
+  ReturnType<typeof makeEIP712MessageHandlerUtils<S>>;
