@@ -102,6 +102,8 @@ export type EIP712ViemUtils = {
  * @param viemUtils
  * @param schema describes the domain and operations of accepted messages.
  *   Messages of any other domain or operation are rejected.
+ * @throws {Error} if a viem util is missing, or if the schema is invalid
+ *   (see {@link makeEIP712MessageKit}).
  */
 export const makeEIP712MessageHandlerUtils = <
   const S extends EIP712MessageSchema,

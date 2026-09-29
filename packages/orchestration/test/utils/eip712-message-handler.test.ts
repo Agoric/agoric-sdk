@@ -301,3 +301,100 @@ test('rejects a permit2 witness of another schema version', t => {
     { message: /Invalid TestVault domain version: 2/ },
   );
 });
+
+test('makeEIP712MessageKit rejects invalid schemas', t => {
+  const base = {
+    domainName: 'Test',
+    domainVersion: '1',
+    operationTypes: { Op: [{ name: 'x', type: 'uint256' }] },
+    subTypes: {},
+  } as const satisfies EIP712MessageSchema;
+  t.notThrows(() => makeEIP712MessageKit(base));
+  t.throws(() => makeEIP712MessageKit({ ...base, domainName: 'Te st' }), {
+    message: /domain name/,
+  });
+  t.throws(
+    () => makeEIP712MessageKit({ ...base, domainVersion: '1.0' as '1' }),
+    { message: /domain version/ },
+  );
+  t.throws(
+    () => makeEIP712MessageKit({ ...base, witnessFieldNamePrefix: '' }),
+    { message: /witness field name prefix/ },
+  );
+  t.throws(
+    () =>
+      makeEIP712MessageKit({
+        ...base,
+        subTypes: { Op: [{ name: 'y', type: 'uint256' }] },
+      }),
+    { message: /collides/ },
+  );
+  t.throws(
+    () =>
+      makeEIP712MessageKit({
+        ...base,
+        operationTypes: { EIP712Domain: [{ name: 'y', type: 'uint256' }] },
+      }),
+    { message: /operation name is reserved: EIP712Domain/ },
+  );
+  // would be dispatched as a permit2 message
+  t.throws(
+    () =>
+      makeEIP712MessageKit({
+        ...base,
+        operationTypes: {
+          PermitWitnessTransferFrom: [{ name: 'y', type: 'uint256' }],
+        },
+      }),
+    { message: /operation name is reserved: PermitWitnessTransferFrom/ },
+  );
+  // would be merged with the permit2 types of a witness message
+  t.throws(
+    () =>
+      makeEIP712MessageKit({
+        ...base,
+        subTypes: { TokenPermissions: [{ name: 'y', type: 'uint256' }] },
+      }),
+    { message: /sub-type name is reserved: TokenPermissions/ },
+  );
+  // would be duplicated by the standalone envelope
+  t.throws(
+    () =>
+      makeEIP712MessageKit({
+        ...base,
+        operationTypes: { Op: [{ name: 'deadline', type: 'uint256' }] },
+      }),
+    { message: /Op field name is reserved: deadline/ },
+  );
+  const withWitness = { ...base, witnessFieldNamePrefix: 'test' } as const;
+  t.notThrows(() => makeEIP712MessageKit(withWitness));
+  // a sub-type would replace the generated witness type
+  t.throws(
+    () =>
+      makeEIP712MessageKit({
+        ...withWitness,
+        subTypes: { TestV1Op: [{ name: 'y', type: 'uint256' }] },
+      }),
+    { message: /witness type name of Op collides with a sub-type: TestV1Op/ },
+  );
+  t.notThrows(
+    () =>
+      makeEIP712MessageKit({
+        ...base,
+        subTypes: { TestV1Op: [{ name: 'y', type: 'uint256' }] },
+      }),
+    'no witness types without permit2 support',
+  );
+  // the witness field would shadow a permit field
+  t.throws(
+    () =>
+      makeEIP712MessageKit({
+        ...base,
+        witnessFieldNamePrefix: 'spend',
+        operationTypes: { er: [{ name: 'x', type: 'uint256' }] },
+      }),
+    {
+      message: /witness field name of er collides with a permit field: spender/,
+    },
+  );
+});

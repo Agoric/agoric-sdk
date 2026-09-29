@@ -29,6 +29,7 @@ import {
   type getPermitWitnessTransferFromData,
   type getPermitBatchWitnessTransferFromData,
   makeWitness,
+  PermitTransferFromTypeParams,
 } from './permit2.ts';
 import { sameEvmAddress } from './address.js';
 import { normalizeAndValidateEIP712Data } from './viem-utils/eip712-normalize.ts';
@@ -205,6 +206,94 @@ export type PermitBatchWitnessTransferFromOperationData<
   >
 >;
 
+const IDENTIFIER = /^[A-Za-z_]\w*$/u;
+const DECIMAL = /^\d+$/u;
+
+/**
+ * Type names that can't be defined by a schema, as they're defined by the
+ * EIP-712 domain or by permit2 typed data (into which a witness's types are
+ * merged).
+ */
+const RESERVED_TYPE_NAMES: readonly string[] = [
+  'EIP712Domain',
+  'PermitTransferFrom',
+  'PermitBatchTransferFrom',
+  'PermitWitnessTransferFrom',
+  'PermitBatchWitnessTransferFrom',
+  'TokenPermissions',
+];
+/** Fields of the permit2 message, which the witness field must not shadow. */
+const PERMIT_FIELD_NAMES: readonly string[] = PermitTransferFromTypeParams.map(
+  ({ name }) => name,
+);
+const ENVELOPE_FIELD_NAMES: readonly string[] =
+  StandaloneEnvelopeTypeParams.map(({ name }) => name);
+
+const validateSchema = (schema: EIP712MessageSchema) => {
+  const {
+    domainName,
+    domainVersion,
+    witnessFieldNamePrefix,
+    operationTypes,
+    subTypes,
+  } = schema;
+  if (!IDENTIFIER.test(domainName)) {
+    throw new Error(`Invalid EIP-712 schema domain name: ${domainName}`);
+  }
+  if (!DECIMAL.test(domainVersion)) {
+    throw new Error(`Invalid EIP-712 schema domain version: ${domainVersion}`);
+  }
+  if (
+    witnessFieldNamePrefix !== undefined &&
+    !IDENTIFIER.test(witnessFieldNamePrefix)
+  ) {
+    throw new Error(
+      `Invalid EIP-712 schema witness field name prefix: ${witnessFieldNamePrefix}`,
+    );
+  }
+  for (const subType of Object.keys(subTypes)) {
+    if (RESERVED_TYPE_NAMES.includes(subType)) {
+      throw new Error(`EIP-712 schema sub-type name is reserved: ${subType}`);
+    }
+  }
+  for (const [operation, params] of Object.entries(operationTypes)) {
+    if (!IDENTIFIER.test(operation)) {
+      throw new Error(`Invalid EIP-712 schema operation name: ${operation}`);
+    }
+    if (RESERVED_TYPE_NAMES.includes(operation)) {
+      throw new Error(
+        `EIP-712 schema operation name is reserved: ${operation}`,
+      );
+    }
+    if (Object.hasOwn(subTypes, operation)) {
+      throw new Error(
+        `EIP-712 schema operation name collides with a sub-type: ${operation}`,
+      );
+    }
+    for (const { name } of params) {
+      if (ENVELOPE_FIELD_NAMES.includes(name)) {
+        throw new Error(
+          `EIP-712 schema operation ${operation} field name is reserved: ${name}`,
+        );
+      }
+    }
+    if (witnessFieldNamePrefix !== undefined) {
+      const witnessTypeName = `${domainName}V${domainVersion}${operation}`;
+      if (Object.hasOwn(subTypes, witnessTypeName)) {
+        throw new Error(
+          `EIP-712 schema witness type name of ${operation} collides with a sub-type: ${witnessTypeName}`,
+        );
+      }
+      const witnessFieldName = `${witnessFieldNamePrefix}${operation}`;
+      if (PERMIT_FIELD_NAMES.includes(witnessFieldName)) {
+        throw new Error(
+          `EIP-712 schema witness field name of ${operation} collides with a permit field: ${witnessFieldName}`,
+        );
+      }
+    }
+  }
+};
+
 /**
  * Helpers to author and validate EIP-712 messages described by a schema.
  *
@@ -269,10 +358,16 @@ export interface EIP712MessageKit<S extends EIP712MessageSchema> {
  * `schema`.
  *
  * @param schema
+ * @throws {Error} if the schema is invalid: its domain name, witness field
+ *   name prefix, or operation names are not identifiers, its domain version
+ *   is not a decimal integer, or its type or field names are reserved or
+ *   would collide once the standalone or permit2 witness types are generated
+ *   (e.g. an operation named after a sub-type, or a `nonce` field).
  */
 export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
   schema: S,
 ): EIP712MessageKit<S> => {
+  validateSchema(schema);
   const {
     domainName,
     domainVersion,
