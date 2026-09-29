@@ -206,6 +206,35 @@ test('rejects an operation not in the schema, even in the schema domain', t => {
   );
 });
 
+test('operation names are own properties of the schema', t => {
+  t.throws(() => observationKit.validateOperationTypeName('toString'), {
+    message: /Unknown TestOracle operation type/,
+  });
+});
+
+test('operations named after inherited properties are not mistaken for permit2 messages', t => {
+  // Relies on the permit2 primary types lookup not inheriting properties.
+  const schema = {
+    domainName: 'Test',
+    domainVersion: '1',
+    operationTypes: { toString: [{ name: 'x', type: 'uint256' }] },
+    subTypes: {},
+  } as const satisfies EIP712MessageSchema;
+  const kit = makeEIP712MessageKit(schema);
+  const utils = makeEIP712MessageHandlerUtils(viemUtils, schema);
+  const data = kit.getStandaloneOperationData(
+    { x: 1n, nonce: 2n, deadline: 3n },
+    'toString',
+    CHAIN_ID,
+    CONTRACT_ADDRESS,
+  );
+  const details = utils.extractOperationDetailsFromDataWithAddress({
+    ...data,
+    address: account.address,
+  });
+  t.like(details, { operation: 'toString', data: { x: 1n }, nonce: 2n });
+});
+
 test('permit2 witness messages are rejected for a standalone-only schema', t => {
   t.throws(
     () => observationKit.getWitness('Observe', { portfolio: 1n, tvls: [] }),

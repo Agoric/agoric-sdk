@@ -534,7 +534,7 @@ export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
     if (validContractAddresses) {
       const chainIdStr = String(chainId);
 
-      if (!(chainIdStr in validContractAddresses)) {
+      if (!Object.hasOwn(validContractAddresses, chainIdStr)) {
         throw new Error(`Unknown chain ID in ${domainName} domain: ${chainId}`);
       }
 
@@ -558,7 +558,7 @@ export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
   function validateOperationTypeName<T extends Ops>(
     typeName: string,
   ): asserts typeName is T {
-    if (!(typeName in operationTypes)) {
+    if (!Object.hasOwn(operationTypes, typeName)) {
       throw new Error(
         `Unknown ${domainName} operation type: ${typeName} (expected one of ${Object.keys(operationTypes).join(', ')})`,
       );
