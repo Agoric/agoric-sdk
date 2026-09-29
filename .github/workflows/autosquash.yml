@@ -1,0 +1,95 @@
+name: Autosquash
+
+on:
+  pull_request_target:
+    types: [labeled, ready_for_review, reopened, synchronize]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: autosquash-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  autosquash:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.base.ref == 'master' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'automerge:rebase') &&
+      !contains(github.event.pull_request.labels.*.name, 'bypass:linear-history')
+    steps:
+      # Decide from the API so most runs skip cloning the repo.
+      - name: Check for fixup commits and approval
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          pr=$(gh pr view "$PR_NUMBER" --json commits,reviewDecision)
+          fixups=$(jq '[.commits[].messageHeadline | select(test("^(fixup|squash|amend)! "))] | length' <<<"$pr")
+          decision=$(jq -r '.reviewDecision // ""' <<<"$pr")
+
+          if [ "$fixups" -eq 0 ]; then
+            echo "No fixup commits."
+          elif [ "$decision" != "APPROVED" ]; then
+            echo "Fixup commits will be folded once the PR is approved (review decision: ${decision:-none})."
+          else
+            echo "fold=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      # A write deploy key, since pushes made with GITHUB_TOKEN don't re-trigger the checks.
+      - name: Check deploy key
+        if: steps.check.outputs.fold == 'true'
+        env:
+          AUTOSQUASH_SSH_KEY: ${{ secrets.AUTOSQUASH_SSH_KEY }}
+        run: |
+          if [ -z "$AUTOSQUASH_SSH_KEY" ]; then
+            echo "::error::AUTOSQUASH_SSH_KEY secret is not configured"
+            exit 1
+          fi
+
+      # Only git runs on the PR's content; nothing from the PR is executed.
+      - uses: actions/checkout@v5
+        if: steps.check.outputs.fold == 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          ssh-key: ${{ secrets.AUTOSQUASH_SSH_KEY }}
+
+      - name: Fold fixup commits
+        if: steps.check.outputs.fold == 'true'
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          base=$(git merge-base "origin/$BASE_REF" "$HEAD_SHA")
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! GIT_SEQUENCE_EDITOR=: GIT_EDITOR=: git rebase --interactive --autosquash "$base"; then
+            git rebase --abort
+            echo "::error::Autosquash rebase failed; fold the fixup commits manually."
+            exit 1
+          fi
+
+          leftover=$(git rev-list "$base..HEAD" --grep='^\(fixup\|squash\|amend\)! ')
+          if [ -n "$leftover" ]; then
+            echo "::error::Fixup commits with no matching target remain; fold them manually."
+            echo "$leftover"
+            exit 1
+          fi
+
+          # Refuse to overwrite anything pushed since this run started.
+          git push --force-with-lease="refs/heads/$HEAD_REF:$HEAD_SHA" \
+            origin "HEAD:refs/heads/$HEAD_REF"
+          echo "::notice::Folded fixup commits into $(git rev-parse HEAD)."
