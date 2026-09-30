@@ -141,7 +141,9 @@ sequenceDiagram
   Note over A: No decision record is written
   A-->>A: plan = [{ src: 'Morpho-XYZ', dest: 'Morpho-PDQ', amount: 120_003_400n },<br/>{ src: 'Morpho-ABC', dest: 'Morpho-PDQ', amount: 80_002_300n }]
   A-->>A: targetAllocation = allocationAfter(currentPositions, plan)
-  A-->>O: observeAndAttest(plan)
+  A-->>O: observeAndAttest(portfolio351)
+  O-->>C: getPortfolioStatus(portfolio351)
+  C-->>O: { positionKeys, accountIdByChain }
   O-->>O: observations = { balances, instrumentTvls }
   O-->>O: signedObservations = sign(observations)
   O-->>A: signedObservations

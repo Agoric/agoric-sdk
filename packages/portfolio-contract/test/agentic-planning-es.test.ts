@@ -10,6 +10,7 @@ import {
   type PlanObservations,
   type PortfolioKey,
   type PortfolioPermissions,
+  type StatusFor,
   type TargetAllocation,
 } from '@agoric/portfolio-api';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
@@ -93,6 +94,10 @@ const allocationAfter = (
 };
 
 type FailedFlowStatus = Readonly<{ state: 'fail'; error: string }>;
+type PortfolioStatus = Pick<
+  StatusFor['portfolio'],
+  'positionKeys' | 'accountIdByChain'
+>;
 
 const idNumber = (id: string, prefix: string) => {
   if (!id.startsWith(prefix)) throw Error(`invalid ${prefix} ID: ${id}`);
@@ -132,17 +137,20 @@ const makePortfolioContract = (
     PortfolioKey,
     Map<FlowKey, FailedFlowStatus>
   >();
+  const positionKeysByPortfolio = new Map<PortfolioKey, Set<InstrumentId>>();
   const contract = harden({
     // eslint-disable-next-line no-underscore-dangle -- test-only ID control
     _setNextPortfolioId(portfolioId: PortfolioKey) {
       nextPortfolioNumber = idNumber(portfolioId, 'portfolio');
     },
-    makePortfolio(config: { permissions: PortfolioPermissions }) {
+    makePortfolioAndGrant(config: { permissions: PortfolioPermissions }) {
       const portfolioId: PortfolioKey = `portfolio${nextPortfolioNumber}`;
       nextPortfolioNumber += 1;
       let nextFlowNumber = 1;
       const flowStatuses = new Map<FlowKey, FailedFlowStatus>();
       flowStatusesByPortfolio.set(portfolioId, flowStatuses);
+      const positionKeys = new Set<InstrumentId>();
+      positionKeysByPortfolio.set(portfolioId, positionKeys);
       const assertMandate = (
         permissions: PortfolioPermissions,
         targetAllocation: TargetAllocation,
@@ -181,6 +189,10 @@ const makePortfolioContract = (
         return flowKey;
       };
       const portfolio = harden({
+        // eslint-disable-next-line no-underscore-dangle -- test-only position setup
+        _addPosition(position: Position) {
+          positionKeys.add(position.src);
+        },
         // eslint-disable-next-line no-underscore-dangle -- test-only ID control
         _setNextFlowId(flowKey: FlowKey) {
           nextFlowNumber = idNumber(flowKey, 'flow');
@@ -194,6 +206,14 @@ const makePortfolioContract = (
       return portfolio;
     },
     vstorage: harden({
+      getPortfolioStatus(portfolioId: PortfolioKey): PortfolioStatus {
+        const positionKeys = positionKeysByPortfolio.get(portfolioId);
+        if (!positionKeys) throw Error(`portfolio not found: ${portfolioId}`);
+        return harden({
+          positionKeys: [...positionKeys],
+          accountIdByChain: {},
+        });
+      },
       getFlowStatus(portfolioId: PortfolioKey, flowKey: FlowKey) {
         const flowStatuses = flowStatusesByPortfolio.get(portfolioId);
         if (!flowStatuses) throw Error(`portfolio not found: ${portfolioId}`);
@@ -207,33 +227,35 @@ const makePortfolioContract = (
 };
 
 type PortfolioContract = ReturnType<typeof makePortfolioContract>;
-type Portfolio = ReturnType<PortfolioContract['makePortfolio']>;
+type Portfolio = ReturnType<PortfolioContract['makePortfolioAndGrant']>;
 type Vstorage = PortfolioContract['vstorage'];
 
 const makeYMaxOracle = (
   ES: CausalSequenceTracer,
+  vstorage: Vstorage,
   observations: PlanObservations,
 ) => {
   const { sealer: observationSealer, unsealer: observationUnsealer } =
     makeBrandPair<PlanObservations>();
-  const observationsFor = (plan: FundsFlowPlan) => {
-    for (const { src, dest } of plan.flow) {
-      if (observations.balances[src] === undefined) {
-        throw Error(`balance observation missing: ${src}`);
-      }
-      if (
-        isInstrumentId(dest) &&
-        observations.instrumentTvls[dest] === undefined
-      ) {
-        throw Error(`TVL observation missing: ${dest}`);
-      }
-    }
-    return observations;
+  const observationsFor = (portfolioId: PortfolioKey): PlanObservations => {
+    const { positionKeys, accountIdByChain } =
+      ES(vstorage).getPortfolioStatus(portfolioId);
+    const assetPlaces = [
+      ...positionKeys,
+      ...Object.keys(accountIdByChain).map(chain => `@${chain}`),
+    ];
+    const balances = Object.fromEntries(
+      assetPlaces.flatMap(place => {
+        const balance = observations.balances[place];
+        return balance === undefined ? [] : [[place, balance]];
+      }),
+    );
+    return harden({ balances, instrumentTvls: observations.instrumentTvls });
   };
   const signObservations = (observed: PlanObservations) =>
     observationSealer.seal(observed);
-  const observeAndAttest = (plan: FundsFlowPlan): SignedObservations => {
-    const observed = ES(oracle).observationsFor(plan);
+  const observeAndAttest = (portfolioId: PortfolioKey): SignedObservations => {
+    const observed = ES(oracle).observationsFor(portfolioId);
     return ES(oracle).signObservations(observed);
   };
   const oracle = harden({
@@ -310,7 +332,9 @@ const makeAgent = (
     const dest = storyInstrument(marketContent.slice(buyAt + buyPrefix.length));
     const plan = ES(agent).makePlan(dest);
     const targetAllocation = ES(agent).allocationAfterCurrentPositions(plan);
-    const signedObservations = ES(powers.oracle).observeAndAttest(plan);
+    const signedObservations = ES(powers.oracle).observeAndAttest(
+      config.portfolioId,
+    );
     const flowKey = ES(powers.portfolio).setTargetAllocation({
       targetAllocation,
       plan,
@@ -360,7 +384,7 @@ const oracleViz = harden({
     resultOnly: () => 'observations = { balances, instrumentTvls }',
   },
   observeAndAttest: {
-    args: () => 'plan',
+    args: (args: readonly unknown[]) => String(args[0]),
     result: () => 'signedObservations',
   },
   signObservations: {
@@ -384,6 +408,10 @@ const portfolioViz = harden({
       const status = result as FailedFlowStatus;
       return `{ state: '${status.state}' }`;
     },
+  },
+  getPortfolioStatus: {
+    args: (args: readonly unknown[]) => String(args[0]),
+    result: () => '{ positionKeys, accountIdByChain }',
   },
   publishFlowStatus: {
     label: (args: readonly unknown[]) => {
@@ -439,27 +467,38 @@ test('ES prompt-injection rejection trace matches diagram', async t => {
       ...apiViz,
     }),
   );
-  const oracle = makeYMaxOracle(
+  let oracle!: YMaxOracle;
+  const portfolioContract = makePortfolioContract(
     ES,
+    harden({
+      unseal(signed: SignedObservations) {
+        return oracle.getObservationVerifier().unseal(signed);
+      },
+    }),
+  );
+  // eslint-disable-next-line no-underscore-dangle -- test-only ID control
+  portfolioContract._setNextPortfolioId('portfolio351');
+  const portfolio = portfolioContract.makePortfolioAndGrant({
+    permissions: harden({ allocation: { maxWeightBps: 6_000n } }),
+  });
+  for (const position of positions) {
+    // eslint-disable-next-line no-underscore-dangle -- test-only position setup
+    portfolio._addPosition(position);
+  }
+  oracle = makeYMaxOracle(
+    ES,
+    portfolioContract.vstorage,
     harden({
       balances: {
         [morpho.xyz]: withYield.xyz,
         [morpho.abc]: withYield.abc,
+        '@Ethereum': 1n,
       },
       instrumentTvls: {
         [morpho.pdq]: { tvlUsd: 50_000_000n },
       },
     }),
   );
-  const portfolioContract = makePortfolioContract(
-    ES,
-    oracle.getObservationVerifier(),
-  );
-  // eslint-disable-next-line no-underscore-dangle -- test-only ID control
-  portfolioContract._setNextPortfolioId('portfolio351');
-  const portfolio = portfolioContract.makePortfolio({
-    permissions: harden({ allocation: { maxWeightBps: 6_000n } }),
-  });
   // eslint-disable-next-line no-underscore-dangle -- test-only ID control
   portfolio._setNextFlowId('flow3');
   const market = makeDefiLlama();
