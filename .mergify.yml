@@ -10,14 +10,16 @@ shared:
         - check-success=integration-test-result
         - label=bypass:integration
     - check-success=breakage
-  merge_conditions: &merge-conditions
-    - base=master
-    # Rebase PRs with fixup commits are allowed to enter the merge queue but
-    # should not be allowed to merge if there are leftover fixup commits after rebase
-    - or:
+    # Fixup commits are folded by the autosquash workflow once the PR is
+    # approved; keep the PR out of the queue until then, since that push would
+    # dequeue it.
+    - or: &no-fixup-commits
         - label=bypass:linear-history
         - check-success=no-fixup-commits
         - check-skipped=no-fixup-commits
+  merge_conditions: &merge-conditions
+    - base=master
+    - or: *no-fixup-commits
     # Require integration tests before merging only
     - or:
         - label=bypass:integration
