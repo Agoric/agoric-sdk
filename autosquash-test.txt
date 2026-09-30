@@ -1,0 +1,2 @@
+Dummy file to exercise the autosquash workflow. Do not merge.
+Second line added by a fixup commit.
