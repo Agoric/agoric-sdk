@@ -5,7 +5,11 @@ import { assert } from '@endo/errors';
 import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
-import type { AssetPlaceRef, MovementDesc } from '@agoric/portfolio-api';
+import type {
+  AssetPlaceRef,
+  FundsFlowPlan,
+  MovementDesc,
+} from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
@@ -116,6 +120,13 @@ export type OfferArgsFor = {
   rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
 };
 
+/**
+ * Build shapes that depend on runtime-supplied remotables such as the USDC
+ * brand.
+ *
+ * The historical name is now a misnomer: the returned collection includes
+ * reusable movement and plan shapes as well as offer-argument shapes.
+ */
 export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   const movementDescShape = M.splitRecord(
     {
@@ -157,6 +168,10 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     // Be robust in the face of additional properties
     M.record(),
   );
+  const orderShape: TypedPattern<FundsFlowPlan['order']> = M.arrayOf([
+    M.number(),
+    M.arrayOf(M.number()),
+  ]);
 
   return {
     deposit: M.splitRecord(
@@ -183,6 +198,11 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       },
       {},
     ) as TypedPattern<OfferArgsFor['rebalance']>,
+    plan: M.splitRecord(
+      { flow: M.arrayOf(movementDescShape) },
+      { order: orderShape },
+      {},
+    ) as TypedPattern<FundsFlowPlan>,
     movementDescShape: movementDescShape as TypedPattern<MovementDesc>,
   };
 };
