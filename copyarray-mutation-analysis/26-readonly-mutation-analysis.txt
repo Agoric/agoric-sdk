@@ -1,0 +1,25 @@
+
+=== Checking for mutations in readonly array files ===
+FILE: packages/client-utils/test/signing-smart-wallet-kit.test.ts
+  - .push(): 3 occurrences
+FILE: packages/fast-usdc-contract/src/utils/settlement-matcher.ts
+  - .push(): 1 occurrences
+  - .pop(): 1 occurrences
+FILE: packages/internal/src/ses-utils.js
+  - .push(): 5 occurrences
+  - .pop(): 1 occurrences
+  - .unshift(): 1 occurrences
+FILE: packages/internal/src/testing-utils.js
+  - .push(): 1 occurrences
+FILE: packages/orchestration/src/utils/viem-utils/hashTypedData.ts
+  - .sort(): 1 occurrences
+FILE: packages/orchestration/test/staking-ops.test.ts
+  - .push(): 1 occurrences
+  - .splice(): 1 occurrences
+FILE: packages/portfolio-contract/src/evm-facade.ts
+  - .push(): 2 occurrences
+FILE: packages/portfolio-contract/test/evm-wallet-handler.test.ts
+  - .push(): 5 occurrences
+FILE: packages/telemetry/src/make-slog-sender.js
+  - .push(): 1 occurrences
+  - .splice(): 1 occurrences
