@@ -1,3 +1,4 @@
+/** @file Tests for the planner exo and customer-routed plan validation. */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, type NatValue } from '@agoric/ertp';
@@ -544,6 +545,30 @@ test('plan funding rejects unordered producer and consumer', t => {
 
   t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
     message: /unfunded plan movement.*@Arbitrum/,
+  });
+});
+
+test('plan allocation rejects unsafe partial success among unordered steps', t => {
+  const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 50n,
+      Compound_Arbitrum: 50n,
+      '@Arbitrum': 40n,
+    },
+    instrumentTvls: {},
+  };
+  const amount = { brand: USDC, value: 40n };
+  const plan: FundsFlowPlan = {
+    flow: [
+      { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount },
+      { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount },
+    ],
+    order: [],
+  };
+
+  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
+    message: /plan exceeds target allocation.*Aave_Arbitrum/,
   });
 });
 

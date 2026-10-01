@@ -128,6 +128,35 @@ test('offerArgs can carry fee', t => {
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });
 
+test('plan flow is limited to 12 movements', t => {
+  const { plan } = makeOfferArgsShapes(USDC);
+  const movement = harden({
+    src: '@noble',
+    dest: 'Aave_Arbitrum',
+    amount: usdc(1n),
+  });
+
+  t.notThrows(() =>
+    mustMatch(harden({ flow: Array(12).fill(movement) }), plan),
+  );
+  t.throws(() => mustMatch(harden({ flow: Array(13).fill(movement) }), plan), {
+    message: /Array length 13 must be <= limit 12/,
+  });
+});
+
+test('plan dependency lists are limited to 12 steps', t => {
+  const { plan } = makeOfferArgsShapes(USDC);
+
+  t.notThrows(() =>
+    mustMatch(harden({ flow: [], order: [[0, Array(12).fill(0)]] }), plan),
+  );
+  t.throws(
+    () =>
+      mustMatch(harden({ flow: [], order: [[0, Array(13).fill(0)]] }), plan),
+    { message: /Array length 13 must be <= limit 12/ },
+  );
+});
+
 test('offerArgs can carry usdnOut', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const [amount, detail] = [usdc(200n), { usdnOut: 198n }];

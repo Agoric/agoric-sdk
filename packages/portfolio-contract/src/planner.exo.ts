@@ -18,6 +18,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
+import { maxWeightClosure } from './max-weight-closure.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import { fullOrder, makeSchedule } from './schedule-order.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
@@ -30,6 +31,7 @@ import {
 
 const trace = makeTracer('PPLN');
 
+/** Reject plans that send funds to positions absent from the target allocation. */
 const vetNoNewPositions = (
   targetAllocation: TargetAllocation,
   planOrSteps: FundsFlowPlan | MovementDesc[],
@@ -44,6 +46,98 @@ const vetNoNewPositions = (
     Fail`planner cannot add positions: ${unexpected.join(', ')}`;
 };
 
+/** Reject a balance projection whose instrument shares exceed their target ceilings. */
+const vetAllocationCeilings = (
+  balances: Map<string, bigint>,
+  targetAllocation: TargetAllocation,
+) => {
+  const totalBalance = [...balances.values()].reduce(
+    (total, balance) => total + balance,
+    0n,
+  );
+  const totalPortions = Object.values(targetAllocation).reduce(
+    (total, portion = 0n) => total + portion,
+    0n,
+  );
+  for (const [place, balance] of balances.entries()) {
+    if (!isInstrumentId(place) || balance === 0n) continue;
+    totalPortions > 0n || Fail`plan target allocation has zero total`;
+    const ceiling = targetAllocation[place] ?? 0n;
+    balance * totalPortions <= totalBalance * ceiling ||
+      Fail`plan exceeds target allocation at ${place}`;
+  }
+};
+
+/**
+ * Reject a plan when partial failure could leave an instrument above both its
+ * target ceiling and initial share.
+ */
+const vetPartialPlanAllocation = (
+  targetAllocation: TargetAllocation,
+  plan: FundsFlowPlan,
+  observations: PlanObservations,
+) => {
+  const initialBalances = new Map<string, bigint>(
+    Object.entries(observations.balances).map(([place, balance]) => [
+      place,
+      balance ?? 0n,
+    ]),
+  );
+  const totalBalance = [...initialBalances.values()].reduce(
+    (total, balance) => total + balance,
+    0n,
+  );
+  const totalPortions = Object.values(targetAllocation).reduce(
+    (total, portion = 0n) => total + portion,
+    0n,
+  );
+  const { flow } = plan;
+  const steps = [...flow.keys()];
+  const dependencies = new Map(plan.order ?? fullOrder(flow.length));
+  const instruments = new Set(
+    [
+      ...Object.keys(targetAllocation),
+      ...initialBalances.keys(),
+      ...flow.flatMap(({ src, dest }) => [src, dest]),
+    ].filter(isInstrumentId),
+  );
+
+  for (const place of instruments) {
+    const initialBalance = initialBalances.get(place) ?? 0n;
+    const maxDelta = maxWeightClosure(
+      steps,
+      index => {
+        const movement = flow[index]!;
+        if (movement.claimRewards) return 0n;
+        const { src, dest, amount } = movement;
+        return (
+          (dest === place ? amount.value : 0n) -
+          (src === place ? amount.value : 0n)
+        );
+      },
+      index => dependencies.get(index) ?? [],
+    );
+    const maxBalance = initialBalance + maxDelta;
+    const ceiling = targetAllocation[place] ?? 0n;
+    const withinTarget =
+      totalPortions > 0n &&
+      maxBalance * totalPortions <= totalBalance * ceiling;
+    withinTarget ||
+      maxBalance <= initialBalance ||
+      Fail`plan exceeds target allocation at ${place}`;
+  }
+};
+
+/**
+ * Simulate dependency-ordered execution to calculate final balances.
+ *
+ * Reward claims do not change the projected balances.
+ *
+ * @throws {Error} if a swap is present because its output value cannot be
+ * projected from the movement amount
+ * @throws {Error} if a destination position lacks an observed starting balance
+ * @throws {Error} if a concurrently ready group lacks sufficient funds
+ */
 const projectPlanBalances = (
   plan: FundsFlowPlan,
   observations: PlanObservations,
@@ -61,6 +155,8 @@ const projectPlanBalances = (
   });
 
   for (const { dest, claimRewards, swap } of flow) {
+    // TODO: Decide where the product should permit swap-bearing plans. Keeping
+    // this check here makes otherwise-general allocation vetting reject them.
     !swap || Fail`customer-routed plan does not support swap`;
     if (claimRewards) continue;
     if (isInstrumentId(dest)) {
@@ -101,7 +197,11 @@ const projectPlanBalances = (
   return balances;
 };
 
-/** Check that a plan's resulting instrument balances stay within allocation ceilings. */
+/**
+ * Reject plans that add positions, finish above target ceilings, or whose
+ * partial failure could increase an instrument above both its target ceiling
+ * and initial share.
+ */
 export const vetPlanAllocation = (
   targetAllocation: TargetAllocation,
   plan: FundsFlowPlan,
@@ -109,31 +209,17 @@ export const vetPlanAllocation = (
 ): void => {
   vetNoNewPositions(targetAllocation, plan);
   const balances = projectPlanBalances(plan, observations);
-
-  const totalBalance = [...balances.values()].reduce(
-    (total, balance) => total + balance,
-    0n,
-  );
-  const totalPortions = Object.values(targetAllocation).reduce(
-    (total, portion = 0n) => total + portion,
-    0n,
-  );
-  for (const [place, balance] of balances.entries()) {
-    if (!isInstrumentId(place) || balance === 0n) continue;
-    totalPortions > 0n || Fail`plan target allocation has zero total`;
-    const ceiling = targetAllocation[place] ?? 0n;
-    balance * totalPortions <= totalBalance * ceiling ||
-      Fail`plan exceeds target allocation at ${place}`;
-  }
+  vetAllocationCeilings(balances, targetAllocation);
+  vetPartialPlanAllocation(targetAllocation, plan, observations);
 };
 harden(vetPlanAllocation);
 
 /**
  * Prepare a Planner exoClass for off-chain planning services.
  *
- * Planning is currently done off-chain
- * because it requires access to real-time APYs, balances, and market data that
- * are not readily available to the on-chain contract.
+ * Planning remains off-chain, where the planner can use APYs and other market
+ * data. This exo validates submitted plans against attested portfolio
+ * observations and contract policy before execution.
  */
 export const preparePlanner = (
   zone: Zone,
