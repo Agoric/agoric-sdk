@@ -1,3 +1,4 @@
+/** @file Shared types for portfolio contracts and clients. */
 /* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { NatAmount } from '@agoric/ertp';
 import {
@@ -175,6 +176,16 @@ export type PortfolioBalancePlaceRef = InstrumentId | InterChainAccountRef;
 export type PlanObservations = {
   balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
+};
+
+/**
+ * Portfolio observations together with the oracle signature that authenticates
+ * them for plan validation.
+ */
+export type PlanAttestation = {
+  observations: PlanObservations;
+  // TODO(AGO-1289): Define the verified EIP-712 signature representation.
+  signature: unknown;
 };
 
 export type FlowDetail =
@@ -547,11 +558,16 @@ export type PortfolioDelegatedClaimRewardsParams = {
   agentMemo?: string;
 };
 
+/**
+ * A delegated target-allocation request, optionally including its execution
+ * plan. A supplied plan requires an attestation for its observations.
+ */
 export type PortfolioDelegatedSetTargetAllocationParams = {
   syncState: PortfolioSyncState;
   targetAllocation: TargetAllocation;
   agentMemo?: string;
   plan?: FundsFlowPlan;
+  attestation?: PlanAttestation;
 };
 
 /**
