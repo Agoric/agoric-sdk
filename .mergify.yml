@@ -107,7 +107,7 @@ pull_request_rules:
       - '#commits-behind=0'
       - '#approved-reviews-by>=1'
       - '#changes-requested-reviews-by=0'
-      - branch-protection-review-decision=APPROVED
+      - github-review-decision=APPROVED
       - -linear-history
       - -draft
     actions:
