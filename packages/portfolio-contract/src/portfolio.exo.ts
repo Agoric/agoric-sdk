@@ -107,6 +107,33 @@ const trace = makeTracer('PortExo');
 
 const DEFAULT_TO_ROUTER = false;
 
+const needsObservations = (permissions: PortfolioPermissions): boolean => {
+  const { allocation } = permissions;
+  return (
+    typeof allocation === 'object' &&
+    (allocation.minVaultTvlUsd !== undefined ||
+      allocation.maxVaultShareBps !== undefined)
+  );
+};
+
+/**
+ * Vet a target allocation and optional execution plan against delegated
+ * permissions and attested observations.
+ *
+ * @returns Whether the target allocation can be committed immediately. `false`
+ * means observation-dependent permissions require a later plan.
+ * @throws {Error} if the allocation, plan, attestation, or observations violate
+ * the delegated permissions
+ */
+export const vetAllocationPlan = (
+  permissions: PortfolioPermissions,
+  targetAllocation: TargetAllocation,
+): boolean => {
+  assertMandateForAllocation(permissions, targetAllocation);
+  return !needsObservations(permissions);
+};
+harden(vetAllocationPlan);
+
 const useRouter = (addresses: EVMContractAddresses) => {
   if (
     !addresses.remoteAccountRouter ||
@@ -711,11 +738,6 @@ export const preparePortfolioKit = (
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
           const { permissions } = delegation;
-          const allocation = permissions.allocation;
-          const needsPlanObservations =
-            typeof allocation === 'object' &&
-            (allocation.minVaultTvlUsd !== undefined ||
-              allocation.maxVaultShareBps !== undefined);
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
           const flowDetail: FlowDetail = {
             type: 'rebalance',
@@ -735,8 +757,7 @@ export const preparePortfolioKit = (
 
           const { flowId } = startedFlow;
           try {
-            assertMandateForAllocation(permissions, targetAllocation);
-            if (!needsPlanObservations) {
+            if (vetAllocationPlan(permissions, targetAllocation)) {
               const resultingPolicyVersion =
                 manager.updateTargetAllocation(targetAllocation);
               this.facets.planner.resolvePendingPolicy(
@@ -962,12 +983,7 @@ export const preparePortfolioKit = (
             this.state.targetAllocation ??
             Fail`mandate.targetAllocation.missing`;
           assertMandateForAllocation(permissions, targetAllocation);
-          const allocation = permissions.allocation;
-          const needsObservations =
-            typeof allocation === 'object' &&
-            (allocation.minVaultTvlUsd !== undefined ||
-              allocation.maxVaultShareBps !== undefined);
-          if (needsObservations) {
+          if (needsObservations(permissions)) {
             const planObservations =
               observations ?? Fail`mandate.observations.missing`;
             assertMandateForPlanObservations(
