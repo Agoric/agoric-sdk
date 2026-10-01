@@ -84,6 +84,8 @@ const makeMcp = (
   getExpectedPortfolioId: () => PortfolioId,
   observations: Attestation['observations'] = harden({
     balances: {
+      '@agoric': 0n,
+      '@Arbitrum': 0n,
       Aave_Arbitrum: 120_003_400n,
       Compound_Arbitrum: 80_002_300n,
     },
@@ -188,8 +190,19 @@ const publishedPortfolioPath = (
     ) as PortfolioPublishedPath;
 
 const promptInjectionScenario = async (t: ExecutionContext) => {
-  const { walletFactory, trader, portfolioRead, mcp, usdc } =
-    await setupTest(t);
+  const { walletFactory, trader, portfolioRead, usdc } = await setupTest(t);
+  const mcp = makeMcp(
+    () => portfolioRead.getPortfolioId(),
+    harden({
+      balances: {
+        '@agoric': 0n,
+        Aave_Arbitrum: 120_003_400n,
+        Aave_Avalanche: 0n,
+        Compound_Arbitrum: 80_002_300n,
+      },
+      instrumentTvls: {},
+    }),
+  );
   const agentWallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
   const dest = 'Aave_Avalanche';
   const agent = makeAgent(
@@ -304,6 +317,8 @@ test('delegated plan commits allocation after observation checks', async t => {
     () => portfolioRead.getPortfolioId(),
     harden({
       balances: {
+        '@agoric': 0n,
+        '@Arbitrum': 0n,
         Aave_Arbitrum: 120_003_400n,
         Compound_Arbitrum: 80_002_300n,
       },

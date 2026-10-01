@@ -20,6 +20,7 @@ import {
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { keyEQ, M } from '@endo/patterns';
+import { vetNoSwaps } from './mandate.ts';
 import { TargetAllocationShape } from './type-guards.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
@@ -160,6 +161,7 @@ export const preparePortfolioDelegationKit = (
           params: PortfolioDelegatedSetTargetAllocationParams,
         ): FlowKey {
           checkAttestation(params);
+          if (params.plan) vetNoSwaps(params.plan);
           const { portfolioAccess, agentId } = this.state;
           const current =
             portfolioAccess.getTargetAllocation(this.facets.client, agentId) ||

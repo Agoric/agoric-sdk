@@ -20,11 +20,15 @@ import type {
 } from '@agoric/portfolio-api';
 import { chainOf, isInstrumentId } from '@agoric/portfolio-api/src/places.js';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
-import { preparePlanner, vetPlanAllocation } from '../src/planner.exo.ts';
+import {
+  vetAllocationPlan,
+  vetObservationPlaces,
+  vetPlanAllocation,
+} from '../src/mandate.ts';
+import { preparePlanner } from '../src/planner.exo.ts';
 import {
   type PortfolioKit,
   preparePortfolioKit,
-  vetAllocationPlan,
 } from '../src/portfolio.exo.ts';
 import {
   makeOfferArgsShapes,
@@ -197,6 +201,9 @@ test('zero-step plan stays within its risk envelope', t => {
   t.true(withinRiskEnvelope(balances, balances, targetAllocation));
 });
 
+// TODO: Complement safety with liveness: for every mandate-compliant target
+// allocation reachable from arbitrary initial balances, generate at least one
+// accepted plan that reaches it.
 testProp(
   'accepted plans stay within the risk envelope after every successful prefix',
   [arbScenario],
@@ -373,6 +380,59 @@ test('allocation operation rejects attested TVL below its mandate', t => {
         harden({ observations, signature: null }),
       ),
     { message: /mandate\.minVaultTvl.*Aave_Arbitrum/ },
+  );
+});
+
+test('balance observations exactly cover current and plan places', t => {
+  const observations: PlanObservations = {
+    balances: { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n },
+    instrumentTvls: {},
+  };
+
+  for (const missing of ['@Base', 'Aave_Avalanche'] as const) {
+    t.throws(
+      () =>
+        vetObservationPlaces(
+          harden([missing, 'Aave_Arbitrum', 'Compound_Arbitrum']),
+          harden({ flow: [] }),
+          observations,
+        ),
+      { message: new RegExp(`missing balance observation.*${missing}`) },
+    );
+  }
+
+  t.throws(
+    () =>
+      vetObservationPlaces(
+        harden(['Aave_Arbitrum']),
+        harden({
+          flow: [
+            {
+              src: 'Aave_Arbitrum',
+              dest: '@Base',
+              amount: { brand: USDC, value: 10n },
+            },
+          ],
+        }),
+        harden({
+          balances: { Aave_Arbitrum: 100n },
+          instrumentTvls: {},
+        }),
+      ),
+    { message: /missing balance observation.*@Base/ },
+  );
+
+  t.throws(
+    () =>
+      vetObservationPlaces(
+        harden(['Aave_Arbitrum']),
+        harden({ flow: [] }),
+        harden({
+          balances: { Aave_Arbitrum: 100n, '@Base': 0n },
+          instrumentTvls: {},
+        }),
+      ),
+    { message: /unexpected balance observation.*@Base/ },
   );
 });
 

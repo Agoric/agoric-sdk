@@ -34,7 +34,6 @@ import {
   type FlowStatus,
   type FundsFlowPlan,
   type FundsFlow,
-  type PlanAttestation,
   type PlanObservations,
   type PortfolioAgentGrantee,
   type PortfolioAgentStatus,
@@ -83,8 +82,10 @@ import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
+  needsObservations,
+  vetAllocationPlan,
+  vetObservationPlaces,
 } from './mandate.ts';
-import { vetPlanAllocation } from './planner.exo.ts';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -110,41 +111,6 @@ import { predictRemoteAccountAddress } from './utils/evm-orch-router.ts';
 const trace = makeTracer('PortExo');
 
 const DEFAULT_TO_ROUTER = false;
-
-const needsObservations = (permissions: PortfolioPermissions): boolean => {
-  const { allocation } = permissions;
-  return (
-    typeof allocation === 'object' &&
-    (allocation.minVaultTvlUsd !== undefined ||
-      allocation.maxVaultShareBps !== undefined)
-  );
-};
-
-/**
- * Vet a target allocation and optional execution plan against delegated
- * permissions and attested observations.
- *
- * @returns Whether the target allocation can be committed immediately. `false`
- * means observation-dependent permissions require a later plan.
- * @throws {Error} if the allocation, plan, attestation, or observations violate
- * the delegated permissions
- */
-export const vetAllocationPlan = (
-  permissions: PortfolioPermissions,
-  targetAllocation: TargetAllocation,
-  plan: FundsFlowPlan | undefined,
-  attestation: PlanAttestation | undefined,
-): boolean => {
-  assertMandateForAllocation(permissions, targetAllocation);
-  if (!plan) return !needsObservations(permissions);
-
-  const { observations } =
-    attestation ?? Fail`customer-supplied plans require an attestation`;
-  vetPlanAllocation(targetAllocation, plan, observations);
-  assertMandateForPlanObservations(permissions, targetAllocation, observations);
-  return true;
-};
-harden(vetAllocationPlan);
 
 const useRouter = (addresses: EVMContractAddresses) => {
   if (
@@ -769,6 +735,19 @@ export const preparePortfolioKit = (
 
           const { flowId } = startedFlow;
           try {
+            if (plan && attestation) {
+              const currentBalancePlaces = harden([
+                ...[...this.state.accounts.keys()].map(
+                  chain => `@${chain}` as const,
+                ),
+                ...this.state.positions.keys(),
+              ]);
+              vetObservationPlaces(
+                currentBalancePlaces,
+                plan,
+                attestation.observations,
+              );
+            }
             const commitNow = vetAllocationPlan(
               permissions,
               targetAllocation,
