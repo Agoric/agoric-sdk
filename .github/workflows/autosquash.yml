@@ -45,16 +45,15 @@ jobs:
             echo "fold=true" >>"$GITHUB_OUTPUT"
           fi
 
-      # A write deploy key, since pushes made with GITHUB_TOKEN don't re-trigger the checks.
-      - name: Check deploy key
+      - name: Create app token
+        id: app-token
         if: steps.check.outputs.fold == 'true'
-        env:
-          AUTOSQUASH_SSH_KEY: ${{ secrets.AUTOSQUASH_SSH_KEY }}
-        run: |
-          if [ -z "$AUTOSQUASH_SSH_KEY" ]; then
-            echo "::error::AUTOSQUASH_SSH_KEY secret is not configured"
-            exit 1
-          fi
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.AGORIC_CI_BOT_APP_ID }}
+          private-key: ${{ secrets.AGORIC_CI_BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-workflows: write
 
       # Only git runs on the PR's content; nothing from the PR is executed.
       - uses: actions/checkout@v5
@@ -62,7 +61,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-          ssh-key: ${{ secrets.AUTOSQUASH_SSH_KEY }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Fold fixup commits
         if: steps.check.outputs.fold == 'true'
@@ -70,12 +69,16 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: |
           set -euo pipefail
           base=$(git merge-base "origin/$BASE_REF" "$HEAD_SHA")
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          bot="$APP_SLUG[bot]"
+          bot_id=$(gh api "/users/$bot" --jq .id)
+          git config user.name "$bot"
+          git config user.email "$bot_id+$bot@users.noreply.github.com"
           if ! GIT_SEQUENCE_EDITOR=: GIT_EDITOR=: git rebase --interactive --autosquash "$base"; then
             git rebase --abort
             echo "::error::Autosquash rebase failed; fold the fixup commits manually."
