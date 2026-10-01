@@ -8,11 +8,17 @@ import { prepareVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
 import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
+import type {
+  FundsFlowPlan,
+  PlanObservations,
+  TargetAllocation,
+} from '@agoric/portfolio-api';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
-import { preparePlanner } from '../src/planner.exo.ts';
+import { preparePlanner, vetPlanAllocation } from '../src/planner.exo.ts';
 import {
   type PortfolioKit,
   preparePortfolioKit,
+  vetAllocationPlan,
 } from '../src/portfolio.exo.ts';
 import {
   makeOfferArgsShapes,
@@ -21,6 +27,380 @@ import {
 import { makeStorageTools } from './supports.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
+
+test('plan allocation is bounded by instrument ceilings', t => {
+  const targetAllocation: TargetAllocation = {
+    Aave_Arbitrum: 60n,
+    Compound_Arbitrum: 40n,
+  };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 120n,
+      Compound_Arbitrum: 80n,
+    },
+    instrumentTvls: {},
+  };
+  const underCeilings: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Aave_Arbitrum',
+        dest: '@Arbitrum',
+        amount: { brand: USDC, value: 20n },
+      },
+    ],
+  };
+  t.notThrows(() =>
+    vetPlanAllocation(targetAllocation, underCeilings, observations),
+  );
+
+  const overCompoundCeiling: FundsFlowPlan = {
+    flow: [
+      ...underCeilings.flow,
+      {
+        src: '@Arbitrum',
+        dest: 'Compound_Arbitrum',
+        amount: { brand: USDC, value: 20n },
+      },
+    ],
+  };
+  t.throws(
+    () =>
+      vetPlanAllocation(targetAllocation, overCompoundCeiling, observations),
+    { message: /plan exceeds target allocation.*Compound_Arbitrum/ },
+  );
+});
+
+test('plan allocation checks exact ceiling arithmetic', t => {
+  const targetAllocation: TargetAllocation = {
+    Aave_Arbitrum: 50n,
+    Compound_Arbitrum: 50n,
+  };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 120_003_400n,
+      Compound_Arbitrum: 80_002_300n,
+    },
+    instrumentTvls: {},
+  };
+  const planFor = (value: bigint): FundsFlowPlan => ({
+    flow: [
+      {
+        src: 'Aave_Arbitrum',
+        dest: 'Compound_Arbitrum',
+        amount: { brand: USDC, value },
+      },
+    ],
+  });
+
+  // 20_000_000 leaves Aave at 100_003_400, which is 550 above 50%.
+  t.throws(
+    () =>
+      vetPlanAllocation(targetAllocation, planFor(20_000_000n), observations),
+    { message: /plan exceeds target allocation.*Aave_Arbitrum/ },
+  );
+  t.notThrows(() =>
+    vetPlanAllocation(targetAllocation, planFor(20_000_550n), observations),
+  );
+});
+
+test('allocation operation rejects a plan over its target ceiling', t => {
+  const targetAllocation = { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 120_003_400n,
+      Compound_Arbitrum: 80_002_300n,
+    },
+    instrumentTvls: {},
+  };
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Aave_Arbitrum',
+        dest: 'Compound_Arbitrum',
+        amount: { brand: USDC, value: 20_000_000n },
+      },
+    ],
+  };
+
+  t.throws(
+    () =>
+      vetAllocationPlan(
+        harden({ allocation: { maxWeightBps: 6_000n } }),
+        targetAllocation,
+        plan,
+        harden({ observations, signature: null }),
+      ),
+    { message: /plan exceeds target allocation.*Compound_Arbitrum/ },
+  );
+});
+
+test('allocation operation rejects attested TVL below its mandate', t => {
+  const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 120_003_400n,
+      Compound_Arbitrum: 80_002_300n,
+    },
+    instrumentTvls: {
+      Aave_Arbitrum: { tvlUsd: 9_999n },
+      Compound_Arbitrum: { tvlUsd: 20_000n },
+    },
+  };
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Aave_Arbitrum',
+        dest: 'Compound_Arbitrum',
+        amount: { brand: USDC, value: 20_000_550n },
+      },
+    ],
+  };
+
+  t.throws(
+    () =>
+      vetAllocationPlan(
+        harden({
+          allocation: { maxWeightBps: 6_000n, minVaultTvlUsd: 10_000n },
+        }),
+        targetAllocation,
+        plan,
+        harden({ observations, signature: null }),
+      ),
+    { message: /mandate\.minVaultTvl.*Aave_Arbitrum/ },
+  );
+});
+
+test('plan allocation requires an observation for its destination', t => {
+  const detail = {
+    observed: { Aave: 120n, Compound: undefined },
+    actual: { Aave: 120n, Compound: 80n },
+    moveDelta: { Aave: -48n, Compound: 48n },
+    calculatedResult: { Aave: 72n, Compound: 48n },
+    actualResult: { Aave: 72n, Compound: 128n },
+  } as const;
+  // The omitted balance makes Compound look 40% (48/120), but it is 64% (128/200).
+  const targetAllocation = { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: detail.observed.Aave,
+    },
+    instrumentTvls: {},
+  };
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Aave_Arbitrum',
+        dest: 'Compound_Arbitrum',
+        amount: { brand: USDC, value: detail.moveDelta.Compound },
+      },
+    ],
+  };
+
+  t.deepEqual(
+    {
+      Aave: detail.observed.Aave + detail.moveDelta.Aave,
+      Compound: 0n + detail.moveDelta.Compound,
+    },
+    detail.calculatedResult,
+  );
+  t.deepEqual(
+    {
+      Aave: detail.actual.Aave + detail.moveDelta.Aave,
+      Compound: detail.actual.Compound + detail.moveDelta.Compound,
+    },
+    detail.actualResult,
+  );
+  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
+    message: /missing balance observation.*Compound_Arbitrum/,
+  });
+});
+
+test('plan allocation rejects transient disallowed positions', t => {
+  const targetAllocation: TargetAllocation = {
+    Aave_Arbitrum: 60n,
+    Compound_Arbitrum: 40n,
+  };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 120n,
+      Compound_Arbitrum: 80n,
+    },
+    instrumentTvls: {},
+  };
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Aave_Arbitrum',
+        dest: 'USDN',
+        amount: { brand: USDC, value: 20n },
+      },
+      {
+        src: 'USDN',
+        dest: '@Arbitrum',
+        amount: { brand: USDC, value: 20n },
+      },
+    ],
+  };
+
+  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
+    message: /planner cannot add positions.*USDN/,
+  });
+});
+
+test('claimRewards amount does not affect allocation ceilings', t => {
+  const detail = {
+    observed: { Aave: 100n, Compound: 100n },
+    // claimDelta is zero because claims do not move USDC.
+    claimDelta: { Aave: 0n, Compound: 0n },
+    moveDelta: { Aave: 1n, Compound: -1n },
+    result: { Aave: 101n, Compound: 99n },
+    ceiling50pct: { Aave: 100n, Compound: 100n },
+  } as const;
+  const { observed, claimDelta, moveDelta, result, ceiling50pct } = detail;
+  // result = observed + claimDelta + moveDelta
+  t.deepEqual(
+    {
+      Aave: observed.Aave + claimDelta.Aave + moveDelta.Aave,
+      Compound: observed.Compound + claimDelta.Compound + moveDelta.Compound,
+    },
+    result,
+  );
+  t.true(result.Aave > ceiling50pct.Aave);
+
+  const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: observed.Aave,
+      Compound_Arbitrum: observed.Compound,
+    },
+    instrumentTvls: {},
+  };
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Aave_Arbitrum',
+        dest: '@Arbitrum',
+        amount: { brand: USDC, value: 100n },
+        claimRewards: { tokens: [], minAmounts: [] },
+      },
+      {
+        src: 'Compound_Arbitrum',
+        dest: 'Aave_Arbitrum',
+        amount: { brand: USDC, value: -moveDelta.Compound },
+      },
+    ],
+  };
+
+  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
+    message: /plan exceeds target allocation.*Aave_Arbitrum/,
+  });
+});
+
+test('plan funding follows declared dependencies, not array order', t => {
+  const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 100n,
+      Compound_Arbitrum: 0n,
+      '@Arbitrum': 0n,
+    },
+    instrumentTvls: {},
+  };
+  const amount = { brand: USDC, value: 50n };
+  const plan: FundsFlowPlan = {
+    flow: [
+      { src: '@Arbitrum', dest: 'Compound_Arbitrum', amount },
+      { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount },
+    ],
+    order: [[0, [1]]],
+  };
+
+  t.notThrows(() => vetPlanAllocation(targetAllocation, plan, observations));
+});
+
+test('plan funding rejects unordered producer and consumer', t => {
+  const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 100n,
+      Compound_Arbitrum: 0n,
+      '@Arbitrum': 0n,
+    },
+    instrumentTvls: {},
+  };
+  const amount = { brand: USDC, value: 50n };
+  const plan: FundsFlowPlan = {
+    flow: [
+      { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount },
+      { src: '@Arbitrum', dest: 'Compound_Arbitrum', amount },
+    ],
+    order: [],
+  };
+
+  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
+    message: /unfunded plan movement.*@Arbitrum/,
+  });
+});
+
+test('customer-routed plan rejects swap steps', t => {
+  const targetAllocation = { Aave_Arbitrum: 100n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 100n,
+      '@Avalanche': 10n,
+    },
+    instrumentTvls: {},
+  };
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: '@Avalanche',
+        dest: '@Avalanche',
+        amount: { brand: USDC, value: 10n },
+        swap: {
+          provider: '1inch',
+          tokenIn: '0x0000000000000000000000000000000000000abc',
+          amountIn: 10n,
+          flags: 0n,
+          executor: '0x2222222222222222222222222222222222222222',
+          srcReceiver: '0x3333333333333333333333333333333333333333',
+          data: '0xdeadbeef',
+        },
+      },
+    ],
+  };
+
+  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
+    message: /customer-routed plan does not support swap/,
+  });
+});
+
+test('customer-routed plan rejects cyclic dependencies', t => {
+  const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 100n,
+      Compound_Arbitrum: 0n,
+      '@Arbitrum': 0n,
+    },
+    instrumentTvls: {},
+  };
+  const amount = { brand: USDC, value: 50n };
+  const plan: FundsFlowPlan = {
+    flow: [
+      { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount },
+      { src: '@Arbitrum', dest: 'Compound_Arbitrum', amount },
+    ],
+    order: [
+      [0, [1]],
+      [1, [0]],
+    ],
+  };
+
+  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
+    message: /dependency cycle/i,
+  });
+});
 
 test('planner exo resolvePlan method', async t => {
   const zone = makeHeapZone();
@@ -33,6 +413,7 @@ test('planner exo resolvePlan method', async t => {
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
@@ -354,6 +735,7 @@ test('planner allows cosmos-based portfolio to withdraw to <Cash> via @chain acc
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
@@ -856,6 +1238,7 @@ test('planner allows EVM-based portfolio to withdraw to -Chain via @chain accoun
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolioKit = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
@@ -999,6 +1382,7 @@ test('planner can reject a plan due to insufficient funds', async t => {
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')

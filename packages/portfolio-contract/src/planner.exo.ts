@@ -19,6 +19,7 @@ import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
+import { fullOrder, makeSchedule } from './schedule-order.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
@@ -42,6 +43,90 @@ const vetNoNewPositions = (
   unexpected.length === 0 ||
     Fail`planner cannot add positions: ${unexpected.join(', ')}`;
 };
+
+const projectPlanBalances = (
+  plan: FundsFlowPlan,
+  observations: PlanObservations,
+): Map<string, bigint> => {
+  const balances = new Map<string, bigint>(
+    Object.entries(observations.balances).map(([place, balance]) => [
+      place,
+      balance ?? 0n,
+    ]),
+  );
+  const { flow } = plan;
+  const schedule = makeSchedule({
+    taskQty: flow.length,
+    order: plan.order ?? fullOrder(flow.length),
+  });
+
+  for (const { dest, claimRewards, swap } of flow) {
+    !swap || Fail`customer-routed plan does not support swap`;
+    if (claimRewards) continue;
+    if (isInstrumentId(dest)) {
+      observations.balances[dest] !== undefined ||
+        Fail`missing balance observation for ${dest}`;
+    }
+  }
+
+  while (schedule.pending()) {
+    const ready = schedule.ready();
+
+    const debits = new Map<string, bigint>();
+    for (const ix of ready) {
+      const movement = flow[ix];
+      if (!movement || movement.claimRewards) continue;
+      debits.set(
+        movement.src,
+        (debits.get(movement.src) ?? 0n) + movement.amount.value,
+      );
+    }
+    for (const [src, debit] of debits.entries()) {
+      const balance = balances.get(src) ?? 0n;
+      balance >= debit || Fail`unfunded plan movement from ${src}`;
+    }
+
+    for (const ix of ready) {
+      const movement = flow[ix];
+      if (!movement || movement.claimRewards) continue;
+      const { src, dest, amount } = movement;
+      balances.set(src, (balances.get(src) ?? 0n) - amount.value);
+      balances.set(dest, (balances.get(dest) ?? 0n) + amount.value);
+    }
+    for (const ix of ready) {
+      schedule.complete(ix);
+    }
+  }
+
+  return balances;
+};
+
+/** Check that a plan's resulting instrument balances stay within allocation ceilings. */
+export const vetPlanAllocation = (
+  targetAllocation: TargetAllocation,
+  plan: FundsFlowPlan,
+  observations: PlanObservations,
+): void => {
+  vetNoNewPositions(targetAllocation, plan);
+  const balances = projectPlanBalances(plan, observations);
+
+  const totalBalance = [...balances.values()].reduce(
+    (total, balance) => total + balance,
+    0n,
+  );
+  const totalPortions = Object.values(targetAllocation).reduce(
+    (total, portion = 0n) => total + portion,
+    0n,
+  );
+  for (const [place, balance] of balances.entries()) {
+    if (!isInstrumentId(place) || balance === 0n) continue;
+    totalPortions > 0n || Fail`plan target allocation has zero total`;
+    const ceiling = targetAllocation[place] ?? 0n;
+    balance * totalPortions <= totalBalance * ceiling ||
+      Fail`plan exceeds target allocation at ${place}`;
+  }
+};
+harden(vetPlanAllocation);
 
 /**
  * Prepare a Planner exoClass for off-chain planning services.

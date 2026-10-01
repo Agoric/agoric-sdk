@@ -1,4 +1,6 @@
 /**
+ * @file Host-side portfolio facets and durable state.
+ *
  * NOTE: This is host side code; can't use await.
  */
 import { AmountMath, type Brand } from '@agoric/ertp';
@@ -32,6 +34,7 @@ import {
   type FlowStatus,
   type FundsFlowPlan,
   type FundsFlow,
+  type PlanAttestation,
   type PlanObservations,
   type PortfolioAgentGrantee,
   type PortfolioAgentStatus,
@@ -81,6 +84,7 @@ import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
 } from './mandate.ts';
+import { vetPlanAllocation } from './planner.exo.ts';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -128,9 +132,17 @@ const needsObservations = (permissions: PortfolioPermissions): boolean => {
 export const vetAllocationPlan = (
   permissions: PortfolioPermissions,
   targetAllocation: TargetAllocation,
+  plan: FundsFlowPlan | undefined,
+  attestation: PlanAttestation | undefined,
 ): boolean => {
   assertMandateForAllocation(permissions, targetAllocation);
-  return !needsObservations(permissions);
+  if (!plan) return !needsObservations(permissions);
+
+  const { observations } =
+    attestation ?? Fail`customer-supplied plans require an attestation`;
+  vetPlanAllocation(targetAllocation, plan, observations);
+  assertMandateForPlanObservations(permissions, targetAllocation, observations);
+  return true;
 };
 harden(vetAllocationPlan);
 
@@ -525,7 +537,7 @@ export const preparePortfolioKit = (
   const makePosition = preparePosition(zone, emptyTransferState, publishStatus);
   const makeDelegationKit = preparePortfolioDelegationKit(
     zone.subZone('delegation'),
-    { zcf },
+    { shapes: offerArgsShapes },
   );
   const makeDelegationsStore = (
     portfolioId: number,
@@ -724,7 +736,7 @@ export const preparePortfolioKit = (
         submitTargetAllocation(
           client: PortfolioDelegationClient,
           agentId: number,
-          delegatedSetTargetAllocationParams: PortfolioDelegatedSetTargetAllocationParams,
+          allocationOperation: PortfolioDelegatedSetTargetAllocationParams,
         ): FlowKey {
           const { reader, manager, delegationHelper } = this.facets;
           const delegation = delegationHelper.getAuthorizedDelegation(
@@ -732,8 +744,8 @@ export const preparePortfolioKit = (
             agentId,
             { allocation: true },
           );
-          const { syncState, targetAllocation, agentMemo } =
-            delegatedSetTargetAllocationParams;
+          const { syncState, targetAllocation, agentMemo, plan, attestation } =
+            allocationOperation;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
@@ -757,13 +769,22 @@ export const preparePortfolioKit = (
 
           const { flowId } = startedFlow;
           try {
-            if (vetAllocationPlan(permissions, targetAllocation)) {
+            const commitNow = vetAllocationPlan(
+              permissions,
+              targetAllocation,
+              plan,
+              attestation,
+            );
+            if (commitNow) {
               const resultingPolicyVersion =
                 manager.updateTargetAllocation(targetAllocation);
               this.facets.planner.resolvePendingPolicy(
                 flowId,
                 resultingPolicyVersion,
               );
+            }
+            if (plan) {
+              this.facets.planner.resolveFlowPlan(flowId, plan);
             }
           } catch (reason) {
             const message =
