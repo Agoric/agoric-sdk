@@ -11,6 +11,7 @@ import {
   type PlanObservations,
   type PortfolioDelegatedClaimRewardsParams,
   type PortfolioDelegatedRebalanceParams,
+  type TargetAllocation,
 } from '@agoric/portfolio-api';
 import { isInstrumentId } from '@agoric/portfolio-api/src/type-guards.js';
 import type { Zone } from '@agoric/zone';
@@ -27,6 +28,20 @@ import {
 } from './type-guards.ts';
 
 const trace = makeTracer('PPLN');
+
+const vetNoNewPositions = (
+  targetAllocation: TargetAllocation,
+  planOrSteps: FundsFlowPlan | MovementDesc[],
+) => {
+  const allowedPositions = Object.keys(targetAllocation);
+  const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
+  const destinations = [...new Set(steps.map(({ dest }) => dest))];
+  const unexpected = destinations.filter(
+    dest => isInstrumentId(dest) && !allowedPositions.includes(dest),
+  );
+  unexpected.length === 0 ||
+    Fail`planner cannot add positions: ${unexpected.join(', ')}`;
+};
 
 /**
  * Prepare a Planner exoClass for off-chain planning services.
@@ -51,23 +66,6 @@ export const preparePlanner = (
 ) => {
   const { movementDescShape, plan: planShape } = shapes;
   const planCompatShape = M.or(planShape, M.arrayOf(movementDescShape));
-  // TODO(#11782): vet more of plan semantics; currently only enforces
-  // delegate-style "no new positions".
-  const vetNoNewPositions = (
-    portfolioPlanner: PortfolioKit['planner'],
-    planOrSteps: FundsFlowPlan | MovementDesc[],
-  ) => {
-    const allowedPositions = Object.keys(
-      portfolioPlanner.getTargetAllocation() ?? {},
-    );
-    const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
-    const destinations = [...new Set(steps.map(({ dest }) => dest))];
-    const unexpected = destinations.filter(
-      dest => isInstrumentId(dest) && !allowedPositions.includes(dest),
-    );
-    unexpected.length === 0 ||
-      Fail`planner cannot add positions: ${unexpected.join(', ')}`;
-  };
 
   const portfolioIdShape = M.number();
   const flowIdShape = M.number();
@@ -116,7 +114,10 @@ export const preparePlanner = (
           .sub(`flow${flowId}`);
         traceFlow('TODO(#11782): vet plan', planOrSteps);
         const portfolioPlanner = getPortfolioPlanner(portfolioId);
-        vetNoNewPositions(portfolioPlanner, planOrSteps);
+        vetNoNewPositions(
+          portfolioPlanner.getTargetAllocation() ?? {},
+          planOrSteps,
+        );
         let acceptedSyncState;
         try {
           acceptedSyncState = portfolioPlanner.validateAndCommitPlanPolicy(
@@ -177,7 +178,10 @@ export const preparePlanner = (
           'TODO(#11782): vet delegated plan',
           planOrSteps,
         );
-        vetNoNewPositions(portfolioPlanner, planOrSteps);
+        vetNoNewPositions(
+          portfolioPlanner.getTargetAllocation() ?? {},
+          planOrSteps,
+        );
         portfolioPlanner.submitVersion(
           delegatedRebalanceParams.syncState.policyVersion,
           delegatedRebalanceParams.syncState.rebalanceCount,
@@ -213,7 +217,10 @@ export const preparePlanner = (
           'TODO(#11782): vet delegated plan',
           planOrSteps,
         );
-        vetNoNewPositions(portfolioPlanner, planOrSteps);
+        vetNoNewPositions(
+          portfolioPlanner.getTargetAllocation() ?? {},
+          planOrSteps,
+        );
         portfolioPlanner.submitVersion(
           delegatedClaimRewardsParams.syncState.policyVersion,
           delegatedClaimRewardsParams.syncState.rebalanceCount,
