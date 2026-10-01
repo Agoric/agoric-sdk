@@ -1,4 +1,6 @@
 /**
+ * @file Host-side portfolio facets and durable state.
+ *
  * NOTE: This is host side code; can't use await.
  */
 import { AmountMath, type Brand } from '@agoric/ertp';
@@ -80,6 +82,9 @@ import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
+  needsObservations,
+  vetAllocationPlan,
+  vetObservationPlaces,
 } from './mandate.ts';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
@@ -498,7 +503,7 @@ export const preparePortfolioKit = (
   const makePosition = preparePosition(zone, emptyTransferState, publishStatus);
   const makeDelegationKit = preparePortfolioDelegationKit(
     zone.subZone('delegation'),
-    { zcf },
+    { shapes: offerArgsShapes },
   );
   const makeDelegationsStore = (
     portfolioId: number,
@@ -697,7 +702,7 @@ export const preparePortfolioKit = (
         submitTargetAllocation(
           client: PortfolioDelegationClient,
           agentId: number,
-          delegatedSetTargetAllocationParams: PortfolioDelegatedSetTargetAllocationParams,
+          allocationOperation: PortfolioDelegatedSetTargetAllocationParams,
         ): FlowKey {
           const { reader, manager, delegationHelper } = this.facets;
           const delegation = delegationHelper.getAuthorizedDelegation(
@@ -705,17 +710,12 @@ export const preparePortfolioKit = (
             agentId,
             { allocation: true },
           );
-          const { syncState, targetAllocation, agentMemo } =
-            delegatedSetTargetAllocationParams;
+          const { syncState, targetAllocation, agentMemo, plan, attestation } =
+            allocationOperation;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
           const { permissions } = delegation;
-          const allocation = permissions.allocation;
-          const needsPlanObservations =
-            typeof allocation === 'object' &&
-            (allocation.minVaultTvlUsd !== undefined ||
-              allocation.maxVaultShareBps !== undefined);
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
           const flowDetail: FlowDetail = {
             type: 'rebalance',
@@ -735,14 +735,35 @@ export const preparePortfolioKit = (
 
           const { flowId } = startedFlow;
           try {
-            assertMandateForAllocation(permissions, targetAllocation);
-            if (!needsPlanObservations) {
+            if (plan && attestation) {
+              const currentBalancePlaces = harden([
+                ...[...this.state.accounts.keys()].map(
+                  chain => `@${chain}` as const,
+                ),
+                ...this.state.positions.keys(),
+              ]);
+              vetObservationPlaces(
+                currentBalancePlaces,
+                plan,
+                attestation.observations,
+              );
+            }
+            const commitNow = vetAllocationPlan(
+              permissions,
+              targetAllocation,
+              plan,
+              attestation,
+            );
+            if (commitNow) {
               const resultingPolicyVersion =
                 manager.updateTargetAllocation(targetAllocation);
               this.facets.planner.resolvePendingPolicy(
                 flowId,
                 resultingPolicyVersion,
               );
+            }
+            if (plan) {
+              this.facets.planner.resolveFlowPlan(flowId, plan);
             }
           } catch (reason) {
             const message =
@@ -962,12 +983,7 @@ export const preparePortfolioKit = (
             this.state.targetAllocation ??
             Fail`mandate.targetAllocation.missing`;
           assertMandateForAllocation(permissions, targetAllocation);
-          const allocation = permissions.allocation;
-          const needsObservations =
-            typeof allocation === 'object' &&
-            (allocation.minVaultTvlUsd !== undefined ||
-              allocation.maxVaultShareBps !== undefined);
-          if (needsObservations) {
+          if (needsObservations(permissions)) {
             const planObservations =
               observations ?? Fail`mandate.observations.missing`;
             assertMandateForPlanObservations(
