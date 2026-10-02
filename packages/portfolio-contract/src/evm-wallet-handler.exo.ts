@@ -12,6 +12,7 @@ import {
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
+import { makeEIP712MessageHandlerUtils } from '@agoric/orchestration/src/utils/eip712-message-handler.ts';
 import { getAddress } from '@agoric/orchestration/src/vendor/viem/viem-address.js';
 import {
   encodeType,
@@ -26,16 +27,16 @@ import type {
   PortfolioSetAutoFeaturesResult,
   StatusFor,
 } from '@agoric/portfolio-api';
-import type {
-  YmaxFullDomain,
-  YmaxPermitWitnessTransferFromData,
-  YmaxStandaloneOperationData,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import {
-  makeEVMHandlerUtils,
-  type FullMessageDetails,
-  type PermitDetails,
-  type YmaxOperationDetails,
+  YmaxPortfolioMessageSchema,
+  type YmaxFullDomain,
+  type YmaxPermitWitnessTransferFromData,
+  type YmaxStandaloneOperationData,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type {
+  FullMessageDetails,
+  PermitDetails,
+  YmaxOperationDetails,
 } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { portfolioPermissionsFromEIP712 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import { provideLazy, type MapStore } from '@agoric/store';
@@ -524,13 +525,17 @@ export const prepareEVMWalletMessageHandler = (
     getWalletForAddress: (address: Address) => EVMWallet;
   },
 ) => {
-  const { extractOperationDetailsFromDataWithAddress } = makeEVMHandlerUtils({
-    isHex,
-    hashStruct,
-    recoverTypedDataAddress,
-    encodeType,
-    getTypesForEIP712Domain,
-  });
+  const { extractOperationDetailsFromDataWithAddress } =
+    makeEIP712MessageHandlerUtils(
+      {
+        isHex,
+        hashStruct,
+        recoverTypedDataAddress,
+        encodeType,
+        getTypesForEIP712Domain,
+      },
+      YmaxPortfolioMessageSchema,
+    );
 
   const MessageHandlerI = M.interface('EVMWalletMessageHandler', {
     handleMessage: M.call(EIP712DataShape).returns(VowShape),
