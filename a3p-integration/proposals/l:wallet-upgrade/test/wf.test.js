@@ -20,7 +20,7 @@ import { writeFile } from 'node:fs/promises';
  */
 
 test(`walletFactory incarnation reflects invokeEntry on existing wallets`, async t => {
-  const history = { walletFactory: 10 };
+  const history = { walletFactory: 11 };
   t.is(await getIncarnation('walletFactory'), history.walletFactory);
 });
 
