@@ -135,7 +135,7 @@ test.serial('make test ops multisig', async t => {
   t.is(record.name, opsConfig.keyName);
   t.truthy(record.address);
   t.truthy(record.pubkey);
-  opsAcctPK.resolve({ address: record.address, number: '30' });
+  opsAcctPK.resolve({ address: record.address, number: '32' });
 
   await $$`./scripts/make-test-multisig.js`; // idempotent
 });
@@ -154,8 +154,8 @@ test.serial('send funds to the multisigs', async t => {
     from: 'gov1',
   };
 
-  await $$`agd tx bank send gov1 ${opsAcct.address} 20000000ubld ${flags(fromGov1)}`;
   await $$`agd tx bank send gov1 ${ymax1Control.address} 20000000ubld ${flags(fromGov1)}`;
+  await $$`agd tx bank send gov1 ${opsAcct.address} 20000000ubld ${flags(fromGov1)}`;
 
   const opsAccount = await fromJson(
     $$`agd query auth account ${opsAcct.address} ${outj}`,
