@@ -21,6 +21,11 @@ import type { Vow, VowTools } from '@agoric/vow';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
 import { expectAssignable, expectError, expectNotType, expectType } from 'tsd';
+import type { TypedDataDomain } from 'abitype';
+import type {
+  EIP712MessageKit,
+  FullDomain,
+} from '../src/utils/eip712-messages.ts';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import type {
   TargetApp,
@@ -456,4 +461,37 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectType<'eip155'>(ethChainInfo.namespace);
   expectType<'1'>(ethChainInfo.reference);
   expectType<number>(ethChainInfo.cctpDestinationDomain);
+}
+
+// EIP-712 message schema domains
+{
+  // `expectType` doesn't distinguish `readonly`, so check strict identity.
+  type StrictEqual<A, B> =
+    (<G>() => G extends A ? 1 : 2) extends <G>() => G extends B ? 1 : 2
+      ? true
+      : false;
+  type Schema = {
+    domainName: 'Test';
+    domainVersion: '2';
+    operationTypes: { Op: [{ name: 'x'; type: 'uint256' }] };
+    subTypes: {};
+  };
+  const domainIsExact: StrictEqual<
+    FullDomain<Schema>,
+    {
+      readonly name: 'Test';
+      readonly version: '2';
+    } & {
+      chainId: bigint;
+      verifyingContract: `0x${string}`;
+    }
+  > = true;
+  expectType<true>(domainIsExact);
+
+  // Assertion methods can be called through a kit declared with the
+  // explicit `EIP712MessageKit` interface (TS2775 otherwise).
+  const kit: EIP712MessageKit<Schema> = null as any;
+  const domain: TypedDataDomain = null as any;
+  kit.validateDomain(domain);
+  expectType<FullDomain<Schema>>(domain);
 }
