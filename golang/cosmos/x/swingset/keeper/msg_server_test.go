@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/sha512"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -30,6 +31,7 @@ import (
 	swingtestutil "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/testutil"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 var (
@@ -145,6 +147,7 @@ type testMsgServerEnv struct {
 	ctx       sdk.Context
 	msgServer types.MsgServer
 	ctrl      *gomock.Controller
+	keeper    keeper.Keeper
 }
 
 // setupMsgServerTest creates a test environment with a configured keeper and message server.
@@ -212,6 +215,89 @@ func setupMsgServerTest(t *testing.T, expectPushQueueItem bool) *testMsgServerEn
 		ctx:       ctx,
 		msgServer: keeper.NewMsgServerImpl(testKeeper),
 		ctrl:      ctrl,
+		keeper:    testKeeper,
+	}
+}
+
+func TestUpdateParams(t *testing.T) {
+	env := setupMsgServerTest(t, false)
+	defer env.ctrl.Finish()
+
+	tests := []struct {
+		name           string
+		authority      string
+		params         types.Params
+		wantErr        bool
+		wantErrSubstr  string
+		wantErrExact   string // when non-empty, assert exact error string
+		expectUpdate   bool
+		expectedConfig string
+	}{
+		{
+			name:          "success",
+			authority:     authority,
+			params:        func() types.Params { p := types.DefaultParams(); p.BootstrapVatConfig = "new-bootstrap-config"; return p }(),
+			wantErr:       false,
+			expectUpdate:  true,
+			expectedConfig: "new-bootstrap-config",
+		},
+		{
+			name:          "invalid authority",
+			authority:     "invalid",
+			params:        types.DefaultParams(),
+			wantErr:       true,
+			wantErrSubstr: "invalid authority",
+			// exact formatting asserted below
+			wantErrExact:  fmt.Sprintf("invalid authority; expected %s, got %s: %s", authority, "invalid", govtypes.ErrInvalidSigner.Error()),
+			expectUpdate:  false,
+		},
+		{
+			name:          "invalid params",
+			authority:     authority,
+			params:        func() types.Params { p := types.DefaultParams(); p.BootstrapVatConfig = ""; return p }(),
+			wantErr:       true,
+			wantErrSubstr: "bootstrap vat config must not be empty",
+			expectUpdate:  false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			msg := &types.MsgUpdateParams{
+				Authority: tc.authority,
+				Params:    tc.params,
+			}
+
+			resp, err := env.msgServer.UpdateParams(env.ctx, msg)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("%s: expected error, got nil (resp=%v)", tc.name, resp)
+				}
+				if tc.wantErrExact != "" {
+					// msgServer.UpdateParams wraps govtypes.ErrInvalidSigner using Wrapf
+					// The returned error message should match the formatted string.
+					if err.Error() != tc.wantErrExact {
+						t.Fatalf("%s: unexpected exact error; want %q, got %q", tc.name, tc.wantErrExact, err.Error())
+					}
+				} else if tc.wantErrSubstr != "" {
+					if !strings.Contains(err.Error(), tc.wantErrSubstr) {
+						t.Fatalf("%s: expected error containing %q, got %q", tc.name, tc.wantErrSubstr, err.Error())
+					}
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("%s: unexpected error: %v", tc.name, err)
+			}
+
+			if tc.expectUpdate {
+				got := env.keeper.GetParams(env.ctx)
+				if got.BootstrapVatConfig != tc.expectedConfig {
+					t.Fatalf("%s: expected BootstrapVatConfig %q, got %q", tc.name, tc.expectedConfig, got.BootstrapVatConfig)
+				}
+			}
+		})
 	}
 }
 

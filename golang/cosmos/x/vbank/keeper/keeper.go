@@ -28,14 +28,15 @@ const addressToUpdatePrefix string = "addressToUpdate"
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeService  storetypes.KVStoreService
-	tstoreService storetypes.TransientStoreService
-	cdc           codec.Codec
-	paramSpace    paramtypes.Subspace
+	storeService   storetypes.KVStoreService
+	tstoreService  storetypes.TransientStoreService
+	cdc            codec.Codec
+	legacySubspace paramtypes.Subspace
 
 	accountKeeper         types.AccountKeeper
 	bankKeeper            types.BankKeeper
 	rewardDistributorName string
+	authority             string
 	PushAction            vm.ActionPusher
 	AddressToUpdate       map[string]sdk.Coins // address string -> Coins
 }
@@ -48,27 +49,27 @@ func NewKeeper(
 	paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper types.BankKeeper,
 	rewardDistributorName string,
+	authority string,
 	pushAction vm.ActionPusher,
 ) Keeper {
-
-	// set KeyTable if it has not already been set
-	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
-	}
-
 	k := Keeper{
 		storeService:          storeService,
 		tstoreService:         tstoreService,
 		cdc:                   cdc,
-		paramSpace:            paramSpace,
+		legacySubspace:        paramSpace,
 		accountKeeper:         accountKeeper,
 		bankKeeper:            bankKeeper,
 		rewardDistributorName: rewardDistributorName,
+		authority:             authority,
 		PushAction:            pushAction,
 	}
 
 	k.bankKeeper.AppendSendRestriction(k.monitorSend)
 	return k
+}
+
+func (k Keeper) GetAuthority() string {
+	return k.authority
 }
 
 func (k Keeper) monitorSend(
@@ -161,13 +162,24 @@ func (k Keeper) IsAllowedMonitoringAccount(ctx sdk.Context, addr string) bool {
 	return params.IsAllowedMonitoringAccount(addr)
 }
 
-func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
-	k.paramSpace.GetParamSetIfExists(ctx, &params)
+func (k Keeper) GetParams(ctx sdk.Context) types.Params {
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	bz := store.Get(types.ParamsKey)
+	if bz == nil {
+		return types.DefaultParams()
+	}
+
+	var params types.Params
+	k.cdc.MustUnmarshal(bz, &params)
 	return params
 }
 
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	k.paramSpace.SetParamSet(ctx, &params)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	bz := k.cdc.MustMarshal(&params)
+	store.Set(types.ParamsKey, bz)
 }
 
 func (k Keeper) GetState(ctx sdk.Context) (types.State, error) {
