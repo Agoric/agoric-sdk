@@ -13,6 +13,7 @@ const { entries } = Object;
  *   outDenom: Denom;
  *   slippage: { slippagePercentage: string; windowSeconds: number };
  *   onFailedDelivery: string;
+ *   fromAccount?: string;
  *   nextMemo?: string;
  * }} SwapInfo
  *
@@ -169,12 +170,13 @@ harden(swapIt);
  * @param {object} ctx
  * @param {GuestInterface<ChainHub>} ctx.chainHub
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
+ * @param {GuestOf<(msg: string, level?: string) => Vow<void>>} ctx.log
  * @param {DenomAmount} transferInfo
  * @param {SwapInfo} memoArgs
  */
 export const swapAnythingViaHook = async (
   _orch,
-  { chainHub, sharedLocalAccountP },
+  { chainHub, sharedLocalAccountP, log },
   { denom, value },
   memoArgs,
 ) => {
@@ -187,12 +189,36 @@ export const swapAnythingViaHook = async (
         outDenom: M.string(),
         onFailedDelivery: M.string(),
         slippage: { slippagePercentage: M.string(), windowSeconds: M.number() },
+        fromAccount: M.string(),
       },
       { nextMemo: M.string() },
     ),
   );
 
-  const { receiverAddr, destAddr } = memoArgs;
+  /**
+   * Helper function to recover if IBC Transfer fails
+   *
+   * @param {Error} e
+   */
+  const recoverFailedTransfer = async e => {
+    const senderAccount = fromAccount?.split(':') ?? [];
+    const [_chain, chainId, address] = senderAccount;
+    await sharedLocalAccount.transfer(
+      {
+        value: address,
+        encoding: 'bech32',
+        chainId,
+      },
+      { denom, value },
+    );
+
+    const errorMsg = `IBC Transfer failed ${q(e)}`;
+    trace(`ERROR: ${errorMsg}`);
+    void log(errorMsg, 'error');
+    throw makeError(errorMsg);
+  };
+
+  const { receiverAddr, destAddr, fromAccount } = memoArgs;
   trace(`sending {${value}} from osmosis to ${receiverAddr}`);
 
   /**
@@ -207,16 +233,22 @@ export const swapAnythingViaHook = async (
   trace(`got info for chain: osmosis ${osmosisChainInfo}`);
   trace(osmosisChainInfo);
 
-  const memo = buildXCSMemo(memoArgs);
+  try {
+    const memo = buildXCSMemo(memoArgs);
 
-  await sharedLocalAccount.transfer(
-    {
-      value: destAddr,
-      encoding: 'bech32',
-      chainId: /** @type {CosmosChainInfo} */ (osmosisChainInfo).chainId,
-    },
-    { denom, value },
-    { memo },
-  );
+    await sharedLocalAccount.transfer(
+      {
+        value: destAddr,
+        encoding: 'bech32',
+        chainId: /** @type {CosmosChainInfo} */ (osmosisChainInfo).chainId,
+      },
+      { denom, value },
+      { memo },
+    );
+    trace(`completed transfer to ${destAddr}`);
+  } catch (e) {
+    void log(`transfer error ${q(e)}`, 'error');
+    return recoverFailedTransfer(e);
+  }
 };
 harden(swapAnythingViaHook);
