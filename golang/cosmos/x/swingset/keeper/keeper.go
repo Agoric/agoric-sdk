@@ -6,6 +6,7 @@ import (
 	"fmt"
 	stdlog "log"
 	"math"
+	"math/big"
 
 	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
@@ -80,7 +81,28 @@ func NewKeeper(
 	vstorageKeeper types.VstorageKeeper, feeCollectorName string, authority string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
-	return Keeper{
+	keeper, _ := NewKeeperAndBeanAccountant(
+		cdc,
+		storeService,
+		paramSpace,
+		accountKeeper,
+		bankKeeper,
+		vstorageKeeper,
+		feeCollectorName,
+		authority,
+		callToController,
+	)
+	return keeper
+}
+
+func NewKeeperAndBeanAccountant(
+	cdc codec.Codec, storeService corestore.KVStoreService,
+	paramSpace paramtypes.Subspace,
+	accountKeeper types.AccountKeeper, bankKeeper types.BankKeeper,
+	vstorageKeeper types.VstorageKeeper, feeCollectorName string, authority string,
+	callToController func(ctx sdk.Context, str string) (string, error),
+) (Keeper, BeanAccountant) {
+	keeper := Keeper{
 		cdc:              cdc,
 		storeService:     storeService,
 		legacySubspace:   paramSpace,
@@ -91,6 +113,7 @@ func NewKeeper(
 		callToController: callToController,
 		authority:        authority,
 	}
+	return keeper, BeanAccountant{keeper: keeper}
 }
 
 func (k Keeper) GetAuthority() string {
@@ -295,6 +318,237 @@ func (k Keeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdkmath.Uint {
 	return beansPerUnit
 }
 
+type BeanAccountant struct {
+	keeper Keeper
+}
+
+func (ba BeanAccountant) GetBeansPerUnit(ctx sdk.Context, msgTypeURL string, unit string) sdkmath.Uint {
+	params := ba.keeper.GetParams(ctx)
+	for _, entry := range params.MsgTypeBeansPerUnit {
+		if entry.MsgTypeUrl != msgTypeURL {
+			continue
+		}
+		for _, beans := range entry.Beans {
+			if beans.Key == unit {
+				return beans.Beans
+			}
+		}
+		break
+	}
+	for _, beans := range params.BeansPerUnit {
+		if beans.Key == unit {
+			return beans.Beans
+		}
+	}
+	return sdkmath.ZeroUint()
+}
+
+func (ba BeanAccountant) HasMsgType(ctx sdk.Context, msgTypeURL string) bool {
+	for _, entry := range ba.keeper.GetParams(ctx).MsgTypeBeansPerUnit {
+		if entry.MsgTypeUrl == msgTypeURL {
+			return true
+		}
+	}
+	return false
+}
+
+func (ba BeanAccountant) MinGasPrice(ctx sdk.Context) sdk.DecCoins {
+	return ba.keeper.GetParams(ctx).MinGasPrice
+}
+
+func (ba BeanAccountant) AddBeansOwing(ctx sdk.Context, addr sdk.AccAddress, msgTypeURL string, unit string, amount uint64) {
+	if amount == 0 {
+		return
+	}
+	beansPerUnit := ba.GetBeansPerUnit(ctx, msgTypeURL, unit)
+	if beansPerUnit.IsZero() {
+		return
+	}
+	beans := beansPerUnit.MulUint64(amount)
+	wasOwing := ba.keeper.GetBeansOwing(ctx, addr)
+	ba.keeper.SetBeansOwing(ctx, addr, wasOwing.Add(beans))
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			"bean_charge",
+			sdk.NewAttribute("fee_payer", addr.String()),
+			sdk.NewAttribute("msg_type_url", msgTypeURL),
+			sdk.NewAttribute("unit", unit),
+			sdk.NewAttribute("amount", fmt.Sprintf("%d", amount)),
+			sdk.NewAttribute("beans", beans.String()),
+		),
+	)
+}
+
+func (ba BeanAccountant) AddBeansOwingForSmartWallet(ctx sdk.Context, feePayer sdk.AccAddress, owner sdk.AccAddress) {
+	switch ba.keeper.GetSmartWalletState(ctx, owner) {
+	case types.SmartWalletStateProvisioned, types.SmartWalletStatePending:
+		return
+	default:
+		ba.AddBeansOwing(ctx, feePayer, "", types.BeansPerSmartWalletProvision, 1)
+	}
+}
+
+func (ba BeanAccountant) AddBeansOwingForProvisioning(ctx sdk.Context, addr sdk.AccAddress, powerFlags []string) error {
+	balances := ba.keeper.bankKeeper.GetAllBalances(ctx, addr)
+	fees, err := calculateFees(balances, powerFlags, ba.keeper.GetParams(ctx).PowerFlagFees)
+	if err != nil {
+		return err
+	}
+	if fees.IsZero() {
+		return nil
+	}
+	params := ba.keeper.GetParams(ctx)
+	prices := make([]sdk.Coins, 0, 1+len(params.FeeUnitPriceAlternatives))
+	prices = append(prices, params.FeeUnitPrice)
+	for _, alt := range params.FeeUnitPriceAlternatives {
+		prices = append(prices, alt.Price)
+	}
+	beans, err := beansForFeesRoundUp(fees, prices, ba.keeper.GetBeansPerUnit(ctx)[types.BeansPerFeeUnit])
+	if err != nil {
+		return err
+	}
+	wasOwing := ba.keeper.GetBeansOwing(ctx, addr)
+	ba.keeper.SetBeansOwing(ctx, addr, wasOwing.Add(beans))
+	return nil
+}
+
+func (ba BeanAccountant) SettleBeansOwing(ctx sdk.Context, addr sdk.AccAddress, feeBudget sdk.Coins, dispose func(uint64, sdk.Coins) error) error {
+	params := ba.keeper.GetParams(ctx)
+	beansPerUnit := ba.keeper.GetBeansPerUnit(ctx)
+	beansPerFeeUnit := beansPerUnit[types.BeansPerFeeUnit]
+	if beansPerFeeUnit.IsZero() {
+		return fmt.Errorf("beans_per_unit[%q] must be nonzero", types.BeansPerFeeUnit)
+	}
+
+	beansOwing := ba.keeper.GetBeansOwing(ctx, addr)
+	feeUnits := beansOwing.Quo(beansPerFeeUnit)
+	if feeUnits.IsZero() {
+		return nil
+	}
+
+	var beanFees sdk.Coins
+	var err error
+	if feeBudget == nil {
+		beanFees, err = quoteFeeAtPrice(feeUnits, params.FeeUnitPrice)
+	} else {
+		prices := make([]sdk.Coins, 0, 1+len(params.FeeUnitPriceAlternatives))
+		prices = append(prices, params.FeeUnitPrice)
+		for _, alt := range params.FeeUnitPriceAlternatives {
+			prices = append(prices, alt.Price)
+		}
+		beanFees, err = selectFeeQuantaFromBudget(feeUnits, prices, feeBudget)
+	}
+	if err != nil {
+		return err
+	}
+
+	beanGas, err := beanGasForFees(beanFees, params.MinGasPrice)
+	if err != nil {
+		return err
+	}
+	if err := dispose(beanGas, beanFees); err != nil {
+		return err
+	}
+
+	ba.keeper.SetBeansOwing(ctx, addr, beansOwing.Sub(feeUnits.Mul(beansPerFeeUnit)))
+	return nil
+}
+
+func quoteFeeAtPrice(feeUnits sdkmath.Uint, price sdk.Coins) (sdk.Coins, error) {
+	if price.IsZero() {
+		return nil, fmt.Errorf("fee_unit_price must not be empty")
+	}
+	unitInt := sdkmath.NewIntFromBigInt(feeUnits.BigInt())
+	fees := sdk.NewCoins()
+	for _, coin := range price {
+		fees = fees.Add(sdk.NewCoin(coin.Denom, coin.Amount.Mul(unitInt)))
+	}
+	return fees, nil
+}
+
+func selectFeeQuantaFromBudget(feeUnits sdkmath.Uint, prices []sdk.Coins, feeBudget sdk.Coins) (sdk.Coins, error) {
+	remainingFees := feeBudget
+	remainingUnits := feeUnits
+	beanFees := sdk.NewCoins()
+	for _, price := range prices {
+		if price.IsZero() {
+			continue
+		}
+		payableUnits := remainingUnits
+		for _, coin := range price {
+			if coin.Amount.IsZero() {
+				continue
+			}
+			available := remainingFees.AmountOf(coin.Denom).Quo(coin.Amount)
+			availableUnits := sdkmath.NewUintFromBigInt(available.BigInt())
+			if availableUnits.LT(payableUnits) {
+				payableUnits = availableUnits
+			}
+		}
+		if payableUnits.IsZero() {
+			continue
+		}
+		payment, err := quoteFeeAtPrice(payableUnits, price)
+		if err != nil {
+			return nil, err
+		}
+		beanFees = beanFees.Add(payment...)
+		remainingFees = remainingFees.Sub(payment...)
+		remainingUnits = remainingUnits.Sub(payableUnits)
+		if remainingUnits.IsZero() {
+			return beanFees, nil
+		}
+	}
+	return nil, fmt.Errorf("insufficient fees for bean charge")
+}
+
+func beanGasForFees(beanFees sdk.Coins, minGasPrice sdk.DecCoins) (uint64, error) {
+	var beanGas uint64
+	for _, coin := range beanFees {
+		price := minGasPrice.AmountOf(coin.Denom)
+		if !price.IsPositive() {
+			continue
+		}
+		gasInt := sdkmath.LegacyNewDecFromInt(coin.Amount).Quo(price).Ceil().RoundInt()
+		if !gasInt.IsUint64() {
+			return 0, fmt.Errorf("bean gas overflows uint64")
+		}
+		beanGas += gasInt.Uint64()
+	}
+	return beanGas, nil
+}
+
+func beansForFeesRoundUp(fees sdk.Coins, prices []sdk.Coins, beansPerFeeUnit sdkmath.Uint) (sdkmath.Uint, error) {
+	if fees.IsZero() {
+		return sdkmath.ZeroUint(), nil
+	}
+	for _, price := range prices {
+		if price.IsZero() {
+			continue
+		}
+		units := sdkmath.ZeroUint()
+		for _, fee := range fees {
+			priceAmount := price.AmountOf(fee.Denom)
+			if priceAmount.IsZero() {
+				units = sdkmath.ZeroUint()
+				break
+			}
+			q, r := new(big.Int).QuoRem(fee.Amount.BigInt(), priceAmount.BigInt(), new(big.Int))
+			if r.Sign() != 0 {
+				q.Add(q, big.NewInt(1))
+			}
+			feeUnits := sdkmath.NewUintFromBigInt(q)
+			if feeUnits.GT(units) {
+				units = feeUnits
+			}
+		}
+		if !units.IsZero() {
+			return units.Mul(beansPerFeeUnit), nil
+		}
+	}
+	return sdkmath.ZeroUint(), fmt.Errorf("provisioning fees cannot be priced by fee_unit_price or alternatives")
+}
+
 func getBeansOwingPathForAddress(addr sdk.AccAddress) string {
 	return StoragePathBeansOwing + "." + addr.String()
 }
@@ -317,48 +571,22 @@ func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdkmat
 	k.vstorageKeeper.SetStorage(ctx, agoric.NewKVEntry(path, beans.String()))
 }
 
-// ChargeBeans charges the given address the given number of beans.  It divides
-// the beans into the number to debit immediately vs. the number to store in the
-// beansOwing.
+// ChargeBeans records the given number of beans as owing. Deprecated: use
+// BeanAccountant.AddBeansOwing.
 func (k Keeper) ChargeBeans(
 	ctx sdk.Context,
 	beansPerUnit map[string]sdkmath.Uint,
 	addr sdk.AccAddress,
 	beans sdkmath.Uint,
 ) error {
+	_ = beansPerUnit
 	wasOwing := k.GetBeansOwing(ctx, addr)
-	nowOwing := wasOwing.Add(beans)
-
-	// Actually debit immediately in integer multiples of the minimum debit, since
-	// nowOwing must be less than the minimum debit.
-	beansPerMinFeeDebit := beansPerUnit[types.BeansPerMinFeeDebit]
-	remainderOwing := nowOwing.Mod(beansPerMinFeeDebit)
-	beansToDebit := nowOwing.Sub(remainderOwing)
-
-	// Convert the debit to coins.
-	beansPerFeeUnitDec := sdkmath.LegacyNewDecFromBigInt(beansPerUnit[types.BeansPerFeeUnit].BigInt())
-	beansToDebitDec := sdkmath.LegacyNewDecFromBigInt(beansToDebit.BigInt())
-	feeUnitPrice := k.GetParams(ctx).FeeUnitPrice
-	feeDecCoins := sdk.NewDecCoinsFromCoins(feeUnitPrice...).MulDec(beansToDebitDec).QuoDec(beansPerFeeUnitDec)
-
-	// Charge the account immediately if they owe more than BeansPerMinFeeDebit.
-	// NOTE: We assume that BeansPerMinFeeDebit is a multiple of BeansPerFeeUnit.
-	feeCoins, _ := feeDecCoins.TruncateDecimal()
-	if !feeCoins.IsZero() {
-		err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, k.feeCollectorName, feeCoins)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Record the new owing value, whether we have debited immediately or not
-	// (i.e. there is more owing than before, but not enough to debit).
-	k.SetBeansOwing(ctx, addr, remainderOwing)
+	k.SetBeansOwing(ctx, addr, wasOwing.Add(beans))
 	return nil
 }
 
 // ChargeForSmartWallet charges the fee for provisioning a smart wallet.
-func (k Keeper) ChargeForSmartWallet(
+func (k Keeper) AddBeansOwingForSmartWallet(
 	ctx sdk.Context,
 	beansPerUnit map[string]sdkmath.Uint,
 	addr sdk.AccAddress,
@@ -377,6 +605,14 @@ func (k Keeper) ChargeForSmartWallet(
 	// effects when the smart wallet is already provisioned.
 
 	return nil
+}
+
+func (k Keeper) ChargeForSmartWallet(
+	ctx sdk.Context,
+	beansPerUnit map[string]sdkmath.Uint,
+	addr sdk.AccAddress,
+) error {
+	return k.AddBeansOwingForSmartWallet(ctx, beansPerUnit, addr)
 }
 
 // makeFeeMenu returns a map from power flag to its fee.  In the case of duplicates, the
@@ -427,12 +663,20 @@ func (k Keeper) ChargeForProvisioning(ctx sdk.Context, submitter sdk.AccAddress,
 	if err != nil {
 		return err
 	}
-
-	// Deduct the fee from the submitter.
 	if fees.IsZero() {
 		return nil
 	}
-	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, submitter, k.feeCollectorName, fees)
+	params := k.GetParams(ctx)
+	prices := make([]sdk.Coins, 0, 1+len(params.FeeUnitPriceAlternatives))
+	prices = append(prices, params.FeeUnitPrice)
+	for _, alt := range params.FeeUnitPriceAlternatives {
+		prices = append(prices, alt.Price)
+	}
+	beans, err := beansForFeesRoundUp(fees, prices, k.GetBeansPerUnit(ctx)[types.BeansPerFeeUnit])
+	if err != nil {
+		return err
+	}
+	return k.ChargeBeans(ctx, k.GetBeansPerUnit(ctx), submitter, beans)
 }
 
 // GetEgress gets the entire egress struct for a peer
