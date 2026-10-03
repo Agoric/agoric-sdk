@@ -551,6 +551,7 @@ export type PortfolioDelegatedSetTargetAllocationParams = {
   syncState: PortfolioSyncState;
   targetAllocation: TargetAllocation;
   agentMemo?: string;
+  plan?: FundsFlowPlan;
 };
 
 /**
