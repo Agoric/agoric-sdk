@@ -338,6 +338,72 @@ test('a declared types.EIP712Domain must cover exactly the present domain fields
   );
 });
 
+test('a verifying contract declared with a non-address type must still be an address', t => {
+  const withVerifyingContract = <D extends { domain?: object; types: object }>(
+    data: D,
+    type: string,
+    verifyingContract: unknown,
+  ) => ({
+    ...data,
+    domain: { ...data.domain, verifyingContract },
+    types: {
+      ...data.types,
+      EIP712Domain: getTypesForEIP712Domain({
+        domain: data.domain as any,
+      }).map(field =>
+        field.name === 'verifyingContract' ? { ...field, type } : field,
+      ),
+    },
+    signature: MOCK_SIGNATURE,
+    address: account.address,
+  });
+
+  // No contract address allowlist given, so only the shape is checked:
+  // against the standard `address` domain type.
+  const data = makeObservation();
+  for (const [type, value] of [
+    ['string', 'not-an-address'],
+    ['uint256', 0x1234n],
+  ] as const) {
+    t.throws(
+      () =>
+        observationUtils.extractOperationDetailsFromDataWithAddress(
+          withVerifyingContract(data, type, value) as any,
+        ),
+      { message: /Invalid EIP-712 address value/ },
+      type,
+    );
+  }
+  // Domain validation also checks it by itself.
+  t.throws(
+    () =>
+      observationKit.validateDomain({
+        ...data.domain,
+        verifyingContract: 'not-an-address' as Address,
+      }),
+    { message: /Invalid verifying contract address in TestOracle domain/ },
+  );
+  // A real address declared as `string` still binds the same value.
+  t.is(
+    observationUtils.extractOperationDetailsFromDataWithAddress(
+      withVerifyingContract(data, 'string', CONTRACT_ADDRESS) as any,
+    ).domain.verifyingContract,
+    CONTRACT_ADDRESS,
+  );
+
+  t.throws(
+    () =>
+      depositUtils.extractOperationDetailsFromDataWithAddress(
+        withVerifyingContract(
+          makeDepositPermit(),
+          'string',
+          'not-an-address',
+        ) as any,
+      ),
+    { message: /Invalid EIP-712 address value/ },
+  );
+});
+
 test('rejects a known field signed with a type other than the expected one', t => {
   const data = makeObservation();
   const extract = (name: string, type: string, value: unknown) =>

@@ -555,7 +555,9 @@ test('validateYmaxDomain is case-insensitive for address comparison', t => {
     name: 'Ymax',
     version: '1',
     chainId: 42161n,
-    verifyingContract: MOCK_CONTRACT_ADDRESS.toUpperCase() as `0x${string}`,
+    // Only the hex digits: a `0X` prefix is not a valid address.
+    verifyingContract:
+      `0x${MOCK_CONTRACT_ADDRESS.slice(2).toUpperCase()}` as const,
   };
 
   // Should pass because sameEvmAddress is case-insensitive

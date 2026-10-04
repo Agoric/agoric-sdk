@@ -35,7 +35,7 @@ import {
   makeWitness,
   PermitTransferFromTypeParams,
 } from './permit2.ts';
-import { sameEvmAddress } from './address.js';
+import { isEvmAddressShape, sameEvmAddress } from './address.js';
 import { normalizeAndValidateEIP712Data } from './viem-utils/eip712-normalize.ts';
 
 type TypedDataRecord = Record<string, readonly TypedDataParameter[]>;
@@ -538,6 +538,13 @@ export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
     if (typeof chainId !== 'bigint' || verifyingContract === undefined) {
       throw new Error(
         `${domainName} domain must include chain ID and verifying contract`,
+      );
+    }
+    // Its declared type may not be `address` (see
+    // `extractOperationDetailsFromDataWithAddress`).
+    if (!isEvmAddressShape(verifyingContract)) {
+      throw new Error(
+        `Invalid verifying contract address in ${domainName} domain`,
       );
     }
 

@@ -128,6 +128,17 @@ export const sameEvmAddress = (a, b) => a.toLowerCase() === b?.toLowerCase();
 harden(sameEvmAddress);
 
 /**
+ * Whether `x` has the shape of an EVM address: `0x` followed by 40 hex
+ * digits, in any casing (an EIP-55 checksum is not verified).
+ *
+ * @param {unknown} x
+ * @returns {x is EvmAddress}
+ */
+export const isEvmAddressShape = x =>
+  typeof x === 'string' && /^0x[0-9a-fA-F]{40}$/u.test(x);
+harden(isEvmAddressShape);
+
+/**
  * Coerce an AccountIdArg into a plain AccountId. The latter is now preferred so
  * this utility can be used to adapt legacy calls, in particular from vows
  * outstanding from previous incarnations.

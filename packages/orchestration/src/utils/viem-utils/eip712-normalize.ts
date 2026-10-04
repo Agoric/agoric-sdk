@@ -101,6 +101,10 @@ const splitArrayType = (
   };
 };
 
+// Same shape as `isEvmAddressShape` in `../address.js`, duplicated rather
+// than imported: this module must have no runtime imports (see the module
+// doc comment; `eip712-normalize.xs.test.js` also evaluates its source
+// directly), and `address.js` has runtime dependencies of its own.
 const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/u;
 // Solidity `(u)int<M>`: (un)signed integer of `M` bits, `0 < M <= 256`,
 // `M % 8 === 0`; bare `uint`/`int` (no explicit width) means 256 bits.
