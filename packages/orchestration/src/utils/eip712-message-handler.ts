@@ -71,6 +71,18 @@ export type PermitDetails = {
   permit2Payload: Omit<PermitWitnessTransferFromPayload, 'transferDetails'>;
 };
 
+/**
+ * The normalized form of an EIP-712 message: what remains of it once
+ * validated, with its values in canonical form (e.g. integers as
+ * `bigint`/`number`). Hashes identically to the message as received.
+ */
+export type NormalizedTypedData = {
+  domain: TypedDataDomain;
+  types: Record<string, readonly TypedDataParameter[]>;
+  primaryType: string;
+  message: Record<string, unknown>;
+};
+
 export type FullMessageDetails<
   S extends EIP712MessageSchema,
   T extends OperationNames<S> = OperationNames<S>,
@@ -79,6 +91,8 @@ export type FullMessageDetails<
   evmWalletAddress: Address;
   nonce: bigint;
   deadline: bigint;
+  /** The normalized message the details were extracted from. */
+  normalizedData: NormalizedTypedData;
 };
 
 /**
@@ -480,6 +494,12 @@ export const makeEIP712MessageHandlerUtils = <
       },
       { onExtraField: 'throw' },
     ).message as TypedDataDomain;
+    const normalizedData: NormalizedTypedData = {
+      domain,
+      types: signedTypes,
+      primaryType: otherData.primaryType,
+      message: signedMessage,
+    };
 
     // The declared types used above may be non-standard (e.g. an `int256`
     // `chainId`), so also check the now-normalized values against the
@@ -533,6 +553,7 @@ export const makeEIP712MessageHandlerUtils = <
         evmWalletAddress: tokenOwner,
         nonce,
         deadline,
+        normalizedData,
       };
     } else {
       const standaloneData = signedData as unknown as Omit<
@@ -552,6 +573,7 @@ export const makeEIP712MessageHandlerUtils = <
         evmWalletAddress: tokenOwner,
         nonce,
         deadline,
+        normalizedData,
       };
     }
   };

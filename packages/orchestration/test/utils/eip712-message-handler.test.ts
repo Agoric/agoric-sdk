@@ -8,6 +8,7 @@ import {
   encodeType,
   getTypesForEIP712Domain,
   hashStruct,
+  hashTypedData,
   isHex,
   recoverTypedDataAddress,
 } from '../../src/stubs/viem-typedData.ts';
@@ -142,6 +143,12 @@ test('standalone message of a custom schema round-trips through signing', async 
     evmWalletAddress: account.address,
     nonce: 3n,
     deadline: 1700000000n,
+    normalizedData: {
+      domain: data.domain,
+      types: data.types,
+      primaryType: data.primaryType,
+      message: data.message,
+    },
   });
 
   const recovered =
@@ -196,7 +203,20 @@ test('string-encoded integers in a signed standalone message are normalized to b
     evmWalletAddress: account.address,
     nonce: 3n,
     deadline: 1700000000n,
+    // `data.message` is the original, all-bigint message `stringData` was
+    // derived from: the string integers come back in canonical form.
+    normalizedData: {
+      domain: data.domain,
+      types: data.types,
+      primaryType: data.primaryType,
+      message: data.message,
+    },
   });
+  // The normalized data hashes identically to what was received.
+  t.is(
+    hashTypedData(details.normalizedData as unknown as typeof data),
+    hashTypedData(stringData as unknown as typeof data),
+  );
 
   // A string `chainId` is hashed by viem's recovery when `types.EIP712Domain`
   // declares it (as `eth_signTypedData_v4` payloads do), so it's accepted.
@@ -441,7 +461,13 @@ test('permit2 witness message of a custom schema', t => {
       verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS },
     },
   );
-  const { permitDetails, ...rest } = details;
+  const { permitDetails, normalizedData, ...rest } = details;
+  t.deepEqual(normalizedData, {
+    domain: permitData.domain,
+    types: permitData.types,
+    primaryType: permitData.primaryType,
+    message: permitData.message,
+  });
   t.deepEqual(rest, {
     operation: 'Deposit',
     domain: {
