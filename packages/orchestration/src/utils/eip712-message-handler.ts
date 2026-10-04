@@ -33,6 +33,7 @@ import {
 } from './permit2.ts';
 import {
   makeEIP712MessageKit,
+  StandaloneEnvelopeTypeParams,
   type EIP712MessageKit,
   type EIP712MessageSchema,
   type FullDomain,
@@ -192,7 +193,11 @@ export const makeEIP712MessageHandlerUtils = <
    * an attenuated grant into an unconstrained one. The returned `data` can
    * therefore be a superset of the expected shape; it is guaranteed to
    * satisfy the expected types (required fields present, values of the
-   * right shape/range), but consumers that must reject unrecognized fields
+   * right shape/range, and already in the canonical JS form for the
+   * expected type, e.g. a `bigint` for a `uint256`: a field the signed
+   * types declared differently, e.g. as `uint48` or `string`, is rejected
+   * rather than returned with an unexpected JS type), but consumers that
+   * must reject unrecognized fields
    * (e.g. permission records) need to validate that themselves against a
    * closed shape.
    *
@@ -218,9 +223,18 @@ export const makeEIP712MessageHandlerUtils = <
 
     messageKit.validateOperationTypeName<T>(standaloneData.primaryType);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { nonce, deadline, ...operationData } =
       standaloneData.message as Record<string, unknown>;
+    // The signed types of the envelope fields are otherwise not checked
+    // against the expected ones (unlike permit2's, see `extractPermitDetails`).
+    normalizeAndValidateEIP712Data(
+      {
+        message: { nonce, deadline },
+        types: { StandaloneEnvelope: StandaloneEnvelopeTypeParams },
+        primaryType: 'StandaloneEnvelope',
+      },
+      { onExtraField: 'throw', onNonCanonicalValue: 'throw' },
+    );
     const operation = standaloneData.primaryType;
     const { message: normalizedData } = normalizeAndValidateEIP712Data(
       {
@@ -228,7 +242,7 @@ export const makeEIP712MessageHandlerUtils = <
         types: messageKit.getOperationTypes(operation),
         primaryType: operation,
       },
-      { onExtraField: 'keep' },
+      { onExtraField: 'keep', onNonCanonicalValue: 'throw' },
     );
     return {
       operation,
@@ -288,7 +302,7 @@ export const makeEIP712MessageHandlerUtils = <
         types: messageKit.getOperationTypes(operation),
         primaryType: operation,
       },
-      { onExtraField: 'keep' },
+      { onExtraField: 'keep', onNonCanonicalValue: 'throw' },
     );
     const spender = permitData.message.spender;
     return {
@@ -466,6 +480,9 @@ export const makeEIP712MessageHandlerUtils = <
       message: signedMessage,
       types: signedTypes,
     };
+    // Normalized per the signed types: checked to be the expected `uint256`
+    // (so `bigint`) by `extractPermitDetails` / the base permit2 types, or
+    // `extractOperationDetailsFromStandaloneData`.
     const { nonce, deadline } = signedMessage as {
       nonce: bigint;
       deadline: bigint;

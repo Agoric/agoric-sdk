@@ -338,6 +338,66 @@ test('a declared types.EIP712Domain must cover exactly the present domain fields
   );
 });
 
+test('rejects a known field signed with a type other than the expected one', t => {
+  const data = makeObservation();
+  const extract = (name: string, type: string, value: unknown) =>
+    observationUtils.extractOperationDetailsFromDataWithAddress(
+      {
+        ...data,
+        types: {
+          ...data.types,
+          Observe: data.types.Observe.map(field =>
+            field.name === name ? { ...field, type } : field,
+          ),
+        },
+        message: { ...data.message, [name]: value },
+        address: account.address,
+      } as unknown as typeof data & { address: Address },
+      { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+    );
+
+  // Normalized to a number per the signed `uint48`, not the bigint the
+  // expected `uint256` promises.
+  t.throws(() => extract('portfolio', 'uint48', 7n), {
+    message: /Expected a bigint for EIP-712 type "uint256", got 7$/,
+  });
+  // Kept as a string per the signed `string`.
+  t.throws(() => extract('portfolio', 'string', '7'), {
+    message: /Expected a bigint for EIP-712 type "uint256", got "7"/,
+  });
+  // Same for the envelope fields.
+  t.throws(() => extract('nonce', 'uint48', 3n), {
+    message: /Expected a bigint for EIP-712 type "uint256", got 3$/,
+  });
+  t.throws(() => extract('deadline', 'string', '1700000000'), {
+    message: /Expected a bigint for EIP-712 type "uint256", got "1700000000"/,
+  });
+  // A wider integer type still yields the expected JS type for the value.
+  t.is(extract('portfolio', 'uint64', 7n).data.portfolio, 7n);
+
+  // Same for a permit2 witness.
+  const permitData = makeDepositPermit();
+  t.throws(
+    () =>
+      depositUtils.extractOperationDetailsFromDataWithAddress(
+        {
+          ...permitData,
+          types: {
+            ...permitData.types,
+            TestVaultV1Deposit: [{ name: 'account', type: 'uint48' }],
+          },
+          signature: MOCK_SIGNATURE,
+          address: account.address,
+        } as unknown as typeof permitData & {
+          signature: typeof MOCK_SIGNATURE;
+          address: Address;
+        },
+        { permit2: { [String(CHAIN_ID)]: PERMIT2_ADDRESS } },
+      ),
+    { message: /Expected a bigint for EIP-712 type "uint256", got 5$/ },
+  );
+});
+
 test('rejects a standalone message with an unexpected verifying contract', t => {
   const data = makeObservation(OTHER_ADDRESS);
   t.throws(
