@@ -18,6 +18,7 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { privateKeyToAccount } from 'viem/accounts';
+import { hashTypedData } from 'viem/utils';
 import {
   makeNonceManager,
   prepareEVMPortfolioOperationManager,
@@ -1368,5 +1369,133 @@ test('handleMessage rejects permit2 message with wrong verifying contract', asyn
     getHandleOperationCalls().length,
     0,
     'handleOperation should not be called',
+  );
+});
+
+// ==================== handleMessage expected hash Tests ====================
+
+const makeHashTestMessage = (nonce: bigint) =>
+  getYmaxStandaloneOperationData(
+    {
+      portfolio: 1n,
+      nonce,
+      deadline: CURRENT_TIME + 3600n,
+    },
+    'Rebalance',
+    CHAIN_ID,
+    MOCK_VERIFYING_CONTRACT,
+  );
+
+test('handleMessage accepts a matching expected hash, in any hex case', async t => {
+  const { zone } = t.context;
+  const { vowTools, handler, getHandleOperationCalls } =
+    makeMessageHandlerTestSetup(zone, 'vow15', { namePrefix: 'test15_' });
+
+  const message = makeHashTestMessage(1n);
+  const signature = await ecdsaAccount.signTypedData(message);
+  const hash = hashTypedData(message);
+
+  await vowTools.when(
+    handler.handleMessage(harden({ ...message, signature, hash }) as any),
+  );
+
+  const message2 = makeHashTestMessage(2n);
+  await vowTools.when(
+    handler.handleMessage(
+      harden({
+        ...message2,
+        signature: await ecdsaAccount.signTypedData(message2),
+        hash: `0x${hashTypedData(message2).slice(2).toUpperCase()}`,
+      }) as any,
+    ),
+  );
+
+  const calls = getHandleOperationCalls();
+  t.is(calls.length, 2);
+  t.is(calls[0].address, ecdsaAccount.address);
+});
+
+test('handleMessage rejects a mismatched expected hash instead of recovering an unrelated signer', async t => {
+  const { zone } = t.context;
+  const { vowTools, handler, getHandleOperationCalls } =
+    makeMessageHandlerTestSetup(zone, 'vow16', { namePrefix: 'test16_' });
+
+  // The submitter's tooling hashed (and the wallet signed) something other
+  // than the data submitted here, e.g. due to an encoding discrepancy.
+  const signed = makeHashTestMessage(1n);
+  const signature = await ecdsaAccount.signTypedData(signed);
+  const submitted = makeHashTestMessage(2n);
+
+  await t.throwsAsync(
+    () =>
+      vowTools.when(
+        handler.handleMessage(
+          harden({
+            ...submitted,
+            signature,
+            hash: hashTypedData(signed),
+          }) as any,
+        ),
+      ),
+    { message: /EIP-712 hash mismatch/ },
+  );
+  t.is(getHandleOperationCalls().length, 0);
+});
+
+test('handleMessage with verifiedSigner rejects data not matching the verified hash', async t => {
+  const { zone } = t.context;
+  const { vowTools, handler, getHandleOperationCalls } =
+    makeMessageHandlerTestSetup(zone, 'vow17', { namePrefix: 'test17_' });
+
+  // e.g. EMS verified a (smart account) signature over `verified`'s hash,
+  // but the data relayed differs.
+  const verified = makeHashTestMessage(1n);
+  const relayed = makeHashTestMessage(2n);
+
+  await t.throwsAsync(
+    () =>
+      vowTools.when(
+        handler.handleMessage(
+          harden({
+            ...relayed,
+            signature: '0x00',
+            verifiedSigner: testSigner,
+            hash: hashTypedData(verified),
+          }) as any,
+        ),
+      ),
+    { message: /EIP-712 hash mismatch/ },
+  );
+  t.is(getHandleOperationCalls().length, 0);
+
+  await vowTools.when(
+    handler.handleMessage(
+      harden({
+        ...relayed,
+        signature: '0x00',
+        verifiedSigner: testSigner,
+        hash: hashTypedData(relayed),
+      }) as any,
+    ),
+  );
+  t.is(getHandleOperationCalls().length, 1);
+});
+
+test('EIP712DataShape rejects a non-string hash', async t => {
+  const { zone } = t.context;
+  const { vowTools, handler } = makeMessageHandlerTestSetup(zone, 'vow18', {
+    namePrefix: 'test18_',
+  });
+  const message = makeHashTestMessage(1n);
+  const signature = await ecdsaAccount.signTypedData(message);
+
+  await t.throwsAsync(
+    async () =>
+      vowTools.when(
+        handler.handleMessage(
+          harden({ ...message, signature, hash: 42n }) as any,
+        ),
+      ),
+    { message: /hash/ },
   );
 });

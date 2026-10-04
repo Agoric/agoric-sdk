@@ -18,7 +18,9 @@ import {
   encodeType,
   getTypesForEIP712Domain,
   hashStruct,
+  hashTypedData,
   isHex,
+  recoverAddress,
   recoverTypedDataAddress,
 } from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
 import type {
@@ -48,8 +50,8 @@ import { E } from '@endo/far';
 import { makePassableKit } from '@endo/marshal';
 import { passStyleOf, type Passable, type PureData } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import type { Address } from 'abitype';
-import type { RecoverTypedDataAddressParameters } from 'viem';
+import type { Address, TypedData } from 'abitype';
+import type { Hex, HashTypedDataParameters } from 'viem';
 import type { PublishStatus } from './portfolio.contract.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 
@@ -66,7 +68,18 @@ const agentIdFromEIP712 = (agentId: bigint): number => {
 
 type EIP712Data = WithSignature<
   YmaxStandaloneOperationData | YmaxPermitWitnessTransferFromData
-> & { verifiedSigner?: Address };
+> & {
+  verifiedSigner?: Address;
+  /**
+   * The EIP-712 hash (`hashTypedData`) the submitter expects the signature
+   * to be over, i.e. what the wallet signed. Not itself signed: if present,
+   * it is only checked against the hash computed here, so that a submitter
+   * whose EIP-712 tooling hashes the data differently is rejected with an
+   * explicit mismatch, rather than recovering an unrelated signer (or, with
+   * `verifiedSigner`, acting on data other than what was verified).
+   */
+  hash?: Hex;
+};
 
 type PortfolioEVMFacet = PortfolioKit['evmHandler'];
 interface PortfolioContractPublicFacet {
@@ -493,6 +506,7 @@ export const EIP712DataShape: TypedPattern<EIP712Data> = M.splitRecord(
   },
   {
     verifiedSigner: M.string(),
+    hash: M.string(),
   },
 ) as TypedPattern<EIP712Data>;
 
@@ -568,7 +582,22 @@ export const prepareEVMWalletMessageHandler = (
         return vowTools.asVow(async () => {
           trace('handleMessage', messageData);
 
-          const { verifiedSigner, ...signedData } = messageData;
+          const { verifiedSigner, hash, ...signedData } = messageData;
+
+          // Hash the data at most once: needed for ECDSA recovery (no
+          // `verifiedSigner`), and to check the expected hash if supplied.
+          const computedHash =
+            verifiedSigner && hash === undefined
+              ? undefined
+              : hashTypedData(signedData as HashTypedDataParameters<TypedData>);
+
+          // Check the expected hash, if supplied, before anything relies on
+          // the signature: with `verifiedSigner`, this is the only place the
+          // data acted on here is tied to what was actually verified.
+          if (hash !== undefined) {
+            computedHash!.toLowerCase() === hash.toLowerCase() ||
+              Fail`EIP-712 hash mismatch: computed ${q(computedHash)}, expected ${q(hash)}`;
+          }
 
           // Extracts the owner address from the signature using ECDSA recovery
           // if a verified signer was not provided by the caller.
@@ -578,9 +607,10 @@ export const prepareEVMWalletMessageHandler = (
           // Resolves immediately on-chain since all deps are bundled
           const walletOwner = await (verifiedSigner
             ? getAddress(verifiedSigner)
-            : recoverTypedDataAddress(
-                signedData as RecoverTypedDataAddressParameters,
-              ));
+            : recoverAddress({
+                hash: computedHash!,
+                signature: signedData.signature,
+              }));
 
           const signedDataWithAddress = {
             ...signedData,
