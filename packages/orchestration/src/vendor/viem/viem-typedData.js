@@ -2,11 +2,12 @@ import {
   getTypesForEIP712Domain,
   hashStruct,
   hashTypedData,
+  recoverAddress,
   recoverTypedDataAddress,
   serializeTypedData,
   validateTypedData,
   verifyTypedData
-} from "./chunk-XNGNAKRR.js";
+} from "./chunk-7BNMBC44.js";
 import {
   isHex
 } from "./chunk-UQHGCCOH.js";
@@ -47,6 +48,7 @@ export {
   hashStruct,
   hashTypedData,
   isHex,
+  recoverAddress,
   recoverTypedDataAddress,
   serializeTypedData,
   validateTypedData,
