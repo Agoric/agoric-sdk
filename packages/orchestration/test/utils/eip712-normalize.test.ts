@@ -453,6 +453,44 @@ test('rejects a missing required field', t => {
   );
 });
 
+test('rejects a struct declaring the same field more than once, in every mode', t => {
+  // EIP-712 hashing would encode both declarations, but the output types
+  // could only describe one.
+  const types = {
+    Mail: [
+      { name: 'contents', type: 'string' },
+      { name: 'contents', type: 'string' },
+    ],
+  };
+  for (const onExtraField of ['drop', 'throw', 'keep'] as const) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data(
+          { message: { contents: 'hi' }, types, primaryType: 'Mail' },
+          { onExtraField },
+        ),
+      { message: /Duplicate field "contents" in EIP-712 type "Mail"/ },
+      onExtraField,
+    );
+  }
+  // Including in a nested struct, or with differing types.
+  t.throws(
+    () =>
+      normalizeAndValidateEIP712Data({
+        message: { inner: { n: 1n } },
+        types: {
+          Outer: [{ name: 'inner', type: 'Inner' }],
+          Inner: [
+            { name: 'n', type: 'uint256' },
+            { name: 'n', type: 'string' },
+          ],
+        },
+        primaryType: 'Outer',
+      }),
+    { message: /Duplicate field "n" in EIP-712 type "Inner"/ },
+  );
+});
+
 test('rejects a fixed-length array with fewer than its declared number of elements', t => {
   const types = {
     Group: [{ name: 'members', type: 'string[2]' }],

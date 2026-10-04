@@ -309,6 +309,10 @@ test('a declared types.EIP712Domain must cover exactly the present domain fields
   t.throws(() => extract([...declared, { name: 'salt', type: 'bytes32' }]), {
     message: /Missing required field "salt"/,
   });
+  // A field must not be declared more than once.
+  t.throws(() => extract([...declared, declared[0]]), {
+    message: /Duplicate field "name" in EIP-712 type "EIP712Domain"/,
+  });
   // A non-standard declared type is caught by domain validation.
   t.throws(
     () =>

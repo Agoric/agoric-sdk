@@ -41,6 +41,8 @@
  *   least their declared number of elements (too few is missing data, not
  *   excess, so no mode tolerates it; too many is excess, tolerated only by
  *   `'keep'`).
+ * - a struct type reached from `primaryType` must not declare the same
+ *   field more than once (hashing would encode every declaration).
  * - a struct/array field must get an array/object value, and a plain
  *   Solidity type (`address`, `bool`, `string`, `uint*`/`int*`, `bytes*`)
  *   must get a value of the specific JS type that implies -- see
@@ -563,6 +565,14 @@ export const normalizeAndValidateEIP712Data = (
     // an inherited Object.prototype member (e.g. a field named "toString").
     const fields: TypeFields = Object.create(null);
     for (const field of declared) {
+      // EIP-712 hashing encodes every declaration, while `fields` (and so
+      // the output types) could only hold one, describing a different type
+      // hash than the input.
+      if (field.name in fields) {
+        throw new Error(
+          `Duplicate field ${quoteName(field.name)} in EIP-712 type ${quoteName(typeName)}`,
+        );
+      }
       fields[field.name] = {
         state: field.optional ? 'optional-unseen' : 'required',
         type: field.type,
