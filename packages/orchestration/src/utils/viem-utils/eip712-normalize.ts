@@ -186,11 +186,13 @@ const describeValue = (value: unknown): string => {
  *   the module doc comment for why).
  * - `bool`: JS `boolean`.
  * - `string`: JS `string`.
- * - `bytes` (dynamic): hex string *or* `Uint8Array` -- hashed identically
- *   either way.
- * - `bytes<M>` (fixed): hex string only, of exactly `M` bytes -- a
- *   `Uint8Array` does not hash successfully here (see the module doc
- *   comment).
+ * - `bytes` (dynamic): even-length hex string *or* `Uint8Array` -- hashed
+ *   identically either way.
+ * - `bytes<M>` (fixed): even-length hex string only, of exactly `M` bytes
+ *   -- a `Uint8Array` does not hash successfully here (see the module doc
+ *   comment). Odd-length hex is rejected for both: ethers.js rejects it,
+ *   and viem pads the missing nibble on the left for `bytes` but on the
+ *   right for `bytes<M>`.
  * - `uint<M>`/`int<M>` (bare `uint`/`int` means 256 bits): `number` or
  *   `bigint`, an integer, in range for the bit width/signedness.
  * - anything else: not a real Solidity primitive type, so rejected
@@ -261,9 +263,14 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
         `Expected a hex string for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
       );
     }
+    if (value.length % 2 !== 0) {
+      throw new Error(
+        `Expected an even number of hex digits for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
+      );
+    }
     if (bytesMatch[1]) {
       const expectedSize = Number(bytesMatch[1]);
-      const actualSize = Math.ceil((value.length - 2) / 2);
+      const actualSize = (value.length - 2) / 2;
       if (actualSize !== expectedSize) {
         throw new Error(
           `Expected EIP-712 type ${quotedType} to be ${expectedSize} bytes, got ${actualSize}: ${describeValue(value)}`,

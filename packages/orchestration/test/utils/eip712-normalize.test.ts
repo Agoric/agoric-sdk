@@ -629,6 +629,30 @@ test('validates fixed-size bytes length, matching viem', t => {
   );
 });
 
+test('rejects odd-length hex for "bytes" fields, fixed or dynamic', t => {
+  // ethers.js rejects these; viem pads the missing nibble on the left for
+  // dynamic `bytes` but on the right for `bytes<M>`.
+  for (const type of ['bytes2', 'bytes']) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data({
+          message: { v: '0x123' },
+          types: { M: [{ name: 'v', type }] },
+          primaryType: 'M',
+        }),
+      { message: /even number of hex digits/ },
+      type,
+    );
+  }
+  t.notThrows(() =>
+    normalizeAndValidateEIP712Data({
+      message: { v: '0x' },
+      types: { M: [{ name: 'v', type: 'bytes' }] },
+      primaryType: 'M',
+    }),
+  );
+});
+
 // --- strict JS-type matching: unlike viem's `validateTypedData`, which
 // only range/shape-checks a value when it already happens to have a
 // plausible JS type (and otherwise silently defers to real hashing, which
