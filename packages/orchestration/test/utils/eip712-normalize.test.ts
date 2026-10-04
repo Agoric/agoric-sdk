@@ -2,6 +2,7 @@ import '@endo/init/debug.js';
 
 import test from '@endo/ses-ava/prepare-endo.js';
 
+import { hashTypedData } from 'viem/utils';
 import { normalizeAndValidateEIP712Data } from '../../src/utils/viem-utils/eip712-normalize.js';
 
 test('no-op round trip for a fully-conforming message', t => {
@@ -396,7 +397,7 @@ test('a struct type can be satisfied by an array value that has the declared pro
     Weird: [
       { name: '0', type: 'string' },
       { name: '1', type: 'string' },
-      { name: 'length', type: 'uint256' },
+      { name: 'length', type: 'uint48' },
     ],
   };
   // A real array happens to have '0', '1', and (non-enumerable, but still
@@ -715,29 +716,23 @@ test('rejects a non-string value for a "string" field -- viem itself would silen
   );
 });
 
-test('rejects a non-integer number and a non-number/bigint value for an integer field', t => {
+test('rejects a non-integer number and a non-integer value for an integer field', t => {
   const types = {
     Person: [{ name: 'favoriteNumber', type: 'uint8' }],
   };
 
-  t.throws(
-    () =>
-      normalizeAndValidateEIP712Data({
-        message: { favoriteNumber: 3.14 },
-        types,
-        primaryType: 'Person',
-      }),
-    { message: /uint8/ },
-  );
-  t.throws(
-    () =>
-      normalizeAndValidateEIP712Data({
-        message: { favoriteNumber: '5' },
-        types,
-        primaryType: 'Person',
-      }),
-    { message: /uint8/ },
-  );
+  for (const favoriteNumber of [3.14, NaN, Infinity, true, null, {}]) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data({
+          message: { favoriteNumber },
+          types,
+          primaryType: 'Person',
+        }),
+      { message: /uint8/ },
+      `${favoriteNumber}`,
+    );
+  }
 });
 
 test('rejects an unsafe integer number, matching ethers.js', t => {
@@ -754,12 +749,259 @@ test('rejects an unsafe integer number, matching ethers.js', t => {
       }),
     { message: /uint256/ },
   );
-  t.notThrows(() =>
+  t.deepEqual(
     normalizeAndValidateEIP712Data({
       message: { amount: Number.MAX_SAFE_INTEGER },
       types,
       primaryType: 'Person',
-    }),
+    }).message,
+    { amount: BigInt(Number.MAX_SAFE_INTEGER) },
+  );
+});
+
+test('accepts and normalizes string-encoded integers', t => {
+  const cases: [type: string, value: string, expected: bigint | number][] = [
+    ['uint256', '12', 12n],
+    ['uint256', '+12', 12n],
+    ['uint256', '0', 0n],
+    ['uint256', '+0', 0n],
+    ['uint256', '0x0c', 12n],
+    // Hex may be zero-padded.
+    ['uint256', '0x000c', 12n],
+    ['uint256', '0x00', 0n],
+    ['uint256', '0xC', 12n],
+    ['uint8', '255', 255],
+    ['uint8', '0xff', 255],
+    ['int8', '-128', -128],
+    ['int8', '+127', 127],
+    ['int256', '-12', -12n],
+    ['uint256', `${2n ** 256n - 1n}`, 2n ** 256n - 1n],
+    ['uint256', `0x${'f'.repeat(64)}`, 2n ** 256n - 1n],
+  ];
+  for (const [type, v, expected] of cases) {
+    const { message } = normalizeAndValidateEIP712Data({
+      message: { v },
+      types: { M: [{ name: 'v', type }] },
+      primaryType: 'M',
+    });
+    t.is(message.v, expected, `${type} ${v}`);
+  }
+});
+
+test('rejects string-encoded integers outside the accepted grammar or range', t => {
+  const cases: [type: string, value: string][] = [
+    ['uint256', ''],
+    ['uint256', '0x'],
+    ['uint256', ' 12'],
+    ['uint256', '12 '],
+    ['uint256', '0X0c'],
+    ['uint256', '0b1100'],
+    ['uint256', '0o14'],
+    ['uint256', '1e3'],
+    ['uint256', '12.0'],
+    ['uint256', '1_000'],
+    ['uint256', '12n'],
+    // Leading zeros in decimal (could be read as legacy octal), and `-0`.
+    ['uint256', '00'],
+    ['uint256', '041'],
+    ['uint256', '+041'],
+    ['int256', '-041'],
+    ['uint256', '-0'],
+    ['int256', '-0'],
+    ['int256', '-00'],
+    // Negative hex: accepted by ethers.js but not viem.
+    ['int256', '-0xc'],
+    ['int256', '+0xc'],
+    ['int256', '--12'],
+    ['uint256', '-1'],
+    ['uint8', '256'],
+    ['uint8', '0x100'],
+    ['int8', '-129'],
+    ['int8', '0x80'], // hex is not two's complement
+    ['uint256', `${2n ** 256n}`],
+    // Too long, even if the value would be in range.
+    ['uint256', `0x${'0'.repeat(100)}1`],
+  ];
+  for (const [type, v] of cases) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data({
+          message: { v },
+          types: { M: [{ name: 'v', type }] },
+          primaryType: 'M',
+        }),
+      { message: new RegExp(type) },
+      `${type} ${JSON.stringify(v)}`,
+    );
+  }
+});
+
+test('accepted string-encoded integers hash identically raw and normalized under viem', t => {
+  // Signatures are recovered from the raw, un-normalized message (see
+  // `extractOperationDetailsFromDataWithAddress`'s callers), so every
+  // accepted string encoding must hash the same raw as its normalized
+  // `bigint`.
+  const cases: [type: string, value: string][] = [
+    ['uint256', '12'],
+    ['uint256', '+12'],
+    ['uint256', '0xC'],
+    ['uint256', '0x000C'],
+    ['int256', '-12'],
+    ['int256', '+12'],
+    ['int64', '+0'],
+  ];
+  for (const [type, v] of cases) {
+    const types = { M: [{ name: 'v', type }] };
+    const { message } = normalizeAndValidateEIP712Data({
+      message: { v },
+      types,
+      primaryType: 'M',
+    });
+    t.is(typeof message.v, 'bigint');
+    const domain = { name: 'X', chainId: 1n };
+    t.is(
+      hashTypedData({ domain, types, primaryType: 'M', message: { v } }),
+      hashTypedData({ domain, types, primaryType: 'M', message }),
+      `${type} ${v}`,
+    );
+  }
+});
+
+test('normalizes integers of at most 48 bits to a number, wider ones to a bigint, matching abitype', t => {
+  const cases: [type: string, value: unknown, expected: bigint | number][] = [
+    ['uint8', 5n, 5],
+    ['uint32', '0xffffffff', 0xffffffff],
+    ['uint48', 2n ** 48n - 1n, 2 ** 48 - 1],
+    ['int48', `${-(2n ** 47n)}`, -(2 ** 47)],
+    ['uint56', 5, 5n],
+    ['int64', -5, -5n],
+    ['uint256', 5, 5n],
+    // Bare `uint`/`int` means 256 bits.
+    ['uint', 5, 5n],
+    ['int', -5, -5n],
+  ];
+  for (const [type, v, expected] of cases) {
+    const { message } = normalizeAndValidateEIP712Data({
+      message: { v },
+      types: { M: [{ name: 'v', type }] },
+      primaryType: 'M',
+    });
+    t.is(message.v, expected, `${type} ${String(v)}`);
+  }
+});
+
+test('normalizes integers nested in arrays and structs', t => {
+  const types = {
+    Outer: [
+      { name: 'inner', type: 'Inner' },
+      { name: 'ids', type: 'uint256[]' },
+    ],
+    Inner: [{ name: 'n', type: 'int64' }],
+  };
+  const { message } = normalizeAndValidateEIP712Data({
+    message: { inner: { n: '-5' }, ids: [1, '0x2', 3n] },
+    types,
+    primaryType: 'Outer',
+  });
+  t.deepEqual(message, { inner: { n: -5n }, ids: [1n, 2n, 3n] });
+});
+
+test('onNonCanonicalValue: "keep" validates integers without converting them', t => {
+  const types = { M: [{ name: 'a', type: 'uint256' }] };
+  for (const onExtraField of ['drop', 'throw'] as const) {
+    const { message } = normalizeAndValidateEIP712Data(
+      { message: { a: '+12' }, types, primaryType: 'M' },
+      { onExtraField, onNonCanonicalValue: 'keep' },
+    );
+    t.deepEqual(message, { a: '+12' });
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data(
+          { message: { a: '-0xc' }, types, primaryType: 'M' },
+          { onExtraField, onNonCanonicalValue: 'keep' },
+        ),
+      { message: /uint256/ },
+    );
+  }
+});
+
+test('onNonCanonicalValue: "throw" rejects valid integers not already in canonical form', t => {
+  const cases: [type: string, value: unknown, canonical: boolean][] = [
+    ['uint256', 12n, true],
+    ['uint256', 12, false],
+    ['uint256', '12', false],
+    ['uint32', 12, true],
+    ['uint32', 12n, false],
+    ['uint32', '0xc', false],
+    ['int', -1n, true],
+    ['int', -1, false],
+  ];
+  for (const onExtraField of ['drop', 'throw', 'keep'] as const) {
+    for (const [type, v, canonical] of cases) {
+      const run = () =>
+        normalizeAndValidateEIP712Data(
+          {
+            message: { v },
+            types: { M: [{ name: 'v', type }] },
+            primaryType: 'M',
+          },
+          { onExtraField, onNonCanonicalValue: 'throw' },
+        );
+      const label = `${onExtraField} ${type} ${typeof v} ${String(v)}`;
+      if (canonical) {
+        t.deepEqual(run().message, { v }, label);
+      } else {
+        t.throws(
+          run,
+          {
+            message: new RegExp(
+              `Expected a (bigint|number) for EIP-712 type "${type}"`,
+            ),
+          },
+          label,
+        );
+      }
+    }
+  }
+  // Values that are invalid altogether are still rejected as such.
+  t.throws(
+    () =>
+      normalizeAndValidateEIP712Data(
+        {
+          message: { v: 256 },
+          types: { M: [{ name: 'v', type: 'uint8' }] },
+          primaryType: 'M',
+        },
+        { onNonCanonicalValue: 'throw' },
+      ),
+    { message: /out of range/ },
+  );
+});
+
+test('"keep" mode validates string-encoded integers without converting them, and rejects onNonCanonicalValue: "normalize"', t => {
+  const types = { M: [{ name: 'a', type: 'uint256' }] };
+  const message = { a: '0x0c' };
+  const result = normalizeAndValidateEIP712Data(
+    { message, types, primaryType: 'M' },
+    { onExtraField: 'keep' },
+  );
+  t.is(result.message, message);
+  t.deepEqual(result.message, { a: '0x0c' });
+  t.throws(
+    () =>
+      normalizeAndValidateEIP712Data(
+        { message: { a: 'nope' }, types, primaryType: 'M' },
+        { onExtraField: 'keep' },
+      ),
+    { message: /uint256/ },
+  );
+  t.throws(
+    () =>
+      normalizeAndValidateEIP712Data(
+        { message, types, primaryType: 'M' },
+        { onExtraField: 'keep', onNonCanonicalValue: 'normalize' },
+      ),
+    { message: /onNonCanonicalValue/ },
   );
 });
 

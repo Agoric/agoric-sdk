@@ -152,6 +152,51 @@ test('standalone message of a custom schema round-trips through signing', async 
   t.is(recovered.evmWalletAddress, account.address);
 });
 
+test('string-encoded integers in a signed standalone message are normalized to bigints', async t => {
+  const data = makeObservation();
+  // As an ethers.js-based client (or JSON transport) might send them: every
+  // message integer (including in nested arrays) as a string.
+  const stringData = {
+    ...data,
+    message: {
+      portfolio: '0x7',
+      tvls: [
+        { instrument: 'Aave_Arbitrum', tvlUsd: '1000000' },
+        { instrument: 'Compound_Base', tvlUsd: '+2000000' },
+      ],
+      nonce: '3',
+      deadline: '1700000000',
+    },
+  };
+
+  // Signed (and recovered) over the raw strings, which hash identically.
+  const signature = await account.signTypedData(data);
+  const address = await recoverTypedDataAddress({
+    ...(stringData as unknown as typeof data),
+    signature,
+  });
+  t.is(address, account.address);
+
+  const details = observationUtils.extractOperationDetailsFromDataWithAddress(
+    { ...(stringData as unknown as typeof data), address },
+    { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+  );
+  t.deepEqual(details, {
+    operation: 'Observe',
+    domain: data.domain,
+    data: {
+      portfolio: 7n,
+      tvls: [
+        { instrument: 'Aave_Arbitrum', tvlUsd: 1_000_000n },
+        { instrument: 'Compound_Base', tvlUsd: 2_000_000n },
+      ],
+    },
+    evmWalletAddress: account.address,
+    nonce: 3n,
+    deadline: 1700000000n,
+  });
+});
+
 test('rejects a standalone message with an unexpected verifying contract', t => {
   const data = makeObservation(OTHER_ADDRESS);
   t.throws(
@@ -426,4 +471,63 @@ test('makeEIP712MessageKit rejects invalid schemas', t => {
       message: /witness field name of er collides with a permit field: spender/,
     },
   );
+});
+
+test('authoring accepts string-encoded integers and normalizes them', t => {
+  // @ts-expect-error integer encodings not yet accepted by the input types
+  const witness = depositKit.getWitness('Deposit', { account: '0x5' });
+  t.deepEqual(witness, depositKit.getWitness('Deposit', { account: 5n }));
+
+  const data = observationKit.getStandaloneOperationData(
+    {
+      // @ts-expect-error integer encodings not yet accepted by the input types
+      portfolio: '7',
+      // @ts-expect-error integer encodings not yet accepted by the input types
+      tvls: [{ instrument: 'Aave_Arbitrum', tvlUsd: 1_000_000 }],
+      // @ts-expect-error integer encodings not yet accepted by the input types
+      nonce: '+3',
+      deadline: 1700000000n,
+    },
+    'Observe',
+    CHAIN_ID,
+    CONTRACT_ADDRESS,
+  );
+  t.deepEqual(data.message, {
+    portfolio: 7n,
+    tvls: [{ instrument: 'Aave_Arbitrum', tvlUsd: 1_000_000n }],
+    nonce: 3n,
+    deadline: 1700000000n,
+  });
+  // The output type is still the canonical `bigint`.
+  const portfolio: bigint = data.message.portfolio;
+  t.is(portfolio, 7n);
+
+  // @ts-expect-error not an integer encoding
+  t.throws(() => depositKit.getWitness('Deposit', { account: true }));
+});
+
+test('normalized output matches abitype types for small and large integer widths', t => {
+  const kit = makeEIP712MessageKit({
+    domainName: 'TestWidths',
+    domainVersion: '1',
+    operationTypes: {
+      Sized: [
+        { name: 'small', type: 'uint32' },
+        { name: 'large', type: 'uint64' },
+      ],
+    },
+    subTypes: {},
+  } as const satisfies EIP712MessageSchema);
+
+  const { message } = kit.getStandaloneOperationData(
+    // @ts-expect-error integer encodings not yet accepted by the input types
+    { small: 7n, large: 8, nonce: 1n, deadline: 2n },
+    'Sized',
+    CHAIN_ID,
+    CONTRACT_ADDRESS,
+  );
+  const small: number = message.small;
+  const large: bigint = message.large;
+  t.is(small, 7);
+  t.is(large, 8n);
 });

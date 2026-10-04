@@ -76,7 +76,12 @@ const runInXs = async (input, options) => {
       result = err.message;
     }
     issueCommand(
-      new TextEncoder().encode(JSON.stringify({ threw, result })).buffer,
+      // bigints (normalized integers) don't survive JSON, so tag them.
+      new TextEncoder().encode(
+        JSON.stringify({ threw, result }, (_key, value) =>
+          typeof value === 'bigint' ? \`\${value}n\` : value,
+        ),
+      ).buffer,
     );
   `);
   await vat.close();
@@ -142,4 +147,52 @@ test('preserves every element of a multi-element array field, under the real XS 
   if (!threw) {
     t.deepEqual(result.message.signers, [VALID_ADDRESS_0, VALID_ADDRESS_1]);
   }
+});
+
+test('parses and normalizes string-encoded integers, under the real XS engine', async t => {
+  const input = {
+    types: {
+      M: [
+        { name: 'dec', type: 'uint256' },
+        { name: 'plus', type: 'int256' },
+        { name: 'neg', type: 'int256' },
+        { name: 'hex', type: 'uint256' },
+        { name: 'num', type: 'uint64' },
+      ],
+    },
+    message: {
+      dec: '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+      plus: '+12',
+      neg: '-12',
+      hex: '0xC',
+      num: 7,
+    },
+    primaryType: 'M',
+  };
+
+  const { threw, result } = await runInXs(input, {});
+
+  t.false(threw, `expected no validation error, got ${JSON.stringify(result)}`);
+  if (!threw) {
+    t.deepEqual(result.message, {
+      dec: `${2n ** 256n - 1n}n`,
+      plus: '12n',
+      neg: '-12n',
+      hex: '12n',
+      num: '7n',
+    });
+  }
+});
+
+test('rejects an out-of-grammar string-encoded integer, under the real XS engine', async t => {
+  const input = {
+    types: { M: [{ name: 'v', type: 'int256' }] },
+    message: { v: '-0xc' },
+    primaryType: 'M',
+  };
+
+  const { threw, result } = await runInXs(input, {});
+
+  t.true(threw, `expected a validation error, got ${JSON.stringify(result)}`);
+  if (threw) t.regex(result, /int256/);
 });
