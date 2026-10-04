@@ -87,14 +87,16 @@ type StructToType<
 >;
 
 /**
- * `Foo[3]` / `Foo[]` -> `{elem: 'Foo'; size: '3' | ''}`; non-array ->
- * `undefined`, NOT `never` -- `never` is a subtype of everything, so
- * `ParseArrayType<T> extends {elem: ...; size: ...}` would then vacuously
- * match every non-array `T` too (mirrors abitype's own `undefined` fallback
- * in `MaybeExtractArrayParameterType`, for the same reason).
+ * `Foo[3]` / `Foo[]` / `Foo[2][]` -> `{elem: 'Foo'; dims: '[3]' | '[]' |
+ * '[2][]'}` (all dimensions, since an array of arrays is valid EIP-712);
+ * non-array -> `undefined`, NOT `never` -- `never` is a subtype of
+ * everything, so `ParseArrayType<T> extends {elem: ...; dims: ...}` would
+ * then vacuously match every non-array `T` too (mirrors abitype's own
+ * `undefined` fallback in `MaybeExtractArrayParameterType`, for the same
+ * reason).
  */
-type ParseArrayType<T extends string> = T extends `${infer Elem}[${infer Size}]`
-  ? { elem: Elem; size: Size }
+type ParseArrayType<T extends string> = T extends `${infer Elem}[${infer Rest}`
+  ? { elem: Elem; dims: `[${Rest}` }
   : undefined;
 
 /** Mirrors abitype's own (unexported) `Tuple` helper. */
@@ -109,6 +111,17 @@ type ArrayOfSize<T, Size extends string> = Size extends `${infer N extends
   number}`
   ? FixedLengthTuple<T, N>
   : readonly T[];
+
+/**
+ * Wraps `T` in an array per dimension of `Dims` (e.g. `'[2][]'`), leftmost
+ * (innermost) first: `T[2][]` is a dynamic-length array of `T[2]`.
+ */
+type ApplyArrayDims<
+  T,
+  Dims extends string,
+> = Dims extends `[${infer Size}]${infer Rest}`
+  ? ApplyArrayDims<ArrayOfSize<T, Size>, Rest>
+  : T;
 
 type PrimitiveToType<
   FieldType extends string,
@@ -126,12 +139,12 @@ type FieldToType<
 > =
   ParseArrayType<FieldType> extends {
     elem: infer Elem extends string;
-    size: infer Size extends string;
+    dims: infer Dims extends string;
   }
     ? Elem extends keyof TD & string
-      ? ArrayOfSize<StructToType<TD, TD[Elem], Kind>, Size>
+      ? ApplyArrayDims<StructToType<TD, TD[Elem], Kind>, Dims>
       : Kind extends 'input'
-        ? ArrayOfSize<PrimitiveToType<Elem, Kind>, Size>
+        ? ApplyArrayDims<PrimitiveToType<Elem, Kind>, Dims>
         : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>
     : FieldType extends keyof TD & string
       ? StructToType<TD, TD[FieldType], Kind>

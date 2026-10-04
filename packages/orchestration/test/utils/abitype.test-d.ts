@@ -1,7 +1,7 @@
 /**
  * @file pure types, no runtime, ignored by Ava
  */
-import { expectAssignable } from 'tsd';
+import { expectAssignable, expectNotAssignable } from 'tsd';
 import type {
   TypedDataParameter,
   TypedDataToStructType,
@@ -64,3 +64,40 @@ expectAssignable<RootType>({
 type LeafType = TypedDataToStructType<TD, 'Leaf'>;
 expectAssignable<LeafType>({ a: true });
 expectAssignable<LeafType>({ a: true, b: 'x' });
+
+// Arrays of arrays (valid EIP-712, supported by viem and ethers.js), of
+// structs or primitives, applying dimensions leftmost (innermost) first:
+// `T[2][3]` is 3 arrays of 2 `T`s.
+const Grid = [
+  { name: 'rows', type: 'Leaf[][]' },
+  { name: 'cells', type: 'Leaf[2][3]' },
+  { name: 'nums', type: 'uint256[][2]' },
+] as const satisfies readonly TypedDataParameter[];
+type GridTD = TD & { Grid: typeof Grid };
+type GridOut = TypedDataToStructType<GridTD, 'Grid'>;
+type GridIn = TypedDataToStructType<GridTD, 'Grid', 'input'>;
+
+const leaf = { a: true };
+expectAssignable<GridOut['rows']>([[leaf], []]);
+expectNotAssignable<GridOut['rows']>([leaf]);
+expectAssignable<GridOut['cells']>([
+  [leaf, leaf],
+  [leaf, leaf],
+  [leaf, leaf],
+]);
+expectNotAssignable<GridOut['cells']>([
+  [leaf, leaf, leaf],
+  [leaf, leaf, leaf],
+]);
+expectAssignable<GridOut['nums']>([[1n], [2n, 3n]]);
+expectNotAssignable<GridOut['nums']>([[1n]]);
+
+// The input kind accepts the other integer encodings at any depth.
+expectAssignable<GridIn['nums']>([[1, '0x2'], ['+3']]);
+expectNotAssignable<GridIn['nums']>([[1]]);
+expectNotAssignable<GridIn['nums']>([1, 2]);
+expectAssignable<GridIn['cells']>([
+  [leaf, leaf],
+  [leaf, leaf],
+  [leaf, leaf],
+]);
