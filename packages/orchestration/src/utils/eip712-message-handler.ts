@@ -423,7 +423,7 @@ export const makeEIP712MessageHandlerUtils = <
   ): FullMessageDetails<S, T> => {
     const {
       address: tokenOwner,
-      domain,
+      domain: rawDomain,
       ...otherData
     } = data as unknown as {
       address: Address;
@@ -433,7 +433,7 @@ export const makeEIP712MessageHandlerUtils = <
       primaryType: string;
     };
 
-    if (!domain) {
+    if (!rawDomain) {
       throw new Error(`Missing domain in typed data`);
     }
 
@@ -459,14 +459,23 @@ export const makeEIP712MessageHandlerUtils = <
 
     // Do not trust type definitions coming from the message for the domain;
     // derive them from `domain`'s own shape instead, then validate `domain`
-    // against that (e.g. `chainId` range, `verifyingContract` shape).
+    // against that (e.g. `chainId` range, `verifyingContract` shape), and
+    // normalize its values (e.g. a number `chainId` to a bigint). Any field
+    // the derived types leave out was not part of the signed domain hash, so
+    // reject rather than drop it -- notably a string `chainId`, which viem
+    // (unlike ethers.js) omits from the domain hash entirely.
     // Domain-specific checks (name/version/contract match) happen later, in
     // `validateDomain`/`validatePermit2Domain`.
-    normalizeAndValidateEIP712Data({
-      message: domain as Record<string, unknown>,
-      types: { EIP712Domain: getTypesForEIP712Domain({ domain }) },
-      primaryType: 'EIP712Domain',
-    });
+    const domain = normalizeAndValidateEIP712Data(
+      {
+        message: rawDomain as Record<string, unknown>,
+        types: {
+          EIP712Domain: getTypesForEIP712Domain({ domain: rawDomain }),
+        },
+        primaryType: 'EIP712Domain',
+      },
+      { onExtraField: 'throw' },
+    ).message as TypedDataDomain;
 
     if (isPermit2MessageType(data.primaryType)) {
       if (!messageKit.supportsPermit2Witness) {

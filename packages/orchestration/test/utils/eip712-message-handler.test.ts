@@ -155,9 +155,11 @@ test('standalone message of a custom schema round-trips through signing', async 
 test('string-encoded integers in a signed standalone message are normalized to bigints', async t => {
   const data = makeObservation();
   // As an ethers.js-based client (or JSON transport) might send them: every
-  // message integer (including in nested arrays) as a string.
+  // message integer (including in nested arrays) as a string, and the domain
+  // `chainId` as a number.
   const stringData = {
     ...data,
+    domain: { ...data.domain, chainId: Number(CHAIN_ID) },
     message: {
       portfolio: '0x7',
       tvls: [
@@ -195,6 +197,21 @@ test('string-encoded integers in a signed standalone message are normalized to b
     nonce: 3n,
     deadline: 1700000000n,
   });
+
+  // viem leaves a string `chainId` out of the domain hash entirely (ethers.js
+  // doesn't), so it must not be accepted.
+  t.throws(
+    () =>
+      observationUtils.extractOperationDetailsFromDataWithAddress(
+        {
+          ...(stringData as unknown as typeof data),
+          domain: { ...data.domain, chainId: String(CHAIN_ID) as any },
+          address,
+        },
+        { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+      ),
+    { message: /chainId/ },
+  );
 });
 
 test('rejects a standalone message with an unexpected verifying contract', t => {
