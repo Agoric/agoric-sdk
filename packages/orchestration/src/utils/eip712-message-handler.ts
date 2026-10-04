@@ -457,25 +457,41 @@ export const makeEIP712MessageHandlerUtils = <
       deadline: bigint;
     };
 
-    // Do not trust type definitions coming from the message for the domain;
-    // derive them from `domain`'s own shape instead, then validate `domain`
-    // against that (e.g. `chainId` range, `verifyingContract` shape), and
-    // normalize its values (e.g. a number `chainId` to a bigint). Any field
-    // the derived types leave out was not part of the signed domain hash, so
-    // reject rather than drop it -- notably a string `chainId`, which viem
-    // (unlike ethers.js) omits from the domain hash entirely.
-    // Domain-specific checks (name/version/contract match) happen later, in
-    // `validateDomain`/`validatePermit2Domain`.
+    // Validate `domain` against the same types viem's signature recovery
+    // hashes it with: the message's own `types.EIP712Domain` if declared (as
+    // `eth_signTypedData_v4` payloads do), else derived from `domain`'s
+    // shape. Any present field those types leave out was not part of the
+    // signed domain hash, so reject rather than drop it -- notably a string
+    // `chainId` without declared types, which viem (unlike ethers.js) omits
+    // from the derived types. This also checks values (e.g. `chainId`
+    // range, `verifyingContract` shape) and normalizes them (e.g. a number
+    // or declared string `chainId` to a bigint).
+    // Domain-specific checks (name/version/contract match, field types)
+    // happen later, in `validateDomain`/`validatePermit2Domain`.
     const domain = normalizeAndValidateEIP712Data(
       {
         message: rawDomain as Record<string, unknown>,
         types: {
-          EIP712Domain: getTypesForEIP712Domain({ domain: rawDomain }),
+          EIP712Domain:
+            otherData.types.EIP712Domain ??
+            getTypesForEIP712Domain({ domain: rawDomain }),
         },
         primaryType: 'EIP712Domain',
       },
       { onExtraField: 'throw' },
     ).message as TypedDataDomain;
+
+    // The declared types used above may be non-standard (e.g. an `int256`
+    // `chainId`), so also check the now-normalized values against the
+    // standard domain types, as derived by viem from those values.
+    normalizeAndValidateEIP712Data(
+      {
+        message: domain as Record<string, unknown>,
+        types: { EIP712Domain: getTypesForEIP712Domain({ domain }) },
+        primaryType: 'EIP712Domain',
+      },
+      { onExtraField: 'throw', onNonCanonicalValue: 'throw' },
+    );
 
     if (isPermit2MessageType(data.primaryType)) {
       if (!messageKit.supportsPermit2Witness) {

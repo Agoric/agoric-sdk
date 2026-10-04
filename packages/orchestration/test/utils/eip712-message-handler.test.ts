@@ -198,19 +198,123 @@ test('string-encoded integers in a signed standalone message are normalized to b
     deadline: 1700000000n,
   });
 
-  // viem leaves a string `chainId` out of the domain hash entirely (ethers.js
-  // doesn't), so it must not be accepted.
+  // A string `chainId` is hashed by viem's recovery when `types.EIP712Domain`
+  // declares it (as `eth_signTypedData_v4` payloads do), so it's accepted.
+  const stringChainIdData = {
+    ...(stringData as unknown as typeof data),
+    domain: { ...data.domain, chainId: String(CHAIN_ID) as any },
+  };
+  t.truthy(stringChainIdData.types.EIP712Domain);
+  t.is(
+    await recoverTypedDataAddress({ ...stringChainIdData, signature }),
+    account.address,
+  );
+  t.deepEqual(
+    observationUtils.extractOperationDetailsFromDataWithAddress(
+      { ...stringChainIdData, address },
+      { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+    ).domain,
+    data.domain,
+  );
+
+  // Without `types.EIP712Domain`, viem leaves a string `chainId` out of the
+  // domain hash entirely (ethers.js doesn't), so it's ambiguous and rejected.
+  const { EIP712Domain: _, ...typesWithoutDomain } = stringChainIdData.types;
   t.throws(
     () =>
       observationUtils.extractOperationDetailsFromDataWithAddress(
         {
-          ...(stringData as unknown as typeof data),
-          domain: { ...data.domain, chainId: String(CHAIN_ID) as any },
+          ...stringChainIdData,
+          types: typesWithoutDomain as typeof data.types,
           address,
         },
         { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
       ),
-    { message: /chainId/ },
+    {
+      message:
+        /Unexpected field\(s\) on EIP-712 type "EIP712Domain": "chainId"/,
+    },
+  );
+  // ... while a number `chainId` is hashed by both.
+  t.notThrows(() =>
+    observationUtils.extractOperationDetailsFromDataWithAddress(
+      {
+        ...(stringData as unknown as typeof data),
+        types: typesWithoutDomain as typeof data.types,
+        address,
+      },
+      { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+    ),
+  );
+});
+
+test('a declared types.EIP712Domain must cover exactly the present domain fields', t => {
+  const data = makeObservation();
+  const extract = (EIP712Domain: unknown, domain: object = data.domain) =>
+    observationUtils.extractOperationDetailsFromDataWithAddress(
+      {
+        ...data,
+        domain: domain as typeof data.domain,
+        types: { ...data.types, EIP712Domain } as typeof data.types,
+        address: account.address,
+      },
+      { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+    );
+  const declared = data.types.EIP712Domain;
+
+  // Any order is accepted, since that's what the signer hashed.
+  t.notThrows(() => extract([...declared].reverse()));
+  // But values are still checked against the standard domain types, e.g. a
+  // negative chain ID declared as `int256`.
+  t.throws(
+    () =>
+      extract(
+        declared.map(field =>
+          field.name === 'chainId' ? { ...field, type: 'int256' } : field,
+        ),
+        { ...data.domain, chainId: -1n },
+      ),
+    { message: /Value -1n is out of range for EIP-712 type "uint256"/ },
+  );
+
+  // Omitting a present field would leave it out of the signed hash.
+  t.throws(
+    () => extract(declared.filter(({ name }) => name !== 'verifyingContract')),
+    {
+      message:
+        /Unexpected field\(s\) on EIP-712 type "EIP712Domain": "verifyingContract"/,
+    },
+  );
+  // A declared field must be present.
+  t.throws(() => extract([...declared, { name: 'salt', type: 'bytes32' }]), {
+    message: /Missing required field "salt"/,
+  });
+  // A non-standard declared type is caught by domain validation.
+  t.throws(
+    () =>
+      extract(
+        declared.map(field =>
+          field.name === 'chainId' ? { ...field, type: 'string' } : field,
+        ),
+        { ...data.domain, chainId: String(CHAIN_ID) },
+      ),
+    // Not part of the standard domain types viem derives for a string.
+    {
+      message:
+        /Unexpected field\(s\) on EIP-712 type "EIP712Domain": "chainId"/,
+    },
+  );
+  // Even a non-standard integer type that hashes fine: a `uint32` chainId
+  // normalizes to a number, but the standard `uint256` requires a bigint.
+  t.throws(
+    () =>
+      extract(
+        declared.map(field =>
+          field.name === 'chainId' ? { ...field, type: 'uint32' } : field,
+        ),
+        { ...data.domain, chainId: Number(CHAIN_ID) },
+      ),
+    { message: /Expected a bigint for EIP-712 type "uint256", got 42161$/ },
   );
 });
 
