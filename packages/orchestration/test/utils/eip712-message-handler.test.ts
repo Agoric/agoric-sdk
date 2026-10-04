@@ -491,17 +491,13 @@ test('makeEIP712MessageKit rejects invalid schemas', t => {
 });
 
 test('authoring accepts string-encoded integers and normalizes them', t => {
-  // @ts-expect-error integer encodings not yet accepted by the input types
   const witness = depositKit.getWitness('Deposit', { account: '0x5' });
   t.deepEqual(witness, depositKit.getWitness('Deposit', { account: 5n }));
 
   const data = observationKit.getStandaloneOperationData(
     {
-      // @ts-expect-error integer encodings not yet accepted by the input types
       portfolio: '7',
-      // @ts-expect-error integer encodings not yet accepted by the input types
       tvls: [{ instrument: 'Aave_Arbitrum', tvlUsd: 1_000_000 }],
-      // @ts-expect-error integer encodings not yet accepted by the input types
       nonce: '+3',
       deadline: 1700000000n,
     },
@@ -537,7 +533,6 @@ test('normalized output matches abitype types for small and large integer widths
   } as const satisfies EIP712MessageSchema);
 
   const { message } = kit.getStandaloneOperationData(
-    // @ts-expect-error integer encodings not yet accepted by the input types
     { small: 7n, large: 8, nonce: 1n, deadline: 2n },
     'Sized',
     CHAIN_ID,

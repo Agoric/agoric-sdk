@@ -42,26 +42,47 @@ export type TypedDataParameter<
  * Unlike abitype's version, this has no self/circular-reference detection:
  * none of this repo's type graphs are self-referencing, so it wasn't worth
  * reproducing.
+ *
+ * `Kind` selects which values the type describes: `'output'` (the default)
+ * is the canonical form, e.g. as returned by `normalizeAndValidateEIP712Data`;
+ * `'input'` additionally allows the other encodings it accepts and
+ * normalizes (see {@link EIP712IntegerInput}).
  */
 export type TypedDataToStructType<
   TD extends Record<string, readonly TypedDataParameter[]>,
   K extends keyof TD & string,
-> = StructToType<TD, TD[K]>;
+  Kind extends TypedDataValueKind = 'output',
+> = StructToType<TD, TD[K], Kind>;
+
+export type TypedDataValueKind = 'input' | 'output';
+
+/**
+ * The values `normalizeAndValidateEIP712Data` accepts (and normalizes to
+ * abitype's `number`/`bigint` output type) for a `uint<M>`/`int<M>` field. Range and exact string grammar
+ * (unsigned hex, or optionally signed decimal) are only checked at runtime.
+ */
+export type EIP712IntegerInput =
+  | bigint
+  | number
+  | `${bigint}`
+  | `+${bigint}`
+  | `0x${string}`;
 
 type StructToType<
   TD extends Record<string, readonly TypedDataParameter[]>,
   Fields extends readonly TypedDataParameter[],
+  Kind extends TypedDataValueKind,
 > = Simplify<
   {
     [F in Exclude<
       Fields[number],
       { optional: true }
-    > as F['name']]: FieldToType<TD, F['type']>;
+    > as F['name']]: FieldToType<TD, F['type'], Kind>;
   } & {
     [F in Extract<
       Fields[number],
       { optional: true }
-    > as F['name']]?: FieldToType<TD, F['type']>;
+    > as F['name']]?: FieldToType<TD, F['type'], Kind>;
   }
 >;
 
@@ -83,19 +104,35 @@ type FixedLengthTuple<
   Acc extends unknown[] = [],
 > = Acc['length'] extends N ? Acc : FixedLengthTuple<T, N, [T, ...Acc]>;
 
+/** `T[N]` / `T[]` for an array type's parsed `Size`. */
+type ArrayOfSize<T, Size extends string> = Size extends `${infer N extends
+  number}`
+  ? FixedLengthTuple<T, N>
+  : readonly T[];
+
+type PrimitiveToType<
+  FieldType extends string,
+  Kind extends TypedDataValueKind,
+> = Kind extends 'input'
+  ? FieldType extends `int${string}` | `uint${string}`
+    ? EIP712IntegerInput
+    : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>
+  : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>;
+
 type FieldToType<
   TD extends Record<string, readonly TypedDataParameter[]>,
   FieldType extends string,
+  Kind extends TypedDataValueKind,
 > =
   ParseArrayType<FieldType> extends {
     elem: infer Elem extends string;
     size: infer Size extends string;
   }
     ? Elem extends keyof TD & string
-      ? Size extends `${infer N extends number}`
-        ? FixedLengthTuple<StructToType<TD, TD[Elem]>, N>
-        : readonly StructToType<TD, TD[Elem]>[]
-      : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>
+      ? ArrayOfSize<StructToType<TD, TD[Elem], Kind>, Size>
+      : Kind extends 'input'
+        ? ArrayOfSize<PrimitiveToType<Elem, Kind>, Size>
+        : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>
     : FieldType extends keyof TD & string
-      ? StructToType<TD, TD[FieldType]>
-      : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>;
+      ? StructToType<TD, TD[FieldType], Kind>
+      : PrimitiveToType<FieldType, Kind>;
