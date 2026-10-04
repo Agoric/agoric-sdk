@@ -193,8 +193,8 @@ const describeValue = (value: unknown): string => {
  *   comment). Odd-length hex is rejected for both: ethers.js rejects it,
  *   and viem pads the missing nibble on the left for `bytes` but on the
  *   right for `bytes<M>`.
- * - `uint<M>`/`int<M>` (bare `uint`/`int` means 256 bits): `number` or
- *   `bigint`, an integer, in range for the bit width/signedness.
+ * - `uint<M>`/`int<M>` (bare `uint`/`int` means 256 bits): safe integer
+ *   `number` or `bigint`, in range for the bit width/signedness.
  * - anything else: not a real Solidity primitive type, so rejected
  *   unconditionally.
  */
@@ -233,9 +233,11 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
         `Expected a number or bigint for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
       );
     }
-    if (typeof value === 'number' && !Number.isInteger(value)) {
+    // An unsafe integer has likely already lost precision; ethers.js rejects
+    // it too (viem would hash it).
+    if (typeof value === 'number' && !Number.isSafeInteger(value)) {
       throw new Error(
-        `Expected an integer for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
+        `Expected a safe integer for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
       );
     }
     const signed = integerMatch[1] === 'int';

@@ -740,6 +740,29 @@ test('rejects a non-integer number and a non-number/bigint value for an integer 
   );
 });
 
+test('rejects an unsafe integer number, matching ethers.js', t => {
+  // viem would hash it, but such a number has likely already lost precision.
+  const types = {
+    Person: [{ name: 'amount', type: 'uint256' }],
+  };
+  t.throws(
+    () =>
+      normalizeAndValidateEIP712Data({
+        message: { amount: 2 ** 60 },
+        types,
+        primaryType: 'Person',
+      }),
+    { message: /uint256/ },
+  );
+  t.notThrows(() =>
+    normalizeAndValidateEIP712Data({
+      message: { amount: Number.MAX_SAFE_INTEGER },
+      types,
+      primaryType: 'Person',
+    }),
+  );
+});
+
 test('rejects a non-string/non-hex value for a "bytes" field, fixed or dynamic', t => {
   const types = {
     Person: [
