@@ -23,8 +23,8 @@
  * isn't in its canonical form is handled. Only integers (given as a
  * `number`, `bigint`, or decimal/hex string -- see `validatePrimitive`)
  * have a distinct canonical form: a `number` for an explicit width of at
- * most 48 bits (e.g. `uint32`), else a `bigint` (e.g. `uint64`, `uint256`,
- * bare `uint`), matching abitype's TS types.
+ * most 48 bits (e.g. `uint32`), else a `bigint` (e.g. `uint64`,
+ * `uint256`), matching abitype's TS types.
  * - 'normalize' (default, except with `onExtraField: 'keep'`): replace it
  *   with its canonical form. Since `onExtraField: 'keep'` never modifies
  *   `message`, combining it with an explicit `onNonCanonicalValue:
@@ -109,11 +109,12 @@ const splitArrayType = (
 // directly), and `address.js` has runtime dependencies of its own.
 const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/u;
 // Solidity `(u)int<M>`: (un)signed integer of `M` bits, `0 < M <= 256`,
-// `M % 8 === 0`; bare `uint`/`int` (no explicit width) means 256 bits.
-// Mirrors viem's `integerRegex` (utils/regex.ts) -- duplicated rather than
-// imported so this module has no runtime dependency on `viem`.
+// `M % 8 === 0`. Unlike viem's `integerRegex` (utils/regex.ts), the width
+// is required: EIP-712 has no bare `uint`/`int` aliases, and viem and
+// ethers.js hash them differently (ethers.js encodes the type as
+// `uint256`/`int256`, viem keeps the alias in the type string).
 const INTEGER_TYPE_REGEX =
-  /^(u?int)(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256)?$/u;
+  /^(u?int)(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256)$/u;
 // Solidity `bytes<M>`: binary type of `M` bytes, `0 < M <= 32`; bare `bytes`
 // (no explicit size) is dynamic-length, so has nothing to check here.
 const BYTES_TYPE_REGEX = /^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])?$/u;
@@ -263,8 +264,8 @@ const parseInteger = (value: unknown): bigint | undefined => {
  *   comment). Odd-length hex is rejected for both: ethers.js rejects it,
  *   and viem pads the missing nibble on the left for `bytes` but on the
  *   right for `bytes<M>`.
- * - `uint<M>`/`int<M>` (bare `uint`/`int` means 256 bits): `bigint`, safe
- *   integer `number`, or a string of unsigned hex (`0x...`) or optionally
+ * - `uint<M>`/`int<M>` (not bare `uint`/`int`, see `INTEGER_TYPE_REGEX`):
+ *   `bigint`, safe integer `number`, or a string of unsigned hex (`0x...`) or optionally
  *   signed decimal digits; in range for the bit width/signedness.
  * - anything else: not a real Solidity primitive type, so rejected
  *   unconditionally.
@@ -306,7 +307,7 @@ const validatePrimitive = (fieldType: string, value: unknown): unknown => {
       );
     }
     const signed = integerMatch[1] === 'int';
-    const bits = integerMatch[2] ? Number(integerMatch[2]) : 256;
+    const bits = Number(integerMatch[2]);
     const max = signed ? 2n ** BigInt(bits - 1) - 1n : 2n ** BigInt(bits) - 1n;
     const min = signed ? -max - 1n : 0n;
     if (bigValue < min || bigValue > max) {
@@ -370,8 +371,9 @@ type GetType = (typeName: string) => TypeFields | undefined;
 
 /**
  * Walks `value` against `fieldType` (a struct or array field type string).
- * One function covers both, since a field's declared type is never an
- * array of arrays. `getType` hands out the *same* {@link TypeFields}
+ * One function covers both, an array of arrays (e.g. `uint256[2][]`)
+ * included: each element is visited against the element type, itself an
+ * array type (e.g. `uint256[2]`). `getType` hands out the *same* {@link TypeFields}
  * record for every instance of a given struct type name encountered
  * anywhere in the message, which is what lets a single walk resolve
  * `optional` fields and validate required-field presence across

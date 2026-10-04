@@ -914,9 +914,6 @@ test('normalizes integers of at most 48 bits to a number, wider ones to a bigint
     ['uint56', 5, 5n],
     ['int64', -5, -5n],
     ['uint256', 5, 5n],
-    // Bare `uint`/`int` means 256 bits.
-    ['uint', 5, 5n],
-    ['int', -5, -5n],
   ];
   for (const [type, v, expected] of cases) {
     const { message } = normalizeAndValidateEIP712Data({
@@ -925,6 +922,21 @@ test('normalizes integers of at most 48 bits to a number, wider ones to a bigint
       primaryType: 'M',
     });
     t.is(message.v, expected, `${type} ${String(v)}`);
+  }
+});
+
+test('rejects bare "uint"/"int" aliases, which EIP-712 disallows', t => {
+  // viem and ethers.js hash them differently.
+  for (const type of ['uint', 'int']) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data({
+          message: { v: 1n },
+          types: { M: [{ name: 'v', type }] },
+          primaryType: 'M',
+        }),
+      { message: new RegExp(`Unrecognized EIP-712 type "${type}"`) },
+    );
   }
 });
 
@@ -971,8 +983,8 @@ test('onNonCanonicalValue: "throw" rejects valid integers not already in canonic
     ['uint32', 12, true],
     ['uint32', 12n, false],
     ['uint32', '0xc', false],
-    ['int', -1n, true],
-    ['int', -1, false],
+    ['int256', -1n, true],
+    ['int256', -1, false],
   ];
   for (const onExtraField of ['drop', 'throw', 'keep'] as const) {
     for (const [type, v, canonical] of cases) {
