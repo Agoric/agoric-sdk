@@ -14,7 +14,10 @@ import {
 } from '../../src/stubs/viem-typedData.ts';
 import {
   makeEIP712MessageKit,
+  StandaloneDomainTypeParams,
+  StandaloneEnvelopeTypeParams,
   type EIP712MessageSchema,
+  type StandaloneOperationData,
 } from '../../src/utils/eip712-messages.ts';
 import { makeEIP712MessageHandlerUtils } from '../../src/utils/eip712-message-handler.ts';
 import { getPermitWitnessTransferFromData } from '../../src/utils/permit2.ts';
@@ -158,6 +161,75 @@ test('standalone message of a custom schema round-trips through signing', async 
     });
   t.is(recovered.evmWalletAddress, account.address);
 });
+
+for (const { label, arrayType, leafFields } of [
+  {
+    label: 'an empty multidimensional struct array',
+    arrayType: 'Leaf[][]',
+    leafFields: [{ name: 'n', type: 'uint256' }],
+  },
+  {
+    label: 'an empty struct array with a transitive type dependency',
+    arrayType: 'Leaf[]',
+    leafFields: [{ name: 'value', type: 'Value' }],
+  },
+] as const) {
+  test(`normalizedData preserves the signed hash and signer for ${label}`, async t => {
+    const schema = {
+      domainName: 'TestEmptyArrays',
+      domainVersion: '1',
+      operationTypes: {
+        Inspect: [{ name: 'items', type: arrayType }],
+      },
+      subTypes: {
+        Leaf: leafFields,
+        Value: [{ name: 'n', type: 'uint256' }],
+      },
+    } as const satisfies EIP712MessageSchema;
+    const domain = {
+      name: schema.domainName,
+      version: schema.domainVersion,
+      chainId: CHAIN_ID,
+      verifyingContract: CONTRACT_ADDRESS,
+    };
+    // Build the wire data directly: the authoring helper normalizes types
+    // too, which would hide a dependency removed before signing. A struct
+    // declaration contributes to the type hash even if its array is empty.
+    const data = {
+      domain,
+      types: {
+        EIP712Domain: StandaloneDomainTypeParams,
+        Inspect: [
+          ...schema.operationTypes.Inspect,
+          ...StandaloneEnvelopeTypeParams,
+        ],
+        ...schema.subTypes,
+      },
+      primaryType: 'Inspect',
+      message: { items: [], nonce: 3n, deadline: 1700000000n },
+    } satisfies StandaloneOperationData<typeof schema, 'Inspect'>;
+    const signature = await account.signTypedData(data);
+    t.is(
+      await recoverTypedDataAddress({ ...data, signature }),
+      account.address,
+    );
+
+    const utils = makeEIP712MessageHandlerUtils(viemUtils, schema);
+    const details = await utils.extractOperationDetailsFromSignedData({
+      ...data,
+      signature,
+    });
+    t.is(details.evmWalletAddress, account.address);
+    const normalized = details.normalizedData as unknown as typeof data;
+    const normalizedSigner = await recoverTypedDataAddress({
+      ...normalized,
+      signature,
+    });
+
+    t.is(hashTypedData(normalized), hashTypedData(data));
+    t.is(normalizedSigner, account.address);
+  });
+}
 
 test('string-encoded integers in a signed standalone message are normalized to bigints', async t => {
   const data = makeObservation();

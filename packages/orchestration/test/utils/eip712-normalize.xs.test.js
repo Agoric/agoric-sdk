@@ -196,3 +196,33 @@ test('rejects an out-of-grammar string-encoded integer, under the real XS engine
   t.true(threw, `expected a validation error, got ${JSON.stringify(result)}`);
   if (threw) t.regex(result, /int256/);
 });
+
+test('keeps and checks struct types referenced only through empty arrays, transitively, under the real XS engine', async t => {
+  // Relies on `Map` iteration also visiting entries added while iterating.
+  const types = {
+    Root: [{ name: 'rows', type: 'Row[][]' }],
+    Row: [{ name: 'cell', type: 'Cell' }],
+    Cell: [{ name: 'n', type: 'uint256' }],
+  };
+  const kept = await runInXs(
+    { types, message: { rows: [] }, primaryType: 'Root' },
+    {},
+  );
+  t.false(kept.threw, `expected no error, got ${JSON.stringify(kept.result)}`);
+  if (!kept.threw) t.deepEqual(kept.result.types, types);
+
+  const checked = await runInXs(
+    {
+      types: { ...types, Cell: [{ name: 'n', type: 'uint' }] },
+      message: { rows: [] },
+      primaryType: 'Root',
+    },
+    {},
+  );
+  t.true(
+    checked.threw,
+    `expected an error, got ${JSON.stringify(checked.result)}`,
+  );
+  if (checked.threw)
+    t.regex(checked.result, /Unrecognized EIP-712 type "uint"/);
+});

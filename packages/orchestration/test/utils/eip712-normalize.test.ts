@@ -944,6 +944,78 @@ test('rejects bare "uint"/"int" aliases, which EIP-712 disallows', t => {
   }
 });
 
+for (const alias of ['uint', 'int']) {
+  for (const { label, dimensions, value } of [
+    { label: 'an empty array', dimensions: '[]', value: [] },
+    { label: 'an empty outer array', dimensions: '[][]', value: [] },
+    { label: 'an empty inner array', dimensions: '[][]', value: [[]] },
+  ]) {
+    for (const onExtraField of ['drop', 'throw', 'keep'] as const) {
+      test(`rejects bare "${alias}" with ${label} in ${onExtraField} mode`, t => {
+        // An empty value does not invalidate the array shape. It is the
+        // declared alias that must be rejected, even without primitive
+        // elements to visit; viem and ethers hash that alias differently.
+        t.notThrows(() =>
+          normalizeAndValidateEIP712Data(
+            {
+              message: { v: value },
+              types: { M: [{ name: 'v', type: `${alias}256${dimensions}` }] },
+              primaryType: 'M',
+            },
+            { onExtraField },
+          ),
+        );
+        t.throws(
+          () =>
+            normalizeAndValidateEIP712Data(
+              {
+                message: { v: value },
+                types: { M: [{ name: 'v', type: `${alias}${dimensions}` }] },
+                primaryType: 'M',
+              },
+              { onExtraField },
+            ),
+          { message: new RegExp(`Unrecognized EIP-712 type "${alias}"`) },
+          onExtraField,
+        );
+      });
+    }
+  }
+}
+
+test('keeps and checks struct types referenced only through empty arrays', t => {
+  // EIP-712 hashing encodes these definitions whatever the values.
+  const types = {
+    Root: [{ name: 'rows', type: 'Row[][]' }],
+    Row: [{ name: 'cell', type: 'Cell' }],
+    Cell: [{ name: 'n', type: 'uint256' }],
+  };
+  for (const rows of [[], [[]]]) {
+    t.deepEqual(
+      normalizeAndValidateEIP712Data({
+        message: { rows },
+        types,
+        primaryType: 'Root',
+      }).types,
+      types,
+      JSON.stringify(rows),
+    );
+  }
+  // So their field types are checked even though no value reaches them.
+  for (const type of ['uint', 'Unknown', 'uint256[x]']) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data({
+          message: { rows: [] },
+          types: { ...types, Cell: [{ name: 'n', type }] },
+          primaryType: 'Root',
+        }),
+      { message: /Unrecognized EIP-712 type/ },
+      type,
+    );
+  }
+});
+
 test('normalizes integers nested in arrays and structs', t => {
   const types = {
     Outer: [

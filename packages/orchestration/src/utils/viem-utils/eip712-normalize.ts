@@ -5,9 +5,12 @@
  *   per-message: dropped from `types` if never present on any instance of
  *   the struct, otherwise kept with the `optional` marker stripped (treated
  *   as required from then on).
- * - struct types never actually encountered while walking `message` from
- *   `primaryType` are absent from `types`. `EIP712Domain` is always
- *   preserved if present, since domain values live outside `message`.
+ * - struct types not referenced from `primaryType` through kept fields
+ *   (e.g. only through a dropped `optional` field) are absent from
+ *   `types`. Referenced ones are kept even when no value reaches them (e.g.
+ *   the element type of an empty array), since EIP-712 hashing encodes
+ *   their definitions regardless. `EIP712Domain` is always preserved if
+ *   present, since domain values live outside `message`.
  *
  * `onExtraField` controls how *excess* data (fields not declared in
  * `types`, array elements beyond a fixed length) is handled:
@@ -90,6 +93,7 @@ export type NormalizeAndValidateEIP712DataResult = {
 };
 
 const ARRAY_SUFFIX = /\[(\d*)\]$/u;
+const ARRAY_SUFFIXES = /(?:\[\d*\])+$/u;
 
 const splitArrayType = (
   type: string,
@@ -246,6 +250,19 @@ export const parseEIP712Integer = (value: unknown): bigint | undefined => {
   // `BigInt` itself accepts a sign on decimal (not hex) strings.
   return BigInt(value);
 };
+
+/**
+ * Whether `type` is a primitive EIP-712 type, i.e. one whose values
+ * {@link normalizeEIP712Primitive} accepts (not, e.g., a bare `uint`).
+ *
+ * @param type
+ */
+const isPrimitiveType = (type: string): boolean =>
+  type === 'address' ||
+  type === 'bool' ||
+  type === 'string' ||
+  INTEGER_TYPE_REGEX.test(type) ||
+  BYTES_TYPE_REGEX.test(type);
 
 /**
  * Validates a value of a primitive (non-struct, non-array) EIP-712 type,
@@ -604,11 +621,26 @@ export const normalizeAndValidateEIP712Data = (
     onNonCanonicalValue,
   ) as Record<string, unknown>;
 
+  // Output only the fields still required (resolved `optional` ones are
+  // dropped). The walk only reaches what the values lead to: e.g. nothing
+  // in an empty array. But EIP-712 hashing encodes every struct type a kept
+  // field references (transitively) whatever the values, so register those
+  // too (iterating a `Map` also visits the entries added while iterating),
+  // and check that every other referenced type is a recognized primitive
+  // (e.g. not a bare `uint`).
   const outputTypes: TypesRecord = {};
   for (const [typeName, fields] of resultTypes) {
-    outputTypes[typeName] = Object.entries(fields)
-      .filter(([, field]) => field.state === 'required')
-      .map(([name, field]) => ({ name, type: field.type }));
+    const outputFields: TypedDataParameter[] = [];
+    for (const fieldName of Object.keys(fields)) {
+      const { state, type } = fields[fieldName];
+      if (state !== 'required') continue;
+      const elementType = type.replace(ARRAY_SUFFIXES, '');
+      if (!getType(elementType) && !isPrimitiveType(elementType)) {
+        throw new Error(`Unrecognized EIP-712 type ${quoteName(elementType)}`);
+      }
+      outputFields.push({ name: fieldName, type });
+    }
+    outputTypes[typeName] = outputFields;
   }
   if ('EIP712Domain' in types) outputTypes.EIP712Domain = types.EIP712Domain;
 
