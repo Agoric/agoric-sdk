@@ -3,7 +3,11 @@ import '@endo/init/debug.js';
 import test from '@endo/ses-ava/prepare-endo.js';
 
 import { hashTypedData } from 'viem/utils';
-import { normalizeAndValidateEIP712Data } from '../../src/utils/viem-utils/eip712-normalize.js';
+import {
+  normalizeAndValidateEIP712Data,
+  normalizeEIP712Primitive,
+  parseEIP712Integer,
+} from '../../src/utils/viem-utils/eip712-normalize.js';
 
 test('no-op round trip for a fully-conforming message', t => {
   const types = {
@@ -1525,4 +1529,44 @@ test('reentrancy: an optional self-referential field always conflicts once recur
       }),
     { message: /child/ },
   );
+});
+
+test('parseEIP712Integer parses the accepted integer encodings, without range checks', t => {
+  const cases: [value: unknown, expected: bigint | undefined][] = [
+    [12n, 12n],
+    [-12, -12n],
+    ['12', 12n],
+    ['+12', 12n],
+    ['-12', -12n],
+    ['0xC', 12n],
+    // Not range checked: that depends on the type.
+    [`${2n ** 300n}`, 2n ** 300n],
+    ['-0xc', undefined],
+    [' 12', undefined],
+    ['', undefined],
+    ['0x', undefined],
+    [1.5, undefined],
+    [2 ** 60, undefined],
+    [true, undefined],
+    [null, undefined],
+  ];
+  for (const [value, expected] of cases) {
+    t.is(parseEIP712Integer(value), expected, String(value));
+  }
+});
+
+test('normalizeEIP712Primitive validates and returns the canonical form of a primitive value', t => {
+  t.is(normalizeEIP712Primitive('uint8', '0xff'), 255);
+  t.is(normalizeEIP712Primitive('uint256', 12), 12n);
+  t.is(normalizeEIP712Primitive('string', 'hi'), 'hi');
+  t.throws(() => normalizeEIP712Primitive('uint8', 256), {
+    message: /out of range/,
+  });
+  t.throws(() => normalizeEIP712Primitive('uint', 1n), {
+    message: /Unrecognized EIP-712 type "uint"/,
+  });
+  // Struct and array types aren't primitives.
+  t.throws(() => normalizeEIP712Primitive('uint256[]', [1n]), {
+    message: /Unrecognized EIP-712 type "uint256\[\]"/,
+  });
 });

@@ -32,20 +32,20 @@ const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambien
 /**
  * Loads the real `eip712-normalize.ts` source, strips its types (via
  * `ts-blank-space`, already a devDependency used to run this package's own
- * tests) and its one `export` keyword (module syntax isn't valid in a plain
+ * tests) and its `export` keywords (module syntax isn't valid in a plain
  * `vat.evaluate` script), so the exact shipped logic -- not a hand-copied
  * approximation of it -- is what runs inside the XS vat.
  */
 const loadNormalizeSource = () => {
   const ts = fs.readFileSync(sourcePath, 'utf8');
   const js = blank(ts);
-  // Only `export const normalizeAndValidateEIP712Data = (...` remains after
-  // blanking (the sole `import type` is blanked away entirely).
-  const withoutExport = js.replace(
-    'export const normalizeAndValidateEIP712Data',
-    'const normalizeAndValidateEIP712Data',
-  );
-  if (withoutExport === js) {
+  // Only `export const ... = (...` declarations remain after blanking (the
+  // sole `import type` is blanked away entirely).
+  const withoutExport = js.replace(/^export const /gmu, 'const ');
+  if (/^\s*export\b/mu.test(withoutExport)) {
+    throw Error('expected only `export const` declarations');
+  }
+  if (!/^const normalizeAndValidateEIP712Data\b/mu.test(withoutExport)) {
     throw Error('expected an `export const normalizeAndValidateEIP712Data`');
   }
   return withoutExport;

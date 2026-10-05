@@ -21,7 +21,7 @@
  *
  * `onNonCanonicalValue` controls how a valid primitive leaf value that
  * isn't in its canonical form is handled. Only integers (given as a
- * `number`, `bigint`, or decimal/hex string -- see `validatePrimitive`)
+ * `number`, `bigint`, or decimal/hex string -- see `normalizeEIP712Primitive`)
  * have a distinct canonical form: a `number` for an explicit width of at
  * most 48 bits (e.g. `uint32`), else a `bigint` (e.g. `uint64`,
  * `uint256`), matching abitype's TS types.
@@ -46,7 +46,7 @@
  * - a struct/array field must get an array/object value, and a plain
  *   Solidity type (`address`, `bool`, `string`, `uint*`/`int*`, `bytes*`)
  *   must get a value of the specific JS type that implies -- see
- *   `validatePrimitive`.
+ *   `normalizeEIP712Primitive`.
  * - primitive leaf values are checked against their type's shape/range,
  *   recursing correctly through arrays, which real EIP-712 tooling (e.g.
  *   viem's `validateTypedData`) does not.
@@ -221,12 +221,17 @@ const describeValue = (value: unknown): string => {
 };
 
 /**
- * Parses an integer given in one of the accepted JS representations (see
- * `INTEGER_STRING_REGEX`), or returns `undefined` if it isn't one.
- * Non-integer and unsafe-integer numbers (which have likely already lost
- * precision; ethers.js rejects them too) are rejected rather than parsed.
+ * Parses an integer given in one of the JS representations accepted for an
+ * EIP-712 `(u)int<M>` value: a `bigint`, a safe integer `number`, or a
+ * string of unsigned hex (`0x...`) or optionally signed decimal digits (see
+ * `INTEGER_STRING_REGEX`). Returns `undefined` for anything else, including
+ * non-integer and unsafe-integer numbers (which have likely already lost
+ * precision; ethers.js rejects them too). Does not check the value's range
+ * for any particular type: see {@link normalizeEIP712Primitive} for that.
+ *
+ * @param value
  */
-const parseInteger = (value: unknown): bigint | undefined => {
+export const parseEIP712Integer = (value: unknown): bigint | undefined => {
   if (typeof value === 'bigint') return value;
   if (typeof value === 'number') {
     return Number.isSafeInteger(value) ? BigInt(value) : undefined;
@@ -243,11 +248,12 @@ const parseInteger = (value: unknown): bigint | undefined => {
 };
 
 /**
- * Validates a value declared as a non-struct, non-array EIP-712 type
- * (`visit` only calls this once it's confirmed `fieldType` is neither),
+ * Validates a value of a primitive (non-struct, non-array) EIP-712 type,
  * returning its canonical form (only integers have a distinct one: a
  * `number` for an explicit width of at most 48 bits, else a `bigint`,
- * matching abitype's TS types).
+ * matching abitype's TS types), or throws if it isn't valid. A struct or
+ * array type is rejected as unrecognized (`visit` only calls this once it's
+ * confirmed `fieldType` is neither).
  * Requires the specific JS type real hashing needs for each Solidity type,
  * not just something that happens to coerce -- e.g. a number given for a
  * `string` field would otherwise hash as the number's own hex encoding,
@@ -265,12 +271,18 @@ const parseInteger = (value: unknown): bigint | undefined => {
  *   and viem pads the missing nibble on the left for `bytes` but on the
  *   right for `bytes<M>`.
  * - `uint<M>`/`int<M>` (not bare `uint`/`int`, see `INTEGER_TYPE_REGEX`):
- *   `bigint`, safe integer `number`, or a string of unsigned hex (`0x...`) or optionally
- *   signed decimal digits; in range for the bit width/signedness.
+ *   any value {@link parseEIP712Integer} accepts, in range for the bit
+ *   width/signedness.
  * - anything else: not a real Solidity primitive type, so rejected
  *   unconditionally.
+ *
+ * @param fieldType
+ * @param value
  */
-const validatePrimitive = (fieldType: string, value: unknown): unknown => {
+export const normalizeEIP712Primitive = (
+  fieldType: string,
+  value: unknown,
+): unknown => {
   const quotedType = quoteName(fieldType);
 
   if (fieldType === 'address') {
@@ -300,7 +312,7 @@ const validatePrimitive = (fieldType: string, value: unknown): unknown => {
 
   const integerMatch = fieldType.match(INTEGER_TYPE_REGEX);
   if (integerMatch) {
-    const bigValue = parseInteger(value);
+    const bigValue = parseEIP712Integer(value);
     if (bigValue === undefined) {
       throw new Error(
         `Expected an integer (bigint, safe integer number, or decimal/hex string) for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
@@ -409,7 +421,7 @@ const visit = (
   if (!isArray && !baseType) {
     // Not a declared struct or array, so it must be a recognized Solidity
     // primitive with a matching JS value; also catches an unknown type.
-    const canonical = validatePrimitive(fieldType, value);
+    const canonical = normalizeEIP712Primitive(fieldType, value);
     if (canonical === value || onNonCanonicalValue === 'keep') return value;
     if (onNonCanonicalValue === 'throw') {
       throw new Error(
