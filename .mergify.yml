@@ -39,6 +39,19 @@ shared:
   pr_queue_squash_conditions: &pr-queue-squash-conditions
     - base=master
     - label=automerge:squash
+  linear_history_rebase_conditions: &linear-history-rebase-conditions
+    - base=master
+    - label=automerge:rebase
+    - '#commits-behind=0'
+    - '#approved-reviews-by>=1'
+    - '#changes-requested-reviews-by=0'
+    - github-review-decision=APPROVED
+    - -linear-history
+    - -draft
+  # Copilot's commits are "copilot-swe-agent[bot]" but apparently the GH Author is "Copilot"
+  bot_author_conditions: &bot-author-conditions
+    - author~=\[bot\]$
+    - author=Copilot
 
 merge_queue:
   max_parallel_checks: 1
@@ -52,15 +65,8 @@ priority_rules:
       - label=priority:high
     priority: high
 
-# Mergify's suggestion to ensure update_bot_account is set. The doc that say a random org user
-# will be picked is no longer accurate (https://docs.mergify.com/configuration/file-format/)
 defaults:
-  actions:
-    rebase:
-      # Copilot's commits are "copilot-swe-agent[bot]" but apparently the GH Author is "Copilot"
-      bot_account: "{% if '[bot]' in author or author == 'Copilot' %}mergify[bot]{% else %}{{ author }}{% endif %}"
   queue_rule:
-    update_bot_account: "{% if '[bot]' in author or author == 'Copilot' %}mergify[bot]{% else %}{{ author }}{% endif %}"
     merge_bot_account: 'mergify[bot]'
     draft_bot_account: 'mergify[bot]'
 
@@ -100,15 +106,18 @@ pull_request_rules:
     actions:
       queue:
         name: squash
-  - name: rebase to linear history
+  # Bots can't be impersonated, so Mergify rebases their pull requests as itself.
+  - name: rebase to linear history (bot authors)
     conditions:
-      - base=master
-      - label=automerge:rebase
-      - '#commits-behind=0'
-      - '#approved-reviews-by>=1'
-      - '#changes-requested-reviews-by=0'
-      - branch-protection-review-decision=APPROVED
-      - -linear-history
-      - -draft
+      - and: *linear-history-rebase-conditions
+      - or: *bot-author-conditions
     actions:
       rebase: {}
+  - name: rebase to linear history
+    conditions:
+      - and: *linear-history-rebase-conditions
+      - not:
+          or: *bot-author-conditions
+    actions:
+      rebase:
+        bot_account: '{{ author }}'
