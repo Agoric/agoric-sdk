@@ -196,6 +196,8 @@ harden(RebalanceStrategy);
  */
 export const ACCOUNT_DUST_EPSILON = 100n;
 
+export const ExperimentalSwapShape = M.boolean();
+
 /**
  * Feature flags to handle contract upgrade flow compatibility.
  * @type {TypedPattern<FlowConfig['features']>}
@@ -204,7 +206,7 @@ export const FlowFeaturesShape = M.splitRecord(
   {},
   {
     useProgressTracker: M.boolean(),
-    experimentalSwap: M.boolean(),
+    experimentalSwap: ExperimentalSwapShape,
   },
 );
 
