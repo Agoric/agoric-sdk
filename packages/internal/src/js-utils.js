@@ -172,6 +172,34 @@ export const defineName = (name, fn) =>
   defineProperty(fn, 'name', { value: name });
 
 /**
+ * Add underscore separators to a decimal string.
+ *
+ * @param {bigint | `${bigint}` | `${bigint}.${bigint}`} decimal
+ * @param {number} [groupSize]
+ */
+export const groupDecimalDigits = (decimal, groupSize = 3) =>
+  `${decimal}`.replace(
+    /^([+-]?)([0-9]+)([.][0-9]+)?$|.*/,
+    (_x, s, w, f = '') => {
+      if (!w) throw Error('input must be a decimal string');
+      const wCount = w.length;
+      const wGroups =
+        w.slice(wCount % groupSize).match(RegExp(`[0-9]{${groupSize}}`, 'g')) ||
+        [];
+      if (wCount % groupSize) wGroups.unshift(w.slice(0, wCount % groupSize));
+
+      const fGroups = f.match(RegExp(`[0-9]{1,${groupSize}}`, 'g')) || [];
+      const lastFGroup = fGroups.pop();
+      if (lastFGroup) {
+        fGroups.push(lastFGroup.padEnd(groupSize, '0'));
+        fGroups[0] = `.${fGroups[0]}`;
+      }
+
+      return `${s}${wGroups.join('_')}${fGroups.join('_')}`;
+    },
+  );
+
+/**
  * By analogy with how `Array.prototype.map` will map the elements of an array
  * to transformed elements of an array of the same shape, `objectMapMutable`
  * will do likewise for the enumerable string-keyed properties of an object.
