@@ -242,11 +242,25 @@ test('validatePermit2Domain throws for wrong verifying contract', t => {
   );
 });
 
+test('validatePermit2Domain requires an address-shaped verifying contract', t => {
+  t.throws(
+    () =>
+      validatePermit2Domain({
+        name: 'Permit2',
+        chainId: 42161n,
+        verifyingContract: 'not-an-address' as `0x${string}`,
+      }),
+    { message: /Invalid verifying contract address in permit2 domain/ },
+  );
+});
+
 test('validatePermit2Domain is case-insensitive for address comparison', t => {
   const domain = {
     name: 'Permit2',
     chainId: 42161n,
-    verifyingContract: MOCK_PERMIT2_ADDRESS.toUpperCase() as `0x${string}`,
+    // Only the hex digits: a `0X` prefix is not a valid address.
+    verifyingContract:
+      `0x${MOCK_PERMIT2_ADDRESS.slice(2).toUpperCase()}` as const,
   };
 
   t.notThrows(() =>

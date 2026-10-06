@@ -600,7 +600,13 @@ export const prepareEVMWalletMessageHandler = (
             details,
           );
 
-          const { nonce, deadline, ...operationDetails } = details;
+          // `normalizedData` is only for off-chain consumers; remove it.
+          const {
+            nonce,
+            deadline,
+            normalizedData: _normalizedData,
+            ...operationDetails
+          } = details;
 
           // Resolves promptly
           const { absValue: localChainTime } =

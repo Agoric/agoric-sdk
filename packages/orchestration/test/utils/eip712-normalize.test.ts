@@ -2,7 +2,12 @@ import '@endo/init/debug.js';
 
 import test from '@endo/ses-ava/prepare-endo.js';
 
-import { normalizeAndValidateEIP712Data } from '../../src/utils/viem-utils/eip712-normalize.js';
+import { hashTypedData } from 'viem/utils';
+import {
+  normalizeAndValidateEIP712Data,
+  normalizeEIP712Primitive,
+  parseEIP712Integer,
+} from '../../src/utils/viem-utils/eip712-normalize.js';
 
 test('no-op round trip for a fully-conforming message', t => {
   const types = {
@@ -396,7 +401,7 @@ test('a struct type can be satisfied by an array value that has the declared pro
     Weird: [
       { name: '0', type: 'string' },
       { name: '1', type: 'string' },
-      { name: 'length', type: 'uint256' },
+      { name: 'length', type: 'uint48' },
     ],
   };
   // A real array happens to have '0', '1', and (non-enumerable, but still
@@ -449,6 +454,44 @@ test('rejects a missing required field', t => {
     {
       message: /contents/,
     },
+  );
+});
+
+test('rejects a struct declaring the same field more than once, in every mode', t => {
+  // EIP-712 hashing would encode both declarations, but the output types
+  // could only describe one.
+  const types = {
+    Mail: [
+      { name: 'contents', type: 'string' },
+      { name: 'contents', type: 'string' },
+    ],
+  };
+  for (const onExtraField of ['drop', 'throw', 'keep'] as const) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data(
+          { message: { contents: 'hi' }, types, primaryType: 'Mail' },
+          { onExtraField },
+        ),
+      { message: /Duplicate field "contents" in EIP-712 type "Mail"/ },
+      onExtraField,
+    );
+  }
+  // Including in a nested struct, or with differing types.
+  t.throws(
+    () =>
+      normalizeAndValidateEIP712Data({
+        message: { inner: { n: 1n } },
+        types: {
+          Outer: [{ name: 'inner', type: 'Inner' }],
+          Inner: [
+            { name: 'n', type: 'uint256' },
+            { name: 'n', type: 'string' },
+          ],
+        },
+        primaryType: 'Outer',
+      }),
+    { message: /Duplicate field "n" in EIP-712 type "Inner"/ },
   );
 });
 
@@ -629,6 +672,30 @@ test('validates fixed-size bytes length, matching viem', t => {
   );
 });
 
+test('rejects odd-length hex for "bytes" fields, fixed or dynamic', t => {
+  // ethers.js rejects these; viem pads the missing nibble on the left for
+  // dynamic `bytes` but on the right for `bytes<M>`.
+  for (const type of ['bytes2', 'bytes']) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data({
+          message: { v: '0x123' },
+          types: { M: [{ name: 'v', type }] },
+          primaryType: 'M',
+        }),
+      { message: /even number of hex digits/ },
+      type,
+    );
+  }
+  t.notThrows(() =>
+    normalizeAndValidateEIP712Data({
+      message: { v: '0x' },
+      types: { M: [{ name: 'v', type: 'bytes' }] },
+      primaryType: 'M',
+    }),
+  );
+});
+
 // --- strict JS-type matching: unlike viem's `validateTypedData`, which
 // only range/shape-checks a value when it already happens to have a
 // plausible JS type (and otherwise silently defers to real hashing, which
@@ -691,28 +758,376 @@ test('rejects a non-string value for a "string" field -- viem itself would silen
   );
 });
 
-test('rejects a non-integer number and a non-number/bigint value for an integer field', t => {
+test('rejects a non-integer number and a non-integer value for an integer field', t => {
   const types = {
     Person: [{ name: 'favoriteNumber', type: 'uint8' }],
   };
 
+  for (const favoriteNumber of [3.14, NaN, Infinity, true, null, {}]) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data({
+          message: { favoriteNumber },
+          types,
+          primaryType: 'Person',
+        }),
+      { message: /uint8/ },
+      `${favoriteNumber}`,
+    );
+  }
+});
+
+test('rejects an unsafe integer number, matching ethers.js', t => {
+  // viem would hash it, but such a number has likely already lost precision.
+  const types = {
+    Person: [{ name: 'amount', type: 'uint256' }],
+  };
   t.throws(
     () =>
       normalizeAndValidateEIP712Data({
-        message: { favoriteNumber: 3.14 },
+        message: { amount: 2 ** 60 },
         types,
         primaryType: 'Person',
       }),
-    { message: /uint8/ },
+    { message: /uint256/ },
+  );
+  t.deepEqual(
+    normalizeAndValidateEIP712Data({
+      message: { amount: Number.MAX_SAFE_INTEGER },
+      types,
+      primaryType: 'Person',
+    }).message,
+    { amount: BigInt(Number.MAX_SAFE_INTEGER) },
+  );
+});
+
+test('accepts and normalizes string-encoded integers', t => {
+  const cases: [type: string, value: string, expected: bigint | number][] = [
+    ['uint256', '12', 12n],
+    ['uint256', '+12', 12n],
+    ['uint256', '0', 0n],
+    ['uint256', '+0', 0n],
+    ['uint256', '0x0c', 12n],
+    // Hex may be zero-padded.
+    ['uint256', '0x000c', 12n],
+    ['uint256', '0x00', 0n],
+    ['uint256', '0xC', 12n],
+    ['uint8', '255', 255],
+    ['uint8', '0xff', 255],
+    ['int8', '-128', -128],
+    ['int8', '+127', 127],
+    ['int256', '-12', -12n],
+    ['uint256', `${2n ** 256n - 1n}`, 2n ** 256n - 1n],
+    ['uint256', `0x${'f'.repeat(64)}`, 2n ** 256n - 1n],
+  ];
+  for (const [type, v, expected] of cases) {
+    const { message } = normalizeAndValidateEIP712Data({
+      message: { v },
+      types: { M: [{ name: 'v', type }] },
+      primaryType: 'M',
+    });
+    t.is(message.v, expected, `${type} ${v}`);
+  }
+});
+
+test('rejects string-encoded integers outside the accepted grammar or range', t => {
+  const cases: [type: string, value: string][] = [
+    ['uint256', ''],
+    ['uint256', '0x'],
+    ['uint256', ' 12'],
+    ['uint256', '12 '],
+    ['uint256', '0X0c'],
+    ['uint256', '0b1100'],
+    ['uint256', '0o14'],
+    ['uint256', '1e3'],
+    ['uint256', '12.0'],
+    ['uint256', '1_000'],
+    ['uint256', '12n'],
+    // Leading zeros in decimal (could be read as legacy octal), and `-0`.
+    ['uint256', '00'],
+    ['uint256', '041'],
+    ['uint256', '+041'],
+    ['int256', '-041'],
+    ['uint256', '-0'],
+    ['int256', '-0'],
+    ['int256', '-00'],
+    // Negative hex: accepted by ethers.js but not viem.
+    ['int256', '-0xc'],
+    ['int256', '+0xc'],
+    ['int256', '--12'],
+    ['uint256', '-1'],
+    ['uint8', '256'],
+    ['uint8', '0x100'],
+    ['int8', '-129'],
+    ['int8', '0x80'], // hex is not two's complement
+    ['uint256', `${2n ** 256n}`],
+    // Too long, even if the value would be in range.
+    ['uint256', `0x${'0'.repeat(100)}1`],
+  ];
+  for (const [type, v] of cases) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data({
+          message: { v },
+          types: { M: [{ name: 'v', type }] },
+          primaryType: 'M',
+        }),
+      { message: new RegExp(type) },
+      `${type} ${JSON.stringify(v)}`,
+    );
+  }
+});
+
+test('accepted string-encoded integers hash identically raw and normalized under viem', t => {
+  // Signatures are recovered from the raw, un-normalized message (see
+  // `extractOperationDetailsFromDataWithAddress`'s callers), so every
+  // accepted string encoding must hash the same raw as its normalized
+  // `bigint`.
+  const cases: [type: string, value: string][] = [
+    ['uint256', '12'],
+    ['uint256', '+12'],
+    ['uint256', '0xC'],
+    ['uint256', '0x000C'],
+    ['int256', '-12'],
+    ['int256', '+12'],
+    ['int64', '+0'],
+  ];
+  for (const [type, v] of cases) {
+    const types = { M: [{ name: 'v', type }] };
+    const { message } = normalizeAndValidateEIP712Data({
+      message: { v },
+      types,
+      primaryType: 'M',
+    });
+    t.is(typeof message.v, 'bigint');
+    const domain = { name: 'X', chainId: 1n };
+    t.is(
+      hashTypedData({ domain, types, primaryType: 'M', message: { v } }),
+      hashTypedData({ domain, types, primaryType: 'M', message }),
+      `${type} ${v}`,
+    );
+  }
+});
+
+test('normalizes integers of at most 48 bits to a number, wider ones to a bigint, matching abitype', t => {
+  const cases: [type: string, value: unknown, expected: bigint | number][] = [
+    ['uint8', 5n, 5],
+    ['uint32', '0xffffffff', 0xffffffff],
+    ['uint48', 2n ** 48n - 1n, 2 ** 48 - 1],
+    ['int48', `${-(2n ** 47n)}`, -(2 ** 47)],
+    ['uint56', 5, 5n],
+    ['int64', -5, -5n],
+    ['uint256', 5, 5n],
+  ];
+  for (const [type, v, expected] of cases) {
+    const { message } = normalizeAndValidateEIP712Data({
+      message: { v },
+      types: { M: [{ name: 'v', type }] },
+      primaryType: 'M',
+    });
+    t.is(message.v, expected, `${type} ${String(v)}`);
+  }
+});
+
+test('rejects bare "uint"/"int" aliases, which EIP-712 disallows', t => {
+  // viem and ethers.js hash them differently.
+  for (const type of ['uint', 'int']) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data({
+          message: { v: 1n },
+          types: { M: [{ name: 'v', type }] },
+          primaryType: 'M',
+        }),
+      { message: new RegExp(`Unrecognized EIP-712 type "${type}"`) },
+    );
+  }
+});
+
+for (const alias of ['uint', 'int']) {
+  for (const { label, dimensions, value } of [
+    { label: 'an empty array', dimensions: '[]', value: [] },
+    { label: 'an empty outer array', dimensions: '[][]', value: [] },
+    { label: 'an empty inner array', dimensions: '[][]', value: [[]] },
+  ]) {
+    for (const onExtraField of ['drop', 'throw', 'keep'] as const) {
+      test(`rejects bare "${alias}" with ${label} in ${onExtraField} mode`, t => {
+        // An empty value does not invalidate the array shape. It is the
+        // declared alias that must be rejected, even without primitive
+        // elements to visit; viem and ethers hash that alias differently.
+        t.notThrows(() =>
+          normalizeAndValidateEIP712Data(
+            {
+              message: { v: value },
+              types: { M: [{ name: 'v', type: `${alias}256${dimensions}` }] },
+              primaryType: 'M',
+            },
+            { onExtraField },
+          ),
+        );
+        t.throws(
+          () =>
+            normalizeAndValidateEIP712Data(
+              {
+                message: { v: value },
+                types: { M: [{ name: 'v', type: `${alias}${dimensions}` }] },
+                primaryType: 'M',
+              },
+              { onExtraField },
+            ),
+          { message: new RegExp(`Unrecognized EIP-712 type "${alias}"`) },
+          onExtraField,
+        );
+      });
+    }
+  }
+}
+
+test('keeps and checks struct types referenced only through empty arrays', t => {
+  // EIP-712 hashing encodes these definitions whatever the values.
+  const types = {
+    Root: [{ name: 'rows', type: 'Row[][]' }],
+    Row: [{ name: 'cell', type: 'Cell' }],
+    Cell: [{ name: 'n', type: 'uint256' }],
+  };
+  for (const rows of [[], [[]]]) {
+    t.deepEqual(
+      normalizeAndValidateEIP712Data({
+        message: { rows },
+        types,
+        primaryType: 'Root',
+      }).types,
+      types,
+      JSON.stringify(rows),
+    );
+  }
+  // So their field types are checked even though no value reaches them.
+  for (const type of ['uint', 'Unknown', 'uint256[x]']) {
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data({
+          message: { rows: [] },
+          types: { ...types, Cell: [{ name: 'n', type }] },
+          primaryType: 'Root',
+        }),
+      { message: /Unrecognized EIP-712 type/ },
+      type,
+    );
+  }
+});
+
+test('normalizes integers nested in arrays and structs', t => {
+  const types = {
+    Outer: [
+      { name: 'inner', type: 'Inner' },
+      { name: 'ids', type: 'uint256[]' },
+    ],
+    Inner: [{ name: 'n', type: 'int64' }],
+  };
+  const { message } = normalizeAndValidateEIP712Data({
+    message: { inner: { n: '-5' }, ids: [1, '0x2', 3n] },
+    types,
+    primaryType: 'Outer',
+  });
+  t.deepEqual(message, { inner: { n: -5n }, ids: [1n, 2n, 3n] });
+});
+
+test('onNonCanonicalValue: "keep" validates integers without converting them', t => {
+  const types = { M: [{ name: 'a', type: 'uint256' }] };
+  for (const onExtraField of ['drop', 'throw'] as const) {
+    const { message } = normalizeAndValidateEIP712Data(
+      { message: { a: '+12' }, types, primaryType: 'M' },
+      { onExtraField, onNonCanonicalValue: 'keep' },
+    );
+    t.deepEqual(message, { a: '+12' });
+    t.throws(
+      () =>
+        normalizeAndValidateEIP712Data(
+          { message: { a: '-0xc' }, types, primaryType: 'M' },
+          { onExtraField, onNonCanonicalValue: 'keep' },
+        ),
+      { message: /uint256/ },
+    );
+  }
+});
+
+test('onNonCanonicalValue: "throw" rejects valid integers not already in canonical form', t => {
+  const cases: [type: string, value: unknown, canonical: boolean][] = [
+    ['uint256', 12n, true],
+    ['uint256', 12, false],
+    ['uint256', '12', false],
+    ['uint32', 12, true],
+    ['uint32', 12n, false],
+    ['uint32', '0xc', false],
+    ['int256', -1n, true],
+    ['int256', -1, false],
+  ];
+  for (const onExtraField of ['drop', 'throw', 'keep'] as const) {
+    for (const [type, v, canonical] of cases) {
+      const run = () =>
+        normalizeAndValidateEIP712Data(
+          {
+            message: { v },
+            types: { M: [{ name: 'v', type }] },
+            primaryType: 'M',
+          },
+          { onExtraField, onNonCanonicalValue: 'throw' },
+        );
+      const label = `${onExtraField} ${type} ${typeof v} ${String(v)}`;
+      if (canonical) {
+        t.deepEqual(run().message, { v }, label);
+      } else {
+        t.throws(
+          run,
+          {
+            message: new RegExp(
+              `Expected a (bigint|number) for EIP-712 type "${type}"`,
+            ),
+          },
+          label,
+        );
+      }
+    }
+  }
+  // Values that are invalid altogether are still rejected as such.
+  t.throws(
+    () =>
+      normalizeAndValidateEIP712Data(
+        {
+          message: { v: 256 },
+          types: { M: [{ name: 'v', type: 'uint8' }] },
+          primaryType: 'M',
+        },
+        { onNonCanonicalValue: 'throw' },
+      ),
+    { message: /out of range/ },
+  );
+});
+
+test('"keep" mode validates string-encoded integers without converting them, and rejects onNonCanonicalValue: "normalize"', t => {
+  const types = { M: [{ name: 'a', type: 'uint256' }] };
+  const message = { a: '0x0c' };
+  const result = normalizeAndValidateEIP712Data(
+    { message, types, primaryType: 'M' },
+    { onExtraField: 'keep' },
+  );
+  t.is(result.message, message);
+  t.deepEqual(result.message, { a: '0x0c' });
+  t.throws(
+    () =>
+      normalizeAndValidateEIP712Data(
+        { message: { a: 'nope' }, types, primaryType: 'M' },
+        { onExtraField: 'keep' },
+      ),
+    { message: /uint256/ },
   );
   t.throws(
     () =>
-      normalizeAndValidateEIP712Data({
-        message: { favoriteNumber: '5' },
-        types,
-        primaryType: 'Person',
-      }),
-    { message: /uint8/ },
+      normalizeAndValidateEIP712Data(
+        { message, types, primaryType: 'M' },
+        { onExtraField: 'keep', onNonCanonicalValue: 'normalize' },
+      ),
+    { message: /onNonCanonicalValue/ },
   );
 });
 
@@ -1186,4 +1601,44 @@ test('reentrancy: an optional self-referential field always conflicts once recur
       }),
     { message: /child/ },
   );
+});
+
+test('parseEIP712Integer parses the accepted integer encodings, without range checks', t => {
+  const cases: [value: unknown, expected: bigint | undefined][] = [
+    [12n, 12n],
+    [-12, -12n],
+    ['12', 12n],
+    ['+12', 12n],
+    ['-12', -12n],
+    ['0xC', 12n],
+    // Not range checked: that depends on the type.
+    [`${2n ** 300n}`, 2n ** 300n],
+    ['-0xc', undefined],
+    [' 12', undefined],
+    ['', undefined],
+    ['0x', undefined],
+    [1.5, undefined],
+    [2 ** 60, undefined],
+    [true, undefined],
+    [null, undefined],
+  ];
+  for (const [value, expected] of cases) {
+    t.is(parseEIP712Integer(value), expected, String(value));
+  }
+});
+
+test('normalizeEIP712Primitive validates and returns the canonical form of a primitive value', t => {
+  t.is(normalizeEIP712Primitive('uint8', '0xff'), 255);
+  t.is(normalizeEIP712Primitive('uint256', 12), 12n);
+  t.is(normalizeEIP712Primitive('string', 'hi'), 'hi');
+  t.throws(() => normalizeEIP712Primitive('uint8', 256), {
+    message: /out of range/,
+  });
+  t.throws(() => normalizeEIP712Primitive('uint', 1n), {
+    message: /Unrecognized EIP-712 type "uint"/,
+  });
+  // Struct and array types aren't primitives.
+  t.throws(() => normalizeEIP712Primitive('uint256[]', [1n]), {
+    message: /Unrecognized EIP-712 type "uint256\[\]"/,
+  });
 });

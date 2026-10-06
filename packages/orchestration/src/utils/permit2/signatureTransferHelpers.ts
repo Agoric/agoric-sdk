@@ -27,7 +27,7 @@ import {
   permitWitnessTransferFromTypes,
   TokenPermissionTypeParams,
 } from './signatureTransfer.ts';
-import { sameEvmAddress } from '../address.js';
+import { isEvmAddressShape, sameEvmAddress } from '../address.js';
 
 const PrimaryTypes = keyMirror({
   PermitBatchWitnessTransferFrom: null,
@@ -157,6 +157,9 @@ export function validatePermit2Domain(
     throw new Error(
       `Permit2 domain must include chainId and verifyingContract`,
     );
+  }
+  if (!isEvmAddressShape(verifyingContract)) {
+    throw new Error(`Invalid verifying contract address in permit2 domain`);
   }
 
   if (permit2Addresses) {

@@ -32,20 +32,20 @@ const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambien
 /**
  * Loads the real `eip712-normalize.ts` source, strips its types (via
  * `ts-blank-space`, already a devDependency used to run this package's own
- * tests) and its one `export` keyword (module syntax isn't valid in a plain
+ * tests) and its `export` keywords (module syntax isn't valid in a plain
  * `vat.evaluate` script), so the exact shipped logic -- not a hand-copied
  * approximation of it -- is what runs inside the XS vat.
  */
 const loadNormalizeSource = () => {
   const ts = fs.readFileSync(sourcePath, 'utf8');
   const js = blank(ts);
-  // Only `export const normalizeAndValidateEIP712Data = (...` remains after
-  // blanking (the sole `import type` is blanked away entirely).
-  const withoutExport = js.replace(
-    'export const normalizeAndValidateEIP712Data',
-    'const normalizeAndValidateEIP712Data',
-  );
-  if (withoutExport === js) {
+  // Only `export const ... = (...` declarations remain after blanking (the
+  // sole `import type` is blanked away entirely).
+  const withoutExport = js.replace(/^export const /gmu, 'const ');
+  if (/^\s*export\b/mu.test(withoutExport)) {
+    throw Error('expected only `export const` declarations');
+  }
+  if (!/^const normalizeAndValidateEIP712Data\b/mu.test(withoutExport)) {
     throw Error('expected an `export const normalizeAndValidateEIP712Data`');
   }
   return withoutExport;
@@ -76,7 +76,12 @@ const runInXs = async (input, options) => {
       result = err.message;
     }
     issueCommand(
-      new TextEncoder().encode(JSON.stringify({ threw, result })).buffer,
+      // bigints (normalized integers) don't survive JSON, so tag them.
+      new TextEncoder().encode(
+        JSON.stringify({ threw, result }, (_key, value) =>
+          typeof value === 'bigint' ? \`\${value}n\` : value,
+        ),
+      ).buffer,
     );
   `);
   await vat.close();
@@ -142,4 +147,82 @@ test('preserves every element of a multi-element array field, under the real XS 
   if (!threw) {
     t.deepEqual(result.message.signers, [VALID_ADDRESS_0, VALID_ADDRESS_1]);
   }
+});
+
+test('parses and normalizes string-encoded integers, under the real XS engine', async t => {
+  const input = {
+    types: {
+      M: [
+        { name: 'dec', type: 'uint256' },
+        { name: 'plus', type: 'int256' },
+        { name: 'neg', type: 'int256' },
+        { name: 'hex', type: 'uint256' },
+        { name: 'num', type: 'uint64' },
+      ],
+    },
+    message: {
+      dec: '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+      plus: '+12',
+      neg: '-12',
+      hex: '0xC',
+      num: 7,
+    },
+    primaryType: 'M',
+  };
+
+  const { threw, result } = await runInXs(input, {});
+
+  t.false(threw, `expected no validation error, got ${JSON.stringify(result)}`);
+  if (!threw) {
+    t.deepEqual(result.message, {
+      dec: `${2n ** 256n - 1n}n`,
+      plus: '12n',
+      neg: '-12n',
+      hex: '12n',
+      num: '7n',
+    });
+  }
+});
+
+test('rejects an out-of-grammar string-encoded integer, under the real XS engine', async t => {
+  const input = {
+    types: { M: [{ name: 'v', type: 'int256' }] },
+    message: { v: '-0xc' },
+    primaryType: 'M',
+  };
+
+  const { threw, result } = await runInXs(input, {});
+
+  t.true(threw, `expected a validation error, got ${JSON.stringify(result)}`);
+  if (threw) t.regex(result, /int256/);
+});
+
+test('keeps and checks struct types referenced only through empty arrays, transitively, under the real XS engine', async t => {
+  // Relies on `Map` iteration also visiting entries added while iterating.
+  const types = {
+    Root: [{ name: 'rows', type: 'Row[][]' }],
+    Row: [{ name: 'cell', type: 'Cell' }],
+    Cell: [{ name: 'n', type: 'uint256' }],
+  };
+  const kept = await runInXs(
+    { types, message: { rows: [] }, primaryType: 'Root' },
+    {},
+  );
+  t.false(kept.threw, `expected no error, got ${JSON.stringify(kept.result)}`);
+  if (!kept.threw) t.deepEqual(kept.result.types, types);
+
+  const checked = await runInXs(
+    {
+      types: { ...types, Cell: [{ name: 'n', type: 'uint' }] },
+      message: { rows: [] },
+      primaryType: 'Root',
+    },
+    {},
+  );
+  t.true(
+    checked.threw,
+    `expected an error, got ${JSON.stringify(checked.result)}`,
+  );
+  if (checked.threw)
+    t.regex(checked.result, /Unrecognized EIP-712 type "uint"/);
 });

@@ -5,9 +5,12 @@
  *   per-message: dropped from `types` if never present on any instance of
  *   the struct, otherwise kept with the `optional` marker stripped (treated
  *   as required from then on).
- * - struct types never actually encountered while walking `message` from
- *   `primaryType` are absent from `types`. `EIP712Domain` is always
- *   preserved if present, since domain values live outside `message`.
+ * - struct types not referenced from `primaryType` through kept fields
+ *   (e.g. only through a dropped `optional` field) are absent from
+ *   `types`. Referenced ones are kept even when no value reaches them (e.g.
+ *   the element type of an empty array), since EIP-712 hashing encodes
+ *   their definitions regardless. `EIP712Domain` is always preserved if
+ *   present, since domain values live outside `message`.
  *
  * `onExtraField` controls how *excess* data (fields not declared in
  * `types`, array elements beyond a fixed length) is handled:
@@ -19,6 +22,21 @@
  *   data). Dynamic-length arrays are never truncated in any mode, since
  *   every element affects the EIP-712 hash.
  *
+ * `onNonCanonicalValue` controls how a valid primitive leaf value that
+ * isn't in its canonical form is handled. Only integers (given as a
+ * `number`, `bigint`, or decimal/hex string -- see `normalizeEIP712Primitive`)
+ * have a distinct canonical form: a `number` for an explicit width of at
+ * most 48 bits (e.g. `uint32`), else a `bigint` (e.g. `uint64`,
+ * `uint256`), matching abitype's TS types.
+ * - 'normalize' (default, except with `onExtraField: 'keep'`): replace it
+ *   with its canonical form. Since `onExtraField: 'keep'` never modifies
+ *   `message`, combining it with an explicit `onNonCanonicalValue:
+ *   'normalize'` is an error (the call throws).
+ * - 'keep' (default with `onExtraField: 'keep'`): leave it as is.
+ * - 'throw': reject it -- e.g. to check that an already-normalized message
+ *   also has the expected JS types for a different (trusted) set of
+ *   `types`, which a field declared with another type would not.
+ *
  * Regardless of `onExtraField`, the result is also *validated*, with the
  * goal that if validation succeeds, hashing the result is guaranteed to
  * succeed and to hash exactly the values given:
@@ -26,10 +44,12 @@
  *   least their declared number of elements (too few is missing data, not
  *   excess, so no mode tolerates it; too many is excess, tolerated only by
  *   `'keep'`).
+ * - a struct type reached from `primaryType` must not declare the same
+ *   field more than once (hashing would encode every declaration).
  * - a struct/array field must get an array/object value, and a plain
  *   Solidity type (`address`, `bool`, `string`, `uint*`/`int*`, `bytes*`)
  *   must get a value of the specific JS type that implies -- see
- *   `assertValidPrimitive`.
+ *   `normalizeEIP712Primitive`.
  * - primitive leaf values are checked against their type's shape/range,
  *   recursing correctly through arrays, which real EIP-712 tooling (e.g.
  *   viem's `validateTypedData`) does not.
@@ -57,6 +77,14 @@ export type NormalizeAndValidateEIP712DataInput = {
 export type NormalizeAndValidateEIP712DataOptions = {
   /** default 'drop' */
   onExtraField?: 'drop' | 'throw' | 'keep';
+  /**
+   * How to handle a valid value not in its canonical form (an integer that
+   * isn't a `number` if at most 48 bits wide, else a `bigint`). Default
+   * 'normalize', except with `onExtraField: 'keep'`, where it defaults to
+   * 'keep' instead: 'keep' mode never modifies `message`, so explicitly
+   * passing 'normalize' with it is an error (the call throws).
+   */
+  onNonCanonicalValue?: 'normalize' | 'keep' | 'throw';
 };
 
 export type NormalizeAndValidateEIP712DataResult = {
@@ -65,6 +93,7 @@ export type NormalizeAndValidateEIP712DataResult = {
 };
 
 const ARRAY_SUFFIX = /\[(\d*)\]$/u;
+const ARRAY_SUFFIXES = /(?:\[\d*\])+$/u;
 
 const splitArrayType = (
   type: string,
@@ -78,17 +107,38 @@ const splitArrayType = (
   };
 };
 
+// Same shape as `isEvmAddressShape` in `../address.js`, duplicated rather
+// than imported: this module must have no runtime imports (see the module
+// doc comment; `eip712-normalize.xs.test.js` also evaluates its source
+// directly), and `address.js` has runtime dependencies of its own.
 const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/u;
 // Solidity `(u)int<M>`: (un)signed integer of `M` bits, `0 < M <= 256`,
-// `M % 8 === 0`; bare `uint`/`int` (no explicit width) means 256 bits.
-// Mirrors viem's `integerRegex` (utils/regex.ts) -- duplicated rather than
-// imported so this module has no runtime dependency on `viem`.
+// `M % 8 === 0`. Unlike viem's `integerRegex` (utils/regex.ts), the width
+// is required: EIP-712 has no bare `uint`/`int` aliases, and viem and
+// ethers.js hash them differently (ethers.js encodes the type as
+// `uint256`/`int256`, viem keeps the alias in the type string).
 const INTEGER_TYPE_REGEX =
-  /^(u?int)(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256)?$/u;
+  /^(u?int)(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256)$/u;
 // Solidity `bytes<M>`: binary type of `M` bytes, `0 < M <= 32`; bare `bytes`
 // (no explicit size) is dynamic-length, so has nothing to check here.
 const BYTES_TYPE_REGEX = /^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])?$/u;
 const HEX_REGEX = /^0x[0-9a-fA-F]*$/u;
+// String-encoded integers: unsigned hex, or decimal with an optional sign.
+// The subset of what both viem and ethers.js accept *and* hash identically
+// to the equivalent `bigint` (both ultimately defer to JS `BigInt(string)`,
+// but e.g. viem rejects negative hex that ethers accepts, and both accept
+// whitespace, `0b`/`0o` prefixes, etc. that we don't need to). Decimal
+// excludes leading zeros, which `BigInt` ignores but a reader could take
+// for a legacy octal literal (e.g. `041` as 33 rather than 41), and `-0`,
+// which has no distinct meaning (`0` and `+0` are fine). Hex may have
+// leading zeros, as fixed-width hex commonly does.
+const INTEGER_STRING_REGEX = /^(?:\+?0|[-+]?[1-9][0-9]*|0x[0-9a-fA-F]+)$/u;
+// Bounds the work `BigInt` parsing of an untrusted string can do. Generous
+// for any in-range 256-bit value (at most 78 decimal or 64 hex digits),
+// leaving room for some leading zeros in hex.
+const MAX_INTEGER_STRING_LENGTH = 100;
+// abitype types `(u)int<M>` values as `number` for `M <= 48`, else `bigint`.
+const MAX_NUMBER_INTEGER_BITS = 48;
 
 const MAX_DESCRIBED_LENGTH = 100;
 
@@ -175,8 +225,52 @@ const describeValue = (value: unknown): string => {
 };
 
 /**
- * Validates a value declared as a non-struct, non-array EIP-712 type
- * (`visit` only calls this once it's confirmed `fieldType` is neither).
+ * Parses an integer given in one of the JS representations accepted for an
+ * EIP-712 `(u)int<M>` value: a `bigint`, a safe integer `number`, or a
+ * string of unsigned hex (`0x...`) or optionally signed decimal digits (see
+ * `INTEGER_STRING_REGEX`). Returns `undefined` for anything else, including
+ * non-integer and unsafe-integer numbers (which have likely already lost
+ * precision; ethers.js rejects them too). Does not check the value's range
+ * for any particular type: see {@link normalizeEIP712Primitive} for that.
+ *
+ * @param value
+ */
+export const parseEIP712Integer = (value: unknown): bigint | undefined => {
+  if (typeof value === 'bigint') return value;
+  if (typeof value === 'number') {
+    return Number.isSafeInteger(value) ? BigInt(value) : undefined;
+  }
+  if (
+    typeof value !== 'string' ||
+    value.length > MAX_INTEGER_STRING_LENGTH ||
+    !INTEGER_STRING_REGEX.test(value)
+  ) {
+    return undefined;
+  }
+  // `BigInt` itself accepts a sign on decimal (not hex) strings.
+  return BigInt(value);
+};
+
+/**
+ * Whether `type` is a primitive EIP-712 type, i.e. one whose values
+ * {@link normalizeEIP712Primitive} accepts (not, e.g., a bare `uint`).
+ *
+ * @param type
+ */
+const isPrimitiveType = (type: string): boolean =>
+  type === 'address' ||
+  type === 'bool' ||
+  type === 'string' ||
+  INTEGER_TYPE_REGEX.test(type) ||
+  BYTES_TYPE_REGEX.test(type);
+
+/**
+ * Validates a value of a primitive (non-struct, non-array) EIP-712 type,
+ * returning its canonical form (only integers have a distinct one: a
+ * `number` for an explicit width of at most 48 bits, else a `bigint`,
+ * matching abitype's TS types), or throws if it isn't valid. A struct or
+ * array type is rejected as unrecognized (`visit` only calls this once it's
+ * confirmed `fieldType` is neither).
  * Requires the specific JS type real hashing needs for each Solidity type,
  * not just something that happens to coerce -- e.g. a number given for a
  * `string` field would otherwise hash as the number's own hex encoding,
@@ -186,24 +280,33 @@ const describeValue = (value: unknown): string => {
  *   the module doc comment for why).
  * - `bool`: JS `boolean`.
  * - `string`: JS `string`.
- * - `bytes` (dynamic): hex string *or* `Uint8Array` -- hashed identically
- *   either way.
- * - `bytes<M>` (fixed): hex string only, of exactly `M` bytes -- a
- *   `Uint8Array` does not hash successfully here (see the module doc
- *   comment).
- * - `uint<M>`/`int<M>` (bare `uint`/`int` means 256 bits): `number` or
- *   `bigint`, an integer, in range for the bit width/signedness.
+ * - `bytes` (dynamic): even-length hex string *or* `Uint8Array` -- hashed
+ *   identically either way.
+ * - `bytes<M>` (fixed): even-length hex string only, of exactly `M` bytes
+ *   -- a `Uint8Array` does not hash successfully here (see the module doc
+ *   comment). Odd-length hex is rejected for both: ethers.js rejects it,
+ *   and viem pads the missing nibble on the left for `bytes` but on the
+ *   right for `bytes<M>`.
+ * - `uint<M>`/`int<M>` (not bare `uint`/`int`, see `INTEGER_TYPE_REGEX`):
+ *   any value {@link parseEIP712Integer} accepts, in range for the bit
+ *   width/signedness.
  * - anything else: not a real Solidity primitive type, so rejected
  *   unconditionally.
+ *
+ * @param fieldType
+ * @param value
  */
-const assertValidPrimitive = (fieldType: string, value: unknown): void => {
+export const normalizeEIP712Primitive = (
+  fieldType: string,
+  value: unknown,
+): unknown => {
   const quotedType = quoteName(fieldType);
 
   if (fieldType === 'address') {
     if (typeof value !== 'string' || !ADDRESS_REGEX.test(value)) {
       throw new Error(`Invalid EIP-712 address value: ${describeValue(value)}`);
     }
-    return;
+    return value;
   }
 
   if (fieldType === 'bool') {
@@ -212,7 +315,7 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
         `Expected a boolean for EIP-712 type "bool", got ${describeValue(value)}`,
       );
     }
-    return;
+    return value;
   }
 
   if (fieldType === 'string') {
@@ -221,24 +324,19 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
         `Expected a string for EIP-712 type "string", got ${describeValue(value)}`,
       );
     }
-    return;
+    return value;
   }
 
   const integerMatch = fieldType.match(INTEGER_TYPE_REGEX);
   if (integerMatch) {
-    if (typeof value !== 'number' && typeof value !== 'bigint') {
+    const bigValue = parseEIP712Integer(value);
+    if (bigValue === undefined) {
       throw new Error(
-        `Expected a number or bigint for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
-      );
-    }
-    if (typeof value === 'number' && !Number.isInteger(value)) {
-      throw new Error(
-        `Expected an integer for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
+        `Expected an integer (bigint, safe integer number, or decimal/hex string) for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
       );
     }
     const signed = integerMatch[1] === 'int';
-    const bits = integerMatch[2] ? Number(integerMatch[2]) : 256;
-    const bigValue = BigInt(value);
+    const bits = Number(integerMatch[2]);
     const max = signed ? 2n ** BigInt(bits - 1) - 1n : 2n ** BigInt(bits) - 1n;
     const min = signed ? -max - 1n : 0n;
     if (bigValue < min || bigValue > max) {
@@ -246,7 +344,9 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
         `Value ${describeValue(value)} is out of range for EIP-712 type ${quotedType} (expected ${min} to ${max})`,
       );
     }
-    return;
+    // Match abitype's (and so viem's) TS types: an explicit width of at most
+    // 48 bits is a `number` (always exact, being under 2^53), else `bigint`.
+    return bits <= MAX_NUMBER_INTEGER_BITS ? Number(bigValue) : bigValue;
   }
 
   const bytesMatch = fieldType.match(BYTES_TYPE_REGEX);
@@ -255,22 +355,27 @@ const assertValidPrimitive = (fieldType: string, value: unknown): void => {
     // `Uint8Array` interchangeably with a hex string. Fixed `bytes<M>` goes
     // through the generic Solidity ABI path instead, which requires a hex
     // string and throws an unrelated error for a `Uint8Array`.
-    if (!bytesMatch[1] && value instanceof Uint8Array) return;
+    if (!bytesMatch[1] && value instanceof Uint8Array) return value;
     if (typeof value !== 'string' || !HEX_REGEX.test(value)) {
       throw new Error(
         `Expected a hex string for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
       );
     }
+    if (value.length % 2 !== 0) {
+      throw new Error(
+        `Expected an even number of hex digits for EIP-712 type ${quotedType}, got ${describeValue(value)}`,
+      );
+    }
     if (bytesMatch[1]) {
       const expectedSize = Number(bytesMatch[1]);
-      const actualSize = Math.ceil((value.length - 2) / 2);
+      const actualSize = (value.length - 2) / 2;
       if (actualSize !== expectedSize) {
         throw new Error(
           `Expected EIP-712 type ${quotedType} to be ${expectedSize} bytes, got ${actualSize}: ${describeValue(value)}`,
         );
       }
     }
-    return;
+    return value;
   }
 
   throw new Error(`Unrecognized EIP-712 type ${quotedType}`);
@@ -295,8 +400,9 @@ type GetType = (typeName: string) => TypeFields | undefined;
 
 /**
  * Walks `value` against `fieldType` (a struct or array field type string).
- * One function covers both, since a field's declared type is never an
- * array of arrays. `getType` hands out the *same* {@link TypeFields}
+ * One function covers both, an array of arrays (e.g. `uint256[2][]`)
+ * included: each element is visited against the element type, itself an
+ * array type (e.g. `uint256[2]`). `getType` hands out the *same* {@link TypeFields}
  * record for every instance of a given struct type name encountered
  * anywhere in the message, which is what lets a single walk resolve
  * `optional` fields and validate required-field presence across
@@ -315,13 +421,14 @@ type GetType = (typeName: string) => TypeFields | undefined;
  * Every mode runs these the same way, `keep` included -- missing data is
  * missing data regardless of `onExtraField`. `keep` only skips removing or
  * rejecting *excess* data (extra fields, over-length arrays) and never
- * touches `message`.
+ * touches `message` (so `onNonCanonicalValue` is never 'normalize').
  */
 const visit = (
   fieldType: string,
   value: any,
   getType: GetType,
   onExtraField: 'drop' | 'throw' | 'keep',
+  onNonCanonicalValue: 'normalize' | 'keep' | 'throw',
 ): unknown => {
   const keep = onExtraField === 'keep';
   const { base, length: requiredLength, isArray } = splitArrayType(fieldType);
@@ -331,8 +438,14 @@ const visit = (
   if (!isArray && !baseType) {
     // Not a declared struct or array, so it must be a recognized Solidity
     // primitive with a matching JS value; also catches an unknown type.
-    assertValidPrimitive(fieldType, value);
-    return value;
+    const canonical = normalizeEIP712Primitive(fieldType, value);
+    if (canonical === value || onNonCanonicalValue === 'keep') return value;
+    if (onNonCanonicalValue === 'throw') {
+      throw new Error(
+        `Expected a ${typeof canonical} for EIP-712 type ${quoteName(fieldType)}, got ${describeValue(value)}`,
+      );
+    }
+    return canonical;
   }
 
   // A declared struct or array needs an actual object/array value. Split
@@ -443,6 +556,7 @@ const visit = (
       value[fieldName],
       getType,
       onExtraField,
+      onNonCanonicalValue,
     );
     if (!keep) result[fieldName] = projectedValue;
   }
@@ -455,6 +569,14 @@ export const normalizeAndValidateEIP712Data = (
 ): NormalizeAndValidateEIP712DataResult => {
   const { message, types, primaryType } = input;
   const onExtraField = options.onExtraField ?? 'drop';
+  const onNonCanonicalValue =
+    options.onNonCanonicalValue ??
+    (onExtraField === 'keep' ? 'keep' : 'normalize');
+  if (onNonCanonicalValue === 'normalize' && onExtraField === 'keep') {
+    throw new Error(
+      `EIP-712 normalization option onNonCanonicalValue: 'normalize' is incompatible with onExtraField: 'keep', which never modifies the message`,
+    );
+  }
 
   if (!(primaryType in types)) {
     throw new Error(
@@ -474,6 +596,14 @@ export const normalizeAndValidateEIP712Data = (
     // an inherited Object.prototype member (e.g. a field named "toString").
     const fields: TypeFields = Object.create(null);
     for (const field of declared) {
+      // EIP-712 hashing encodes every declaration, while `fields` (and so
+      // the output types) could only hold one, describing a different type
+      // hash than the input.
+      if (field.name in fields) {
+        throw new Error(
+          `Duplicate field ${quoteName(field.name)} in EIP-712 type ${quoteName(typeName)}`,
+        );
+      }
       fields[field.name] = {
         state: field.optional ? 'optional-unseen' : 'required',
         type: field.type,
@@ -488,13 +618,29 @@ export const normalizeAndValidateEIP712Data = (
     message,
     getType,
     onExtraField,
+    onNonCanonicalValue,
   ) as Record<string, unknown>;
 
+  // Output only the fields still required (resolved `optional` ones are
+  // dropped). The walk only reaches what the values lead to: e.g. nothing
+  // in an empty array. But EIP-712 hashing encodes every struct type a kept
+  // field references (transitively) whatever the values, so register those
+  // too (iterating a `Map` also visits the entries added while iterating),
+  // and check that every other referenced type is a recognized primitive
+  // (e.g. not a bare `uint`).
   const outputTypes: TypesRecord = {};
   for (const [typeName, fields] of resultTypes) {
-    outputTypes[typeName] = Object.entries(fields)
-      .filter(([, field]) => field.state === 'required')
-      .map(([name, field]) => ({ name, type: field.type }));
+    const outputFields: TypedDataParameter[] = [];
+    for (const fieldName of Object.keys(fields)) {
+      const { state, type } = fields[fieldName];
+      if (state !== 'required') continue;
+      const elementType = type.replace(ARRAY_SUFFIXES, '');
+      if (!getType(elementType) && !isPrimitiveType(elementType)) {
+        throw new Error(`Unrecognized EIP-712 type ${quoteName(elementType)}`);
+      }
+      outputFields.push({ name: fieldName, type });
+    }
+    outputTypes[typeName] = outputFields;
   }
   if ('EIP712Domain' in types) outputTypes.EIP712Domain = types.EIP712Domain;
 

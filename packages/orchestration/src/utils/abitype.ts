@@ -42,38 +42,61 @@ export type TypedDataParameter<
  * Unlike abitype's version, this has no self/circular-reference detection:
  * none of this repo's type graphs are self-referencing, so it wasn't worth
  * reproducing.
+ *
+ * `Kind` selects which values the type describes: `'output'` (the default)
+ * is the canonical form, e.g. as returned by `normalizeAndValidateEIP712Data`;
+ * `'input'` additionally allows the other encodings it accepts and
+ * normalizes (see {@link EIP712IntegerInput}).
  */
 export type TypedDataToStructType<
   TD extends Record<string, readonly TypedDataParameter[]>,
   K extends keyof TD & string,
-> = StructToType<TD, TD[K]>;
+  Kind extends TypedDataValueKind = 'output',
+> = StructToType<TD, TD[K], Kind>;
+
+export type TypedDataValueKind = 'input' | 'output';
+
+/**
+ * The values `normalizeAndValidateEIP712Data` accepts (and normalizes to
+ * abitype's `number`/`bigint` output type) for a `uint<M>`/`int<M>` field. Range and exact string grammar
+ * (unsigned hex, or optionally signed decimal) are only checked at runtime.
+ */
+export type EIP712IntegerInput =
+  | bigint
+  | number
+  | `${bigint}`
+  | `+${bigint}`
+  | `0x${string}`;
 
 type StructToType<
   TD extends Record<string, readonly TypedDataParameter[]>,
   Fields extends readonly TypedDataParameter[],
+  Kind extends TypedDataValueKind,
 > = Simplify<
   {
     [F in Exclude<
       Fields[number],
       { optional: true }
-    > as F['name']]: FieldToType<TD, F['type']>;
+    > as F['name']]: FieldToType<TD, F['type'], Kind>;
   } & {
     [F in Extract<
       Fields[number],
       { optional: true }
-    > as F['name']]?: FieldToType<TD, F['type']>;
+    > as F['name']]?: FieldToType<TD, F['type'], Kind>;
   }
 >;
 
 /**
- * `Foo[3]` / `Foo[]` -> `{elem: 'Foo'; size: '3' | ''}`; non-array ->
- * `undefined`, NOT `never` -- `never` is a subtype of everything, so
- * `ParseArrayType<T> extends {elem: ...; size: ...}` would then vacuously
- * match every non-array `T` too (mirrors abitype's own `undefined` fallback
- * in `MaybeExtractArrayParameterType`, for the same reason).
+ * `Foo[3]` / `Foo[]` / `Foo[2][]` -> `{elem: 'Foo'; dims: '[3]' | '[]' |
+ * '[2][]'}` (all dimensions, since an array of arrays is valid EIP-712);
+ * non-array -> `undefined`, NOT `never` -- `never` is a subtype of
+ * everything, so `ParseArrayType<T> extends {elem: ...; dims: ...}` would
+ * then vacuously match every non-array `T` too (mirrors abitype's own
+ * `undefined` fallback in `MaybeExtractArrayParameterType`, for the same
+ * reason).
  */
-type ParseArrayType<T extends string> = T extends `${infer Elem}[${infer Size}]`
-  ? { elem: Elem; size: Size }
+type ParseArrayType<T extends string> = T extends `${infer Elem}[${infer Rest}`
+  ? { elem: Elem; dims: `[${Rest}` }
   : undefined;
 
 /** Mirrors abitype's own (unexported) `Tuple` helper. */
@@ -83,19 +106,46 @@ type FixedLengthTuple<
   Acc extends unknown[] = [],
 > = Acc['length'] extends N ? Acc : FixedLengthTuple<T, N, [T, ...Acc]>;
 
+/** `T[N]` / `T[]` for an array type's parsed `Size`. */
+type ArrayOfSize<T, Size extends string> = Size extends `${infer N extends
+  number}`
+  ? FixedLengthTuple<T, N>
+  : readonly T[];
+
+/**
+ * Wraps `T` in an array per dimension of `Dims` (e.g. `'[2][]'`), leftmost
+ * (innermost) first: `T[2][]` is a dynamic-length array of `T[2]`.
+ */
+type ApplyArrayDims<
+  T,
+  Dims extends string,
+> = Dims extends `[${infer Size}]${infer Rest}`
+  ? ApplyArrayDims<ArrayOfSize<T, Size>, Rest>
+  : T;
+
+type PrimitiveToType<
+  FieldType extends string,
+  Kind extends TypedDataValueKind,
+> = Kind extends 'input'
+  ? FieldType extends `int${string}` | `uint${string}`
+    ? EIP712IntegerInput
+    : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>
+  : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>;
+
 type FieldToType<
   TD extends Record<string, readonly TypedDataParameter[]>,
   FieldType extends string,
+  Kind extends TypedDataValueKind,
 > =
   ParseArrayType<FieldType> extends {
     elem: infer Elem extends string;
-    size: infer Size extends string;
+    dims: infer Dims extends string;
   }
     ? Elem extends keyof TD & string
-      ? Size extends `${infer N extends number}`
-        ? FixedLengthTuple<StructToType<TD, TD[Elem]>, N>
-        : readonly StructToType<TD, TD[Elem]>[]
-      : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>
+      ? ApplyArrayDims<StructToType<TD, TD[Elem], Kind>, Dims>
+      : Kind extends 'input'
+        ? ApplyArrayDims<PrimitiveToType<Elem, Kind>, Dims>
+        : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>
     : FieldType extends keyof TD & string
-      ? StructToType<TD, TD[FieldType]>
-      : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>;
+      ? StructToType<TD, TD[FieldType], Kind>
+      : PrimitiveToType<FieldType, Kind>;

@@ -23,7 +23,11 @@
 
 import type { Address, TypedData, TypedDataDomain } from 'abitype';
 import type { TypedDataDefinition } from 'viem';
-import type { TypedDataParameter, TypedDataToStructType } from './abitype.ts';
+import type {
+  TypedDataParameter,
+  TypedDataToStructType,
+  TypedDataValueKind,
+} from './abitype.ts';
 import {
   type Witness,
   type getPermitWitnessTransferFromData,
@@ -31,7 +35,7 @@ import {
   makeWitness,
   PermitTransferFromTypeParams,
 } from './permit2.ts';
-import { sameEvmAddress } from './address.js';
+import { isEvmAddressShape, sameEvmAddress } from './address.js';
 import { normalizeAndValidateEIP712Data } from './viem-utils/eip712-normalize.ts';
 
 type TypedDataRecord = Record<string, readonly TypedDataParameter[]>;
@@ -148,12 +152,18 @@ export type StandaloneTypes<
 export type WitnessData<
   S extends EIP712MessageSchema,
   T extends OperationNames<S>,
-> = TypedDataToStructType<WitnessTypes<S, T>, WitnessTypeParam<S, T>['type']>;
+  Kind extends TypedDataValueKind = 'output',
+> = TypedDataToStructType<
+  WitnessTypes<S, T>,
+  WitnessTypeParam<S, T>['type'],
+  Kind
+>;
 
 export type StandaloneData<
   S extends EIP712MessageSchema,
   T extends OperationNames<S>,
-> = TypedDataToStructType<StandaloneTypes<S, T>, T>;
+  Kind extends TypedDataValueKind = 'output',
+> = TypedDataToStructType<StandaloneTypes<S, T>, T, Kind>;
 
 export type StandaloneOperationData<
   S extends EIP712MessageSchema,
@@ -316,7 +326,7 @@ export interface EIP712MessageKit<S extends EIP712MessageSchema> {
   /** Make the witness of an operation for a permit2 message. */
   getWitness<T extends OperationNames<S>>(
     operation: T,
-    data: NoInfer<WitnessData<S, T>>,
+    data: NoInfer<WitnessData<S, T, 'input'>>,
   ): OperationWitness<S, T>;
   getStandaloneDomain(
     chainId: bigint | number,
@@ -324,7 +334,7 @@ export interface EIP712MessageKit<S extends EIP712MessageSchema> {
   ): FullDomain<S>;
   /** Make the typed data of a standalone operation message. */
   getStandaloneOperationData<T extends OperationNames<S>>(
-    data: NoInfer<StandaloneData<S, T>>,
+    data: NoInfer<StandaloneData<S, T, 'input'>>,
     operation: T,
     chainId: bigint | number,
     verifyingContract: Address,
@@ -444,7 +454,7 @@ export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
 
   const getWitness = <T extends Ops>(
     operation: T,
-    data: NoInfer<WitnessData<S, T>>,
+    data: NoInfer<WitnessData<S, T, 'input'>>,
   ): OperationWitness<S, T> => {
     const witnessTypeParam = getWitnessTypeParam(operation);
     // Normalize away unused `optional` fields (and their now-unreferenced
@@ -474,7 +484,7 @@ export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
   });
 
   const getStandaloneOperationData = <T extends Ops>(
-    data: NoInfer<StandaloneData<S, T>>,
+    data: NoInfer<StandaloneData<S, T, 'input'>>,
     operation: T,
     chainId: bigint | number,
     verifyingContract: Address,
@@ -528,6 +538,13 @@ export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
     if (typeof chainId !== 'bigint' || verifyingContract === undefined) {
       throw new Error(
         `${domainName} domain must include chain ID and verifying contract`,
+      );
+    }
+    // Its declared type may not be `address` (see
+    // `extractOperationDetailsFromDataWithAddress`).
+    if (!isEvmAddressShape(verifyingContract)) {
+      throw new Error(
+        `Invalid verifying contract address in ${domainName} domain`,
       );
     }
 

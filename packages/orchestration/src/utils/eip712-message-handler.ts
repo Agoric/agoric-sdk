@@ -33,6 +33,7 @@ import {
 } from './permit2.ts';
 import {
   makeEIP712MessageKit,
+  StandaloneEnvelopeTypeParams,
   type EIP712MessageKit,
   type EIP712MessageSchema,
   type FullDomain,
@@ -71,6 +72,18 @@ export type PermitDetails = {
   permit2Payload: Omit<PermitWitnessTransferFromPayload, 'transferDetails'>;
 };
 
+/**
+ * The normalized form of an EIP-712 message: what remains of it once
+ * validated, with its values in canonical form (e.g. integers as
+ * `bigint`/`number`). Hashes identically to the message as received.
+ */
+export type NormalizedTypedData = {
+  domain: TypedDataDomain;
+  types: Record<string, readonly TypedDataParameter[]>;
+  primaryType: string;
+  message: Record<string, unknown>;
+};
+
 export type FullMessageDetails<
   S extends EIP712MessageSchema,
   T extends OperationNames<S> = OperationNames<S>,
@@ -79,6 +92,8 @@ export type FullMessageDetails<
   evmWalletAddress: Address;
   nonce: bigint;
   deadline: bigint;
+  /** The normalized message the details were extracted from. */
+  normalizedData: NormalizedTypedData;
 };
 
 /**
@@ -178,7 +193,11 @@ export const makeEIP712MessageHandlerUtils = <
    * an attenuated grant into an unconstrained one. The returned `data` can
    * therefore be a superset of the expected shape; it is guaranteed to
    * satisfy the expected types (required fields present, values of the
-   * right shape/range), but consumers that must reject unrecognized fields
+   * right shape/range, and already in the canonical JS form for the
+   * expected type, e.g. a `bigint` for a `uint256`: a field the signed
+   * types declared differently, e.g. as `uint48` or `string`, is rejected
+   * rather than returned with an unexpected JS type), but consumers that
+   * must reject unrecognized fields
    * (e.g. permission records) need to validate that themselves against a
    * closed shape.
    *
@@ -204,9 +223,18 @@ export const makeEIP712MessageHandlerUtils = <
 
     messageKit.validateOperationTypeName<T>(standaloneData.primaryType);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { nonce, deadline, ...operationData } =
       standaloneData.message as Record<string, unknown>;
+    // The signed types of the envelope fields are otherwise not checked
+    // against the expected ones (unlike permit2's, see `extractPermitDetails`).
+    normalizeAndValidateEIP712Data(
+      {
+        message: { nonce, deadline },
+        types: { StandaloneEnvelope: StandaloneEnvelopeTypeParams },
+        primaryType: 'StandaloneEnvelope',
+      },
+      { onExtraField: 'throw', onNonCanonicalValue: 'throw' },
+    );
     const operation = standaloneData.primaryType;
     const { message: normalizedData } = normalizeAndValidateEIP712Data(
       {
@@ -214,7 +242,7 @@ export const makeEIP712MessageHandlerUtils = <
         types: messageKit.getOperationTypes(operation),
         primaryType: operation,
       },
-      { onExtraField: 'keep' },
+      { onExtraField: 'keep', onNonCanonicalValue: 'throw' },
     );
     return {
       operation,
@@ -274,7 +302,7 @@ export const makeEIP712MessageHandlerUtils = <
         types: messageKit.getOperationTypes(operation),
         primaryType: operation,
       },
-      { onExtraField: 'keep' },
+      { onExtraField: 'keep', onNonCanonicalValue: 'throw' },
     );
     const spender = permitData.message.spender;
     return {
@@ -423,7 +451,7 @@ export const makeEIP712MessageHandlerUtils = <
   ): FullMessageDetails<S, T> => {
     const {
       address: tokenOwner,
-      domain,
+      domain: rawDomain,
       ...otherData
     } = data as unknown as {
       address: Address;
@@ -433,7 +461,7 @@ export const makeEIP712MessageHandlerUtils = <
       primaryType: string;
     };
 
-    if (!domain) {
+    if (!rawDomain) {
       throw new Error(`Missing domain in typed data`);
     }
 
@@ -452,21 +480,55 @@ export const makeEIP712MessageHandlerUtils = <
       message: signedMessage,
       types: signedTypes,
     };
+    // Normalized per the signed types: checked to be the expected `uint256`
+    // (so `bigint`) by `extractPermitDetails` / the base permit2 types, or
+    // `extractOperationDetailsFromStandaloneData`.
     const { nonce, deadline } = signedMessage as {
       nonce: bigint;
       deadline: bigint;
     };
 
-    // Do not trust type definitions coming from the message for the domain;
-    // derive them from `domain`'s own shape instead, then validate `domain`
-    // against that (e.g. `chainId` range, `verifyingContract` shape).
-    // Domain-specific checks (name/version/contract match) happen later, in
-    // `validateDomain`/`validatePermit2Domain`.
-    normalizeAndValidateEIP712Data({
-      message: domain as Record<string, unknown>,
-      types: { EIP712Domain: getTypesForEIP712Domain({ domain }) },
-      primaryType: 'EIP712Domain',
-    });
+    // Validate `domain` against the same types viem's signature recovery
+    // hashes it with: the message's own `types.EIP712Domain` if declared (as
+    // `eth_signTypedData_v4` payloads do), else derived from `domain`'s
+    // shape. Any present field those types leave out was not part of the
+    // signed domain hash, so reject rather than drop it -- notably a string
+    // `chainId` without declared types, which viem (unlike ethers.js) omits
+    // from the derived types. This also checks values (e.g. `chainId`
+    // range, `verifyingContract` shape) and normalizes them (e.g. a number
+    // or declared string `chainId` to a bigint).
+    // Domain-specific checks (name/version/contract match, field types)
+    // happen later, in `validateDomain`/`validatePermit2Domain`.
+    const domain = normalizeAndValidateEIP712Data(
+      {
+        message: rawDomain as Record<string, unknown>,
+        types: {
+          EIP712Domain:
+            otherData.types.EIP712Domain ??
+            getTypesForEIP712Domain({ domain: rawDomain }),
+        },
+        primaryType: 'EIP712Domain',
+      },
+      { onExtraField: 'throw' },
+    ).message as TypedDataDomain;
+    const normalizedData: NormalizedTypedData = {
+      domain,
+      types: signedTypes,
+      primaryType: otherData.primaryType,
+      message: signedMessage,
+    };
+
+    // The declared types used above may be non-standard (e.g. an `int256`
+    // `chainId`), so also check the now-normalized values against the
+    // standard domain types, as derived by viem from those values.
+    normalizeAndValidateEIP712Data(
+      {
+        message: domain as Record<string, unknown>,
+        types: { EIP712Domain: getTypesForEIP712Domain({ domain }) },
+        primaryType: 'EIP712Domain',
+      },
+      { onExtraField: 'throw', onNonCanonicalValue: 'throw' },
+    );
 
     if (isPermit2MessageType(data.primaryType)) {
       if (!messageKit.supportsPermit2Witness) {
@@ -508,6 +570,7 @@ export const makeEIP712MessageHandlerUtils = <
         evmWalletAddress: tokenOwner,
         nonce,
         deadline,
+        normalizedData,
       };
     } else {
       const standaloneData = signedData as unknown as Omit<
@@ -527,6 +590,7 @@ export const makeEIP712MessageHandlerUtils = <
         evmWalletAddress: tokenOwner,
         nonce,
         deadline,
+        normalizedData,
       };
     }
   };

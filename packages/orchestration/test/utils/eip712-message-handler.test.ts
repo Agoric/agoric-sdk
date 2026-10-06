@@ -8,12 +8,16 @@ import {
   encodeType,
   getTypesForEIP712Domain,
   hashStruct,
+  hashTypedData,
   isHex,
   recoverTypedDataAddress,
 } from '../../src/stubs/viem-typedData.ts';
 import {
   makeEIP712MessageKit,
+  StandaloneDomainTypeParams,
+  StandaloneEnvelopeTypeParams,
   type EIP712MessageSchema,
+  type StandaloneOperationData,
 } from '../../src/utils/eip712-messages.ts';
 import { makeEIP712MessageHandlerUtils } from '../../src/utils/eip712-message-handler.ts';
 import { getPermitWitnessTransferFromData } from '../../src/utils/permit2.ts';
@@ -142,6 +146,12 @@ test('standalone message of a custom schema round-trips through signing', async 
     evmWalletAddress: account.address,
     nonce: 3n,
     deadline: 1700000000n,
+    normalizedData: {
+      domain: data.domain,
+      types: data.types,
+      primaryType: data.primaryType,
+      message: data.message,
+    },
   });
 
   const recovered =
@@ -150,6 +160,384 @@ test('standalone message of a custom schema round-trips through signing', async 
       signature,
     });
   t.is(recovered.evmWalletAddress, account.address);
+});
+
+for (const { label, arrayType, leafFields } of [
+  {
+    label: 'an empty multidimensional struct array',
+    arrayType: 'Leaf[][]',
+    leafFields: [{ name: 'n', type: 'uint256' }],
+  },
+  {
+    label: 'an empty struct array with a transitive type dependency',
+    arrayType: 'Leaf[]',
+    leafFields: [{ name: 'value', type: 'Value' }],
+  },
+] as const) {
+  test(`normalizedData preserves the signed hash and signer for ${label}`, async t => {
+    const schema = {
+      domainName: 'TestEmptyArrays',
+      domainVersion: '1',
+      operationTypes: {
+        Inspect: [{ name: 'items', type: arrayType }],
+      },
+      subTypes: {
+        Leaf: leafFields,
+        Value: [{ name: 'n', type: 'uint256' }],
+      },
+    } as const satisfies EIP712MessageSchema;
+    const domain = {
+      name: schema.domainName,
+      version: schema.domainVersion,
+      chainId: CHAIN_ID,
+      verifyingContract: CONTRACT_ADDRESS,
+    };
+    // Build the wire data directly: the authoring helper normalizes types
+    // too, which would hide a dependency removed before signing. A struct
+    // declaration contributes to the type hash even if its array is empty.
+    const data = {
+      domain,
+      types: {
+        EIP712Domain: StandaloneDomainTypeParams,
+        Inspect: [
+          ...schema.operationTypes.Inspect,
+          ...StandaloneEnvelopeTypeParams,
+        ],
+        ...schema.subTypes,
+      },
+      primaryType: 'Inspect',
+      message: { items: [], nonce: 3n, deadline: 1700000000n },
+    } satisfies StandaloneOperationData<typeof schema, 'Inspect'>;
+    const signature = await account.signTypedData(data);
+    t.is(
+      await recoverTypedDataAddress({ ...data, signature }),
+      account.address,
+    );
+
+    const utils = makeEIP712MessageHandlerUtils(viemUtils, schema);
+    const details = await utils.extractOperationDetailsFromSignedData({
+      ...data,
+      signature,
+    });
+    t.is(details.evmWalletAddress, account.address);
+    const normalized = details.normalizedData as unknown as typeof data;
+    const normalizedSigner = await recoverTypedDataAddress({
+      ...normalized,
+      signature,
+    });
+
+    t.is(hashTypedData(normalized), hashTypedData(data));
+    t.is(normalizedSigner, account.address);
+  });
+}
+
+test('string-encoded integers in a signed standalone message are normalized to bigints', async t => {
+  const data = makeObservation();
+  // As an ethers.js-based client (or JSON transport) might send them: every
+  // message integer (including in nested arrays) as a string, and the domain
+  // `chainId` as a number.
+  const stringData = {
+    ...data,
+    domain: { ...data.domain, chainId: Number(CHAIN_ID) },
+    message: {
+      portfolio: '0x7',
+      tvls: [
+        { instrument: 'Aave_Arbitrum', tvlUsd: '1000000' },
+        { instrument: 'Compound_Base', tvlUsd: '+2000000' },
+      ],
+      nonce: '3',
+      deadline: '1700000000',
+    },
+  };
+
+  // Signed (and recovered) over the raw strings, which hash identically.
+  const signature = await account.signTypedData(data);
+  const address = await recoverTypedDataAddress({
+    ...(stringData as unknown as typeof data),
+    signature,
+  });
+  t.is(address, account.address);
+
+  const details = observationUtils.extractOperationDetailsFromDataWithAddress(
+    { ...(stringData as unknown as typeof data), address },
+    { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+  );
+  t.deepEqual(details, {
+    operation: 'Observe',
+    domain: data.domain,
+    data: {
+      portfolio: 7n,
+      tvls: [
+        { instrument: 'Aave_Arbitrum', tvlUsd: 1_000_000n },
+        { instrument: 'Compound_Base', tvlUsd: 2_000_000n },
+      ],
+    },
+    evmWalletAddress: account.address,
+    nonce: 3n,
+    deadline: 1700000000n,
+    // `data.message` is the original, all-bigint message `stringData` was
+    // derived from: the string integers come back in canonical form.
+    normalizedData: {
+      domain: data.domain,
+      types: data.types,
+      primaryType: data.primaryType,
+      message: data.message,
+    },
+  });
+  // The normalized data hashes identically to what was received.
+  t.is(
+    hashTypedData(details.normalizedData as unknown as typeof data),
+    hashTypedData(stringData as unknown as typeof data),
+  );
+
+  // A string `chainId` is hashed by viem's recovery when `types.EIP712Domain`
+  // declares it (as `eth_signTypedData_v4` payloads do), so it's accepted.
+  const stringChainIdData = {
+    ...(stringData as unknown as typeof data),
+    domain: { ...data.domain, chainId: String(CHAIN_ID) as any },
+  };
+  t.truthy(stringChainIdData.types.EIP712Domain);
+  t.is(
+    await recoverTypedDataAddress({ ...stringChainIdData, signature }),
+    account.address,
+  );
+  t.deepEqual(
+    observationUtils.extractOperationDetailsFromDataWithAddress(
+      { ...stringChainIdData, address },
+      { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+    ).domain,
+    data.domain,
+  );
+
+  // Without `types.EIP712Domain`, viem leaves a string `chainId` out of the
+  // domain hash entirely (ethers.js doesn't), so it's ambiguous and rejected.
+  const { EIP712Domain: _, ...typesWithoutDomain } = stringChainIdData.types;
+  t.throws(
+    () =>
+      observationUtils.extractOperationDetailsFromDataWithAddress(
+        {
+          ...stringChainIdData,
+          types: typesWithoutDomain as typeof data.types,
+          address,
+        },
+        { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+      ),
+    {
+      message:
+        /Unexpected field\(s\) on EIP-712 type "EIP712Domain": "chainId"/,
+    },
+  );
+  // ... while a number `chainId` is hashed by both.
+  t.notThrows(() =>
+    observationUtils.extractOperationDetailsFromDataWithAddress(
+      {
+        ...(stringData as unknown as typeof data),
+        types: typesWithoutDomain as typeof data.types,
+        address,
+      },
+      { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+    ),
+  );
+});
+
+test('a declared types.EIP712Domain must cover exactly the present domain fields', t => {
+  const data = makeObservation();
+  const extract = (EIP712Domain: unknown, domain: object = data.domain) =>
+    observationUtils.extractOperationDetailsFromDataWithAddress(
+      {
+        ...data,
+        domain: domain as typeof data.domain,
+        types: { ...data.types, EIP712Domain } as typeof data.types,
+        address: account.address,
+      },
+      { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+    );
+  const declared = data.types.EIP712Domain;
+
+  // Any order is accepted, since that's what the signer hashed.
+  t.notThrows(() => extract([...declared].reverse()));
+  // But values are still checked against the standard domain types, e.g. a
+  // negative chain ID declared as `int256`.
+  t.throws(
+    () =>
+      extract(
+        declared.map(field =>
+          field.name === 'chainId' ? { ...field, type: 'int256' } : field,
+        ),
+        { ...data.domain, chainId: -1n },
+      ),
+    { message: /Value -1n is out of range for EIP-712 type "uint256"/ },
+  );
+
+  // Omitting a present field would leave it out of the signed hash.
+  t.throws(
+    () => extract(declared.filter(({ name }) => name !== 'verifyingContract')),
+    {
+      message:
+        /Unexpected field\(s\) on EIP-712 type "EIP712Domain": "verifyingContract"/,
+    },
+  );
+  // A declared field must be present.
+  t.throws(() => extract([...declared, { name: 'salt', type: 'bytes32' }]), {
+    message: /Missing required field "salt"/,
+  });
+  // A field must not be declared more than once.
+  t.throws(() => extract([...declared, declared[0]]), {
+    message: /Duplicate field "name" in EIP-712 type "EIP712Domain"/,
+  });
+  // A non-standard declared type is caught by domain validation.
+  t.throws(
+    () =>
+      extract(
+        declared.map(field =>
+          field.name === 'chainId' ? { ...field, type: 'string' } : field,
+        ),
+        { ...data.domain, chainId: String(CHAIN_ID) },
+      ),
+    // Not part of the standard domain types viem derives for a string.
+    {
+      message:
+        /Unexpected field\(s\) on EIP-712 type "EIP712Domain": "chainId"/,
+    },
+  );
+  // Even a non-standard integer type that hashes fine: a `uint32` chainId
+  // normalizes to a number, but the standard `uint256` requires a bigint.
+  t.throws(
+    () =>
+      extract(
+        declared.map(field =>
+          field.name === 'chainId' ? { ...field, type: 'uint32' } : field,
+        ),
+        { ...data.domain, chainId: Number(CHAIN_ID) },
+      ),
+    { message: /Expected a bigint for EIP-712 type "uint256", got 42161$/ },
+  );
+});
+
+test('a verifying contract declared with a non-address type must still be an address', t => {
+  const withVerifyingContract = <D extends { domain?: object; types: object }>(
+    data: D,
+    type: string,
+    verifyingContract: unknown,
+  ) => ({
+    ...data,
+    domain: { ...data.domain, verifyingContract },
+    types: {
+      ...data.types,
+      EIP712Domain: getTypesForEIP712Domain({
+        domain: data.domain as any,
+      }).map(field =>
+        field.name === 'verifyingContract' ? { ...field, type } : field,
+      ),
+    },
+    signature: MOCK_SIGNATURE,
+    address: account.address,
+  });
+
+  // No contract address allowlist given, so only the shape is checked:
+  // against the standard `address` domain type.
+  const data = makeObservation();
+  for (const [type, value] of [
+    ['string', 'not-an-address'],
+    ['uint256', 0x1234n],
+  ] as const) {
+    t.throws(
+      () =>
+        observationUtils.extractOperationDetailsFromDataWithAddress(
+          withVerifyingContract(data, type, value) as any,
+        ),
+      { message: /Invalid EIP-712 address value/ },
+      type,
+    );
+  }
+  // Domain validation also checks it by itself.
+  t.throws(
+    () =>
+      observationKit.validateDomain({
+        ...data.domain,
+        verifyingContract: 'not-an-address' as Address,
+      }),
+    { message: /Invalid verifying contract address in TestOracle domain/ },
+  );
+  // A real address declared as `string` still binds the same value.
+  t.is(
+    observationUtils.extractOperationDetailsFromDataWithAddress(
+      withVerifyingContract(data, 'string', CONTRACT_ADDRESS) as any,
+    ).domain.verifyingContract,
+    CONTRACT_ADDRESS,
+  );
+
+  t.throws(
+    () =>
+      depositUtils.extractOperationDetailsFromDataWithAddress(
+        withVerifyingContract(
+          makeDepositPermit(),
+          'string',
+          'not-an-address',
+        ) as any,
+      ),
+    { message: /Invalid EIP-712 address value/ },
+  );
+});
+
+test('rejects a known field signed with a type other than the expected one', t => {
+  const data = makeObservation();
+  const extract = (name: string, type: string, value: unknown) =>
+    observationUtils.extractOperationDetailsFromDataWithAddress(
+      {
+        ...data,
+        types: {
+          ...data.types,
+          Observe: data.types.Observe.map(field =>
+            field.name === name ? { ...field, type } : field,
+          ),
+        },
+        message: { ...data.message, [name]: value },
+        address: account.address,
+      } as unknown as typeof data & { address: Address },
+      { verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS } },
+    );
+
+  // Normalized to a number per the signed `uint48`, not the bigint the
+  // expected `uint256` promises.
+  t.throws(() => extract('portfolio', 'uint48', 7n), {
+    message: /Expected a bigint for EIP-712 type "uint256", got 7$/,
+  });
+  // Kept as a string per the signed `string`.
+  t.throws(() => extract('portfolio', 'string', '7'), {
+    message: /Expected a bigint for EIP-712 type "uint256", got "7"/,
+  });
+  // Same for the envelope fields.
+  t.throws(() => extract('nonce', 'uint48', 3n), {
+    message: /Expected a bigint for EIP-712 type "uint256", got 3$/,
+  });
+  t.throws(() => extract('deadline', 'string', '1700000000'), {
+    message: /Expected a bigint for EIP-712 type "uint256", got "1700000000"/,
+  });
+  // A wider integer type still yields the expected JS type for the value.
+  t.is(extract('portfolio', 'uint64', 7n).data.portfolio, 7n);
+
+  // Same for a permit2 witness.
+  const permitData = makeDepositPermit();
+  t.throws(
+    () =>
+      depositUtils.extractOperationDetailsFromDataWithAddress(
+        {
+          ...permitData,
+          types: {
+            ...permitData.types,
+            TestVaultV1Deposit: [{ name: 'account', type: 'uint48' }],
+          },
+          signature: MOCK_SIGNATURE,
+          address: account.address,
+        } as unknown as typeof permitData & {
+          signature: typeof MOCK_SIGNATURE;
+          address: Address;
+        },
+        { permit2: { [String(CHAIN_ID)]: PERMIT2_ADDRESS } },
+      ),
+    { message: /Expected a bigint for EIP-712 type "uint256", got 5$/ },
+  );
 });
 
 test('rejects a standalone message with an unexpected verifying contract', t => {
@@ -275,7 +663,13 @@ test('permit2 witness message of a custom schema', t => {
       verifyingContract: { [String(CHAIN_ID)]: CONTRACT_ADDRESS },
     },
   );
-  const { permitDetails, ...rest } = details;
+  const { permitDetails, normalizedData, ...rest } = details;
+  t.deepEqual(normalizedData, {
+    domain: permitData.domain,
+    types: permitData.types,
+    primaryType: permitData.primaryType,
+    message: permitData.message,
+  });
   t.deepEqual(rest, {
     operation: 'Deposit',
     domain: {
@@ -426,4 +820,58 @@ test('makeEIP712MessageKit rejects invalid schemas', t => {
       message: /witness field name of er collides with a permit field: spender/,
     },
   );
+});
+
+test('authoring accepts string-encoded integers and normalizes them', t => {
+  const witness = depositKit.getWitness('Deposit', { account: '0x5' });
+  t.deepEqual(witness, depositKit.getWitness('Deposit', { account: 5n }));
+
+  const data = observationKit.getStandaloneOperationData(
+    {
+      portfolio: '7',
+      tvls: [{ instrument: 'Aave_Arbitrum', tvlUsd: 1_000_000 }],
+      nonce: '+3',
+      deadline: 1700000000n,
+    },
+    'Observe',
+    CHAIN_ID,
+    CONTRACT_ADDRESS,
+  );
+  t.deepEqual(data.message, {
+    portfolio: 7n,
+    tvls: [{ instrument: 'Aave_Arbitrum', tvlUsd: 1_000_000n }],
+    nonce: 3n,
+    deadline: 1700000000n,
+  });
+  // The output type is still the canonical `bigint`.
+  const portfolio: bigint = data.message.portfolio;
+  t.is(portfolio, 7n);
+
+  // @ts-expect-error not an integer encoding
+  t.throws(() => depositKit.getWitness('Deposit', { account: true }));
+});
+
+test('normalized output matches abitype types for small and large integer widths', t => {
+  const kit = makeEIP712MessageKit({
+    domainName: 'TestWidths',
+    domainVersion: '1',
+    operationTypes: {
+      Sized: [
+        { name: 'small', type: 'uint32' },
+        { name: 'large', type: 'uint64' },
+      ],
+    },
+    subTypes: {},
+  } as const satisfies EIP712MessageSchema);
+
+  const { message } = kit.getStandaloneOperationData(
+    { small: 7n, large: 8, nonce: 1n, deadline: 2n },
+    'Sized',
+    CHAIN_ID,
+    CONTRACT_ADDRESS,
+  );
+  const small: number = message.small;
+  const large: bigint = message.large;
+  t.is(small, 7);
+  t.is(large, 8n);
 });
