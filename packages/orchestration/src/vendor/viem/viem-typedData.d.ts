@@ -1,4 +1,4 @@
-export { hashStruct, hashTypedData, isHex, recoverTypedDataAddress, serializeTypedData, validateTypedData, verifyTypedData } from 'viem/utils';
+export { hashStruct, hashTypedData, isHex, recoverAddress, recoverTypedDataAddress, serializeTypedData, validateTypedData, verifyTypedData } from 'viem/utils';
 export { getTypesForEIP712Domain } from 'viem';
 
 /**

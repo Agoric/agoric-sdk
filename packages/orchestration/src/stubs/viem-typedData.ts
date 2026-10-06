@@ -10,6 +10,7 @@ export {
   isHex,
   hashStruct,
   hashTypedData,
+  recoverAddress,
   recoverTypedDataAddress,
   verifyTypedData,
   serializeTypedData,
