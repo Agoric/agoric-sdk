@@ -4,7 +4,11 @@
 import { Fail, q } from '@endo/errors';
 
 import type { NatAmount } from '@agoric/ertp/src/types.js';
-import { provideLazyMap, typedEntries } from '@agoric/internal/src/js-utils.js';
+import {
+  groupDecimalDigits,
+  provideLazyMap,
+  typedEntries,
+} from '@agoric/internal/src/js-utils.js';
 import { tryNow } from '@agoric/internal/src/ses-utils.js';
 import {
   isDepositFromChainRef,
@@ -48,7 +52,7 @@ const bfs = <T>(start: T, adj: Map<T, T[]>): Set<T> => {
  *
  * Example output (when graph.debug is true):
  * ```
- * No feasible solution: nodes=7 edges=12 | supply: sum=0 pos=1500 neg=1500 (pos should equal neg; sum should be 0) | sources=2 sinks=2 | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum
+ * No feasible solution: nodes=7 edges=12 | volume: supply=1_000 sink=1_500 IMBALANCE=-500 | sources (2): @agoric, @Arbitrum | sinks (1): Compound_Arbitrum | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum
  * ```
  *
  * How to enable:
@@ -102,11 +106,17 @@ export const diagnoseInfeasible = (
 
   const lines: string[] = [];
   lines.push(`nodes=${nodes.length} edges=${edges.length}`);
-  lines.push(
-    `supply: pos ${posTotal} must equal neg ${negTotal} (diff ${sumSupply})`,
-  );
-  if (sumSupply !== 0) lines.push('WARN: total supply does not balance to 0');
-  lines.push(`sources=${sources.length} sinks=${sinksSet.size}`);
+  if (sumSupply === 0) {
+    lines.push(
+      `volume: supply=${groupDecimalDigits(`${posTotal}` as `${bigint}`)} sink=${groupDecimalDigits(`${negTotal}` as `${bigint}`)}`,
+    );
+  } else {
+    lines.push(
+      `volume: supply=${groupDecimalDigits(`${posTotal}` as `${bigint}`)} sink=${groupDecimalDigits(`${negTotal}` as `${bigint}`)} IMBALANCE=${groupDecimalDigits(`${sumSupply}` as `${bigint}`)}`,
+    );
+  }
+  lines.push(`sources (${sources.length}): ${sources.join(', ')}`);
+  lines.push(`sinks (${sinksSet.size}): ${[...sinksSet].join(', ')}`);
   if (stranded.length) {
     const sample = stranded
       .slice(0, 6)

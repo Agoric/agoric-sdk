@@ -685,7 +685,7 @@ test('infeasibility error with debug=true', async t => {
   t.assert(thrown);
   t.is(
     thrown?.message,
-    'No feasible solution: nodes=5 edges=11 | supply: pos 0 must equal neg 10000000000000000 (diff -10000000000000000) | WARN: total supply does not balance to 0 | sources=0 sinks=2 | hubs: @FakeSink, @FakeSupply | inter-hub edges: @FakeSupply->@FakeSink, @FakeSink->@FakeSupply | { feasible: false, result: 0, bounded: true, e01: { arc: "@FakeSupply->Aave_FakeSupply", pick: 0.010, via: 9_999_990_000 }, e02: { arc: "Aave_FakeSink->@FakeSink", via: 9_999_990_000 }, e10: { arc: "@FakeSink->@FakeSupply", pick: 0.010, via: 9_999_990_000 } }',
+    'No feasible solution: nodes=5 edges=11 | volume: supply=0 sink=10_000_000_000_000_000 IMBALANCE=-10_000_000_000_000_000 | sources (0):  | sinks (2): Aave_FakeSupply, Aave_FakeSink | hubs: @FakeSink, @FakeSupply | inter-hub edges: @FakeSupply->@FakeSink, @FakeSink->@FakeSupply | { feasible: false, result: 0, bounded: true, e01: { arc: "@FakeSupply->Aave_FakeSupply", pick: 0.010, via: 9_999_990_000 }, e02: { arc: "Aave_FakeSink->@FakeSink", via: 9_999_990_000 }, e10: { arc: "@FakeSink->@FakeSupply", pick: 0.010, via: 9_999_990_000 } }',
   );
 });
 
