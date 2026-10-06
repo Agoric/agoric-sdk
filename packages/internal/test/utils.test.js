@@ -8,6 +8,7 @@ import { assert, X, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import {
   deepMapObject,
+  groupDecimalDigits,
   makeMeasureSeconds,
   partialMap,
 } from '../src/js-utils.js';
@@ -557,6 +558,49 @@ test('deep mapping', deepMapObjectTest, {
   },
 });
 // #endregion
+
+test('groupDecimalDigits', t => {
+  t.is(groupDecimalDigits('1'), '1');
+  t.is(groupDecimalDigits('12'), '12');
+  t.is(groupDecimalDigits('123'), '123');
+  t.is(groupDecimalDigits('1234'), '1_234');
+  t.is(groupDecimalDigits('12345'), '12_345');
+  t.is(groupDecimalDigits('123456'), '123_456');
+  t.is(groupDecimalDigits('1234567'), '1_234_567');
+  t.is(groupDecimalDigits('12345678'), '12_345_678');
+  t.is(groupDecimalDigits('123456789'), '123_456_789');
+
+  t.is(groupDecimalDigits('1.1'), '1.100');
+  t.is(groupDecimalDigits('12.12'), '12.120');
+  t.is(groupDecimalDigits('123.123'), '123.123');
+  t.is(groupDecimalDigits('1234.1234'), '1_234.123_400');
+  t.is(groupDecimalDigits('12345.12345'), '12_345.123_450');
+  t.is(groupDecimalDigits('123456.123456'), '123_456.123_456');
+  t.is(groupDecimalDigits('1234567.1234567'), '1_234_567.123_456_700');
+  t.is(groupDecimalDigits('12345678.12345678'), '12_345_678.123_456_780');
+  t.is(groupDecimalDigits('123456789.123456789'), '123_456_789.123_456_789');
+
+  t.is(groupDecimalDigits('1.1', 4), '1.1000');
+  t.is(groupDecimalDigits('12.12', 4), '12.1200');
+  t.is(groupDecimalDigits('123.123', 4), '123.1230');
+  t.is(groupDecimalDigits('1234.1234', 4), '1234.1234');
+  t.is(groupDecimalDigits('12345.12345', 4), '1_2345.1234_5000');
+  t.is(groupDecimalDigits('123456.123456', 4), '12_3456.1234_5600');
+  t.is(groupDecimalDigits('1234567.1234567', 4), '123_4567.1234_5670');
+  t.is(groupDecimalDigits('12345678.12345678', 4), '1234_5678.1234_5678');
+  t.is(
+    groupDecimalDigits('123456789.123456789', 4),
+    '1_2345_6789.1234_5678_9000',
+  );
+
+  t.is(groupDecimalDigits(1234n), '1_234');
+  t.is(groupDecimalDigits(-1234n), '-1_234');
+
+  // @ts-expect-error intentionally incorrect input
+  t.throws(() => groupDecimalDigits('1e100'), {
+    message: 'input must be a decimal string',
+  });
+});
 
 test('makeMeasureSeconds', async t => {
   const times = [1000.25, 2000.75, NaN];
