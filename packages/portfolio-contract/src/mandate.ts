@@ -178,6 +178,17 @@ const vetAllocationCeilings = (
 /**
  * Reject a plan when partial failure could leave an instrument above both its
  * target ceiling and initial share.
+ *
+ * Let S be the number of plan steps, D the number of distinct dependency
+ * edges, and I the number of referenced instruments. This runs one
+ * maximum-weight closure per instrument, for O(I * S * (S + D)^2) worst-case
+ * time and O(S^2) peak space, excluding bigint arithmetic. With the default
+ * linear order D is O(S), so the time bound is O(I * S^3); a dense explicit
+ * order can raise it to O(I * S^5).
+ *
+ * The closure graph is rebuilt synchronously for each instrument. Keep
+ * admitted plan sizes and instrument counts bounded, and benchmark this path
+ * before increasing either limit materially.
  */
 const vetPartialPlanAllocation = (
   targetAllocation: TargetAllocation,
