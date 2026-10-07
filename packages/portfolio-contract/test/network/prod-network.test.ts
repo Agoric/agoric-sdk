@@ -97,6 +97,7 @@ const POOLS: ReadonlyArray<PoolKey> = [
   'ERC4626_morphoReEcosystemVault_Ethereum',
   'ERC4626_morphoApyxUsdc_Ethereum',
   'ERC4626_morphoRockawayxToriEcosystem_Ethereum',
+  'ERC4626_morphoRockawayxFxProtocolEcosystemUsdc_Ethereum',
 ];
 
 // Helpers
