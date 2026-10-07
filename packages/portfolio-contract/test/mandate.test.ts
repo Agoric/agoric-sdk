@@ -186,6 +186,125 @@ const arbScenario = arbBalances.chain(balances => {
     });
 });
 
+/** Construct a fully ordered plan that withdraws excess before depositing deficits. */
+const makeWitnessPlan = ({
+  account,
+  instruments,
+  initialBalances,
+  desiredBalances,
+}: {
+  account: PortfolioBalancePlaceRef;
+  instruments: InstrumentId[];
+  initialBalances: ProjectedBalances;
+  desiredBalances: ProjectedBalances;
+}): FundsFlowPlan => {
+  const withdrawals: MovementDesc[] = [];
+  const deposits: MovementDesc[] = [];
+  for (const instrument of instruments) {
+    const delta = desiredBalances[instrument] - initialBalances[instrument];
+    if (delta < 0n) {
+      withdrawals.push({
+        src: instrument,
+        dest: account,
+        amount: { brand: USDC, value: -delta },
+      });
+    } else if (delta > 0n) {
+      deposits.push({
+        src: account,
+        dest: instrument,
+        amount: { brand: USDC, value: delta },
+      });
+    }
+  }
+  // Omitting order selects the contract's default full sequential order.
+  return { flow: [...withdrawals, ...deposits] };
+};
+
+/**
+ * Generate a scenario for one authorized chain account and a non-empty subset
+ * of its instruments:
+ *
+ * - a non-zero initial balance state;
+ * - a target allocation;
+ * - a desired state that conserves the initial total, keeps each instrument at
+ *   or below its target-weighted share, and leaves the remainder in cash; and
+ * - a safely ordered witness plan.
+ *
+ * The plan withdraws excess balances before depositing deficits, so every
+ * sequential prefix remains within the initial-or-target risk envelope.
+ */
+const arbSafelyReachableScenario = fc
+  .constantFrom(...testAccounts)
+  .chain(account => {
+    const accountInstruments = testInstruments.filter(
+      instrument => `@${chainOf(instrument)}` === account,
+    );
+    return fc
+      .subarray(accountInstruments, { minLength: 1 })
+      .chain(instruments => {
+        const places: PortfolioBalancePlaceRef[] = [account, ...instruments];
+        return fc
+          .record({
+            values: fc.array(fc.bigInt({ min: 0n, max: 999_999n }), {
+              minLength: places.length,
+              maxLength: places.length,
+            }),
+            portions: fc.array(fc.bigInt({ min: 1n, max: 100n }), {
+              minLength: instruments.length,
+              maxLength: instruments.length,
+            }),
+            desiredFractions: fc.array(fc.bigInt({ min: 0n, max: 100n }), {
+              minLength: instruments.length,
+              maxLength: instruments.length,
+            }),
+          })
+          .map(({ values, portions, desiredFractions }) => {
+            const fundedValues = values.map((value, index) =>
+              index === 1 ? value + 1n : value,
+            );
+            const initial: ProjectedBalances = Object.fromEntries(
+              places.map((place, index) => [place, fundedValues[index]]),
+            );
+            const total = totalBalance(initial);
+            const totalPortions = portions.reduce(
+              (sum, portion) => sum + portion,
+              0n,
+            );
+            const targetAllocation: TargetAllocation = Object.fromEntries(
+              instruments.map((instrument, index) => [
+                instrument,
+                portions[index],
+              ]),
+            );
+            const desired: ProjectedBalances = Object.fromEntries([
+              [account, 0n],
+              ...instruments.map((instrument, index) => {
+                const ceiling = (total * portions[index]) / totalPortions;
+                return [instrument, (ceiling * desiredFractions[index]) / 100n];
+              }),
+            ]);
+            desired[account] =
+              total -
+              instruments.reduce(
+                (sum, instrument) => sum + desired[instrument],
+                0n,
+              );
+
+            const plan = makeWitnessPlan({
+              account,
+              instruments,
+              initialBalances: initial,
+              desiredBalances: desired,
+            });
+            return {
+              pre: { balances: initial },
+              request: { targetAllocation, plan },
+              desired: { balances: desired },
+            };
+          });
+      });
+  });
+
 test('zero-step plan stays within its risk envelope', t => {
   const targetAllocation = {
     Aave_Arbitrum: 60n,
@@ -199,9 +318,116 @@ test('zero-step plan stays within its risk envelope', t => {
   t.true(withinRiskEnvelope(balances, balances, targetAllocation));
 });
 
-// TODO: Complement safety with liveness: for every mandate-compliant target
-// allocation reachable from arbitrary initial balances, generate at least one
-// accepted plan that reaches it.
+/**
+ * Liveness condition:
+ *
+ * Given:
+ *
+ * - a non-zero initial balance state;
+ * - a desired final state over already-authorized places; and
+ * - a target allocation.
+ *
+ * Require the desired state to:
+ *
+ * - conserve value;
+ * - stay within every target instrument ceiling; and
+ * - be reachable through supported movements without exceeding the greater of
+ *   each instrument's initial or target share.
+ *
+ * Then at least one ordered plan reaches the desired state and is accepted.
+ *
+ * {@link arbSafelyReachableScenario} samples the "Given" and "Require" parts
+ * for one chain account and its instruments. {@link makeWitnessPlan} supplies
+ * the ordered plan that witnesses "at least one".
+ *
+ * Contract acceptance is static validation only. It does not imply that the
+ * plan will succeed at runtime.
+ */
+testProp(
+  'every safely reachable desired state has an accepted plan',
+  [arbSafelyReachableScenario],
+  (t, { pre, request, desired }) => {
+    const { balances: initial } = pre;
+    const { targetAllocation, plan } = request;
+    const { balances: desiredBalances } = desired;
+    const observations: PlanObservations = {
+      balances: initial,
+      instrumentTvls: {},
+    };
+    const total = totalBalance(initial);
+    const totalPortions = Object.values(targetAllocation).reduce(
+      (sum, portion = 0n) => sum + portion,
+      0n,
+    );
+
+    t.is(totalBalance(desiredBalances), total, 'desired state conserves value');
+    for (const [instrument, portion = 0n] of Object.entries(targetAllocation)) {
+      t.true(
+        desiredBalances[instrument] * totalPortions <= total * portion,
+        `${instrument} is within its target ceiling`,
+      );
+    }
+
+    t.notThrows(() => vetPlanAllocation(targetAllocation, plan, observations));
+
+    const actual = { ...initial };
+    for (const [index, { src, dest, amount }] of plan.flow.entries()) {
+      actual[src] -= amount.value;
+      actual[dest] += amount.value;
+      t.true(
+        withinRiskEnvelope(initial, actual, targetAllocation),
+        `safe prefix ending at step ${index + 1}`,
+      );
+    }
+    t.deepEqual(actual, desiredBalances);
+  },
+  { numRuns: 1_000 },
+);
+
+/**
+ * The safety constraint intentionally prohibits some useful agent actions. An
+ * Aave runtime constraint might require depositing $0.95 before withdrawing
+ * $1.00 to reduce a position by $0.05. Although the final state is exactly at
+ * its 50% target, failure of the withdrawal would leave the position larger
+ * than both its initial balance and its target ceiling, so the plan is unsafe.
+ */
+test('safety rejects a temporary increase needed to reduce exposure', t => {
+  const targetAllocation = { Aave_Arbitrum: 50n, '@Arbitrum': 50n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 100_100_000n,
+      '@Arbitrum': 100_000_000n,
+    },
+    instrumentTvls: {},
+  };
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: '@Arbitrum',
+        dest: 'Aave_Arbitrum',
+        amount: { brand: USDC, value: 950_000n },
+      },
+      {
+        src: 'Aave_Arbitrum',
+        dest: '@Arbitrum',
+        amount: { brand: USDC, value: 1_000_000n },
+      },
+    ],
+  };
+
+  const afterDeposit = 100_100_000n + 950_000n;
+  const finalAave = afterDeposit - 1_000_000n;
+  const finalCash = 100_000_000n - 950_000n + 1_000_000n;
+  t.true(afterDeposit > observations.balances.Aave_Arbitrum!);
+  t.deepEqual(
+    { Aave_Arbitrum: finalAave, '@Arbitrum': finalCash },
+    { Aave_Arbitrum: 100_050_000n, '@Arbitrum': 100_050_000n },
+  );
+  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
+    message: /plan exceeds target allocation.*Aave_Arbitrum/,
+  });
+});
+
 testProp(
   'accepted plans stay within the risk envelope after every successful prefix',
   [arbScenario],
