@@ -1416,6 +1416,7 @@
       "ERC4626_morphoReEcosystemVault_Ethereum": "0xD1E9242e075Db4bdd3f3c721D7d5fd4180A94A7e",
       "ERC4626_morphoApyxUsdc_Ethereum": "0x069662D2588fcaC24B5c209456Db965D151556f0",
       "ERC4626_morphoRockawayxToriEcosystem_Ethereum": "0x3BD9AdAE6643dDcddD02746b8B60075E56DF9478",
+      "ERC4626_morphoRockawayxFxProtocolEcosystemUsdc_Ethereum": "0x2cA22cb25558fa2018ecb1CE4eD8AF92Ee7ea423",
       "aavePool": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
       "aaveRewardsController": "0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb",
       "aaveUSDC": "0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c",
