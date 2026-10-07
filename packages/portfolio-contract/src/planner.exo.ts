@@ -2,7 +2,7 @@
  * @file Planner exo for off-chain planning services to submit portfolio rebalancing plans.
  * @see {@link preparePlanner}
  */
-import { makeTracer, type TypedPattern } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import {
   PortfolioDelegatedClaimRewardsParamsShape,
   PortfolioDelegatedRebalanceParamsShape,
@@ -12,11 +12,10 @@ import {
   type PortfolioDelegatedClaimRewardsParams,
   type PortfolioDelegatedRebalanceParams,
 } from '@agoric/portfolio-api';
-import { isInstrumentId } from '@agoric/portfolio-api/src/type-guards.js';
 import type { Zone } from '@agoric/zone';
-import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
+import { vetNoNewPositions } from './mandate.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
@@ -28,17 +27,12 @@ import {
 
 const trace = makeTracer('PPLN');
 
-const OrderShape: TypedPattern<FundsFlowPlan['order']> = M.arrayOf([
-  M.number(),
-  M.arrayOf(M.number()),
-]);
-
 /**
  * Prepare a Planner exoClass for off-chain planning services.
  *
- * Planning is currently done off-chain
- * because it requires access to real-time APYs, balances, and market data that
- * are not readily available to the on-chain contract.
+ * Planning remains off-chain, where the planner can use APYs and other market
+ * data. This exo validates submitted plans against attested portfolio
+ * observations and contract policy before execution.
  */
 export const preparePlanner = (
   zone: Zone,
@@ -54,29 +48,8 @@ export const preparePlanner = (
     shapes: ReturnType<typeof makeOfferArgsShapes>;
   },
 ) => {
-  const { movementDescShape } = shapes;
-  const planShape: TypedPattern<FundsFlowPlan> = M.splitRecord(
-    { flow: M.arrayOf(movementDescShape) },
-    { order: OrderShape },
-  );
+  const { movementDescShape, plan: planShape } = shapes;
   const planCompatShape = M.or(planShape, M.arrayOf(movementDescShape));
-  // TODO(#11782): vet more of plan semantics; currently only enforces
-  // delegate-style "no new positions".
-  const vetNoNewPositions = (
-    portfolioPlanner: PortfolioKit['planner'],
-    planOrSteps: FundsFlowPlan | MovementDesc[],
-  ) => {
-    const allowedPositions = Object.keys(
-      portfolioPlanner.getTargetAllocation() ?? {},
-    );
-    const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
-    const destinations = [...new Set(steps.map(({ dest }) => dest))];
-    const unexpected = destinations.filter(
-      dest => isInstrumentId(dest) && !allowedPositions.includes(dest),
-    );
-    unexpected.length === 0 ||
-      Fail`planner cannot add positions: ${unexpected.join(', ')}`;
-  };
 
   const portfolioIdShape = M.number();
   const flowIdShape = M.number();
@@ -125,7 +98,10 @@ export const preparePlanner = (
           .sub(`flow${flowId}`);
         traceFlow('TODO(#11782): vet plan', planOrSteps);
         const portfolioPlanner = getPortfolioPlanner(portfolioId);
-        vetNoNewPositions(portfolioPlanner, planOrSteps);
+        vetNoNewPositions(
+          portfolioPlanner.getTargetAllocation() ?? {},
+          planOrSteps,
+        );
         let acceptedSyncState;
         try {
           acceptedSyncState = portfolioPlanner.validateAndCommitPlanPolicy(
@@ -186,7 +162,10 @@ export const preparePlanner = (
           'TODO(#11782): vet delegated plan',
           planOrSteps,
         );
-        vetNoNewPositions(portfolioPlanner, planOrSteps);
+        vetNoNewPositions(
+          portfolioPlanner.getTargetAllocation() ?? {},
+          planOrSteps,
+        );
         portfolioPlanner.submitVersion(
           delegatedRebalanceParams.syncState.policyVersion,
           delegatedRebalanceParams.syncState.rebalanceCount,
@@ -222,7 +201,10 @@ export const preparePlanner = (
           'TODO(#11782): vet delegated plan',
           planOrSteps,
         );
-        vetNoNewPositions(portfolioPlanner, planOrSteps);
+        vetNoNewPositions(
+          portfolioPlanner.getTargetAllocation() ?? {},
+          planOrSteps,
+        );
         portfolioPlanner.submitVersion(
           delegatedClaimRewardsParams.syncState.policyVersion,
           delegatedClaimRewardsParams.syncState.rebalanceCount,

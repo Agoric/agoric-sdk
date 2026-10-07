@@ -1,11 +1,33 @@
+/** @file Tests for dependency schedule ordering and execution. */
 import '@endo/init/debug.js';
 
 import test from 'ava';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { runJob, type Job } from '../src/schedule-order.ts';
+import { makeSchedule, runJob, type Job } from '../src/schedule-order.ts';
 
 const USDC = { name: 'USDC' };
 const BLD = { name: 'BLD' };
+
+test('makeSchedule releases claimed dependencies as they complete', t => {
+  const schedule = makeSchedule({
+    taskQty: 3,
+    order: [[2, [0, 1]]],
+  });
+
+  t.deepEqual(schedule.ready(), [0, 1]);
+  t.deepEqual(schedule.ready(), []);
+  schedule.complete(0);
+  t.deepEqual(schedule.ready(), []);
+  schedule.complete(1);
+  t.deepEqual(schedule.ready(), [2]);
+  t.false(schedule.pending());
+});
+
+test('makeSchedule validates steps with empty dependency lists', t => {
+  t.throws(() => makeSchedule({ taskQty: 1, order: [[1, []]] }), {
+    message: 'Invalid node index: 1',
+  });
+});
 
 const job1info = {
   portfolioId: 4,
