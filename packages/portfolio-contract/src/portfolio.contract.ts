@@ -50,6 +50,7 @@ import {
 import {
   AxelarChain,
   DEFAULT_FLOW_CONFIG,
+  ExperimentalSwapShape,
   FlowConfigShape,
   PortfolioPlannerAgent,
   YieldProtocol,
@@ -70,7 +71,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E, type ERef } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import type { CopyRecord } from '@endo/pass-style';
+import type { CopyRecord, Passable } from '@endo/pass-style';
 import { M, objectMap } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
@@ -310,6 +311,13 @@ const GmpAddressesShape: TypedPattern<GmpAddresses> = M.splitRecord({
   AXELAR_GAS: M.string(),
 });
 
+const CONTRACT_FEATURE_SUFFIX = 'ContractFeature';
+const EXPERIMENTAL_SWAP_CONTRACT_FEATURE = `experimentalSwap${CONTRACT_FEATURE_SUFFIX}`;
+const contractFeatureArgShapes = harden({
+  [`agenticPlanning${CONTRACT_FEATURE_SUFFIX}`]: M.boolean(),
+  [EXPERIMENTAL_SWAP_CONTRACT_FEATURE]: ExperimentalSwapShape,
+});
+
 export type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
@@ -322,6 +330,8 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   gmpAddresses: GmpAddresses;
   chainMetadata?: ChainTokenMetadata;
   defaultFlowConfig?: FlowConfig | null;
+  agenticPlanningContractFeature?: boolean;
+  experimentalSwapContractFeature?: boolean;
   // Keep new private args optional: seemingly small breaking changes in
   // startup configuration often turn out to be expensive across upgrade,
   // bootstrap, and test paths.
@@ -351,6 +361,7 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
     {
       chainMetadata: ChainTokenMetadataShape,
       defaultFlowConfig: M.or(FlowConfigShape, M.null()),
+      ...contractFeatureArgShapes,
       postalService: M.remotable('PostalService'),
       postalServiceInstance: M.remotable('PostalServiceInstance'),
     },
@@ -365,14 +376,41 @@ harden(meta);
 
 const marshalData = makeMarshal(_ => Fail`data only`);
 
+const publishMarshalled = (
+  node: ERemote<StorageNode>,
+  value: Passable,
+): void => {
+  const capData = marshalData.toCapData(harden(value));
+  void E(node).setValue(JSON.stringify(capData));
+};
+
 const publishStatus = <K extends keyof StatusFor>(
   node: ERemote<StorageNode>,
   status: StatusFor[K],
 ) => {
-  const capData = marshalData.toCapData(harden(status));
-  void E(node).setValue(JSON.stringify(capData));
+  publishMarshalled(node, status);
 };
 export type PublishStatus = typeof publishStatus;
+
+const contractFeatureArgNames = Object.keys(
+  contractFeatureArgShapes,
+) as (keyof typeof contractFeatureArgShapes)[];
+const getContractFeatures = (privateArgs: PortfolioPrivateArgs) => {
+  const defaults: Partial<
+    Pick<PortfolioPrivateArgs, keyof typeof contractFeatureArgShapes>
+  > = {
+    [EXPERIMENTAL_SWAP_CONTRACT_FEATURE]:
+      privateArgs.defaultFlowConfig?.features?.experimentalSwap,
+  };
+  const entries: [string, Passable][] = [];
+  for (const name of contractFeatureArgNames) {
+    const value = privateArgs[name] ?? defaults[name];
+    if (value !== undefined) {
+      entries.push([name.slice(0, -CONTRACT_FEATURE_SUFFIX.length), value]);
+    }
+  }
+  return Object.fromEntries(entries);
+};
 
 // Until we find a need for on-chain subscribers, this stop-gap will do.
 const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
@@ -455,6 +493,9 @@ export const contract = async (
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
   const { cachingMarshaller } = tools;
+
+  const contractFeatures = getContractFeatures(privateArgs);
+  trace('privateArgs contract features:', contractFeatures);
 
   const resolverZone = zone.subZone('Resolver');
   const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
@@ -1107,6 +1148,7 @@ export const contract = async (
     },
   );
 
+  publishStatus(E(storageNode).makeChildNode('features'), contractFeatures);
   return { creatorFacet, publicFacet };
 };
 harden(contract);

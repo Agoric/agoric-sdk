@@ -32,6 +32,45 @@ import {
   keys,
 } from './contract-test-support.ts';
 
+test('contract feature flags are published in vstorage', async t => {
+  const checkFeatures = async (
+    overrides: Parameters<typeof deploy>[1],
+    expected: Record<string, boolean>,
+  ) => {
+    const { common } = await deploy(t, overrides);
+    await eventLoopIteration();
+    const values = common.bootstrap.storage.getDeserialized(
+      `${ROOT_STORAGE_PATH}.features`,
+    );
+    t.deepEqual(values.at(-1), expected);
+  };
+
+  await checkFeatures({}, {});
+  await checkFeatures({ defaultFlowConfig: null }, {});
+  await checkFeatures(
+    {
+      agenticPlanningContractFeature: true,
+      defaultFlowConfig: { features: { experimentalSwap: true } },
+    },
+    { agenticPlanning: true, experimentalSwap: true },
+  );
+  await checkFeatures(
+    { defaultFlowConfig: { features: { experimentalSwap: false } } },
+    { experimentalSwap: false },
+  );
+  await checkFeatures(
+    {
+      defaultFlowConfig: { features: { experimentalSwap: true } },
+      experimentalSwapContractFeature: false,
+    },
+    { experimentalSwap: false },
+  );
+  await checkFeatures(
+    { defaultFlowConfig: null, experimentalSwapContractFeature: true },
+    { experimentalSwap: true },
+  );
+});
+
 test('open portfolio with USDN position', async t => {
   const { trader1, common, txResolver } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;

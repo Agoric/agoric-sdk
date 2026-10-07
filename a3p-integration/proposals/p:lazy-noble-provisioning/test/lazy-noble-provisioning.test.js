@@ -158,13 +158,22 @@ test.serial('upgrade ymax1 and provision handler and planner', async t => {
   );
   await control.ymaxControl.upgrade({
     bundleId,
-    privateArgsOverrides: harden({ contracts, postalServiceInstance }),
+    privateArgsOverrides: harden({
+      contracts,
+      agenticPlanningContractFeature: true,
+      experimentalSwapContractFeature: true,
+      postalServiceInstance,
+    }),
   });
 
   const { ymax1: upgradedInstance } = await fromPublishedEntries(
     'agoricNames.instance',
   );
   t.is(upgradedInstance.getBoardId(), instance.getBoardId());
+  t.deepEqual(await vsc.readPublished('ymax1.features'), {
+    agenticPlanning: true,
+    experimentalSwap: true,
+  });
   const vatInfo = await getVatInfoFromID(vatDetails.vatID);
   t.is(
     /** @type {{incarnation: number}} */ (vatInfo.currentSpan()).incarnation,

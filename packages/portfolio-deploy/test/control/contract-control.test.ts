@@ -198,6 +198,49 @@ test.serial('installAndStart ymax0', async t => {
   await E(cc).terminate({ message: 'prepare for next test' });
 });
 
+test.serial(
+  'start overrides a contract feature in initial privateArgs',
+  async t => {
+    const { common, bundleAndInstall, makeContractControl, walletBytecode } =
+      t.context;
+    const name = 'ymaxFeatureOverride';
+    const { rootNode: chainStorage } = common.bootstrap.storage;
+    const storageNode = await E(chainStorage).makeChildNode(name);
+
+    const installation = await bundleAndInstall(ymaxExports);
+    const { usdc, bld } = common.brands;
+    const issuers = { USDC: usdc.issuer, Fee: bld.issuer, BLD: bld.issuer };
+
+    const initialPrivateArgs = harden({
+      ...makeYmaxDataPrivateArgs(walletBytecode),
+      // @ts-expect-error some commonPrivateArgs types are sus
+      ...(common.commonPrivateArgs as ymaxExports.PortfolioPrivateArgs),
+      agenticPlanningContractFeature: true,
+    });
+    const cc = makeContractControl<YMaxStartFn>({
+      name,
+      storageNode,
+      initialPrivateArgs,
+    });
+
+    await E(cc).start({
+      installation,
+      issuers,
+      privateArgsOverrides: harden({
+        agenticPlanningContractFeature: false,
+      }),
+    });
+    await eventLoopIteration();
+
+    t.deepEqual(
+      common.bootstrap.storage
+        .getDeserialized(`orchtest.${name}.features`)
+        .at(-1),
+      { agenticPlanning: false },
+    );
+  },
+);
+
 test.serial('start ymax0 using contractExport', async t => {
   const { common, bundleAndInstall, space } = t.context;
   const cc = await space.consume.ymaxControl;

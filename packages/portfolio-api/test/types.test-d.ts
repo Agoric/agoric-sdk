@@ -23,6 +23,7 @@ import type {
   PlanObservations,
   PortfolioBalancePlaceRef,
   PortfolioKey,
+  PortfolioPublishedPathTypes,
   ProposalType,
   SeatKeyword,
   StatusFor,
@@ -292,6 +293,7 @@ const status: StatusFor = {
       },
     },
   },
+  features: { agenticPlanning: true, experimentalSwap: false },
   evmWallet: {
     updated: 'messageUpdate',
     nonce: 1n,
@@ -345,6 +347,12 @@ const status: StatusFor = {
 };
 
 expectType<StatusFor>(status);
+expectType<StatusFor['features']>(
+  null as unknown as PortfolioPublishedPathTypes['ymax0.features'],
+);
+expectType<StatusFor['features']>(
+  null as unknown as PortfolioPublishedPathTypes['ymax1.features'],
+);
 
 // Ensure every Axelar chain key is covered by SupportedChain.
 expectAssignable<keyof typeof SupportedChain>(

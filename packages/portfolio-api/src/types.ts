@@ -478,6 +478,10 @@ export type StatusFor = {
       currentRouterAddresses: Partial<Record<AxelarChain, AccountId>>;
     };
   };
+  features: {
+    agenticPlanning?: boolean;
+    experimentalSwap?: FlowFeatures['experimentalSwap'];
+  };
   pendingTx: PublishedTx;
   evmWallet: EVMWalletUpdate;
   evmWalletPortfolios: PortfolioPath[];
@@ -559,6 +563,8 @@ export type PortfolioDelegatedSetTargetAllocationParams = {
 export type PortfolioPublishedPathTypes = {
   ymax0: StatusFor['contract'];
   ymax1: StatusFor['contract'];
+  'ymax0.features': StatusFor['features'];
+  'ymax1.features': StatusFor['features'];
   'ymax0.portfolios': StatusFor['portfolios'];
   'ymax1.portfolios': StatusFor['portfolios'];
 } & {
