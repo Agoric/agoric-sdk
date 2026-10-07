@@ -311,10 +311,10 @@ const GmpAddressesShape: TypedPattern<GmpAddresses> = M.splitRecord({
   AXELAR_GAS: M.string(),
 });
 
-const CONTRACT_FEATURE_SUFFIX = 'ContractFeature';
-const EXPERIMENTAL_SWAP_CONTRACT_FEATURE = `experimentalSwap${CONTRACT_FEATURE_SUFFIX}`;
+const CONTRACT_FEATURE_PREFIX = 'features.';
+const EXPERIMENTAL_SWAP_CONTRACT_FEATURE = `${CONTRACT_FEATURE_PREFIX}experimentalSwap`;
 const contractFeatureArgShapes = harden({
-  [`agenticPlanning${CONTRACT_FEATURE_SUFFIX}`]: M.boolean(),
+  [`${CONTRACT_FEATURE_PREFIX}agenticPlanning`]: M.boolean(),
   [EXPERIMENTAL_SWAP_CONTRACT_FEATURE]: ExperimentalSwapShape,
 });
 
@@ -330,8 +330,8 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   gmpAddresses: GmpAddresses;
   chainMetadata?: ChainTokenMetadata;
   defaultFlowConfig?: FlowConfig | null;
-  agenticPlanningContractFeature?: boolean;
-  experimentalSwapContractFeature?: boolean;
+  'features.agenticPlanning'?: boolean;
+  'features.experimentalSwap'?: boolean;
   // Keep new private args optional: seemingly small breaking changes in
   // startup configuration often turn out to be expensive across upgrade,
   // bootstrap, and test paths.
@@ -406,7 +406,7 @@ const getContractFeatures = (privateArgs: PortfolioPrivateArgs) => {
   for (const name of contractFeatureArgNames) {
     const value = privateArgs[name] ?? defaults[name];
     if (value !== undefined) {
-      entries.push([name.slice(0, -CONTRACT_FEATURE_SUFFIX.length), value]);
+      entries.push([name.slice(CONTRACT_FEATURE_PREFIX.length), value]);
     }
   }
   return Object.fromEntries(entries);

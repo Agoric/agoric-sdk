@@ -49,7 +49,7 @@ test('contract feature flags are published in vstorage', async t => {
   await checkFeatures({ defaultFlowConfig: null }, {});
   await checkFeatures(
     {
-      agenticPlanningContractFeature: true,
+      'features.agenticPlanning': true,
       defaultFlowConfig: { features: { experimentalSwap: true } },
     },
     { agenticPlanning: true, experimentalSwap: true },
@@ -61,12 +61,12 @@ test('contract feature flags are published in vstorage', async t => {
   await checkFeatures(
     {
       defaultFlowConfig: { features: { experimentalSwap: true } },
-      experimentalSwapContractFeature: false,
+      'features.experimentalSwap': false,
     },
     { experimentalSwap: false },
   );
   await checkFeatures(
-    { defaultFlowConfig: null, experimentalSwapContractFeature: true },
+    { defaultFlowConfig: null, 'features.experimentalSwap': true },
     { experimentalSwap: true },
   );
 });
