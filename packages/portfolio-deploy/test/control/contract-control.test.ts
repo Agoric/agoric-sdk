@@ -215,7 +215,7 @@ test.serial(
       ...makeYmaxDataPrivateArgs(walletBytecode),
       // @ts-expect-error some commonPrivateArgs types are sus
       ...(common.commonPrivateArgs as ymaxExports.PortfolioPrivateArgs),
-      agenticPlanningContractFeature: true,
+      'features.agenticPlanning': true,
     });
     const cc = makeContractControl<YMaxStartFn>({
       name,
@@ -227,7 +227,7 @@ test.serial(
       installation,
       issuers,
       privateArgsOverrides: harden({
-        agenticPlanningContractFeature: false,
+        'features.agenticPlanning': false,
       }),
     });
     await eventLoopIteration();
