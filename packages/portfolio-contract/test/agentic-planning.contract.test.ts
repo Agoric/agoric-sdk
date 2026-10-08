@@ -6,19 +6,30 @@ import assert from 'node:assert/strict';
 
 import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { eventLoopIteration as pendingVstorageWrites } from '@agoric/internal/src/testing-utils.js';
-import type { PortfolioDelegatedSetTargetAllocationParams } from '@agoric/portfolio-api';
+import type {
+  PlanObservations,
+  PortfolioDelegatedSetTargetAllocationParams,
+} from '@agoric/portfolio-api';
+import {
+  portfolioObservationsToEIP712,
+  ymaxObservationMessageKit,
+  type SignedPortfolioObservations,
+} from '@agoric/portfolio-api/src/observation-messages.js';
+import type { TimerService } from '@agoric/time';
 import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { NameAdmin } from '@agoric/vats';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
 import { E, Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import {
-  goodSig,
-  type PortfolioDelegationClient,
-} from '../src/delegation.exo.ts';
+import { privateKeyToAccount } from 'viem/accounts';
+import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { deploy, makeEvmTraderKit } from './contract-setup.ts';
-import { evmTrader0PrivateKey } from './mocks.ts';
+import {
+  contractsMock,
+  evmTrader0PrivateKey,
+  evmTrader1PrivateKey,
+} from './mocks.ts';
 
 const expectUnhandled = makeExpectUnhandledRejectionMacro({
   test,
@@ -26,6 +37,11 @@ const expectUnhandled = makeExpectUnhandledRejectionMacro({
 });
 
 const AGENT_ADDRESS = 'agoric1andrewAgent' as const;
+/** The observation service's EOA, which signs portfolio observations. */
+const attestor = privateKeyToAccount(evmTrader1PrivateKey);
+const ARBITRUM_CHAIN_ID = 42161n;
+/** The lifetime the observation service gives its observations. */
+const OBSERVATION_LIFETIME = 5n * 60n;
 const emptyProposal = harden({ give: {}, want: {} }) as Proposal;
 
 const makeWalletFactory = (namesByAddressAdmin: NameAdmin, zoe: ZoeService) => {
@@ -72,9 +88,6 @@ type PortfolioRead = {
 };
 
 type PortfolioId = ReturnType<PortfolioRead['getPortfolioId']>;
-type Attestation = NonNullable<
-  PortfolioDelegatedSetTargetAllocationParams['attestation']
->;
 type SyncState = PortfolioDelegatedSetTargetAllocationParams['syncState'];
 type Mcp = {
   // AGO-1298: hosted MCP obtains signed observations; the agent only forwards them.
@@ -82,12 +95,18 @@ type Mcp = {
   attest: (
     portfolioId: PortfolioId,
     syncState: SyncState,
-  ) => Promise<Attestation>;
+  ) => Promise<SignedPortfolioObservations>;
 };
 
 const makeMcp = (
-  getExpectedPortfolioId: () => PortfolioId,
-  observations: Attestation['observations'] = harden({
+  {
+    getExpectedPortfolioId,
+    timerService,
+  }: {
+    getExpectedPortfolioId: () => PortfolioId;
+    timerService: TimerService;
+  },
+  observations: PlanObservations = harden({
     balances: {
       '@agoric': 0n,
       '@Arbitrum': 0n,
@@ -98,11 +117,27 @@ const makeMcp = (
   }),
 ): Mcp =>
   harden({
-    async attest(portfolioId: PortfolioId, _syncState: SyncState) {
+    async attest(portfolioId: PortfolioId, syncState: SyncState) {
       assert.equal(portfolioId, getExpectedPortfolioId());
+      const { absValue: issuedAt } =
+        await E(timerService).getCurrentTimestamp();
+      const message = ymaxObservationMessageKit.getStandaloneOperationData(
+        {
+          ...portfolioObservationsToEIP712({
+            portfolioId,
+            syncState,
+            observations,
+          }),
+          nonce: issuedAt,
+          deadline: issuedAt + OBSERVATION_LIFETIME,
+        },
+        'PortfolioObservations',
+        ARBITRUM_CHAIN_ID,
+        contractsMock.Arbitrum.remoteAccountRouter!,
+      );
       return harden({
-        observations,
-        signature: goodSig,
+        ...message,
+        signature: await attestor.signTypedData(message),
       });
     },
   });
@@ -135,7 +170,7 @@ const makeAgent = (
         policyVersion: before.policyVersion,
         rebalanceCount: before.rebalanceCount,
       });
-      const attestation = await mcp.attest(
+      const signedObservations = await mcp.attest(
         portfolioRead.getPortfolioId(),
         syncState,
       );
@@ -143,7 +178,7 @@ const makeAgent = (
         syncState,
         targetAllocation,
         plan,
-        attestation,
+        signedObservations,
       }) satisfies PortfolioDelegatedSetTargetAllocationParams;
 
       return E(delegationClient).setTargetAllocation(submitted);
@@ -158,8 +193,8 @@ const initialAllocation: TargetAllocation[] = harden([
 ]);
 
 const setupTest = async (t: ExecutionContext) => {
-  const deployed = await deploy(t);
-  const { zoe, common } = deployed;
+  const deployed = await deploy(t, { observationAttestor: attestor.address });
+  const { zoe, common, timerService } = deployed;
   const walletFactory = makeWalletFactory(
     common.bootstrap.namesByAddressAdmin,
     zoe,
@@ -174,13 +209,18 @@ const setupTest = async (t: ExecutionContext) => {
     readPublished: traderKit.readPublished,
   });
   const trader = traderKit.evmTrader.forChain('Arbitrum');
-  const mcp = makeMcp(() => portfolioRead.getPortfolioId());
+  const mcpPowers = harden({
+    getExpectedPortfolioId: () => portfolioRead.getPortfolioId(),
+    timerService,
+  });
+  const mcp = makeMcp(mcpPowers);
 
   return harden({
     walletFactory,
     trader,
     portfolioRead,
     mcp,
+    mcpPowers,
     usdc: common.brands.usdc,
     bld: common.brands.bld,
   });
@@ -199,9 +239,10 @@ const publishedPortfolioPath = (
     ) as PortfolioPublishedPath;
 
 const promptInjectionScenario = async (t: ExecutionContext) => {
-  const { walletFactory, trader, portfolioRead, usdc } = await setupTest(t);
+  const { walletFactory, trader, portfolioRead, mcpPowers, usdc } =
+    await setupTest(t);
   const mcp = makeMcp(
-    () => portfolioRead.getPortfolioId(),
+    mcpPowers,
     harden({
       balances: {
         '@agoric': 0n,
@@ -319,11 +360,11 @@ test('delegated attested plan supplies execution steps', async t => {
 });
 
 test('delegated plan commits allocation after observation checks', async t => {
-  const { walletFactory, trader, portfolioRead, usdc, bld } =
+  const { walletFactory, trader, portfolioRead, mcpPowers, usdc, bld } =
     await setupTest(t);
   const agentWallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
   const mcp = makeMcp(
-    () => portfolioRead.getPortfolioId(),
+    mcpPowers,
     harden({
       balances: {
         '@agoric': 0n,
