@@ -1,16 +1,18 @@
 import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import type {
-  BeefyInstrumentId,
-  ChainTokenMetadata,
-  ERC4626InstrumentId,
-  TokenMetadata,
+import {
+  isInstrumentId,
+  type BeefyInstrumentId,
+  type ChainTokenMetadata,
+  type ERC4626InstrumentId,
+  type TokenMetadata,
 } from './places.ts';
 import type {
   DepositFromChainRef,
   LocalChainAccountRef,
   PortfolioAgentKey,
   InterChainAccountRef,
+  PortfolioBalancePlaceRef,
   PortfolioDelegatedClaimRewardsParams,
   PortfolioDelegatedRebalanceParams,
   PortfolioSyncState,
@@ -82,6 +84,16 @@ export const isInterChainAccountRef = (
   ref: string,
 ): ref is InterChainAccountRef => ref.startsWith('@');
 harden(isInterChainAccountRef);
+
+/**
+ * Without regard to supported chains or instruments, is the input plausibly a
+ * PortfolioBalancePlaceRef (i.e., an InterChainAccountRef or InstrumentId)?
+ */
+export const isPortfolioBalancePlaceRef = (
+  ref: string,
+): ref is PortfolioBalancePlaceRef =>
+  isInterChainAccountRef(ref) || isInstrumentId(ref);
+harden(isPortfolioBalancePlaceRef);
 
 /**
  * Without regard to supported chains, is the input plausibly a
