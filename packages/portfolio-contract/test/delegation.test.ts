@@ -1266,81 +1266,93 @@ const someObservations: PlanObservations = harden({
   instrumentTvls: {},
 });
 
-test('delegated plans: the signed observations are verified and checked against the portfolio', async t => {
-  const { peteKit, portfolioId, delegationClient, signObservations } =
-    await setupPlanDelegation(t);
-  const before = await peteKit.evmTrader.getPortfolioStatus();
-  const syncState = getSyncState(before);
-  const submit = (
-    extra: Pick<
-      PortfolioDelegatedSetTargetAllocationParams,
-      'plan' | 'signedObservations'
-    >,
-  ) =>
-    E(delegationClient).setTargetAllocation({
-      targetAllocation: planTargetAllocation,
+test(
+  'delegated plans: the signed observations are verified and checked against the portfolio',
+  expectUnhandled(1),
+  async t => {
+    const { peteKit, portfolioId, delegationClient, signObservations } =
+      await setupPlanDelegation(t);
+    const before = await peteKit.evmTrader.getPortfolioStatus();
+    const syncState = getSyncState(before);
+    const submit = (
+      extra: Pick<
+        PortfolioDelegatedSetTargetAllocationParams,
+        'plan' | 'signedObservations'
+      >,
+    ) =>
+      E(delegationClient).setTargetAllocation({
+        targetAllocation: planTargetAllocation,
+        syncState,
+        ...extra,
+      });
+    const content = harden({
+      portfolioId,
       syncState,
-      ...extra,
+      observations: someObservations,
     });
-  const content = harden({
-    portfolioId,
-    syncState,
-    observations: someObservations,
-  });
 
-  await t.throwsAsync(submit({ plan: emptyPlan }), {
-    message: 'a plan requires signed observations, and vice versa',
-  });
-  await t.throwsAsync(
-    submit({ signedObservations: await signObservations(content) }),
-    { message: 'a plan requires signed observations, and vice versa' },
-  );
-  await t.throwsAsync(
-    submit({
-      plan: emptyPlan,
-      signedObservations: await signObservations(
-        content,
-        privateKeyToAccount(evmTrader0PrivateKey),
-      ),
-    }),
-    { message: /^observations not signed by the attestor/ },
-  );
-  await t.throwsAsync(
-    submit({
-      plan: emptyPlan,
-      signedObservations: await signObservations({
-        ...content,
-        portfolioId: portfolioId + 1,
+    await t.throwsAsync(submit({ plan: emptyPlan }), {
+      message: 'a plan requires signed observations, and vice versa',
+    });
+    await t.throwsAsync(
+      submit({ signedObservations: await signObservations(content) }),
+      { message: 'a plan requires signed observations, and vice versa' },
+    );
+    await t.throwsAsync(
+      submit({
+        plan: emptyPlan,
+        signedObservations: await signObservations(
+          content,
+          privateKeyToAccount(evmTrader0PrivateKey),
+        ),
       }),
-    }),
-    { message: `observations are for portfolio ${portfolioId + 1}` },
-  );
-  await t.throwsAsync(
-    submit({
-      plan: emptyPlan,
-      signedObservations: await signObservations({
-        ...content,
-        syncState: {
-          ...syncState,
-          rebalanceCount: syncState.rebalanceCount + 1,
-        },
+      { message: /^observations not signed by the attestor/ },
+    );
+    await t.throwsAsync(
+      submit({
+        plan: emptyPlan,
+        signedObservations: await signObservations({
+          ...content,
+          portfolioId: portfolioId + 1,
+        }),
       }),
-    }),
-    { message: /^observations sync state .* does not match/ },
-  );
-  await t.throwsAsync(
-    submit({
+      { message: `observations are for portfolio ${portfolioId + 1}` },
+    );
+    await t.throwsAsync(
+      submit({
+        plan: emptyPlan,
+        signedObservations: await signObservations({
+          ...content,
+          syncState: {
+            ...syncState,
+            rebalanceCount: syncState.rebalanceCount + 1,
+          },
+        }),
+      }),
+      { message: /^observations sync state .* does not match/ },
+    );
+    await eventLoopIteration();
+    const after = await peteKit.evmTrader.getPortfolioStatus();
+    t.deepEqual(getSyncState(after), syncState, 'no flow was started');
+    t.deepEqual(after.flowsRunning, before.flowsRunning);
+
+    // Verified observations get the plan vetted against them, in a flow: these
+    // ones don't cover every place of the portfolio.
+    const flowKey = await submit({
       plan: emptyPlan,
       signedObservations: await signObservations(content),
-    }),
-    { message: 'TODO(AGO-1299): delegated plans are not implemented' },
-  );
-
-  await eventLoopIteration();
-  const after = await peteKit.evmTrader.getPortfolioStatus();
-  t.deepEqual(getSyncState(after), syncState, 'no flow was started');
-  t.deepEqual(after.flowsRunning, before.flowsRunning);
-});
+    });
+    await eventLoopIteration();
+    const portfolioPath = stripRootStoragePath(
+      peteKit.evmTrader.getPortfolioPath(),
+    );
+    t.like(await peteKit.readPublished(`${portfolioPath}.flows.${flowKey}`), {
+      state: 'fail',
+      agent: 'agent1',
+      error: 'missing balance observation for "@agoric"',
+    });
+  },
+);
 
 test('delegated plans: an unauthorized client causes no verification', async t => {
   const {
