@@ -11,6 +11,7 @@ import {
   gmpAddresses as gmpAddressesByEnv,
 } from '../src/axelar-configs.js';
 import { makeAssetInfo } from '../src/chain-name-service.js';
+import { observationAttestors } from '../src/observation-attestors.js';
 import {
   chainInfoDevNet,
   chainInfoProposal100,
@@ -131,7 +132,7 @@ const stubPowers = {
   timerService: Far('TimerService'),
 };
 
-const computeOverrides = async (tag: string = 'ymax0') => {
+const computeOverrides = async (tag: 'ymax0' | 'ymax1' = 'ymax0') => {
   const { bytecode: walletBytecode } = JSON.parse(
     await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
   );
@@ -168,6 +169,7 @@ const computeOverrides = async (tag: string = 'ymax0') => {
     assetInfo,
     gmpAddresses: gmpAddressesByEnv.mainnet,
     walletBytecode,
+    observationAttestor: observationAttestors[tag].mainnet,
   };
 };
 
@@ -248,3 +250,11 @@ test('ymax1 overrides include cctpRelayer', async t => {
     t.truthy((addrs as any).cctpRelayer, `ymax1 ${chain} has cctpRelayer`);
   }
 });
+
+for (const tag of ['ymax0', 'ymax1'] as const) {
+  test(`${tag} observation attestor matches golden snapshot`, async t => {
+    const computed = await computeOverrides(tag);
+    const golden = JSON.parse(await asset(`./privateArgs-${tag}.json`));
+    t.is(golden.observationAttestor, computed.observationAttestor);
+  });
+}
