@@ -1339,8 +1339,8 @@ test('revoked delegation client is no longer usable', async t => {
   t.like(await getPortfolioAgents!(19), {
     agent1: { state: 'revoked' },
   });
-  t.throws(
-    () =>
+  await t.throwsAsync(
+    async () =>
       client.setTargetAllocation({
         targetAllocation: { USDN: 100n },
         syncState: { policyVersion: 1, rebalanceCount: 0 },
