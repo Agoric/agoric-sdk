@@ -67,7 +67,7 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { bare, Fail, X } from '@endo/errors';
+import { bare, Fail, q, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { hexToBytes } from '@noble/hashes/utils';
@@ -84,6 +84,10 @@ import {
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
+import type {
+  PortfolioObservationsVerifier,
+  VerifiedPortfolioObservations,
+} from './observation-verifier.ts';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
   makeFlowPath,
@@ -415,6 +419,7 @@ export const preparePortfolioKit = (
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
+    verifyPortfolioObservations,
   }: {
     rebalance: (
       seat: ZCFSeat,
@@ -464,6 +469,7 @@ export const preparePortfolioKit = (
       grantee: PortfolioAgentGrantee,
       permissions: PortfolioPermissionsExt,
     ) => Promise<void>;
+    verifyPortfolioObservations: PortfolioObservationsVerifier;
   },
 ) => {
   // Ephemeral node cache
@@ -498,7 +504,7 @@ export const preparePortfolioKit = (
   const makePosition = preparePosition(zone, emptyTransferState, publishStatus);
   const makeDelegationKit = preparePortfolioDelegationKit(
     zone.subZone('delegation'),
-    { zcf },
+    { zcf, verifyPortfolioObservations, shapes: offerArgsShapes },
   );
   const makeDelegationsStore = (
     portfolioId: number,
@@ -697,7 +703,11 @@ export const preparePortfolioKit = (
         submitTargetAllocation(
           client: PortfolioDelegationClient,
           agentId: number,
-          delegatedSetTargetAllocationParams: PortfolioDelegatedSetTargetAllocationParams,
+          delegatedSetTargetAllocationParams: Omit<
+            PortfolioDelegatedSetTargetAllocationParams,
+            'signedObservations'
+          >,
+          verifiedObservations?: VerifiedPortfolioObservations,
         ): FlowKey {
           const { reader, manager, delegationHelper } = this.facets;
           const delegation = delegationHelper.getAuthorizedDelegation(
@@ -705,11 +715,25 @@ export const preparePortfolioKit = (
             agentId,
             { allocation: true },
           );
-          const { syncState, targetAllocation, agentMemo } =
+          const { syncState, targetAllocation, agentMemo, plan } =
             delegatedSetTargetAllocationParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
+          if (plan !== undefined || verifiedObservations !== undefined) {
+            // The delegation client verified the signed observations.
+            if (!verifiedObservations) {
+              throw Fail`a plan requires verified observations`;
+            }
+            const { portfolioId, syncState: observedSyncState } =
+              verifiedObservations;
+            portfolioId === this.state.portfolioId ||
+              Fail`observations are for portfolio ${q(portfolioId)}`;
+            (observedSyncState.policyVersion === policyVersion &&
+              observedSyncState.rebalanceCount === rebalanceCount) ||
+              Fail`observations sync state ${q(observedSyncState)} does not match ${q(syncState)}`;
+            Fail`TODO(AGO-1299): delegated plans are not implemented`;
+          }
           const { permissions } = delegation;
           const allocation = permissions.allocation;
           const needsPlanObservations =

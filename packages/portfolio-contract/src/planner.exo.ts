@@ -2,7 +2,7 @@
  * @file Planner exo for off-chain planning services to submit portfolio rebalancing plans.
  * @see {@link preparePlanner}
  */
-import { makeTracer, type TypedPattern } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import {
   PortfolioDelegatedClaimRewardsParamsShape,
   PortfolioDelegatedRebalanceParamsShape,
@@ -28,11 +28,6 @@ import {
 
 const trace = makeTracer('PPLN');
 
-const OrderShape: TypedPattern<FundsFlowPlan['order']> = M.arrayOf([
-  M.number(),
-  M.arrayOf(M.number()),
-]);
-
 /**
  * Prepare a Planner exoClass for off-chain planning services.
  *
@@ -54,11 +49,7 @@ export const preparePlanner = (
     shapes: ReturnType<typeof makeOfferArgsShapes>;
   },
 ) => {
-  const { movementDescShape } = shapes;
-  const planShape: TypedPattern<FundsFlowPlan> = M.splitRecord(
-    { flow: M.arrayOf(movementDescShape) },
-    { order: OrderShape },
-  );
+  const { movementDescShape, plan: planShape } = shapes;
   const planCompatShape = M.or(planShape, M.arrayOf(movementDescShape));
   // TODO(#11782): vet more of plan semantics; currently only enforces
   // delegate-style "no new positions".

@@ -38,6 +38,7 @@ test('planner exo resolvePlan method', async t => {
       .makeChildNode('ymax0')
       .makeChildNode('portfolios'),
     vowTools: vt,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
   const aPortfolio = makePortfolio({ portfolioId: 1 });
@@ -178,7 +179,7 @@ test('planner rejects delegated plans that fail observation-time validation', as
   await eventLoopIteration();
   assert(delegationClient);
   const before = { policyVersion: 2, rebalanceCount: 0 };
-  const flowKey = delegationClient.setTargetAllocation({
+  const flowKey = await delegationClient.setTargetAllocation({
     targetAllocation: { Aave_Base: 100n },
     syncState: {
       policyVersion: before.policyVersion,
@@ -220,7 +221,7 @@ test('planner rejects delegated plans that fail observation-time validation', as
   );
 
   const beforeRace = await getPortfolioStatus(1);
-  const racedFlowKey = delegationClient.setTargetAllocation({
+  const racedFlowKey = await delegationClient.setTargetAllocation({
     targetAllocation: { Aave_Base: 100n },
     syncState: {
       policyVersion: beforeRace.policyVersion,
@@ -301,7 +302,7 @@ test('planner accepts already-committed delegated target allocation after policy
   await eventLoopIteration();
   assert(delegationClient);
   const beforeFlow = await getPortfolioStatus(1);
-  const flowKey = delegationClient.setTargetAllocation({
+  const flowKey = await delegationClient.setTargetAllocation({
     targetAllocation: { Aave_Base: 100n },
     syncState: {
       policyVersion,
@@ -359,6 +360,7 @@ test('planner allows cosmos-based portfolio to withdraw to <Cash> via @chain acc
       .makeChildNode('ymax0')
       .makeChildNode('portfolios'),
     vowTools: vt,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
   // cosmos-based portfolio: no sourceAccountId
@@ -861,6 +863,7 @@ test('planner allows EVM-based portfolio to withdraw to -Chain via @chain accoun
       .makeChildNode('ymax0')
       .makeChildNode('portfolios'),
     vowTools: vt,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
   // EVM-based portfolio: sourceAccountId is set
@@ -1004,6 +1007,7 @@ test('planner can reject a plan due to insufficient funds', async t => {
       .makeChildNode('ymax0')
       .makeChildNode('portfolios'),
     vowTools: vt,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
   const aPortfolio = makePortfolio({ portfolioId: 1 });

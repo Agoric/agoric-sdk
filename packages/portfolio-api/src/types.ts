@@ -25,6 +25,7 @@ import type {
   PortfolioAutoFeaturesExt,
   PortfolioPermissionsExt,
 } from './portfolio-permissions.js';
+import type { SignedPortfolioObservations } from './observation-messages.ts';
 
 /**
  * Feature flags to handle contract upgrade flow compatibility.
@@ -551,10 +552,17 @@ export type PortfolioDelegatedClaimRewardsParams = {
   agentMemo?: string;
 };
 
+/**
+ * A delegated target-allocation request, optionally with the plan to execute
+ * it, which requires observations of the portfolio at `syncState`, signed by
+ * the observation service.
+ */
 export type PortfolioDelegatedSetTargetAllocationParams = {
   syncState: PortfolioSyncState;
   targetAllocation: TargetAllocation;
   agentMemo?: string;
+  plan?: FundsFlowPlan;
+  signedObservations?: SignedPortfolioObservations;
 };
 
 /**

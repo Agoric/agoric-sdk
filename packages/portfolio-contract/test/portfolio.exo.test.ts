@@ -31,6 +31,7 @@ import {
 import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
 import type { StatusFor } from '../src/type-guards.ts';
+import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 import { contractsMock } from './mocks.ts';
@@ -162,6 +163,7 @@ const makeTestSetup = (
     walletBytecode,
     transferChannels,
     // rest are not used for this test
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
 
@@ -200,6 +202,7 @@ test('portfolio exo caches storage nodes', async t => {
     usdcBrand: USDC,
     vowTools,
     // rest are not used
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
 
@@ -1339,8 +1342,8 @@ test('revoked delegation client is no longer usable', async t => {
   t.like(await getPortfolioAgents!(19), {
     agent1: { state: 'revoked' },
   });
-  t.throws(
-    () =>
+  await t.throwsAsync(
+    async () =>
       client.setTargetAllocation({
         targetAllocation: { USDN: 100n },
         syncState: { policyVersion: 1, rebalanceCount: 0 },
