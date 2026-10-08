@@ -875,3 +875,94 @@ test('normalized output matches abitype types for small and large integer widths
   t.is(small, 7);
   t.is(large, 8n);
 });
+
+test('onUnknownSignedField: a signed field unknown to the schema in a standalone message', t => {
+  const observation = makeObservation();
+  const extended = {
+    ...observation,
+    types: {
+      ...observation.types,
+      Observe: [
+        ...observation.types.Observe,
+        { name: 'extra', type: 'uint256' },
+      ],
+    },
+    message: { ...observation.message, extra: 1n },
+    signature: MOCK_SIGNATURE,
+    address: account.address,
+  } as unknown as typeof observation & {
+    signature: typeof MOCK_SIGNATURE;
+    address: Address;
+  };
+
+  const kept =
+    observationUtils.extractOperationDetailsFromDataWithAddress(extended);
+  t.is((kept.data as Record<string, unknown>).extra, 1n);
+
+  const strictUtils = makeEIP712MessageHandlerUtils(
+    viemUtils,
+    ObservationSchema,
+    { onUnknownSignedField: 'throw' },
+  );
+  t.throws(
+    () => strictUtils.extractOperationDetailsFromDataWithAddress(extended),
+    {
+      message: 'Unexpected field(s) on EIP-712 type "Observe": "extra"',
+    },
+  );
+  t.like(
+    strictUtils.extractOperationDetailsFromDataWithAddress({
+      ...observation,
+      address: account.address,
+    }),
+    { operation: 'Observe', data: { portfolio: 7n } },
+  );
+});
+
+test('onUnknownSignedField: a signed field unknown to the schema in a permit2 witness', t => {
+  const permitData = makeDepositPermit();
+  const witnessType = 'TestVaultV1Deposit';
+  const extended = {
+    ...permitData,
+    types: {
+      ...permitData.types,
+      [witnessType]: [
+        ...permitData.types[witnessType],
+        { name: 'memo', type: 'string' },
+      ],
+    },
+    message: {
+      ...permitData.message,
+      vaultDeposit: { ...permitData.message.vaultDeposit, memo: 'hi' },
+    },
+    signature: MOCK_SIGNATURE,
+    address: account.address,
+  } as unknown as typeof permitData & {
+    signature: typeof MOCK_SIGNATURE;
+    address: Address;
+  };
+
+  const kept =
+    depositUtils.extractOperationDetailsFromDataWithAddress(extended);
+  t.deepEqual(kept.data, { account: 5n, memo: 'hi' } as typeof kept.data);
+
+  const strictUtils = makeEIP712MessageHandlerUtils(viemUtils, DepositSchema, {
+    onUnknownSignedField: 'throw',
+  });
+  t.throws(
+    () => strictUtils.extractOperationDetailsFromDataWithAddress(extended),
+    {
+      message: 'Unexpected field(s) on EIP-712 type "Deposit": "memo"',
+    },
+  );
+});
+
+test('onUnknownSignedField: rejects an invalid option', t => {
+  t.throws(
+    () =>
+      makeEIP712MessageHandlerUtils(viemUtils, ObservationSchema, {
+        onUnknownSignedField: 'drop' as any,
+      }),
+    { message: 'Invalid onUnknownSignedField option: drop' },
+  );
+});
