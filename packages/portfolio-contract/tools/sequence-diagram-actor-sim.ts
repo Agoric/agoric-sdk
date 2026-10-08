@@ -156,24 +156,6 @@ export const makeCausalSequenceTracer = (
 
 export type CausalSequenceTracer = ReturnType<typeof makeCausalSequenceTracer>;
 
-export const makeSequenceRecorder = () => {
-  const arrows: SequenceArrow[] = [];
-  // XXX Actors naming themselves and their senders is an expedient; users of
-  // this recorder rely on actor implementations to report topology accurately.
-  const node = (name: string) =>
-    harden({
-      call(from: string, label: string) {
-        arrows.push(harden({ from, kind: '->>', to: name, label }));
-      },
-      consequence(from: string, label: string) {
-        arrows.push(harden({ from, kind: '-->>', to: name, label }));
-      },
-    });
-  return harden({ node, snapshot: () => harden([...arrows]) });
-};
-
-export type SequenceRecorder = ReturnType<typeof makeSequenceRecorder>;
-
 export const md = {
   skipToH: (level: number, title: string) => (lines: readonly string[]) => {
     const heading = `${'#'.repeat(level)} ${title}`;
