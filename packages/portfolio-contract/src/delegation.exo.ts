@@ -22,6 +22,7 @@ import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
+import type { PortfolioObservationsVerifier } from './observation-verifier.ts';
 import { TargetAllocationShape } from './type-guards.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 
@@ -84,7 +85,10 @@ const DelegationClientI = M.interface('PortfolioDelegationClient', {
 
 export const preparePortfolioDelegationKit = (
   zone: Zone,
-  { zcf: _zcf }: { zcf: ZCF },
+  {
+    zcf: _zcf,
+    verifyPortfolioObservations: _verifyPortfolioObservations,
+  }: { zcf: ZCF; verifyPortfolioObservations: PortfolioObservationsVerifier },
 ) =>
   zone.exoClassKit(
     'PortfolioDelegation',

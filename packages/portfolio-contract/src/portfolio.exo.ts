@@ -84,6 +84,7 @@ import {
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
+import type { PortfolioObservationsVerifier } from './observation-verifier.ts';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
   makeFlowPath,
@@ -415,6 +416,7 @@ export const preparePortfolioKit = (
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
+    verifyPortfolioObservations,
   }: {
     rebalance: (
       seat: ZCFSeat,
@@ -464,6 +466,7 @@ export const preparePortfolioKit = (
       grantee: PortfolioAgentGrantee,
       permissions: PortfolioPermissionsExt,
     ) => Promise<void>;
+    verifyPortfolioObservations: PortfolioObservationsVerifier;
   },
 ) => {
   // Ephemeral node cache
@@ -498,7 +501,7 @@ export const preparePortfolioKit = (
   const makePosition = preparePosition(zone, emptyTransferState, publishStatus);
   const makeDelegationKit = preparePortfolioDelegationKit(
     zone.subZone('delegation'),
-    { zcf },
+    { zcf, verifyPortfolioObservations },
   );
   const makeDelegationsStore = (
     portfolioId: number,
