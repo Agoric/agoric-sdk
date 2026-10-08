@@ -1,5 +1,5 @@
 /**
- * OrchestrationFlow functions for {@link portfolio.contract.ts}
+ * @file Portfolio orchestration flows for lifecycle and plan execution.
  *
  * @see {openPortfolio}
  * @see {rebalance}
@@ -100,7 +100,7 @@ import {
 } from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
 import type { ResolverKit } from './resolver/resolver.exo.js';
-import { runJob, type Job } from './schedule-order.ts';
+import { fullOrder, runJob, type Job } from './schedule-order.ts';
 import {
   getChainNameOfPlaceRef,
   getDepositChainOfPlaceRef,
@@ -217,10 +217,6 @@ export type ProtocolDetail<
 };
 
 const { min } = Math;
-const range = (n: number) => Array.from(Array(n).keys());
-const fullOrder = (length: number): Job['order'] =>
-  range(length - 1).map(lo => [lo + 1, [lo]]);
-
 const { toCapData } = makeMarshal(undefined, undefined, {
   serializeBodyFormat: 'smallcaps',
 });

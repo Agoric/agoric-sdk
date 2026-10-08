@@ -19,6 +19,7 @@
     "./src/evm-wallet/message-handler-helpers.js": "./src/evm-wallet/message-handler-helpers.ts",
     "./src/network/network-spec.js": "./src/network/network-spec.ts",
     "./src/network/prod-network.js": "./src/network/prod-network.ts",
+    "./src/observation-messages.js": "./src/observation-messages.ts",
     "./src/places.js": "./src/places.ts",
     "./src/portfolio-permissions.js": "./src/portfolio-permissions.ts",
     "./src/portfolio-constants.js": "./src/portfolio-constants.js",

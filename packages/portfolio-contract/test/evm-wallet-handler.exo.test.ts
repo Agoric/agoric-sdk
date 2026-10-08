@@ -18,6 +18,7 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { privateKeyToAccount } from 'viem/accounts';
+import { parseSignature } from 'viem';
 import { hashTypedData } from 'viem/utils';
 import {
   makeNonceManager,
@@ -1184,6 +1185,36 @@ test('handleMessage extracts permit2 details and delegates to handleOperation', 
     chainId: CHAIN_ID,
     verifyingContract: MOCK_VERIFYING_CONTRACT,
   });
+});
+
+test('handleMessage accepts a structured ECDSA signature', async t => {
+  const { zone } = t.context;
+  const { vowTools, handler, getHandleOperationCalls } =
+    makeMessageHandlerTestSetup(zone, 'vowStructuredSig', {
+      namePrefix: 'testStructuredSig_',
+    });
+
+  const message = getYmaxStandaloneOperationData(
+    {
+      allocations: [{ instrument: 'Aave_Arbitrum', portion: 100n }],
+      portfolio: 1n,
+      nonce: 1n,
+      deadline: CURRENT_TIME + 3600n,
+    },
+    'SetTargetAllocation',
+    CHAIN_ID,
+    MOCK_VERIFYING_CONTRACT,
+  );
+  // e.g. `{ r, s, v, yParity }`
+  const signature = parseSignature(await ecdsaAccount.signTypedData(message));
+
+  await vowTools.when(
+    handler.handleMessage(harden({ ...message, signature }) as any),
+  );
+
+  const calls = getHandleOperationCalls();
+  t.is(calls.length, 1);
+  t.is(calls[0].address, ecdsaAccount.address);
 });
 
 test('handleMessage normalizes verifiedSigner to checksum format and accepts non ECDSA signatures', async t => {

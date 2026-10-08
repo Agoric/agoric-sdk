@@ -409,8 +409,8 @@ test.serial('upgrade ymax1 and provision handler and planner', async t => {
     bundleId,
     privateArgsOverrides: harden({
       contracts,
-      agenticPlanningContractFeature: true,
-      experimentalSwapContractFeature: false,
+      'features.agenticPlanning': true,
+      'features.experimentalSwap': false,
       postalServiceInstance,
     }),
   });

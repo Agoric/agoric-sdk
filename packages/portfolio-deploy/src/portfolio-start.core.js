@@ -40,6 +40,7 @@ const trace = makeTracer(`YMX-Start`, true);
  *   walletBytecode: `0x${string}`;
  *   chainMetadata?: ChainTokenMetadata;
  *   defaultFlowConfig?: FlowConfig | null;
+ *   observationAttestor?: `0x${string}`;
  * } & CopyRecord} PortfolioDeployConfig
  */
 
@@ -58,6 +59,7 @@ export const portfolioDeployConfigShape = M.splitRecord(
     oldBoardId: M.string(),
     chainMetadata: ChainTokenMetadataShape,
     defaultFlowConfig: M.or(FlowConfigShape, M.null()),
+    observationAttestor: M.string(),
   },
 );
 
@@ -77,6 +79,7 @@ export const makePrivateArgs = async (
     walletBytecode,
     chainMetadata = {},
     defaultFlowConfig,
+    observationAttestor,
   } = config;
   const { agoricNames } = orchestrationPowers;
   const { chainInfo: cosmosChainInfo, assetInfo } = await lookupInterchainInfo(
@@ -128,6 +131,7 @@ export const makePrivateArgs = async (
     walletBytecode,
     defaultFlowConfig,
     postalServiceInstance,
+    ...(observationAttestor && { observationAttestor }),
   });
   return it;
 };

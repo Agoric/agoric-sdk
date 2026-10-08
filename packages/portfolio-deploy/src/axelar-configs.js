@@ -435,6 +435,13 @@ const erc4626VaultAddresses = harden({
     },
     testnet: {},
   },
+  morphoRockawayxFxProtocolEcosystemUsdc: {
+    mainnet: {
+      // https://app.morpho.org/ethereum/vault/0x2cA22cb25558fa2018ecb1CE4eD8AF92Ee7ea423/rockawayx-fx-protocol-ecosystem-usdc
+      Ethereum: '0x2cA22cb25558fa2018ecb1CE4eD8AF92Ee7ea423',
+    },
+    testnet: {},
+  },
 });
 
 /** @type {AddressesMap} */
@@ -726,6 +733,9 @@ const mainnetContracts = {
       erc4626VaultAddresses.morphoApyxUsdc.mainnet.Ethereum,
     ERC4626_morphoRockawayxToriEcosystem_Ethereum:
       erc4626VaultAddresses.morphoRockawayxToriEcosystem.mainnet.Ethereum,
+    ERC4626_morphoRockawayxFxProtocolEcosystemUsdc_Ethereum:
+      erc4626VaultAddresses.morphoRockawayxFxProtocolEcosystemUsdc.mainnet
+        .Ethereum,
     oneInchRouter,
     merkleDistributor: merkleDistributorAddresses.mainnet.Ethereum,
   },

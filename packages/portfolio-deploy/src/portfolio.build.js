@@ -13,6 +13,7 @@ import {
   gmpAddresses,
 } from './axelar-configs.js';
 import { toExternalConfig } from './config-marshal.js';
+import { observationAttestors } from './observation-attestors.js';
 import { name } from './portfolio.contract.permit.js';
 import { portfolioDeployConfigShape } from './portfolio-start.core.js';
 import {
@@ -129,6 +130,7 @@ const build = async (homeP, endowments) => {
       walletBytecode,
       chainMetadata: getDefaultChainTokenMetadata('mainnet'),
       defaultFlowConfig,
+      observationAttestor: observationAttestors.ymax0.mainnet,
     },
     testnet: {
       cluster: 'testnet',
@@ -140,6 +142,7 @@ const build = async (homeP, endowments) => {
       walletBytecode,
       chainMetadata: getDefaultChainTokenMetadata('testnet'),
       defaultFlowConfig,
+      observationAttestor: observationAttestors.ymax0.testnet,
     },
   });
 

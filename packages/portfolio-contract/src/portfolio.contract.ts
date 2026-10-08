@@ -75,6 +75,10 @@ import type { CopyRecord, Passable } from '@endo/pass-style';
 import { M, objectMap } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
+import {
+  makePortfolioObservationsVerifier,
+  type PortfolioObservationsVerifier,
+} from './observation-verifier.ts';
 import { preparePlanner } from './planner.exo.ts';
 import {
   makeValidateOpenMessageRepresentativeInfo,
@@ -152,6 +156,24 @@ const extractContractAddresses = <T extends keyof EVMContractAddresses>(
   ) satisfies Partial<Record<AxelarChain, AccountId>>;
   return addresses;
 };
+
+/**
+ * The valid verifying contracts of signed observations, by EIP-155 chain ID:
+ * the current remote account router of the chain.
+ *
+ * @param chainIdToAxelarChain
+ * @param contracts
+ */
+const extractObservationVerifyingContracts = (
+  chainIdToAxelarChain: ReturnType<typeof makeEip155ChainIdToAxelarChain>,
+  contracts: EVMContractAddressesMap,
+): Partial<Record<string, `0x${string}`>> =>
+  fromTypedEntries(
+    Object.entries(chainIdToAxelarChain).flatMap(([chainId, chainName]) => {
+      const router = contracts[chainName].remoteAccountRouter;
+      return router && router.length > 2 ? [[chainId, router] as const] : [];
+    }),
+  );
 
 export const extractEvmRemoteAccountConfig = (
   chainIdToAxelarChain: ReturnType<typeof makeEip155ChainIdToAxelarChain>,
@@ -311,10 +333,10 @@ const GmpAddressesShape: TypedPattern<GmpAddresses> = M.splitRecord({
   AXELAR_GAS: M.string(),
 });
 
-const CONTRACT_FEATURE_SUFFIX = 'ContractFeature';
-const EXPERIMENTAL_SWAP_CONTRACT_FEATURE = `experimentalSwap${CONTRACT_FEATURE_SUFFIX}`;
+const CONTRACT_FEATURE_PREFIX = 'features.';
+const EXPERIMENTAL_SWAP_CONTRACT_FEATURE = `${CONTRACT_FEATURE_PREFIX}experimentalSwap`;
 const contractFeatureArgShapes = harden({
-  [`agenticPlanning${CONTRACT_FEATURE_SUFFIX}`]: M.boolean(),
+  [`${CONTRACT_FEATURE_PREFIX}agenticPlanning`]: M.boolean(),
   [EXPERIMENTAL_SWAP_CONTRACT_FEATURE]: ExperimentalSwapShape,
 });
 
@@ -330,8 +352,8 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   gmpAddresses: GmpAddresses;
   chainMetadata?: ChainTokenMetadata;
   defaultFlowConfig?: FlowConfig | null;
-  agenticPlanningContractFeature?: boolean;
-  experimentalSwapContractFeature?: boolean;
+  'features.agenticPlanning'?: boolean;
+  'features.experimentalSwap'?: boolean;
   // Keep new private args optional: seemingly small breaking changes in
   // startup configuration often turn out to be expensive across upgrade,
   // bootstrap, and test paths.
@@ -340,6 +362,13 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   // directly to avoid standing up a full Zoe-managed postal-service contract.
   postalService?: PostalService;
   postalServiceInstance?: PostalServiceInstance;
+  /**
+   * Address of the EOA of the observation service (the attestor), which signs
+   * the portfolio observations that agent-submitted plans are checked
+   * against. If absent (or a `0x` placeholder), any signed observations are
+   * rejected.
+   */
+  observationAttestor?: `0x${string}`;
 };
 
 export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
@@ -364,6 +393,7 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
       ...contractFeatureArgShapes,
       postalService: M.remotable('PostalService'),
       postalServiceInstance: M.remotable('PostalServiceInstance'),
+      observationAttestor: M.string(),
     },
     {},
   );
@@ -406,7 +436,7 @@ const getContractFeatures = (privateArgs: PortfolioPrivateArgs) => {
   for (const name of contractFeatureArgNames) {
     const value = privateArgs[name] ?? defaults[name];
     if (value !== undefined) {
-      entries.push([name.slice(0, -CONTRACT_FEATURE_SUFFIX.length), value]);
+      entries.push([name.slice(CONTRACT_FEATURE_PREFIX.length), value]);
     }
   }
   return Object.fromEntries(entries);
@@ -465,6 +495,7 @@ export const contract = async (
     defaultFlowConfig = DEFAULT_FLOW_CONFIG,
     postalService,
     postalServiceInstance,
+    observationAttestor,
   } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
@@ -541,6 +572,19 @@ export const contract = async (
     );
     trace('published contractAccount', addr.value);
   });
+
+  // As for contract addresses, `0x` is a placeholder for "not configured".
+  const verifyPortfolioObservations: PortfolioObservationsVerifier =
+    observationAttestor && observationAttestor.length > 2
+      ? makePortfolioObservationsVerifier({
+          attestorAddress: observationAttestor,
+          verifyingContracts: extractObservationVerifyingContracts(
+            eip155ChainIdToAxelarChain,
+            contracts,
+          ),
+          timerService,
+        })
+      : async () => Fail`no observation attestor configured`;
 
   const validateOpenMessageRepresentativeInfo =
     makeValidateOpenMessageRepresentativeInfo(
@@ -725,6 +769,7 @@ export const contract = async (
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
+    verifyPortfolioObservations,
   });
 
   /**

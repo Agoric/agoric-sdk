@@ -1,3 +1,4 @@
+/** @file Tests for the planner exo. */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
@@ -33,6 +34,7 @@ test('planner exo resolvePlan method', async t => {
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
@@ -178,7 +180,7 @@ test('planner rejects delegated plans that fail observation-time validation', as
   await eventLoopIteration();
   assert(delegationClient);
   const before = { policyVersion: 2, rebalanceCount: 0 };
-  const flowKey = delegationClient.setTargetAllocation({
+  const flowKey = await delegationClient.setTargetAllocation({
     targetAllocation: { Aave_Base: 100n },
     syncState: {
       policyVersion: before.policyVersion,
@@ -220,7 +222,7 @@ test('planner rejects delegated plans that fail observation-time validation', as
   );
 
   const beforeRace = await getPortfolioStatus(1);
-  const racedFlowKey = delegationClient.setTargetAllocation({
+  const racedFlowKey = await delegationClient.setTargetAllocation({
     targetAllocation: { Aave_Base: 100n },
     syncState: {
       policyVersion: beforeRace.policyVersion,
@@ -301,7 +303,7 @@ test('planner accepts already-committed delegated target allocation after policy
   await eventLoopIteration();
   assert(delegationClient);
   const beforeFlow = await getPortfolioStatus(1);
-  const flowKey = delegationClient.setTargetAllocation({
+  const flowKey = await delegationClient.setTargetAllocation({
     targetAllocation: { Aave_Base: 100n },
     syncState: {
       policyVersion,
@@ -354,6 +356,7 @@ test('planner allows cosmos-based portfolio to withdraw to <Cash> via @chain acc
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
@@ -856,6 +859,7 @@ test('planner allows EVM-based portfolio to withdraw to -Chain via @chain accoun
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolioKit = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
@@ -999,6 +1003,7 @@ test('planner can reject a plan due to insufficient funds', async t => {
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
