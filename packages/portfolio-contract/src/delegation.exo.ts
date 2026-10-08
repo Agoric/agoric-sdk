@@ -7,6 +7,7 @@
  * @see {@link preparePortfolioDelegationKit}
  */
 import type { TypedPattern } from '@agoric/internal';
+import { SignedEIP712DataShape } from '@agoric/orchestration';
 import {
   PortfolioAutoFeaturesExtShape,
   PortfolioDelegatedClaimRewardsParamsShape,
@@ -14,6 +15,7 @@ import {
   PortfolioFlowAgentMemoShape,
   PortfolioSyncStateShape,
   type FlowKey,
+  type FundsFlowPlan,
   type PortfolioDelegatedClaimRewardsParams,
   type PortfolioDelegatedRebalanceParams,
   type PortfolioDelegatedSetTargetAllocationParams,
@@ -24,21 +26,30 @@ import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { PortfolioObservationsVerifier } from './observation-verifier.ts';
 import { TargetAllocationShape } from './type-guards.ts';
+import type { makeOfferArgsShapes } from './type-guards-steps.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 
 // TODO(#12011): move to `@agoric/portfolio-api` alongside PortfolioSyncStateShape /
 // PortfolioDelegatedRebalanceParamsShape / PortfolioDelegatedClaimRewardsParamsShape
-// once TargetAllocationShape's dependency on contract-local pool/protocol
-// data (PoolPlaces et al.) is resolved.
-export const PortfolioDelegatedSetTargetAllocationParamsShape: TypedPattern<PortfolioDelegatedSetTargetAllocationParams> =
+// once the dependencies of TargetAllocationShape on contract-local
+// pool/protocol data (PoolPlaces et al.) and of the plan shape on the USDC
+// brand are resolved.
+const makePortfolioDelegatedSetTargetAllocationParamsShape = (
+  planShape: TypedPattern<FundsFlowPlan>,
+) =>
   M.splitRecord(
     {
       syncState: PortfolioSyncStateShape,
       targetAllocation: TargetAllocationShape,
     },
-    { agentMemo: PortfolioFlowAgentMemoShape },
+    {
+      agentMemo: PortfolioFlowAgentMemoShape,
+      plan: planShape,
+      // Only the envelope: the content is validated when verifying it.
+      signedObservations: SignedEIP712DataShape,
+    },
     {},
-  );
+  ) as TypedPattern<PortfolioDelegatedSetTargetAllocationParams>;
 
 type DelegationState = {
   agentId: number;
@@ -71,26 +82,40 @@ const DelegationReaderI = M.interface('PortfolioDelegationReader', {
   getAutoFeatures: M.call().returns(M.opt(PortfolioAutoFeaturesExtShape)),
 });
 
-const DelegationClientI = M.interface('PortfolioDelegationClient', {
-  getReader: M.call().returns(M.remotable('PortfolioDelegationReader')),
-  rebalance: M.call(PortfolioDelegatedRebalanceParamsShape).returns(M.string()),
-  claimRewards: M.call(PortfolioDelegatedClaimRewardsParamsShape).returns(
-    M.string(),
-  ),
-  // Async to allow for prompt asynchronous validation of the params.
-  setTargetAllocation: M.callWhen(
-    PortfolioDelegatedSetTargetAllocationParamsShape,
-  ).returns(M.string()),
-});
+const makeDelegationClientI = (
+  setTargetAllocationParamsShape: TypedPattern<PortfolioDelegatedSetTargetAllocationParams>,
+) =>
+  M.interface('PortfolioDelegationClient', {
+    getReader: M.call().returns(M.remotable('PortfolioDelegationReader')),
+    rebalance: M.call(PortfolioDelegatedRebalanceParamsShape).returns(
+      M.string(),
+    ),
+    claimRewards: M.call(PortfolioDelegatedClaimRewardsParamsShape).returns(
+      M.string(),
+    ),
+    // Async to allow for prompt asynchronous validation of the params.
+    setTargetAllocation: M.callWhen(setTargetAllocationParamsShape).returns(
+      M.string(),
+    ),
+  });
 
 export const preparePortfolioDelegationKit = (
   zone: Zone,
   {
     zcf: _zcf,
     verifyPortfolioObservations: _verifyPortfolioObservations,
-  }: { zcf: ZCF; verifyPortfolioObservations: PortfolioObservationsVerifier },
-) =>
-  zone.exoClassKit(
+    shapes,
+  }: {
+    zcf: ZCF;
+    verifyPortfolioObservations: PortfolioObservationsVerifier;
+    shapes: Pick<ReturnType<typeof makeOfferArgsShapes>, 'plan'>;
+  },
+) => {
+  const DelegationClientI = makeDelegationClientI(
+    makePortfolioDelegatedSetTargetAllocationParamsShape(shapes.plan),
+  );
+
+  return zone.exoClassKit(
     'PortfolioDelegation',
     {
       reader: DelegationReaderI,
@@ -143,6 +168,9 @@ export const preparePortfolioDelegationKit = (
         async setTargetAllocation(
           params: PortfolioDelegatedSetTargetAllocationParams,
         ): Promise<FlowKey> {
+          (params.plan === undefined &&
+            params.signedObservations === undefined) ||
+            Fail`TODO(AGO-1299): delegated plans are not implemented`;
           const { portfolioAccess, agentId } = this.state;
           const current =
             portfolioAccess.getTargetAllocation(this.facets.client, agentId) ||
@@ -164,6 +192,7 @@ export const preparePortfolioDelegationKit = (
     },
     { stateShape: DelegationStateShape },
   );
+};
 
 export type PortfolioDelegationKit = ReturnType<
   ReturnType<typeof preparePortfolioDelegationKit>

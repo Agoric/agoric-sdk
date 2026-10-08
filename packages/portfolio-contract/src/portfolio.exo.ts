@@ -501,7 +501,7 @@ export const preparePortfolioKit = (
   const makePosition = preparePosition(zone, emptyTransferState, publishStatus);
   const makeDelegationKit = preparePortfolioDelegationKit(
     zone.subZone('delegation'),
-    { zcf, verifyPortfolioObservations },
+    { zcf, verifyPortfolioObservations, shapes: offerArgsShapes },
   );
   const makeDelegationsStore = (
     portfolioId: number,

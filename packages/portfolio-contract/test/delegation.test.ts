@@ -1178,3 +1178,44 @@ test('open+grant with an unrecognized permission key aborts before portfolio cre
     message: /no data at path/,
   });
 });
+
+test('delegated plans are not implemented yet', async t => {
+  const deployed = await deploy(t);
+  const { receiver, peteKit, peteArbitrum, portfolioId } =
+    await openPetePortfolio(deployed);
+  const grantStatus = await peteArbitrum.grant(
+    PETE_AGENT,
+    harden({ allocation: true }),
+  );
+  const { delegationClient } = await redeemAndCheckDelegation({
+    t,
+    zoe: deployed.zoe,
+    grantStatus,
+    receiver,
+    expectedDetails: {
+      portfolioId,
+      agentId: 'agent1',
+      permissions: { allocation: true },
+    },
+  });
+  const params = harden({
+    targetAllocation: { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n },
+    syncState: getSyncState(await peteKit.evmTrader.getPortfolioStatus()),
+  });
+
+  await t.throwsAsync(
+    E(delegationClient).setTargetAllocation({
+      ...params,
+      plan: { flow: [] },
+    }),
+    { message: 'TODO(AGO-1299): delegated plans are not implemented' },
+  );
+  await t.throwsAsync(
+    E(delegationClient).setTargetAllocation({
+      ...params,
+      // @ts-expect-error intentionally malformed
+      signedObservations: { message: {} },
+    }),
+    { message: /signedObservations\?: .* - Must have missing properties/ },
+  );
+});
