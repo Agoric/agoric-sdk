@@ -75,9 +75,14 @@ type PortfolioId = ReturnType<PortfolioRead['getPortfolioId']>;
 type Attestation = NonNullable<
   PortfolioDelegatedSetTargetAllocationParams['attestation']
 >;
+type SyncState = PortfolioDelegatedSetTargetAllocationParams['syncState'];
 type Mcp = {
   // AGO-1298: hosted MCP obtains signed observations; the agent only forwards them.
-  attest: (portfolioId: PortfolioId) => Promise<Attestation>;
+  // The observations are of the portfolio at a given sync state.
+  attest: (
+    portfolioId: PortfolioId,
+    syncState: SyncState,
+  ) => Promise<Attestation>;
 };
 
 const makeMcp = (
@@ -93,7 +98,7 @@ const makeMcp = (
   }),
 ): Mcp =>
   harden({
-    async attest(portfolioId: PortfolioId) {
+    async attest(portfolioId: PortfolioId, _syncState: SyncState) {
       assert.equal(portfolioId, getExpectedPortfolioId());
       return harden({
         observations,
@@ -126,12 +131,16 @@ const makeAgent = (
       const delegationClient =
         await wallet.executeOffer<PortfolioDelegationClient>();
       const before = await portfolioRead.getPortfolioStatus();
-      const attestation = await mcp.attest(portfolioRead.getPortfolioId());
+      const syncState = harden({
+        policyVersion: before.policyVersion,
+        rebalanceCount: before.rebalanceCount,
+      });
+      const attestation = await mcp.attest(
+        portfolioRead.getPortfolioId(),
+        syncState,
+      );
       const submitted = harden({
-        syncState: {
-          policyVersion: before.policyVersion,
-          rebalanceCount: before.rebalanceCount,
-        },
+        syncState,
         targetAllocation,
         plan,
         attestation,
