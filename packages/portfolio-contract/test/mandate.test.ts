@@ -565,7 +565,7 @@ test('allocation operation rejects a plan over its target ceiling', t => {
         harden({ allocation: { maxWeightBps: 6_000n } }),
         targetAllocation,
         plan,
-        harden({ observations, signature: null }),
+        harden(observations),
       ),
     { message: /plan exceeds target allocation.*Compound_Arbitrum/ },
   );
@@ -601,7 +601,7 @@ test('allocation operation rejects attested TVL below its mandate', t => {
         }),
         targetAllocation,
         plan,
-        harden({ observations, signature: null }),
+        harden(observations),
       ),
     { message: /mandate\.minVaultTvl.*Aave_Arbitrum/ },
   );

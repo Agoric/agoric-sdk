@@ -702,7 +702,11 @@ export const preparePortfolioKit = (
         submitTargetAllocation(
           client: PortfolioDelegationClient,
           agentId: number,
-          allocationOperation: PortfolioDelegatedSetTargetAllocationParams,
+          allocationOperation: Omit<
+            PortfolioDelegatedSetTargetAllocationParams,
+            'attestation'
+          >,
+          observations?: PlanObservations,
         ): FlowKey {
           const { reader, manager, delegationHelper } = this.facets;
           const delegation = delegationHelper.getAuthorizedDelegation(
@@ -710,7 +714,7 @@ export const preparePortfolioKit = (
             agentId,
             { allocation: true },
           );
-          const { syncState, targetAllocation, agentMemo, plan, attestation } =
+          const { syncState, targetAllocation, agentMemo, plan } =
             allocationOperation;
 
           const { policyVersion, rebalanceCount } = syncState;
@@ -735,24 +739,20 @@ export const preparePortfolioKit = (
 
           const { flowId } = startedFlow;
           try {
-            if (plan && attestation) {
+            if (plan && observations) {
               const currentBalancePlaces = harden([
                 ...[...this.state.accounts.keys()].map(
                   chain => `@${chain}` as const,
                 ),
                 ...this.state.positions.keys(),
               ]);
-              vetObservationPlaces(
-                currentBalancePlaces,
-                plan,
-                attestation.observations,
-              );
+              vetObservationPlaces(currentBalancePlaces, plan, observations);
             }
             const commitNow = vetAllocationPlan(
               permissions,
               targetAllocation,
               plan,
-              attestation,
+              observations,
             );
             if (commitNow) {
               const resultingPolicyVersion =

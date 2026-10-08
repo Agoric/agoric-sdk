@@ -173,10 +173,13 @@ export const preparePortfolioDelegationKit = (
           extra.length === 0 || Fail`unauthorized allocations for ${q(extra)}`;
           missing.length === 0 || Fail`missing allocations for ${q(missing)}`;
 
+          // Only pass on the observations, once their attestation is checked.
+          const { attestation, ...allocationParams } = params;
           return portfolioAccess.submitTargetAllocation(
             this.facets.client,
             agentId,
-            params,
+            harden(allocationParams),
+            attestation?.observations,
           );
         },
       },

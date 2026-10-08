@@ -1,7 +1,6 @@
 /** @file Mandate and evidence checks for delegated portfolio operations. */
 import {
   type FundsFlowPlan,
-  type PlanAttestation,
   type PlanObservations,
   type PortfolioBalancePlaceRef,
   type PortfolioPermissions,
@@ -334,24 +333,23 @@ harden(vetPlanAllocation);
 
 /**
  * Vet a target allocation and optional execution plan against delegated
- * permissions and attested observations.
+ * permissions and the attested observations of the portfolio.
  *
  * @returns Whether the target allocation can be committed immediately. `false`
  * means observation-dependent permissions require a later plan.
- * @throws {Error} if the allocation, plan, attestation, or observations violate
- * the delegated permissions
+ * @throws {Error} if the allocation, plan, or observations violate the
+ * delegated permissions, or if a plan lacks observations
  */
 export const vetAllocationPlan = (
   permissions: PortfolioPermissions,
   targetAllocation: TargetAllocation,
   plan: FundsFlowPlan | undefined,
-  attestation: PlanAttestation | undefined,
+  observations: PlanObservations | undefined,
 ): boolean => {
   assertMandateForAllocation(permissions, targetAllocation);
   if (!plan) return !needsObservations(permissions);
 
-  const { observations } =
-    attestation ?? Fail`customer-supplied plans require an attestation`;
+  if (!observations) throw Fail`customer-supplied plans require observations`;
   vetPlanAllocation(targetAllocation, plan, observations);
   assertMandateForPlanObservations(permissions, targetAllocation, observations);
   return true;
