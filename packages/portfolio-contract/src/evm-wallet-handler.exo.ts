@@ -10,7 +10,10 @@ import {
   type TypedPattern,
 } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
-import type { Bech32Address } from '@agoric/orchestration';
+import {
+  SignedEIP712DataShape,
+  type Bech32Address,
+} from '@agoric/orchestration';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
 import { makeEIP712MessageHandlerUtils } from '@agoric/orchestration/src/utils/eip712-message-handler.ts';
 import { getAddress } from '@agoric/orchestration/src/vendor/viem/viem-address.js';
@@ -497,13 +500,7 @@ type EVMPortfolioOperationManager = ReturnType<
 >;
 
 export const EIP712DataShape: TypedPattern<EIP712Data> = M.splitRecord(
-  {
-    domain: M.any(),
-    types: M.record(),
-    primaryType: M.string(),
-    message: M.record(),
-    signature: M.any(),
-  },
+  SignedEIP712DataShape,
   {
     verifiedSigner: M.string(),
     hash: M.string(),
