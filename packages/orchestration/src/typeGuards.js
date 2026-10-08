@@ -378,3 +378,23 @@ export const IBCTransferOptionsShape = M.and(
   ),
   CosmosActionOptionsShape,
 );
+
+/**
+ * The fields of signed EIP-712 typed data, e.g. as relayed on behalf of its
+ * signer. Only the envelope is described: the typed data itself, and its
+ * signature, need to be validated separately.
+ *
+ * The signature may be in any passable form accepted by viem (see
+ * `WithSignature`): hex encoded, or structured (`{ r, s, v }` or
+ * `{ r, s, yParity }`).
+ *
+ * As a record of shapes, it can also be extended with other fields.
+ */
+export const SignedEIP712DataShape = {
+  domain: M.record(),
+  types: M.record(),
+  primaryType: M.string(),
+  message: M.record(),
+  signature: M.or(M.string(), M.record()),
+};
+harden(SignedEIP712DataShape);
