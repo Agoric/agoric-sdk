@@ -103,7 +103,7 @@ export const preparePortfolioDelegationKit = (
   zone: Zone,
   {
     zcf: _zcf,
-    verifyPortfolioObservations: _verifyPortfolioObservations,
+    verifyPortfolioObservations,
     shapes,
   }: {
     zcf: ZCF;
@@ -168,10 +168,18 @@ export const preparePortfolioDelegationKit = (
         async setTargetAllocation(
           params: PortfolioDelegatedSetTargetAllocationParams,
         ): Promise<FlowKey> {
-          (params.plan === undefined &&
-            params.signedObservations === undefined) ||
-            Fail`TODO(AGO-1299): delegated plans are not implemented`;
           const { portfolioAccess, agentId } = this.state;
+          // Don't let an unauthorized client cause any verification work.
+          // Authorization is checked again once verification resolves.
+          portfolioAccess.getAuthorizedDelegation(this.facets.client, agentId, {
+            allocation: true,
+          });
+          const { signedObservations, ...allocationParams } = params;
+          (params.plan === undefined) === (signedObservations === undefined) ||
+            Fail`a plan requires signed observations, and vice versa`;
+          // Resolves promptly. Everything below is checked after it does.
+          const verifiedObservations = await (signedObservations &&
+            verifyPortfolioObservations(signedObservations));
           const current =
             portfolioAccess.getTargetAllocation(this.facets.client, agentId) ||
             {};
@@ -182,10 +190,12 @@ export const preparePortfolioDelegationKit = (
           extra.length === 0 || Fail`unauthorized allocations for ${q(extra)}`;
           missing.length === 0 || Fail`missing allocations for ${q(missing)}`;
 
+          // Only pass on the observations as verified.
           return portfolioAccess.submitTargetAllocation(
             this.facets.client,
             agentId,
-            params,
+            harden(allocationParams),
+            verifiedObservations,
           );
         },
       },

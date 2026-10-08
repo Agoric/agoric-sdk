@@ -20,10 +20,20 @@ import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
 import type { Bech32Address } from '@agoric/orchestration';
 import type {
   FlowKey,
+  FundsFlowPlan,
+  PlanObservations,
+  PortfolioDelegatedSetTargetAllocationParams,
   PortfolioPermissions,
   StatusFor,
   TargetAllocation,
 } from '@agoric/portfolio-api';
+import {
+  portfolioObservationsToEIP712,
+  ymaxObservationMessageKit,
+  type PortfolioObservationsContent,
+  type SignedPortfolioObservations,
+} from '@agoric/portfolio-api/src/observation-messages.js';
+import { privateKeyToAccount } from 'viem/accounts';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { NameAdmin } from '@agoric/vats';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
@@ -36,7 +46,11 @@ import { E, Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { deploy, makeEvmTraderKit } from './contract-setup.ts';
-import { contractsMock, evmTrader0PrivateKey } from './mocks.ts';
+import {
+  contractsMock,
+  evmTrader0PrivateKey,
+  evmTrader1PrivateKey,
+} from './mocks.ts';
 import type { PortfolioStatus } from './contract-test-support.ts';
 import { chainInfoWithCCTP } from './supports.ts';
 
@@ -1179,8 +1193,18 @@ test('open+grant with an unrecognized permission key aborts before portfolio cre
   });
 });
 
-test('delegated plans are not implemented yet', async t => {
-  const deployed = await deploy(t);
+// #region delegated plans with signed observations
+
+const attestor = privateKeyToAccount(evmTrader1PrivateKey);
+const ARBITRUM_CHAIN_ID = 42161n;
+
+const setupPlanDelegation = async (
+  t: ExecutionContext,
+  overrides: Parameters<typeof deploy>[1] = {
+    observationAttestor: attestor.address,
+  },
+) => {
+  const deployed = await deploy(t, overrides);
   const { receiver, peteKit, peteArbitrum, portfolioId } =
     await openPetePortfolio(deployed);
   const grantStatus = await peteArbitrum.grant(
@@ -1198,24 +1222,172 @@ test('delegated plans are not implemented yet', async t => {
       permissions: { allocation: true },
     },
   });
-  const params = harden({
-    targetAllocation: { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n },
-    syncState: getSyncState(await peteKit.evmTrader.getPortfolioStatus()),
+
+  const signObservations = async (
+    content: PortfolioObservationsContent,
+    account = attestor,
+  ): Promise<SignedPortfolioObservations> => {
+    const { absValue: now } = await E(
+      deployed.timerService,
+    ).getCurrentTimestamp();
+    const message = ymaxObservationMessageKit.getStandaloneOperationData(
+      {
+        ...portfolioObservationsToEIP712(content),
+        // issuedAt
+        nonce: now,
+        deadline: now + 300n,
+      },
+      'PortfolioObservations',
+      ARBITRUM_CHAIN_ID,
+      contractsMock.Arbitrum.remoteAccountRouter!,
+    );
+    return harden({
+      ...message,
+      signature: await account.signTypedData(message),
+    });
+  };
+
+  return {
+    peteKit,
+    peteArbitrum,
+    portfolioId,
+    delegationClient,
+    signObservations,
+  };
+};
+
+const planTargetAllocation = harden({
+  Aave_Arbitrum: 60n,
+  Compound_Arbitrum: 40n,
+});
+const emptyPlan: FundsFlowPlan = harden({ flow: [] });
+const someObservations: PlanObservations = harden({
+  balances: { Aave_Arbitrum: 6_000_000n, Compound_Arbitrum: 4_000_000n },
+  instrumentTvls: {},
+});
+
+test('delegated plans: the signed observations are verified and checked against the portfolio', async t => {
+  const { peteKit, portfolioId, delegationClient, signObservations } =
+    await setupPlanDelegation(t);
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const syncState = getSyncState(before);
+  const submit = (
+    extra: Pick<
+      PortfolioDelegatedSetTargetAllocationParams,
+      'plan' | 'signedObservations'
+    >,
+  ) =>
+    E(delegationClient).setTargetAllocation({
+      targetAllocation: planTargetAllocation,
+      syncState,
+      ...extra,
+    });
+  const content = harden({
+    portfolioId,
+    syncState,
+    observations: someObservations,
   });
 
+  await t.throwsAsync(submit({ plan: emptyPlan }), {
+    message: 'a plan requires signed observations, and vice versa',
+  });
   await t.throwsAsync(
-    E(delegationClient).setTargetAllocation({
-      ...params,
-      plan: { flow: [] },
+    submit({ signedObservations: await signObservations(content) }),
+    { message: 'a plan requires signed observations, and vice versa' },
+  );
+  await t.throwsAsync(
+    submit({
+      plan: emptyPlan,
+      signedObservations: await signObservations(
+        content,
+        privateKeyToAccount(evmTrader0PrivateKey),
+      ),
+    }),
+    { message: /^observations not signed by the attestor/ },
+  );
+  await t.throwsAsync(
+    submit({
+      plan: emptyPlan,
+      signedObservations: await signObservations({
+        ...content,
+        portfolioId: portfolioId + 1,
+      }),
+    }),
+    { message: `observations are for portfolio ${portfolioId + 1}` },
+  );
+  await t.throwsAsync(
+    submit({
+      plan: emptyPlan,
+      signedObservations: await signObservations({
+        ...content,
+        syncState: {
+          ...syncState,
+          rebalanceCount: syncState.rebalanceCount + 1,
+        },
+      }),
+    }),
+    { message: /^observations sync state .* does not match/ },
+  );
+  await t.throwsAsync(
+    submit({
+      plan: emptyPlan,
+      signedObservations: await signObservations(content),
     }),
     { message: 'TODO(AGO-1299): delegated plans are not implemented' },
   );
+
+  await eventLoopIteration();
+  const after = await peteKit.evmTrader.getPortfolioStatus();
+  t.deepEqual(getSyncState(after), syncState, 'no flow was started');
+  t.deepEqual(after.flowsRunning, before.flowsRunning);
+});
+
+test('delegated plans: an unauthorized client causes no verification', async t => {
+  const {
+    peteKit,
+    peteArbitrum,
+    portfolioId,
+    delegationClient,
+    signObservations,
+  } = await setupPlanDelegation(t);
+  const revokeStatus = await peteArbitrum.revoke(1);
+  t.is(revokeStatus.status, 'ok');
+  await eventLoopIteration();
+  const syncState = getSyncState(await peteKit.evmTrader.getPortfolioStatus());
+
+  // Verification would reject these observations, signed by someone else.
   await t.throwsAsync(
     E(delegationClient).setTargetAllocation({
-      ...params,
-      // @ts-expect-error intentionally malformed
-      signedObservations: { message: {} },
+      targetAllocation: planTargetAllocation,
+      syncState,
+      plan: emptyPlan,
+      signedObservations: await signObservations(
+        { portfolioId, syncState, observations: someObservations },
+        privateKeyToAccount(evmTrader0PrivateKey),
+      ),
     }),
-    { message: /signedObservations\?: .* - Must have missing properties/ },
+    { message: /delegation client is not active for agent1/ },
   );
 });
+
+test('delegated plans: signed observations are rejected without a configured attestor', async t => {
+  const { peteKit, portfolioId, delegationClient, signObservations } =
+    await setupPlanDelegation(t, {});
+  const syncState = getSyncState(await peteKit.evmTrader.getPortfolioStatus());
+
+  await t.throwsAsync(
+    E(delegationClient).setTargetAllocation({
+      targetAllocation: planTargetAllocation,
+      syncState,
+      plan: emptyPlan,
+      signedObservations: await signObservations({
+        portfolioId,
+        syncState,
+        observations: someObservations,
+      }),
+    }),
+    { message: 'no observation attestor configured' },
+  );
+});
+
+// #endregion
