@@ -86,6 +86,8 @@ export const InstrumentId = /** @type {const} */ ({
   ERC4626_morphoApyxUsdc_Ethereum: 'ERC4626_morphoApyxUsdc_Ethereum',
   ERC4626_morphoRockawayxToriEcosystem_Ethereum:
     'ERC4626_morphoRockawayxToriEcosystem_Ethereum',
+  ERC4626_morphoRockawayxFxProtocolEcosystemUsdc_Ethereum:
+    'ERC4626_morphoRockawayxFxProtocolEcosystemUsdc_Ethereum',
   USDN: 'USDN',
   USDNVault: 'USDNVault',
 });

@@ -26,6 +26,7 @@ import type {
   PortfolioAutoFeaturesExt,
   PortfolioPermissionsExt,
 } from './portfolio-permissions.js';
+import type { SignedPortfolioObservations } from './observation-messages.ts';
 
 /**
  * Feature flags to handle contract upgrade flow compatibility.
@@ -176,16 +177,6 @@ export type PortfolioBalancePlaceRef = InstrumentId | InterChainAccountRef;
 export type PlanObservations = {
   balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
-};
-
-/**
- * Portfolio observations together with the oracle signature that authenticates
- * them for plan validation.
- */
-export type PlanAttestation = {
-  observations: PlanObservations;
-  // TODO(AGO-1289): Define the verified EIP-712 signature representation.
-  signature: unknown;
 };
 
 export type FlowDetail =
@@ -563,15 +554,16 @@ export type PortfolioDelegatedClaimRewardsParams = {
 };
 
 /**
- * A delegated target-allocation request, optionally including its execution
- * plan. A supplied plan requires an attestation for its observations.
+ * A delegated target-allocation request, optionally with the plan to execute
+ * it, which requires observations of the portfolio at `syncState`, signed by
+ * the observation service.
  */
 export type PortfolioDelegatedSetTargetAllocationParams = {
   syncState: PortfolioSyncState;
   targetAllocation: TargetAllocation;
   agentMemo?: string;
   plan?: FundsFlowPlan;
-  attestation?: PlanAttestation;
+  signedObservations?: SignedPortfolioObservations;
 };
 
 /**

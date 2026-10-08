@@ -58,7 +58,8 @@ export type OperationDetails<
      * drop) genuinely-signed fields this version doesn't recognize, `data`
      * can carry extra properties beyond `OperationType<S, P>` at runtime.
      * Consumers that must reject such fields (e.g. permission records)
-     * need to validate that themselves against a closed shape.
+     * need to validate that themselves against a closed shape, unless the
+     * utils were made with `onUnknownSignedField: 'throw'`.
      */
     data: OperationType<S, P>;
   };
@@ -101,6 +102,25 @@ export type FullMessageDetails<
  */
 export type ContractAddresses = Partial<Record<number | string, Address>>;
 
+/**
+ * What to do with a field that was genuinely signed, but is not part of the
+ * schema's types for the operation (e.g. added by a newer client version):
+ *
+ * - `'keep'`: return it as part of the operation `data`, for the consumer to
+ *   validate (e.g. against a closed shape).
+ * - `'throw'`: reject the message.
+ *
+ * Silently dropping such a field is intentionally not an option: a dropped
+ * field the signer relied upon (e.g. an attenuation on a grant) would be
+ * treated as absent.
+ */
+export type UnknownSignedFieldHandling = 'keep' | 'throw';
+
+export type EIP712MessageHandlerOptions = {
+  /** @default 'keep' */
+  onUnknownSignedField?: UnknownSignedFieldHandling;
+};
+
 export type EIP712ViemUtils = {
   isHex: typeof isHex;
   hashStruct: typeof hashStruct;
@@ -117,14 +137,17 @@ export type EIP712ViemUtils = {
  * @param viemUtils
  * @param schema describes the domain and operations of accepted messages.
  *   Messages of any other domain or operation are rejected.
- * @throws {Error} if a viem util is missing, or if the schema is invalid
- *   (see {@link makeEIP712MessageKit}).
+ * @param options
+ * @param options.onUnknownSignedField see {@link UnknownSignedFieldHandling}
+ * @throws {Error} if a viem util is missing, if the schema is invalid
+ *   (see {@link makeEIP712MessageKit}), or if an option is invalid.
  */
 export const makeEIP712MessageHandlerUtils = <
   const S extends EIP712MessageSchema,
 >(
   viemUtils: EIP712ViemUtils,
   schema: S,
+  { onUnknownSignedField = 'keep' }: EIP712MessageHandlerOptions = {},
 ) => {
   type Ops = OperationNames<S>;
   type PermitData<T extends Ops = Ops> = PermitWitnessTransferFromOperationData<
@@ -169,6 +192,12 @@ export const makeEIP712MessageHandlerUtils = <
     }
   }
 
+  if (onUnknownSignedField !== 'keep' && onUnknownSignedField !== 'throw') {
+    throw new Error(
+      `Invalid onUnknownSignedField option: ${String(onUnknownSignedField)}`,
+    );
+  }
+
   // Explicitly typed, as required to call its assertion methods.
   const messageKit: EIP712MessageKit<S> = makeEIP712MessageKit(schema);
   const { domainName } = schema;
@@ -186,9 +215,9 @@ export const makeEIP712MessageHandlerUtils = <
    * actually part of what was signed. This function normalizes it a second
    * time against the types this (possibly older) version of the code
    * expects for the operation, resolving any `optional` field based on
-   * whether it's actually present in the message, but *keeps* rather than
-   * drops fields the signer's client signed that this version doesn't know
-   * about yet: dropping them would let a permissions-bearing field silently
+   * whether it's actually present in the message, but *keeps* (or, if so
+   * configured, rejects) rather than drops fields the signer's client signed
+   * that this version doesn't know about yet: dropping them would let a permissions-bearing field silently
    * disappear (e.g. a not-yet-understood attenuation on a grant), turning
    * an attenuated grant into an unconstrained one. The returned `data` can
    * therefore be a superset of the expected shape; it is guaranteed to
@@ -242,7 +271,7 @@ export const makeEIP712MessageHandlerUtils = <
         types: messageKit.getOperationTypes(operation),
         primaryType: operation,
       },
-      { onExtraField: 'keep', onNonCanonicalValue: 'throw' },
+      { onExtraField: onUnknownSignedField, onNonCanonicalValue: 'throw' },
     );
     return {
       operation,
@@ -262,8 +291,8 @@ export const makeEIP712MessageHandlerUtils = <
    * normalizes it a second time against the types this (possibly older)
    * version of the code expects for the operation, resolving any `optional`
    * field based on whether it's actually present in the witness data, but
-   * *keeps* rather than drops fields the signer's client signed that this
-   * version doesn't know about yet (see
+   * *keeps* (or, if so configured, rejects) rather than drops fields the
+   * signer's client signed that this version doesn't know about yet (see
    * `extractOperationDetailsFromStandaloneData`).
    *
    * Assumes the message has already been validated against the types from the data.
@@ -302,7 +331,7 @@ export const makeEIP712MessageHandlerUtils = <
         types: messageKit.getOperationTypes(operation),
         primaryType: operation,
       },
-      { onExtraField: 'keep', onNonCanonicalValue: 'throw' },
+      { onExtraField: onUnknownSignedField, onNonCanonicalValue: 'throw' },
     );
     const spender = permitData.message.spender;
     return {
@@ -425,9 +454,10 @@ export const makeEIP712MessageHandlerUtils = <
    * the same way, separately (its values live outside `message`).
    * A *different*, later normalize pass (in
    * `extractOperationDetailsFromStandaloneData` /
-   * `extractOperationDetailsFromPermit2WitnessData`) keeps -- rather than
-   * rejects -- fields that were genuinely signed but aren't supported by
-   * this version's schema operation types: they were legitimately
+   * `extractOperationDetailsFromPermit2WitnessData`) by default keeps --
+   * rather than rejects -- fields that were genuinely signed but aren't
+   * supported by this version's schema operation types (see
+   * {@link UnknownSignedFieldHandling}): they were legitimately
    * signed, merely not (yet) understood by this version. They are not
    * dropped, because a permissions-bearing field this version doesn't
    * understand yet must not silently vanish and be treated as absent (that
