@@ -32,8 +32,8 @@ An actor may emit information only if it:
 
 For each arrow, ask what the sender knew before and after it. Watch especially
 for an actor emitting a value it was neither created with nor told through a
-method. A submitted claim may select what an oracle observes, but cannot become
-the oracle's independent observation. If a callee allocates an identifier, the
+method. A submitted claim may direct another actor's inquiry, but cannot become
+that actor's independent observation. If a callee allocates an identifier, the
 callee returns it; the caller does not supply a convenient future identifier.
 
 Use an assignment self-arrow to bind a diagram-local name at the point an actor
