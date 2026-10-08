@@ -76,7 +76,8 @@ const DelegationClientI = M.interface('PortfolioDelegationClient', {
   claimRewards: M.call(PortfolioDelegatedClaimRewardsParamsShape).returns(
     M.string(),
   ),
-  setTargetAllocation: M.call(
+  // Async to allow for prompt asynchronous validation of the params.
+  setTargetAllocation: M.callWhen(
     PortfolioDelegatedSetTargetAllocationParamsShape,
   ).returns(M.string()),
 });
@@ -135,9 +136,9 @@ export const preparePortfolioDelegationKit = (
             params,
           );
         },
-        setTargetAllocation(
+        async setTargetAllocation(
           params: PortfolioDelegatedSetTargetAllocationParams,
-        ): FlowKey {
+        ): Promise<FlowKey> {
           const { portfolioAccess, agentId } = this.state;
           const current =
             portfolioAccess.getTargetAllocation(this.facets.client, agentId) ||
