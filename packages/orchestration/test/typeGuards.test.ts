@@ -58,23 +58,74 @@ test('backwards compatibility', t => {
 
 test('SignedEIP712Data', t => {
   const signed = harden({
-    domain: { name: 'Test', version: '1' },
-    types: { Test: [{ name: 'value', type: 'uint256' }] },
+    domain: {
+      name: 'Test',
+      version: '1',
+      chainId: 1n,
+      verifyingContract: `0x${'12'.repeat(20)}`,
+    },
+    types: {
+      EIP712Domain: [
+        { name: 'name', type: 'string' },
+        { name: 'version', type: 'string' },
+        { name: 'chainId', type: 'uint256' },
+        { name: 'verifyingContract', type: 'address' },
+      ],
+      Test: [{ name: 'value', type: 'uint256' }],
+    },
     primaryType: 'Test',
     message: { value: 1n },
     signature: `0x${'ab'.repeat(65)}`,
   });
   mustMatch(signed, SignedEIP712DataShape);
-  mustMatch(
-    harden({ ...signed, signature: { r: '0x01', s: '0x02', v: 27n } }),
-    SignedEIP712DataShape,
+  const accepts = (variant: object) =>
+    matches(harden({ ...signed, ...variant }), SignedEIP712DataShape);
+
+  t.true(accepts({ signature: { r: '0x01', s: '0x02', v: 27n } }));
+  t.false(accepts({ signature: 1 }));
+
+  t.true(accepts({ domain: {} }), 'no domain field is required');
+  for (const chainId of ['1', '0x1', 1]) {
+    t.true(accepts({ domain: { ...signed.domain, chainId } }), `${chainId}`);
+  }
+  t.true(
+    accepts({ domain: { ...signed.domain, salt: `0x${'00'.repeat(32)}` } }),
   );
-  t.false(matches(harden({ ...signed, signature: 1 }), SignedEIP712DataShape));
+  t.false(accepts({ domain: { ...signed.domain, extra: 'x' } }));
+
+  t.true(
+    accepts({ types: { Test: signed.types.Test } }),
+    'EIP712Domain types are not required',
+  );
+  t.false(
+    accepts({
+      types: { Test: [{ name: 'value', type: 'uint256', optional: true }] },
+    }),
+    'no optional marker',
+  );
+  t.false(accepts({ types: { Test: [{ name: 'value' }] } }));
+  t.false(accepts({ types: { Test: { name: 'value', type: 'uint256' } } }));
+  t.false(accepts({ message: 'value' }));
 
   const { signature: _, ...unsigned } = signed;
   t.false(matches(harden(unsigned), SignedEIP712DataShape));
-  t.false(matches(harden({ ...signed, extra: 1 }), SignedEIP712DataShape));
+  t.false(accepts({ extra: 1 }));
 
   const extended = M.splitRecord(SignedEIP712DataShape, { extra: M.number() });
   t.true(matches(harden({ ...signed, extra: 1 }), extended));
+
+  const requiringDomainTypes = M.splitRecord({
+    ...SignedEIP712DataShape,
+    types: M.and(
+      M.splitRecord({ EIP712Domain: M.any() }, {}, M.any()),
+      SignedEIP712DataShape.types,
+    ),
+  });
+  t.true(matches(signed, requiringDomainTypes));
+  t.false(
+    matches(
+      harden({ ...signed, types: { Test: signed.types.Test } }),
+      requiringDomainTypes,
+    ),
+  );
 });
