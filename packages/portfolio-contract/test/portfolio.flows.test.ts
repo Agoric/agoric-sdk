@@ -896,9 +896,8 @@ test(
     t.like(
       seatFails?.reason,
       {
-        error: 'Insufficient funds - piggy bank sprang a leak',
-        how: 'Compound',
-        step: 4,
+        message:
+          'step 4 (Compound) failed: Insufficient funds - piggy bank sprang a leak',
       },
       'rebalance should fail when EVM account creation fails',
     );
