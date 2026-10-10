@@ -11,6 +11,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/log"
@@ -308,7 +309,7 @@ func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sd
 	subspace := pk.Subspace(types.ModuleName)
 	vbankStore := runtime.NewKVStoreService(vbankStoreKey)
 	transientStore := runtime.NewTransientStoreService(paramsTStoreKey)
-	keeper := NewKeeper(cdc, vbankStore, transientStore, subspace, account, bank, "feeCollectorName", pushAction)
+	keeper := NewKeeper(cdc, vbankStore, transientStore, subspace, account, bank, "feeCollectorName", authtypes.NewModuleAddress(govtypes.ModuleName).String(), pushAction)
 
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
