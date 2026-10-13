@@ -14,6 +14,7 @@ import {
   vetObservationPlaces,
   vetPlanAllocation,
 } from '../src/delegation-limits.ts';
+import { makeSchedule } from '../src/schedule-order.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -29,6 +30,50 @@ const staticObservations = harden({
 });
 
 const allocation = harden({ Aave_Base: 60n, Compound_Base: 40n });
+
+/**
+ * The safety constraint intentionally prohibits some useful agent actions. An
+ * Aave runtime constraint might require depositing $0.95 before withdrawing
+ * $1.00 to reduce a position by $0.05. Although the final state is exactly at
+ * its 50% target, failure of the withdrawal would leave the position larger
+ * than both its initial balance and its target ceiling, so the plan is unsafe.
+ */
+test('safety rejects a temporary increase needed to reduce exposure', t => {
+  const targetAllocation = { Aave_Arbitrum: 50n, '@Arbitrum': 50n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 100_100_000n,
+      '@Arbitrum': 100_000_000n,
+    },
+    instrumentTvls: {},
+  };
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: '@Arbitrum',
+        dest: 'Aave_Arbitrum',
+        amount: { brand: USDC, value: 950_000n },
+      },
+      {
+        src: 'Aave_Arbitrum',
+        dest: '@Arbitrum',
+        amount: { brand: USDC, value: 1_000_000n },
+      },
+    ],
+  };
+
+  const afterDeposit = 100_100_000n + 950_000n;
+  const finalAave = afterDeposit - 1_000_000n;
+  const finalCash = 100_000_000n - 950_000n + 1_000_000n;
+  t.true(afterDeposit > observations.balances.Aave_Arbitrum!);
+  t.deepEqual(
+    { Aave_Arbitrum: finalAave, '@Arbitrum': finalCash },
+    { Aave_Arbitrum: 100_050_000n, '@Arbitrum': 100_050_000n },
+  );
+  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
+    message: /plan exceeds target allocation.*Aave_Arbitrum/,
+  });
+});
 
 test('plan allocation is bounded by instrument ceilings', t => {
   const targetAllocation: TargetAllocation = {
@@ -444,6 +489,48 @@ test('plan funding follows declared dependencies, not array order', t => {
   t.notThrows(() => vetPlanAllocation(targetAllocation, plan, observations));
 });
 
+test('plan vetting uses the execution scheduler dependency semantics', t => {
+  const planObservations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 100n,
+      Compound_Arbitrum: 100n,
+      '@Arbitrum': 0n,
+    },
+    instrumentTvls: {},
+  };
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Aave_Arbitrum',
+        dest: '@Arbitrum',
+        amount: { brand: USDC, value: 100n },
+      },
+      {
+        src: '@Arbitrum',
+        dest: 'Aave_Arbitrum',
+        amount: { brand: USDC, value: 100n },
+      },
+    ],
+    order: [
+      [1, [0]],
+      [1, []],
+    ],
+  };
+  const schedule = makeSchedule({ taskQty: 2, order: plan.order! });
+  t.deepEqual(schedule.ready(), [0]);
+  schedule.complete(0);
+  t.deepEqual(schedule.ready(), [1]);
+  // Execution withdraws before supplying, so Aave never exceeds its initial
+  // or target share. Partial-plan validation should use those same dependencies.
+  t.notThrows(() =>
+    vetPlanAllocation(
+      { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
+      plan,
+      planObservations,
+    ),
+  );
+});
+
 for (const place of ['@Arbitrum', 'Aave_Arbitrum'] as const) {
   test(`allocation plan rejects self-movement at ${place}`, t => {
     t.throws(
@@ -490,6 +577,30 @@ test('plan funding rejects unordered producer and consumer', t => {
 
   t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
     message: /unfunded plan movement.*@Arbitrum/,
+  });
+});
+
+test('plan allocation rejects unsafe partial success among unordered steps', t => {
+  const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Arbitrum: 50n,
+      Compound_Arbitrum: 50n,
+      '@Arbitrum': 40n,
+    },
+    instrumentTvls: {},
+  };
+  const amount = { brand: USDC, value: 40n };
+  const plan: FundsFlowPlan = {
+    flow: [
+      { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount },
+      { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount },
+    ],
+    order: [],
+  };
+
+  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
+    message: /plan exceeds target allocation.*Aave_Arbitrum/,
   });
 });
 

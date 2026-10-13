@@ -15,7 +15,8 @@ import {
   isPortfolioBalancePlaceRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
 import { Fail } from '@endo/errors';
-import { fullOrder, makeSchedule } from './schedule-order.ts';
+import { maxWeightClosure } from './max-weight-closure.ts';
+import { fullOrder, makeDependencies, makeSchedule } from './schedule-order.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
 
 const { entries, keys, values } = Object;
@@ -233,6 +234,73 @@ const vetAllocationCeilings = (
 };
 
 /**
+ * Reject a plan when partial failure could increase a position balance above
+ * both its target allocation ceiling and its initial balance.
+ *
+ * Let S be the number of plan steps, D the number of distinct dependency
+ * edges, and I the number of referenced instruments. This runs one
+ * maximum-weight closure per instrument, for O(I * S * (S + D)^2) worst-case
+ * time and O(S^2) peak space, excluding bigint arithmetic. With the default
+ * linear order D is O(S), so the time bound is O(I * S^3); a dense explicit
+ * order can raise it to O(I * S^5).
+ *
+ * The closure graph is rebuilt synchronously for each instrument. Keep
+ * admitted plan sizes and instrument counts bounded, and benchmark this path
+ * before increasing either limit materially.
+ */
+const vetPartialPlanAllocation = (
+  targetAllocation: TargetAllocation,
+  plan: DecodedPlan,
+  observations: PlanObservations,
+) => {
+  const initialBalances = new Map<string, bigint>(
+    entries(observations.balances).map(([place, balance]) => [
+      place,
+      balance ?? 0n,
+    ]),
+  );
+  const totalBalance = sumOptionalBigints([...initialBalances.values()]);
+  const totalPortions = sumPortions(targetAllocation);
+  const { flow } = plan;
+  const steps = [...flow.keys()];
+  const dependencies = makeDependencies(
+    flow.length,
+    plan.order ?? fullOrder(flow.length),
+  );
+  const instruments = new Set(
+    [
+      ...keys(targetAllocation),
+      ...initialBalances.keys(),
+      ...flow.flatMap(({ src, dest }) => [src, dest]),
+    ].filter(isInstrumentId),
+  );
+
+  for (const place of instruments) {
+    const initialBalance = initialBalances.get(place) ?? 0n;
+    const maxDelta = maxWeightClosure(
+      steps,
+      index => {
+        const movement = flow[index]!;
+        if (movement.kind === 'claimRewards') return 0n;
+        const { src, dest, amount } = movement;
+        if (dest === place) return amount.value;
+        if (src === place) return -amount.value;
+        return 0n;
+      },
+      index => [...(dependencies.get(index) ?? [])],
+    );
+    const maxBalance = initialBalance + maxDelta;
+    const ceiling = targetAllocation[place] ?? 0n;
+    const withinTarget =
+      totalPortions > 0n &&
+      maxBalance * totalPortions <= totalBalance * ceiling;
+    withinTarget ||
+      maxBalance <= initialBalance ||
+      Fail`plan exceeds target allocation at ${place}`;
+  }
+};
+
+/**
  * Simulate dependency-ordered execution to calculate final balances.
  *
  * Reward claims do not change the projected balances.
@@ -297,8 +365,9 @@ const projectPlanBalances = (
 };
 
 /**
- * Reject plans that claim rewards, add positions, or finish above target
- * ceilings.
+ * Reject plans that claim rewards, add positions, finish above target ceilings,
+ * or whose partial failure could increase a position balance above both its
+ * target allocation ceiling and its initial balance.
  */
 export const vetPlanAllocation = (
   targetAllocation: TargetAllocation,
@@ -318,6 +387,7 @@ export const vetPlanAllocation = (
   vetNoNewPositions(targetAllocation, plan);
   const balances = projectPlanBalances(decodedPlan, observations);
   vetAllocationCeilings(balances, targetAllocation);
+  vetPartialPlanAllocation(targetAllocation, decodedPlan, observations);
 };
 harden(vetPlanAllocation);
 
