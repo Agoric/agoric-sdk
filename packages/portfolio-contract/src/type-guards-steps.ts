@@ -120,6 +120,13 @@ export type OfferArgsFor = {
   rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
 };
 
+/**
+ * Build shapes that depend on runtime-supplied remotables such as the USDC
+ * brand.
+ *
+ * The historical name is now a misnomer: the returned collection includes
+ * reusable movement and plan shapes as well as offer-argument shapes.
+ */
 export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   const movementDescShape = M.splitRecord(
     {
@@ -163,7 +170,7 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   );
   const orderShape: TypedPattern<FundsFlowPlan['order']> = M.arrayOf([
     M.number(),
-    M.arrayOf(M.number()),
+    M.arrayOf(M.number(), { arrayLengthLimit: 12 }),
   ]);
 
   return {
@@ -192,8 +199,9 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       {},
     ) as TypedPattern<OfferArgsFor['rebalance']>,
     plan: M.splitRecord(
-      { flow: M.arrayOf(movementDescShape) },
+      { flow: M.arrayOf(movementDescShape, { arrayLengthLimit: 12 }) },
       { order: orderShape },
+      {},
     ) as TypedPattern<FundsFlowPlan>,
     movementDescShape: movementDescShape as TypedPattern<MovementDesc>,
   };
