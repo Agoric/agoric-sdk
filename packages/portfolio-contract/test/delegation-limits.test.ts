@@ -1,12 +1,17 @@
 /** @file Tests for delegated portfolio mandates and plan evidence. */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, type NatValue } from '@agoric/ertp';
+import { fc, testProp } from '@fast-check/ava';
 import type {
+  AssetPlaceRef,
   FundsFlowPlan,
+  InstrumentId,
   PlanObservations,
+  PortfolioBalancePlaceRef,
   TargetAllocation,
 } from '@agoric/portfolio-api';
+import { chainOf, isInstrumentId } from '@agoric/portfolio-api/src/places.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
@@ -14,6 +19,7 @@ import {
   vetObservationPlaces,
   vetPlanAllocation,
 } from '../src/delegation-limits.ts';
+import type { MovementDesc } from '../src/type-guards-steps.ts';
 import { makeSchedule } from '../src/schedule-order.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
@@ -30,6 +36,354 @@ const staticObservations = harden({
 });
 
 const allocation = harden({ Aave_Base: 60n, Compound_Base: 40n });
+
+type ProjectedBalances = Record<string, bigint>;
+
+const totalBalance = (balances: ProjectedBalances) =>
+  Object.values(balances).reduce((total, balance) => total + balance, 0n);
+
+type Ratio = { top: bigint; bot: bigint };
+
+const lte = (exposureShare: Ratio, max: Ratio) =>
+  exposureShare.top * max.bot <= max.top * exposureShare.bot;
+
+const withinRiskEnvelope = (
+  initial: ProjectedBalances,
+  current: ProjectedBalances,
+  targetAllocation: TargetAllocation,
+) => {
+  const initialTotal = totalBalance(initial);
+  const currentTotal = totalBalance(current);
+  const totalPortions = Object.values(targetAllocation).reduce(
+    (total, portion = 0n) => total + portion,
+    0n,
+  );
+  return Object.entries(targetAllocation).every(([place, ceiling = 0n]) => {
+    const exposureShare = { top: current[place] ?? 0n, bot: currentTotal };
+
+    const targetCeiling = { top: ceiling, bot: totalPortions };
+    if (lte(exposureShare, targetCeiling)) return true;
+
+    const initialShare = { top: initial[place] ?? 0n, bot: initialTotal };
+    if (lte(exposureShare, initialShare)) return true;
+
+    return false;
+  });
+};
+
+const arbPlan = (balances: Map<PortfolioBalancePlaceRef, NatValue>) => {
+  const instruments = [...balances.keys()].filter(isInstrumentId);
+  const accountByInstrument = new Map(
+    instruments.map(instrument => [
+      instrument,
+      `@${chainOf(instrument)}` as AssetPlaceRef,
+    ]),
+  );
+  const accounts = [
+    ...new Set([
+      ...[...balances.keys()].filter(place => !isInstrumentId(place)),
+      ...accountByInstrument.values(),
+    ]),
+  ];
+  const places: AssetPlaceRef[] = [...instruments, ...accounts];
+  const total = [...balances.values()].reduce(
+    (sum, balance) => sum + balance,
+    0n,
+  );
+  const arbChoice = fc.record({
+    source: fc.nat(),
+    destination: fc.nat(),
+    amount: fc.bigInt({ min: 1n, max: total || 1n }),
+  });
+
+  return fc.array(arbChoice, { minLength: 1, maxLength: 8 }).map(choices => {
+    const projected = new Map<AssetPlaceRef, NatValue>(balances);
+    for (const account of accounts) {
+      if (!projected.has(account)) projected.set(account, 0n);
+    }
+    const flow: MovementDesc[] = [];
+
+    for (const choice of choices) {
+      const funded = places.filter(
+        place =>
+          (projected.get(place) ?? 0n) > 0n &&
+          (isInstrumentId(place) ||
+            instruments.some(
+              instrument => `@${chainOf(instrument)}` === place,
+            )),
+      );
+      if (funded.length === 0) break;
+      const src = funded[choice.source % funded.length];
+      const destinations = isInstrumentId(src)
+        ? [accountByInstrument.get(src)!]
+        : instruments.filter(instrument => `@${chainOf(instrument)}` === src);
+      if (destinations.length === 0) continue;
+      const dest = destinations[choice.destination % destinations.length];
+      const available = projected.get(src)!;
+      const value = ((choice.amount - 1n) % available) + 1n;
+      flow.push({ src, dest, amount: { brand: USDC, value } });
+      projected.set(src, available - value);
+      projected.set(dest, (projected.get(dest) ?? 0n) + value);
+    }
+
+    return harden({ flow }) satisfies FundsFlowPlan;
+  });
+};
+
+const testAccounts: PortfolioBalancePlaceRef[] = ['@Arbitrum', '@Base'];
+const testInstruments: InstrumentId[] = [
+  'Aave_Arbitrum',
+  'Compound_Arbitrum',
+  'Aave_Base',
+  'Compound_Base',
+];
+
+const arbBalances = fc
+  .subarray(testAccounts, { minLength: 1 })
+  .chain(accounts => {
+    const accountSet = new Set(accounts);
+    const relevantInstruments = testInstruments.filter(instrument =>
+      accountSet.has(`@${chainOf(instrument)}`),
+    );
+    return fc
+      .subarray(relevantInstruments, { minLength: 1 })
+      .chain(instruments => {
+        const places: PortfolioBalancePlaceRef[] = [
+          ...accounts,
+          ...instruments,
+        ];
+        return fc
+          .array(fc.bigInt({ min: 0n, max: 999_999n }), {
+            minLength: places.length,
+            maxLength: places.length,
+          })
+          .map(values => {
+            const fundedValues = values.map((value, index) =>
+              index === accounts.length ? value + 1n : value,
+            );
+            return new Map(
+              places.map((place, index) => [place, fundedValues[index]]),
+            );
+          });
+      });
+  });
+
+const arbScenario = arbBalances.chain(balances => {
+  const instruments = [...balances.keys()].filter(isInstrumentId);
+  return fc
+    .array(fc.bigInt({ min: 1n, max: 100n }), {
+      minLength: instruments.length,
+      maxLength: instruments.length,
+    })
+    .chain(portions => {
+      const targetAllocation: TargetAllocation = Object.fromEntries(
+        instruments.map((instrument, index) => [instrument, portions[index]]),
+      );
+      return arbPlan(balances).map(plan => ({
+        balances,
+        targetAllocation,
+        plan,
+      }));
+    });
+});
+
+/** Construct a fully ordered plan that withdraws excess before depositing deficits. */
+const makeWitnessPlan = ({
+  account,
+  instruments,
+  initialBalances,
+  desiredBalances,
+}: {
+  account: PortfolioBalancePlaceRef;
+  instruments: InstrumentId[];
+  initialBalances: ProjectedBalances;
+  desiredBalances: ProjectedBalances;
+}): FundsFlowPlan => {
+  const withdrawals: MovementDesc[] = [];
+  const deposits: MovementDesc[] = [];
+  for (const instrument of instruments) {
+    const delta = desiredBalances[instrument] - initialBalances[instrument];
+    if (delta < 0n) {
+      withdrawals.push({
+        src: instrument,
+        dest: account,
+        amount: { brand: USDC, value: -delta },
+      });
+    } else if (delta > 0n) {
+      deposits.push({
+        src: account,
+        dest: instrument,
+        amount: { brand: USDC, value: delta },
+      });
+    }
+  }
+  // Omitting order selects the contract's default full sequential order.
+  return { flow: [...withdrawals, ...deposits] };
+};
+
+/**
+ * Generate a scenario for one authorized chain account and a non-empty subset
+ * of its instruments:
+ *
+ * - a non-zero initial balance state;
+ * - a target allocation;
+ * - a desired state that conserves the initial total, keeps each instrument at
+ *   or below its target-weighted share, and leaves the remainder in cash; and
+ * - a safely ordered witness plan.
+ *
+ * The plan withdraws excess balances before depositing deficits, so every
+ * sequential prefix remains within the initial-or-target risk envelope.
+ */
+const arbSafelyReachableScenario = fc
+  .constantFrom(...testAccounts)
+  .chain(account => {
+    const accountInstruments = testInstruments.filter(
+      instrument => `@${chainOf(instrument)}` === account,
+    );
+    return fc
+      .subarray(accountInstruments, { minLength: 1 })
+      .chain(instruments => {
+        const places: PortfolioBalancePlaceRef[] = [account, ...instruments];
+        return fc
+          .record({
+            values: fc.array(fc.bigInt({ min: 0n, max: 999_999n }), {
+              minLength: places.length,
+              maxLength: places.length,
+            }),
+            portions: fc.array(fc.bigInt({ min: 1n, max: 100n }), {
+              minLength: instruments.length,
+              maxLength: instruments.length,
+            }),
+            desiredFractions: fc.array(fc.bigInt({ min: 0n, max: 100n }), {
+              minLength: instruments.length,
+              maxLength: instruments.length,
+            }),
+          })
+          .map(({ values, portions, desiredFractions }) => {
+            const fundedValues = values.map((value, index) =>
+              index === 1 ? value + 1n : value,
+            );
+            const initial: ProjectedBalances = Object.fromEntries(
+              places.map((place, index) => [place, fundedValues[index]]),
+            );
+            const total = totalBalance(initial);
+            const totalPortions = portions.reduce(
+              (sum, portion) => sum + portion,
+              0n,
+            );
+            const targetAllocation: TargetAllocation = Object.fromEntries(
+              instruments.map((instrument, index) => [
+                instrument,
+                portions[index],
+              ]),
+            );
+            const desired: ProjectedBalances = Object.fromEntries([
+              [account, 0n],
+              ...instruments.map((instrument, index) => {
+                const ceiling = (total * portions[index]) / totalPortions;
+                return [instrument, (ceiling * desiredFractions[index]) / 100n];
+              }),
+            ]);
+            desired[account] =
+              total -
+              instruments.reduce(
+                (sum, instrument) => sum + desired[instrument],
+                0n,
+              );
+
+            const plan = makeWitnessPlan({
+              account,
+              instruments,
+              initialBalances: initial,
+              desiredBalances: desired,
+            });
+            return {
+              pre: { balances: initial },
+              request: { targetAllocation, plan },
+              desired: { balances: desired },
+            };
+          });
+      });
+  });
+
+test('zero-step plan stays within its risk envelope', t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 60n,
+    Compound_Arbitrum: 40n,
+  };
+  const balances = { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n };
+  const observations: PlanObservations = { balances, instrumentTvls: {} };
+  const plan: FundsFlowPlan = { flow: [] };
+
+  t.notThrows(() => vetPlanAllocation(targetAllocation, plan, observations));
+  t.true(withinRiskEnvelope(balances, balances, targetAllocation));
+});
+
+/**
+ * Liveness condition:
+ *
+ * Given:
+ *
+ * - a non-zero initial balance state;
+ * - a desired final state over already-authorized places; and
+ * - a target allocation.
+ *
+ * Require the desired state to:
+ *
+ * - conserve value;
+ * - stay within every target instrument ceiling; and
+ * - be reachable through supported movements without exceeding the greater of
+ *   each instrument's initial or target share.
+ *
+ * Then at least one ordered plan reaches the desired state and is accepted.
+ *
+ * {@link arbSafelyReachableScenario} samples the "Given" and "Require" parts
+ * for one chain account and its instruments. {@link makeWitnessPlan} supplies
+ * the ordered plan that witnesses "at least one".
+ *
+ * Contract acceptance is static validation only. It does not imply that the
+ * plan will succeed at runtime.
+ */
+testProp(
+  'every safely reachable desired state has an accepted plan',
+  [arbSafelyReachableScenario],
+  (t, { pre, request, desired }) => {
+    const { balances: initial } = pre;
+    const { targetAllocation, plan } = request;
+    const { balances: desiredBalances } = desired;
+    const observations: PlanObservations = {
+      balances: initial,
+      instrumentTvls: {},
+    };
+    const total = totalBalance(initial);
+    const totalPortions = Object.values(targetAllocation).reduce(
+      (sum, portion = 0n) => sum + portion,
+      0n,
+    );
+
+    t.is(totalBalance(desiredBalances), total, 'desired state conserves value');
+    for (const [instrument, portion = 0n] of Object.entries(targetAllocation)) {
+      t.true(
+        desiredBalances[instrument] * totalPortions <= total * portion,
+        `${instrument} is within its target ceiling`,
+      );
+    }
+
+    t.notThrows(() => vetPlanAllocation(targetAllocation, plan, observations));
+
+    const actual = { ...initial };
+    for (const [index, { src, dest, amount }] of plan.flow.entries()) {
+      actual[src] -= amount.value;
+      actual[dest] += amount.value;
+      t.true(
+        withinRiskEnvelope(initial, actual, targetAllocation),
+        `safe prefix ending at step ${index + 1}`,
+      );
+    }
+    t.deepEqual(actual, desiredBalances);
+  },
+  { numRuns: 1_000 },
+);
 
 /**
  * The safety constraint intentionally prohibits some useful agent actions. An
@@ -74,6 +428,43 @@ test('safety rejects a temporary increase needed to reduce exposure', t => {
     message: /plan exceeds target allocation.*Aave_Arbitrum/,
   });
 });
+
+testProp(
+  'accepted plans stay within the risk envelope after every successful prefix',
+  [arbScenario],
+  (t, { balances, targetAllocation, plan }) => {
+    const initial: ProjectedBalances = Object.fromEntries(balances);
+    for (const { src, dest } of plan.flow) {
+      initial[src] ??= 0n;
+      initial[dest] ??= 0n;
+    }
+    const observations: PlanObservations = {
+      balances: initial,
+      instrumentTvls: {},
+    };
+    try {
+      vetPlanAllocation(targetAllocation, plan, observations);
+    } catch {
+      t.pass('plan rejected');
+      return;
+    }
+
+    const current = { ...initial };
+    t.true(
+      withinRiskEnvelope(initial, current, targetAllocation),
+      'initial state',
+    );
+    for (const [index, { src, dest, amount }] of plan.flow.entries()) {
+      current[src] = (current[src] ?? 0n) - amount.value;
+      current[dest] = (current[dest] ?? 0n) + amount.value;
+      t.true(
+        withinRiskEnvelope(initial, current, targetAllocation),
+        `successful prefix ending at step ${index + 1}`,
+      );
+    }
+  },
+  { numRuns: 1_000 },
+);
 
 test('plan allocation is bounded by instrument ceilings', t => {
   const targetAllocation: TargetAllocation = {
