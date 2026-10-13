@@ -163,7 +163,7 @@ const makePortfolioContract = (
         permissions: PortfolioPermissions,
         targetAllocation: TargetAllocation,
       ) => assertMandateForAllocation(permissions, targetAllocation);
-      const verifyObservations = (signed: SignedObservations) =>
+      const verifyPortfolioObservations = (signed: SignedObservations) =>
         observationVerifier.verify(signed);
       const assertAttestationContext = (observed: AttestedObservations) => {
         observed.portfolioId === portfolioId ||
@@ -174,7 +174,7 @@ const makePortfolioContract = (
       const setTargetAllocation = (
         params: AgentSetTargetAllocationParams,
       ): FlowKey => {
-        const observations = ES(portfolio).verifyObservations(
+        const observations = ES(portfolio).verifyPortfolioObservations(
           params.signedObservations,
         );
         ES(portfolio).assertAttestationContext(observations);
@@ -203,7 +203,7 @@ const makePortfolioContract = (
         assertMandateForAllocation: assertMandate,
         portfolioId,
         setTargetAllocation,
-        verifyObservations,
+        verifyPortfolioObservations,
       });
       return portfolio;
     },
@@ -465,7 +465,7 @@ const oracleViz = harden({
   },
   signObservations: {
     resultOnly: () =>
-      'signedObservations = { ...observations, signature: sign(observations) }',
+      'signedObservations = signTypedData(PortfolioObservations,<br/>{ ...observations, nonce: issuedAt, deadline })',
   },
 }) satisfies CausalSequenceViz;
 
@@ -500,8 +500,9 @@ const portfolioViz = harden({
     args: () => '{ targetAllocation, plan, signedObservations }',
     result: (result: unknown) => String(result),
   },
-  verifyObservations: {
-    resultOnly: () => 'observations = verify(signedObservations)',
+  verifyPortfolioObservations: {
+    resultOnly: () =>
+      'observations = verifyPortfolioObservations(signedObservations)',
   },
 }) satisfies CausalSequenceViz;
 

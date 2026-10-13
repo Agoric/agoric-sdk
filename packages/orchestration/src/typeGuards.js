@@ -380,9 +380,47 @@ export const IBCTransferOptionsShape = M.and(
 );
 
 /**
+ * An entry of an EIP-712 struct type definition: a field name and its type.
+ * Nothing else is allowed, notably not the repo-local `optional` marker, which
+ * belongs in schema definitions only, never in typed data.
+ */
+export const EIP712TypeEntryShape = { name: M.string(), type: M.string() };
+harden(EIP712TypeEntryShape);
+
+/**
+ * EIP-712 struct type definitions, keyed by type name. The `EIP712Domain` type
+ * is not required; a consumer that requires it can combine this with e.g.
+ * `M.splitRecord({ EIP712Domain: M.any() }, {}, M.any())` using `M.and`.
+ */
+export const EIP712TypesShape = M.recordOf(
+  M.string(),
+  M.arrayOf(EIP712TypeEntryShape),
+);
+harden(EIP712TypesShape);
+
+/**
+ * An EIP-712 domain, with only standard fields, all optional. An integer
+ * `chainId` may be in any form accepted for EIP-712 integers.
+ */
+export const EIP712DomainShape = M.splitRecord(
+  {},
+  {
+    name: M.string(),
+    version: M.string(),
+    chainId: M.or(M.string(), M.number(), M.bigint()),
+    verifyingContract: M.string(),
+    salt: M.string(),
+  },
+  {},
+);
+harden(EIP712DomainShape);
+
+/**
  * The fields of signed EIP-712 typed data, e.g. as relayed on behalf of its
- * signer. Only the envelope is described: the typed data itself, and its
- * signature, need to be validated separately.
+ * signer. Only the structure is described: the values themselves (whose
+ * types depend on the typed data's `types`, and can't be described by a
+ * recursive pattern), identifiers, and the signature need to be validated
+ * separately, e.g. by `normalizeAndValidateEIP712Data`.
  *
  * The signature may be in any passable form accepted by viem (see
  * `WithSignature`): hex encoded, or structured (`{ r, s, v }` or
@@ -391,10 +429,10 @@ export const IBCTransferOptionsShape = M.and(
  * As a record of shapes, it can also be extended with other fields.
  */
 export const SignedEIP712DataShape = {
-  domain: M.record(),
-  types: M.record(),
+  domain: EIP712DomainShape,
+  types: EIP712TypesShape,
   primaryType: M.string(),
-  message: M.record(),
+  message: M.recordOf(M.string(), M.any()),
   signature: M.or(M.string(), M.record()),
 };
 harden(SignedEIP712DataShape);

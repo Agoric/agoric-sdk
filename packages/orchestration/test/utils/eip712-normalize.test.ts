@@ -4,6 +4,8 @@ import test from '@endo/ses-ava/prepare-endo.js';
 
 import { hashTypedData } from 'viem/utils';
 import {
+  EIP712_INTEGER_STRING_MAX_LENGTH,
+  makeEIP712IntegerStringRegExp,
   normalizeAndValidateEIP712Data,
   normalizeEIP712Primitive,
   parseEIP712Integer,
@@ -1625,6 +1627,23 @@ test('parseEIP712Integer parses the accepted integer encodings, without range ch
   for (const [value, expected] of cases) {
     t.is(parseEIP712Integer(value), expected, String(value));
   }
+});
+
+test('the exported integer string grammar matches parseEIP712Integer', t => {
+  const regExp = makeEIP712IntegerStringRegExp();
+  const strings = [
+    ...['0', '+0', '12', '+12', '-12', '0xC', '0x00ff', `${2n ** 300n}`],
+    ...['-0', '012', '-0xc', '0X1', ' 12', '', '0x', '1e3', '0b1'],
+  ];
+  for (const value of strings) {
+    t.is(regExp.test(value), parseEIP712Integer(value) !== undefined, value);
+  }
+
+  const longest = `1${'0'.repeat(EIP712_INTEGER_STRING_MAX_LENGTH - 1)}`;
+  t.not(parseEIP712Integer(longest), undefined);
+  const tooLong = `${longest}0`;
+  t.true(regExp.test(tooLong), 'the grammar alone');
+  t.is(parseEIP712Integer(tooLong), undefined, 'but too long');
 });
 
 test('normalizeEIP712Primitive validates and returns the canonical form of a primitive value', t => {
