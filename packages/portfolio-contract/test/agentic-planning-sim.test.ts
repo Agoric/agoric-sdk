@@ -18,7 +18,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { keyEQ } from '@endo/patterns';
 import { readFile } from 'node:fs/promises';
 
-import { assertMandateForAllocation } from '../src/mandate.js';
+import { assertMandateForAllocation } from '../src/delegation-limits.js';
 import {
   type CausalSequenceTracer,
   type CausalSequenceViz,

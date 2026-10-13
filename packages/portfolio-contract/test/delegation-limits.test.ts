@@ -3,7 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
-} from '../src/mandate.ts';
+} from '../src/delegation-limits.ts';
 
 const observations = harden({
   balances: {

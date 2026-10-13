@@ -80,7 +80,7 @@ import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
-} from './mandate.ts';
+} from './delegation-limits.ts';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
