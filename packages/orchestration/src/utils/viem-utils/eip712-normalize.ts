@@ -133,10 +133,27 @@ const HEX_REGEX = /^0x[0-9a-fA-F]*$/u;
 // which has no distinct meaning (`0` and `+0` are fine). Hex may have
 // leading zeros, as fixed-width hex commonly does.
 const INTEGER_STRING_REGEX = /^(?:\+?0|[-+]?[1-9][0-9]*|0x[0-9a-fA-F]+)$/u;
-// Bounds the work `BigInt` parsing of an untrusted string can do. Generous
-// for any in-range 256-bit value (at most 78 decimal or 64 hex digits),
-// leaving room for some leading zeros in hex.
-const MAX_INTEGER_STRING_LENGTH = 100;
+
+/**
+ * Make a `RegExp` of the grammar of string-encoded EIP-712 `(u)int<M>` values
+ * accepted by {@link parseEIP712Integer}: unsigned hex, or decimal with an
+ * optional sign. Such strings are also bounded in length by
+ * {@link EIP712_INTEGER_STRING_MAX_LENGTH}.
+ *
+ * For consumers that need to describe the grammar (e.g. in an API schema); to
+ * validate a value, prefer {@link parseEIP712Integer}. Each call returns a new
+ * instance, since a `RegExp` is mutable.
+ */
+export const makeEIP712IntegerStringRegExp = (): RegExp =>
+  new RegExp(INTEGER_STRING_REGEX);
+
+/**
+ * The maximum length of a string-encoded EIP-712 integer accepted by
+ * {@link parseEIP712Integer}. Bounds the work `BigInt` parsing of an
+ * untrusted string can do. Generous for any in-range 256-bit value (at most
+ * 78 decimal or 64 hex digits), leaving room for some leading zeros in hex.
+ */
+export const EIP712_INTEGER_STRING_MAX_LENGTH = 100;
 // abitype types `(u)int<M>` values as `number` for `M <= 48`, else `bigint`.
 const MAX_NUMBER_INTEGER_BITS = 48;
 
@@ -228,7 +245,7 @@ const describeValue = (value: unknown): string => {
  * Parses an integer given in one of the JS representations accepted for an
  * EIP-712 `(u)int<M>` value: a `bigint`, a safe integer `number`, or a
  * string of unsigned hex (`0x...`) or optionally signed decimal digits (see
- * `INTEGER_STRING_REGEX`). Returns `undefined` for anything else, including
+ * {@link makeEIP712IntegerStringRegExp}). Returns `undefined` for anything else, including
  * non-integer and unsafe-integer numbers (which have likely already lost
  * precision; ethers.js rejects them too). Does not check the value's range
  * for any particular type: see {@link normalizeEIP712Primitive} for that.
@@ -242,7 +259,7 @@ export const parseEIP712Integer = (value: unknown): bigint | undefined => {
   }
   if (
     typeof value !== 'string' ||
-    value.length > MAX_INTEGER_STRING_LENGTH ||
+    value.length > EIP712_INTEGER_STRING_MAX_LENGTH ||
     !INTEGER_STRING_REGEX.test(value)
   ) {
     return undefined;

@@ -3,8 +3,9 @@
 Agent-driven planning unbundles plan construction from the current YMax
 planner. Suppose a portfolio owner, Andrew, delegates planning to an agent that
 can allocate among supported Morpho2 vaults. The YMax oracle observes portfolio
-state independently of the agent. The contract verifies the oracle's
-attestation and enforces Andrew's mandate before executing a plan.
+state independently of the agent, and provides it as attested YMax portfolio
+observations. The contract verifies the attestation and enforces Andrew's
+mandate before executing a plan.
 
 Cross-component operation names below define the shared vocabulary for this
 design and should be used consistently by implementations. Internal helper
@@ -13,8 +14,11 @@ remain prose, and replies show results.
 
 ## Conventions
 
-- The YMax oracle observes portfolio balances and instrument TVL. Its precise
-  deployment and attestation protocol remain design work.
+- The YMax oracle (the observation service) observes portfolio balances and
+  instrument TVL, and provides them as attested YMax portfolio observations:
+  EIP-712 messages signed by its attestor account. Its deployment remains
+  design work (AGO-1297); the message format and its verification by the
+  contract are described below.
 - A proposal link carries configuration to review; Andrew's signed transaction,
   not the link, authorizes portfolio creation and delegation.
 
@@ -49,16 +53,31 @@ mandate-enforcement protocol in detail.
 After several recorded decisions to do nothing, the agent suffers a prompt
 injection while considering market conditions. Without recording a decision,
 it directly requests a different allocation that puts Andrew's entire portfolio
-into one Avalanche vault. The oracle-signed observations establish the
+into one Avalanche vault. The oracle's attested observations establish the
 portfolio identity and synchronized state used to evaluate the request; the
 contract still rejects an allocation outside Andrew's signed mandate.
 
-The contract is configured with the YMax oracle's address and verifies that
-signed observations came from it. Details of the EIP-712 typed data and
-verification protocol are scheduled to be resolved in AGO-1289.
+The contract is configured with the address of the oracle's attestor account
+(its `observationAttestor` private argument) and verifies that signed
+observations came from it. The delegated `setTargetAllocation` accepts a `plan`
+together with `signedObservations`: an EIP-712 `PortfolioObservations` message
+(see `@agoric/portfolio-api/src/observation-messages.js`) with:
 
-XXX The shared API and production delegation shape do not yet accept `plan` or
-`signedObservations`; implementation work should add them together.
+- the `YmaxObservation` domain (version `1`), whose verifying contract is the
+  remote account router of its chain;
+- the portfolio, its sync state (`policyVersion` and `rebalanceCount`), the
+  balance of each of its places (`holdings`), and the TVL of the relevant
+  instruments (`instruments`);
+- when the observations were issued (`issuedAt`, as the message `nonce`) and
+  when they expire (`deadline`), both in seconds since the epoch.
+
+`verifyPortfolioObservations` rejects observations that are not signed by the
+attestor account, are for another domain or verifying contract, have expired,
+were issued in the future, or were issued more than 15 minutes ago
+(`MAX_OBSERVATION_AGE_SECONDS`). `assertAttestationContext` stands for the
+portfolio's checks that the verified observations are for this portfolio and at
+the submitted sync state, and `assertMandate` for the mandate checks of the
+target allocation and plan.
 
 For compactness in the diagram, `XYZ`, `ABC`, and `PDQ` abbreviate the
 corresponding Morpho vaults.
@@ -75,7 +94,7 @@ sequenceDiagram
   participant C as YMax contract
   participant API as YMax API
 
-  Note over O,C: YMax contract is configured with YMax oracle's address
+  Note over O,C: YMax contract is configured with YMax oracle's attestor address
 
   A->>A: wake()
   A-->>M: GET /hot-stuff
@@ -87,11 +106,11 @@ sequenceDiagram
   O-->>C: getPortfolioStatus(portfolio351)
   C-->>O: { positionKeys: ['XYZ', 'ABC'],<br/>policyVersion: 0, rebalanceCount: 0, ... }
   O-->>O: observations = { portfolioId: ..., syncState: { policyVersion: 0, rebalanceCount: 0 },<br/>balances: { 'XYZ': 120_003_400n, 'ABC': 80_002_300n }, instrumentTvls: { 'PDQ': ... } }
-  O-->>O: signedObservations = { ...observations, signature: sign(observations) }
+  O-->>O: signedObservations = signTypedData(PortfolioObservations,<br/>{ ...observations, nonce: issuedAt, deadline })
   O-->>A: signedObservations
   Note over A,C: Smart-wallet submission path omitted
   A-->>C: setTargetAllocation({ targetAllocation, plan, signedObservations })
-  C-->>C: observations = verify(signedObservations)
+  C-->>C: observations = verifyPortfolioObservations(signedObservations)
   C-->>C: assertAttestationContext({ portfolioId: ..., syncState: { policyVersion: 0, rebalanceCount: 0 }, ... })
   C-->>C: assertMandate({ allocation: { maxWeightBps: 6000n }, ... })
   Note over C,API: The omitted smart-wallet/vstorage path publishes<br/>the invocation failure for YDS indexing
@@ -103,5 +122,5 @@ The rejection happens before a flow is assigned. The smart wallet publishes the
 invocation failure, YDS indexes it, and the agent reads the failed wallet action
 through the YMax API with no flow key. The agent does not read vstorage
 directly. Neither prompt injection, omission of the off-chain decision record,
-nor oracle-signed account data grants authority to exceed the limit Andrew
+nor oracle-attested account data grants authority to exceed the limit Andrew
 signed.
