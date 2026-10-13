@@ -273,7 +273,7 @@ jobs:
   # upgrade-prepare reports a signed tx is actually ready to send.
   upgrade-submit:
     permissions:
-      contents: read
+      contents: write
     needs: [plan, pre-upgrade, upgrade-prepare]
     if: |
       always() &&
