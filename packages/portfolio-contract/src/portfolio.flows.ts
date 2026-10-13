@@ -46,6 +46,7 @@ import {
   type FlowConfig,
   type FlowErrors,
   type FlowFeatures,
+  type FlowStatus,
   type FlowStep,
   type FundsFlowPlan,
   type OpenPortfolioInitiatingOperation,
@@ -169,8 +170,13 @@ type AssetMovement = FlowStep & {
 };
 
 const moveStatus = ({ apply: _a, ...data }: AssetMovement): FlowStep => data;
-const errmsg = (err: any) =>
-  `${err != null && 'message' in err ? err.message : err}`;
+const errmsg = (err: unknown): string => {
+  if (typeof err === 'string') return err;
+  if (err !== null && typeof err === 'object' && 'message' in err) {
+    return `${err.message}`;
+  }
+  return `${q(err)}`;
+};
 
 export type TransportDetail<
   How extends string,
@@ -251,6 +257,35 @@ type ExecutePlanOptions = {
     }
   >;
 };
+
+/**
+ * Publish the status of one flow, along with its detail.
+ *
+ * Tracks whether a failure was published, so that a catch-all at the top of a
+ * flow does not overwrite the attribution (e.g. which step failed) of a
+ * failure published deeper in the flow.
+ */
+const makeFlowReporter = (
+  reporter: GuestInterface<PortfolioKit['reporter']>,
+  flowId: number,
+  flowDetail?: object, // formerly FlowDetail
+) => {
+  let failed = false;
+  return harden({
+    publishStatus: (status: Exclude<FlowStatus, { state: 'fail' }>) =>
+      reporter.publishFlowStatus(flowId, { ...status, ...flowDetail }),
+    publishFailure: (errs: FlowErrors) => {
+      failed = true;
+      reporter.publishFlowStatus(flowId, {
+        state: 'fail',
+        ...errs,
+        ...flowDetail,
+      });
+    },
+    failurePublished: () => failed,
+  });
+};
+type FlowReporter = ReturnType<typeof makeFlowReporter>;
 
 const makeFlowStepPowers = (
   {
@@ -416,12 +451,12 @@ export const makeErrorList = (
  */
 const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
+  flowReporter: FlowReporter,
   moves: AssetMovement[],
   flowId: number,
   traceFlow: TraceLogger,
   accounts: AccountsByChain,
   order: Job['order'],
-  detail?: object, // formerly FlowDetail
   progressPowers?: {
     resolverClient: GuestInterface<ResolverKit['client']>;
     phasesForStep: Map<TxPhase, TxId[]>[];
@@ -433,12 +468,11 @@ const trackFlow = async (
     const steps = running.map(i => i + 1);
     const move = moves[ix];
     const traceStep = traceFlow.sub(`step${step}`);
-    reporter.publishFlowStatus(flowId, {
+    flowReporter.publishStatus({
       state: 'run',
       steps,
       step: min(...steps),
       how: moves[min(...running)].how,
-      ...detail,
     });
 
     // Publish the step's traffic entries as they are produced.
@@ -502,15 +536,15 @@ const trackFlow = async (
   if (results.some(r => r.status === 'rejected')) {
     const reasons = makeErrorList(results, moves);
     assert(reasons); // guaranteed by results.some(...) above
-    reporter.publishFlowStatus(flowId, {
-      state: 'fail',
-      ...reasons,
-      ...detail,
-    });
-    throw reasons;
+    flowReporter.publishFailure(reasons);
+    // The full list of failures is published above. A record is not a passable
+    // Error `cause`, so the thrown error carries only the first failure.
+    throw Error(
+      `step ${reasons.step} (${reasons.how}) failed: ${reasons.error}`,
+    );
   }
 
-  reporter.publishFlowStatus(flowId, { state: 'done', ...detail });
+  flowReporter.publishStatus({ state: 'done' });
 };
 
 const makeAgoricAccount = async (
@@ -936,7 +970,7 @@ const stepFlow = async (
   kit: GuestInterface<PortfolioKit>,
   traceP: TraceLogger,
   flowId: number,
-  flowDetail?: object, // formerly FlowDetail
+  flowReporter: FlowReporter,
   config?: FlowConfig,
   options?: Pick<ExecutePlanOptions, 'queuedSteps' | 'evmDepositDetail'>,
 ) => {
@@ -1557,11 +1591,10 @@ const stepFlow = async (
   ];
 
   traceFlow('provideAccounts', ...acctsToDo);
-  reporter.publishFlowStatus(flowId, {
+  flowReporter.publishStatus({
     state: 'run',
     step: 0,
     how: `makeAccounts(${acctsToDo.join(', ')})`,
-    ...flowDetail,
   });
   reporter.publishFlowSteps(flowId, todo.map(moveStatus), maybeOrder);
 
@@ -1584,12 +1617,10 @@ const stepFlow = async (
       return result;
     } catch (err) {
       traceFlow('failed to make account for', chain, err);
-      reporter.publishFlowStatus(flowId, {
-        state: 'fail',
+      flowReporter.publishFailure({
         step: 0,
         how: `makeAccount: ${chain}`,
-        error: err && typeof err === 'object' ? err.message : `${err}`,
-        ...flowDetail,
+        error: errmsg(err),
       });
       throw err;
     }
@@ -1719,12 +1750,12 @@ const stepFlow = async (
     : undefined;
   await trackFlow(
     reporter,
+    flowReporter,
     todo,
     flowId,
     traceFlow,
     accounts,
     order,
-    flowDetail,
     progressPowers,
   );
   traceFlow('stepFlow done');
@@ -1786,9 +1817,7 @@ export const rebalance = (async (
         kit,
         traceP,
         flowId,
-        {
-          type: 'rebalance',
-        },
+        makeFlowReporter(kit.reporter, flowId, { type: 'rebalance' }),
         config,
       );
     }
@@ -2191,6 +2220,8 @@ export const executePlan = (async (
       : Fail`executePlan requires either startedFlow or flowDetail`);
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
+  const flowReporter = makeFlowReporter(pKit.reporter, flowId, flowDetail);
+
   await null;
   try {
     // idea: race with seat.getSubscriber()
@@ -2227,7 +2258,7 @@ export const executePlan = (async (
     }
     if (steps.length === 0) {
       traceFlow('no steps to execute');
-      pKit.reporter.publishFlowStatus(flowId, { state: 'done', ...flowDetail });
+      flowReporter.publishStatus({ state: 'done' });
       return `flow${flowId}`;
     }
     await stepFlow(
@@ -2238,20 +2269,22 @@ export const executePlan = (async (
       pKit,
       traceP,
       flowId,
-      flowDetail,
+      flowReporter,
       config,
       { queuedSteps, evmDepositDetail: options?.evmDepositDetail },
     );
     return `flow${flowId}`;
   } catch (err) {
     if (!seat.hasExited()) seat.fail(err);
-    pKit.reporter.publishFlowStatus(flowId, {
-      state: 'fail',
-      step: 0,
-      error: errmsg(err),
-      how: `await plan`,
-      ...flowDetail,
-    });
+    // Don't overwrite the attribution of a failure published deeper in the
+    // flow, e.g. which step failed.
+    if (!flowReporter.failurePublished()) {
+      flowReporter.publishFailure({
+        step: 0,
+        how: `await plan`,
+        error: errmsg(err),
+      });
+    }
     throw err;
   } finally {
     // The seat must be exited no matter what to avoid leaks
