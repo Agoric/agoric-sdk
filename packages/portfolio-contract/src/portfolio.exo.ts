@@ -78,6 +78,7 @@ import {
   preparePortfolioDelegationKit,
   type PortfolioDelegationClient,
 } from './delegation.exo.ts';
+import { vetFlowPlanPlaces } from './flow-plan-places.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import {
   assertMandateForAllocation,
@@ -1079,6 +1080,25 @@ export const preparePortfolioKit = (
           const { resolver, ...sync } = detail.sync;
           if (!resolver) {
             throw Fail`flow${flowId} has already been resolved`;
+          }
+          try {
+            vetFlowPlanPlaces(
+              {
+                flowType: detail.type,
+                isEvmPortfolio: !!this.state.sourceAccountId,
+                ...(detail.type === 'deposit' && {
+                  fromChain: detail.fromChain,
+                }),
+                ...(detail.type === 'withdraw' && { toChain: detail.toChain }),
+              },
+              steps,
+            );
+          } catch (reason) {
+            // Fail the flow rather than leave it waiting for another plan.
+            const message =
+              reason instanceof Error ? reason.message : String(reason);
+            this.facets.planner.rejectFlowPlan(flowId, message);
+            throw reason;
           }
           resolver.resolve(steps);
           flowsRunning.set(flowId, { ...detail, sync });
