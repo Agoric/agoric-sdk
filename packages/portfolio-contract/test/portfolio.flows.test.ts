@@ -2705,7 +2705,10 @@ test('openPortfolio from EVM with Permit2 completes a deposit flow', async t => 
 
   const { orch, ctx, offer, cosmosId, storage, txResolver } = mocks();
   const { log, seat } = offer;
-  const kit = await ctx.makePortfolioKit();
+  // EVM-opened portfolios have a sourceAccountId (cf. openPortfolioFromEVM)
+  const kit = await ctx.makePortfolioKit({
+    sourceAccountId: 'eip155:42161:0x1111111111111111111111111111111111111111',
+  });
   const portfolioId = kit.reader.getPortfolioId();
   const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
   let flowNum: number | undefined;
@@ -4313,7 +4316,10 @@ test('pure EVM deposit does not provision an unused Noble account', async t => {
   const targetAllocation = { Aave_Arbitrum: 10_000n };
   const { orch, ctx, offer, storage, txResolver } = mocks();
   const { seat } = offer;
-  const kit = await ctx.makePortfolioKit();
+  // EVM-opened portfolios have a sourceAccountId (cf. openPortfolioFromEVM)
+  const kit = await ctx.makePortfolioKit({
+    sourceAccountId: 'eip155:42161:0x1111111111111111111111111111111111111111',
+  });
   const portfolioId = kit.reader.getPortfolioId();
   const { getPortfolioStatus } = makeStorageTools(storage);
 
@@ -4432,7 +4438,10 @@ test('openPortfolio from EVM: Noble registration failure fails the flow, not the
     transfer: Error('forwarding registration refused; axelar relay healthy'),
   });
   const { seat } = offer;
-  const kit = await ctx.makePortfolioKit();
+  // EVM-opened portfolios have a sourceAccountId (cf. openPortfolioFromEVM)
+  const kit = await ctx.makePortfolioKit({
+    sourceAccountId: 'eip155:42161:0x1111111111111111111111111111111111111111',
+  });
   const portfolioId = kit.reader.getPortfolioId();
   const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
 
