@@ -29,6 +29,21 @@ test('makeSchedule validates steps with empty dependency lists', t => {
   });
 });
 
+test('makeSchedule preserves duplicate handling', t => {
+  const schedule = makeSchedule({
+    taskQty: 3,
+    order: [
+      [2, [0]],
+      [2, [1, 1]],
+    ],
+  });
+  t.deepEqual(schedule.ready(), [0, 1]);
+  schedule.complete(0);
+  t.deepEqual(schedule.ready(), []);
+  schedule.complete(1);
+  t.deepEqual(schedule.ready(), [2]);
+});
+
 const job1info = {
   portfolioId: 4,
   steps: [

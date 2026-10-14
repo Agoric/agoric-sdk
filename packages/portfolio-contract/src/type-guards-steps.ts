@@ -28,6 +28,8 @@ export type SeatKeyword = 'Cash' | 'Deposit';
 export const seatKeywords: SeatKeyword[] = ['Cash', 'Deposit'];
 harden(seatKeywords);
 
+export const MAX_PLAN_STEPS = 30;
+
 const AssetPlaceRefShape = M.or(
   ...seatKeywords.map(kw => `<${kw}>`),
   '+agoric',
@@ -168,23 +170,29 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     // Be robust in the face of additional properties
     M.record(),
   );
-  const orderShape: TypedPattern<FundsFlowPlan['order']> = M.arrayOf([
-    M.number(),
-    M.arrayOf(M.number(), { arrayLengthLimit: 12 }),
-  ]);
+  const flowShape = M.arrayOf(movementDescShape, {
+    arrayLengthLimit: MAX_PLAN_STEPS,
+  });
+  const orderShape: TypedPattern<FundsFlowPlan['order']> = M.arrayOf(
+    [
+      M.number(),
+      M.arrayOf(M.number(), { arrayLengthLimit: MAX_PLAN_STEPS - 1 }),
+    ],
+    { arrayLengthLimit: MAX_PLAN_STEPS },
+  );
 
   return {
     deposit: M.splitRecord(
       {},
       {
-        flow: M.arrayOf(movementDescShape),
+        flow: flowShape,
       },
       {},
     ) as TypedPattern<OfferArgsFor['deposit']>,
     openPortfolio: M.splitRecord(
       {},
       {
-        flow: M.arrayOf(movementDescShape, { arrayLengthLimit: 12 }),
+        flow: flowShape,
         destinationEVMChain: M.or(...keys(AxelarChain)),
         targetAllocation: TargetAllocationShape,
       },
@@ -193,13 +201,13 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     rebalance: M.splitRecord(
       {},
       {
-        flow: M.arrayOf(movementDescShape),
+        flow: flowShape,
         targetAllocation: TargetAllocationShape,
       },
       {},
     ) as TypedPattern<OfferArgsFor['rebalance']>,
     plan: M.splitRecord(
-      { flow: M.arrayOf(movementDescShape, { arrayLengthLimit: 12 }) },
+      { flow: flowShape },
       { order: orderShape },
       {},
     ) as TypedPattern<FundsFlowPlan>,

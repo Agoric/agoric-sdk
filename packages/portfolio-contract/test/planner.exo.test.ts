@@ -54,6 +54,17 @@ test('planner exo resolvePlan method', async t => {
 
   const planner = makePlanner();
 
+  const oversizedSteps = harden(
+    Array(31).fill({
+      src: '@noble',
+      dest: 'USDN',
+      amount: { brand: USDC, value: 1n },
+    }),
+  );
+  t.throws(() => planner.resolvePlan(1, 0, oversizedSteps, 0, 0), {
+    message: /In "resolvePlan" method.*arg 2:.*Must match one of/s,
+  });
+
   aPortfolio.manager.setTargetAllocation({ USDN: 100n });
 
   {

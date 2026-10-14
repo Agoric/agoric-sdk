@@ -18,7 +18,7 @@ import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import { vetNoNewPositions } from './delegation-limits.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
-import { makeOfferArgsShapes } from './type-guards-steps.ts';
+import { makeOfferArgsShapes, MAX_PLAN_STEPS } from './type-guards-steps.ts';
 import {
   flowIdFromKey,
   FlowKeyShape,
@@ -49,7 +49,10 @@ export const preparePlanner = (
   },
 ) => {
   const { movementDescShape, plan: planShape } = shapes;
-  const planCompatShape = M.or(planShape, M.arrayOf(movementDescShape));
+  const planCompatShape = M.or(
+    planShape,
+    M.arrayOf(movementDescShape, { arrayLengthLimit: MAX_PLAN_STEPS }),
+  );
 
   const portfolioIdShape = M.number();
   const flowIdShape = M.number();

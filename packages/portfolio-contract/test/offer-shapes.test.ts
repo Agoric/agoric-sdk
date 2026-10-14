@@ -128,32 +128,56 @@ test('offerArgs can carry fee', t => {
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });
 
-test('plan flow is limited to 12 movements', t => {
-  const { plan } = makeOfferArgsShapes(USDC);
+test('plan and offer flows are limited to 30 movements', t => {
+  const shapes = makeOfferArgsShapes(USDC);
   const movement = harden({
     src: '@noble',
     dest: 'Aave_Arbitrum',
     amount: usdc(1n),
   });
 
-  t.notThrows(() =>
-    mustMatch(harden({ flow: Array(12).fill(movement) }), plan),
-  );
-  t.throws(() => mustMatch(harden({ flow: Array(13).fill(movement) }), plan), {
-    message: /Array length 13 must be <= limit 12/,
-  });
+  for (const shape of [
+    shapes.plan,
+    shapes.openPortfolio,
+    shapes.rebalance,
+    shapes.deposit,
+  ]) {
+    t.notThrows(() =>
+      mustMatch(harden({ flow: Array(30).fill(movement) }), shape),
+    );
+    t.throws(
+      () => mustMatch(harden({ flow: Array(31).fill(movement) }), shape),
+      {
+        message: /Array length 31 must be <= limit 30/,
+      },
+    );
+  }
 });
 
-test('plan dependency lists are limited to 12 steps', t => {
+test('plan dependency lists are limited to 29 steps', t => {
   const { plan } = makeOfferArgsShapes(USDC);
 
   t.notThrows(() =>
-    mustMatch(harden({ flow: [], order: [[0, Array(12).fill(0)]] }), plan),
+    mustMatch(harden({ flow: [], order: [[0, Array(29).fill(0)]] }), plan),
   );
   t.throws(
     () =>
-      mustMatch(harden({ flow: [], order: [[0, Array(13).fill(0)]] }), plan),
-    { message: /Array length 13 must be <= limit 12/ },
+      mustMatch(harden({ flow: [], order: [[0, Array(30).fill(0)]] }), plan),
+    { message: /Array length 30 must be <= limit 29/ },
+  );
+});
+
+test('plan order is limited to 30 entries', t => {
+  const { plan } = makeOfferArgsShapes(USDC);
+  const entry = harden([0, []]);
+  t.notThrows(() =>
+    mustMatch(harden({ flow: [], order: Array(30).fill(entry) }), plan),
+  );
+  t.throws(
+    () => mustMatch(harden({ flow: [], order: Array(31).fill(entry) }), plan),
+    {
+      message: /Array length 31 must be <= limit 30/,
+    },
   );
 });
 
