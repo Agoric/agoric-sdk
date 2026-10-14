@@ -3,6 +3,7 @@ import '@endo/init/debug.js';
 import test from '@endo/ses-ava/prepare-endo.js';
 
 import { hashTypedData } from 'viem/utils';
+import { describeValue } from '../../src/utils/meta.ts';
 import {
   EIP712_INTEGER_STRING_MAX_LENGTH,
   makeEIP712IntegerStringRegExp,
@@ -1605,45 +1606,68 @@ test('reentrancy: an optional self-referential field always conflicts once recur
   );
 });
 
+const longestEip712IntegerString = '9'.repeat(EIP712_INTEGER_STRING_MAX_LENGTH);
+const tooLongEip712IntegerString = `1${'0'.repeat(EIP712_INTEGER_STRING_MAX_LENGTH)}`;
+
+const eip712IntegerCases: [
+  input: unknown,
+  expected: bigint | undefined,
+  label?: string,
+  isWellFormed?: boolean,
+][] = [
+  ['0', 0n],
+  ['+0', 0n],
+  [12n, 12n],
+  [-12, -12n],
+  ['12', 12n],
+  ['+12', 12n],
+  ['-12', -12n],
+  ['0xC', 12n],
+  ['0x00ff', 255n],
+  // Not range checked: that depends on the type.
+  [`${2n ** 300n}`, 2n ** 300n, `String(2n ** 300n) = ${2n ** 300n}`],
+  ['-0', undefined],
+  ['-0xc', undefined],
+  [' 12', undefined],
+  ['012', undefined],
+  ['', undefined],
+  ['0X1', undefined],
+  ['0x', undefined],
+  ['1e3', undefined],
+  ['0b1', undefined],
+  [1.5, undefined],
+  [2 ** 60, undefined, `2**60 = ${2 ** 60}`],
+  [true, undefined],
+  [null, undefined],
+  [
+    longestEip712IntegerString,
+    BigInt(longestEip712IntegerString),
+    `longest string (EIP712_INTEGER_STRING_MAX_LENGTH nines = ${longestEip712IntegerString})`,
+  ],
+  [
+    tooLongEip712IntegerString,
+    undefined,
+    `too-long string (one followed by EIP712_INTEGER_STRING_MAX_LENGTH zeros = ${tooLongEip712IntegerString})`,
+    true,
+  ],
+];
+
 test('parseEIP712Integer parses the accepted integer encodings, without range checks', t => {
-  const cases: [value: unknown, expected: bigint | undefined][] = [
-    [12n, 12n],
-    [-12, -12n],
-    ['12', 12n],
-    ['+12', 12n],
-    ['-12', -12n],
-    ['0xC', 12n],
-    // Not range checked: that depends on the type.
-    [`${2n ** 300n}`, 2n ** 300n],
-    ['-0xc', undefined],
-    [' 12', undefined],
-    ['', undefined],
-    ['0x', undefined],
-    [1.5, undefined],
-    [2 ** 60, undefined],
-    [true, undefined],
-    [null, undefined],
-  ];
-  for (const [value, expected] of cases) {
-    t.is(parseEIP712Integer(value), expected, String(value));
+  for (const [input, expected, label] of eip712IntegerCases) {
+    t.is(parseEIP712Integer(input), expected, label ?? describeValue(input));
   }
 });
 
 test('the exported integer string grammar matches parseEIP712Integer', t => {
   const regExp = makeEIP712IntegerStringRegExp();
-  const strings = [
-    ...['0', '+0', '12', '+12', '-12', '0xC', '0x00ff', `${2n ** 300n}`],
-    ...['-0', '012', '-0xc', '0X1', ' 12', '', '0x', '1e3', '0b1'],
-  ];
-  for (const value of strings) {
-    t.is(regExp.test(value), parseEIP712Integer(value) !== undefined, value);
+  for (const [input, _expected, label, isWellFormed] of eip712IntegerCases) {
+    if (typeof input !== 'string') continue;
+    t.is(
+      regExp.test(input),
+      isWellFormed ?? parseEIP712Integer(input) !== undefined,
+      label ?? describeValue(input),
+    );
   }
-
-  const longest = `1${'0'.repeat(EIP712_INTEGER_STRING_MAX_LENGTH - 1)}`;
-  t.not(parseEIP712Integer(longest), undefined);
-  const tooLong = `${longest}0`;
-  t.true(regExp.test(tooLong), 'the grammar alone');
-  t.is(parseEIP712Integer(tooLong), undefined, 'but too long');
 });
 
 test('normalizeEIP712Primitive validates and returns the canonical form of a primitive value', t => {

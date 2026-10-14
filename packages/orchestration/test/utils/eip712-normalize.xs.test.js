@@ -14,8 +14,8 @@ import * as proc from 'node:child_process';
 import fs from 'node:fs';
 import * as os from 'node:os';
 import { tmpName } from 'tmp';
-import blank from 'ts-blank-space';
 import { xsnap } from '@agoric/xsnap';
+import bundleSource from '@endo/bundle-source';
 
 import url from 'node:url';
 
@@ -26,30 +26,10 @@ import url from 'node:url';
 
 const here = url.fileURLToPath(new URL('.', import.meta.url));
 const sourcePath = `${here}../../src/utils/viem-utils/eip712-normalize.ts`;
+/** A source bundle of the real `eip712-normalize.ts` to evaluate in XS vats. */
+const bundleP = bundleSource(sourcePath, { format: 'endoScript' });
 
 const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
-
-/**
- * Loads the real `eip712-normalize.ts` source, strips its types (via
- * `ts-blank-space`, already a devDependency used to run this package's own
- * tests) and its `export` keywords (module syntax isn't valid in a plain
- * `vat.evaluate` script), so the exact shipped logic -- not a hand-copied
- * approximation of it -- is what runs inside the XS vat.
- */
-const loadNormalizeSource = () => {
-  const ts = fs.readFileSync(sourcePath, 'utf8');
-  const js = blank(ts);
-  // Only `export const ... = (...` declarations remain after blanking (the
-  // sole `import type` is blanked away entirely).
-  const withoutExport = js.replace(/^export const /gmu, 'const ');
-  if (/^\s*export\b/mu.test(withoutExport)) {
-    throw Error('expected only `export const` declarations');
-  }
-  if (!/^const normalizeAndValidateEIP712Data\b/mu.test(withoutExport)) {
-    throw Error('expected an `export const normalizeAndValidateEIP712Data`');
-  }
-  return withoutExport;
-};
 
 /**
  * Evaluates `normalizeAndValidateEIP712Data(input, options)` inside a fresh
@@ -61,30 +41,42 @@ const loadNormalizeSource = () => {
  */
 const runInXs = async (input, options) => {
   const opts = xsnapTestOptions();
+  const bundle = await bundleP;
   const vat = await xsnap(opts);
-  await vat.evaluate(`
-    ${loadNormalizeSource()}
-    let threw = false;
-    let result;
-    try {
-      result = normalizeAndValidateEIP712Data(
-        ${JSON.stringify(input)},
-        ${JSON.stringify(options)},
+  try {
+    await vat.evaluate(`
+      let threw = false;
+      let result;
+      try {
+        const exports = ${bundle.source};
+        const { normalizeAndValidateEIP712Data } = exports;
+        if (typeof normalizeAndValidateEIP712Data !== 'function') {
+          throw Error('expected an export \`normalizeAndValidateEIP712Data\`');
+        }
+        result = normalizeAndValidateEIP712Data(
+          ${JSON.stringify(input)},
+          ${JSON.stringify(options)},
+        );
+      } catch (err) {
+        threw = true;
+        result = err.message;
+      }
+      issueCommand(
+        new TextEncoder().encode(
+          // Replace JSON-incompatible values with surrogates.
+          JSON.stringify({ threw, result }, (_key, value) => {
+            switch (typeof value) {
+              case 'bigint': return \`\${value}n\`;
+              case 'undefined': return '<undefined>';
+              default: return value;
+            }
+          }),
+        ).buffer,
       );
-    } catch (err) {
-      threw = true;
-      result = err.message;
-    }
-    issueCommand(
-      // bigints (normalized integers) don't survive JSON, so tag them.
-      new TextEncoder().encode(
-        JSON.stringify({ threw, result }, (_key, value) =>
-          typeof value === 'bigint' ? \`\${value}n\` : value,
-        ),
-      ).buffer,
-    );
-  `);
-  await vat.close();
+    `);
+  } finally {
+    await vat.close();
+  }
   return JSON.parse(opts.messages[0]);
 };
 
