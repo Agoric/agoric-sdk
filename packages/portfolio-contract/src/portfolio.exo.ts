@@ -1,4 +1,6 @@
 /**
+ * @file Host-side portfolio facets and durable state.
+ *
  * NOTE: This is host side code; can't use await.
  */
 import { AmountMath, type Brand } from '@agoric/ertp';
@@ -80,7 +82,10 @@ import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
-} from './mandate.ts';
+  needsObservations,
+  vetAllocationPlan,
+  vetObservationPlaces,
+} from './delegation-limits.ts';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -732,14 +737,27 @@ export const preparePortfolioKit = (
             (observedSyncState.policyVersion === policyVersion &&
               observedSyncState.rebalanceCount === rebalanceCount) ||
               Fail`observations sync state ${q(observedSyncState)} does not match ${q(syncState)}`;
-            Fail`TODO(AGO-1299): delegated plans are not implemented`;
           }
+          const observations = verifiedObservations?.observations;
           const { permissions } = delegation;
-          const allocation = permissions.allocation;
-          const needsPlanObservations =
-            typeof allocation === 'object' &&
-            (allocation.minVaultTvlUsd !== undefined ||
-              allocation.maxVaultShareBps !== undefined);
+          // Pre-signed plans can be checked completely before assigning a flow.
+          // Requests for a planner-supplied plan retain the existing lifecycle.
+          let vettedCommit: boolean | undefined;
+          if (plan && observations) {
+            const currentBalancePlaces = harden([
+              ...[...this.state.accounts.keys()].map(
+                chain => `@${chain}` as const,
+              ),
+              ...this.state.positions.keys(),
+            ]);
+            vetObservationPlaces(currentBalancePlaces, plan, observations);
+            vettedCommit = vetAllocationPlan(
+              permissions,
+              targetAllocation,
+              plan,
+              observations,
+            );
+          }
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
           const flowDetail: FlowDetail = {
             type: 'rebalance',
@@ -759,14 +777,24 @@ export const preparePortfolioKit = (
 
           const { flowId } = startedFlow;
           try {
-            assertMandateForAllocation(permissions, targetAllocation);
-            if (!needsPlanObservations) {
+            const commitNow =
+              vettedCommit ??
+              vetAllocationPlan(
+                permissions,
+                targetAllocation,
+                plan,
+                observations,
+              );
+            if (commitNow) {
               const resultingPolicyVersion =
                 manager.updateTargetAllocation(targetAllocation);
               this.facets.planner.resolvePendingPolicy(
                 flowId,
                 resultingPolicyVersion,
               );
+            }
+            if (plan) {
+              this.facets.planner.resolveFlowPlan(flowId, plan);
             }
           } catch (reason) {
             const message =
@@ -986,12 +1014,7 @@ export const preparePortfolioKit = (
             this.state.targetAllocation ??
             Fail`mandate.targetAllocation.missing`;
           assertMandateForAllocation(permissions, targetAllocation);
-          const allocation = permissions.allocation;
-          const needsObservations =
-            typeof allocation === 'object' &&
-            (allocation.minVaultTvlUsd !== undefined ||
-              allocation.maxVaultShareBps !== undefined);
-          if (needsObservations) {
+          if (needsObservations(permissions)) {
             const planObservations =
               observations ?? Fail`mandate.observations.missing`;
             assertMandateForPlanObservations(

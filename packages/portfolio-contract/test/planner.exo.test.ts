@@ -1,3 +1,4 @@
+/** @file Tests for the planner exo. */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
@@ -33,12 +34,12 @@ test('planner exo resolvePlan method', async t => {
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
       .makeChildNode('portfolios'),
     vowTools: vt,
-    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
   const aPortfolio = makePortfolio({ portfolioId: 1 });
@@ -52,6 +53,17 @@ test('planner exo resolvePlan method', async t => {
   });
 
   const planner = makePlanner();
+
+  const oversizedSteps = harden(
+    Array(31).fill({
+      src: '@noble',
+      dest: 'USDN',
+      amount: { brand: USDC, value: 1n },
+    }),
+  );
+  t.throws(() => planner.resolvePlan(1, 0, oversizedSteps, 0, 0), {
+    message: /In "resolvePlan" method.*arg 2:.*Must match one of/s,
+  });
 
   aPortfolio.manager.setTargetAllocation({ USDN: 100n });
 
@@ -130,7 +142,7 @@ test('planner exo resolvePlan method', async t => {
     ];
     t.throws(
       () => planner.resolvePlan(portfolioId, flowId, newPositionPlan, 1, 2),
-      { message: /planner cannot add positions/i },
+      { message: /plan cannot add positions/i },
     );
   }
 });
@@ -355,12 +367,12 @@ test('planner allows cosmos-based portfolio to withdraw to <Cash> via @chain acc
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
       .makeChildNode('portfolios'),
     vowTools: vt,
-    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
   // cosmos-based portfolio: no sourceAccountId
@@ -570,7 +582,7 @@ test('planner cannot start delegated rebalance with new positions', async t => {
   };
 
   t.throws(() => planner.rebalance(1, rebalanceParams, newPositionPlan), {
-    message: /planner cannot add positions/i,
+    message: /plan cannot add positions/i,
   });
 });
 
@@ -751,7 +763,7 @@ test('planner cannot start delegated claimRewards with new positions', async t =
   };
 
   t.throws(() => planner.claimRewards(1, claimRewardsParams, newPositionPlan), {
-    message: /planner cannot add positions/i,
+    message: /plan cannot add positions/i,
   });
 });
 
@@ -858,12 +870,12 @@ test('planner allows EVM-based portfolio to withdraw to -Chain via @chain accoun
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolioKit = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
       .makeChildNode('portfolios'),
     vowTools: vt,
-    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
   // EVM-based portfolio: sourceAccountId is set
@@ -1002,12 +1014,12 @@ test('planner can reject a plan due to insufficient funds', async t => {
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode: storage.rootNode
       .makeChildNode('ymax0')
       .makeChildNode('portfolios'),
     vowTools: vt,
-    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
   const aPortfolio = makePortfolio({ portfolioId: 1 });

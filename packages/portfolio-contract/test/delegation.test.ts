@@ -1253,6 +1253,7 @@ const setupPlanDelegation = async (
     portfolioId,
     delegationClient,
     signObservations,
+    usdc: deployed.common.brands.usdc,
   };
 };
 
@@ -1328,17 +1329,111 @@ test('delegated plans: the signed observations are verified and checked against 
     }),
     { message: /^observations sync state .* does not match/ },
   );
+  await eventLoopIteration();
+  const after = await peteKit.evmTrader.getPortfolioStatus();
+  t.deepEqual(getSyncState(after), syncState, 'no flow was started');
+  t.deepEqual(after.flowsRunning, before.flowsRunning);
+
+  // These verified observations omit a portfolio place, so no flow starts.
   await t.throwsAsync(
     submit({
       plan: emptyPlan,
       signedObservations: await signObservations(content),
     }),
-    { message: 'TODO(AGO-1299): delegated plans are not implemented' },
+    { message: /missing balance observation for .*@agoric/ },
   );
+  await eventLoopIteration();
+  const afterMissingObservation = await peteKit.evmTrader.getPortfolioStatus();
+  t.is(afterMissingObservation.flowCount, before.flowCount);
+  t.deepEqual(getSyncState(afterMissingObservation), syncState);
+  t.deepEqual(afterMissingObservation.flowsRunning, before.flowsRunning);
+});
 
+test('delegated plans: signed TVL mandate failure creates no flow', async t => {
+  const {
+    peteKit,
+    peteArbitrum,
+    portfolioId,
+    delegationClient,
+    signObservations,
+  } = await setupPlanDelegation(t);
+  t.is(
+    (
+      await peteArbitrum.changePermissions(
+        1,
+        harden({
+          allocation: { minVaultTvlUsd: 10_000n },
+        }),
+      )
+    ).status,
+    'ok',
+  );
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const syncState = getSyncState(before);
+  const signedObservations = await signObservations({
+    portfolioId,
+    syncState,
+    observations: {
+      balances: { '@agoric': 10_000_000n },
+      instrumentTvls: {
+        Aave_Arbitrum: { tvlUsd: 9_999n },
+        Compound_Arbitrum: { tvlUsd: 20_000n },
+      },
+    },
+  });
+  await t.throwsAsync(
+    E(delegationClient).setTargetAllocation({
+      targetAllocation: planTargetAllocation,
+      syncState,
+      plan: emptyPlan,
+      signedObservations,
+    }),
+    { message: 'mandate.minVaultTvl:"Aave_Arbitrum"' },
+  );
   await eventLoopIteration();
   const after = await peteKit.evmTrader.getPortfolioStatus();
-  t.deepEqual(getSyncState(after), syncState, 'no flow was started');
+  t.is(after.flowCount, before.flowCount);
+  t.deepEqual(getSyncState(after), syncState);
+  t.deepEqual(after.targetAllocation, before.targetAllocation);
+  t.deepEqual(after.flowsRunning, before.flowsRunning);
+});
+
+test('delegated plans: allocation permission cannot submit reward claims', async t => {
+  const { peteKit, portfolioId, delegationClient, signObservations, usdc } =
+    await setupPlanDelegation(t);
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const syncState = getSyncState(before);
+  const signedObservations = await signObservations({
+    portfolioId,
+    syncState,
+    observations: {
+      balances: { '@agoric': 0n, '@Arbitrum': 40n, Aave_Arbitrum: 60n },
+      instrumentTvls: {},
+    },
+  });
+  await t.throwsAsync(
+    E(delegationClient).setTargetAllocation({
+      targetAllocation: planTargetAllocation,
+      syncState,
+      signedObservations,
+      plan: {
+        flow: [
+          {
+            src: 'Aave_Arbitrum',
+            dest: '@Arbitrum',
+            amount: usdc.make(0n),
+            claimRewards: { tokens: [], minAmounts: [] },
+          },
+        ],
+      },
+    }),
+    { message: 'allocation plan does not support claimRewards' },
+  );
+  await eventLoopIteration();
+  const after = await peteKit.evmTrader.getPortfolioStatus();
+  t.is(after.flowCount, before.flowCount);
+  t.deepEqual(getSyncState(after), syncState);
+  t.deepEqual(after.targetAllocation, before.targetAllocation);
   t.deepEqual(after.flowsRunning, before.flowsRunning);
 });
 

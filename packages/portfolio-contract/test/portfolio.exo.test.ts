@@ -30,8 +30,8 @@ import {
 } from '../src/portfolio.exo.ts';
 import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
-import type { StatusFor } from '../src/type-guards.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
+import type { StatusFor } from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 import { contractsMock } from './mocks.ts';
@@ -153,6 +153,7 @@ const makeTestSetup = (
     portfoliosNode,
     marshaller,
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     vowTools,
     eip155ChainIdToAxelarChain,
     ...spies,
@@ -163,7 +164,6 @@ const makeTestSetup = (
     walletBytecode,
     transferChannels,
     // rest are not used for this test
-    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
 
@@ -200,9 +200,9 @@ test('portfolio exo caches storage nodes', async t => {
     portfoliosNode: makeMockNode('published.ymax0.portfolios'),
     marshaller,
     usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     vowTools,
     // rest are not used
-    offerArgsShapes: makeOfferArgsShapes(USDC),
     ...({} as any),
   });
 
@@ -1274,6 +1274,57 @@ test('delegation rebalance rejects a current target outside its mandate', async 
   t.like(await getPortfolioStatus!(26), {
     flowsRunning: { flow1: { type: 'rebalance', awaitingSteps: false } },
   });
+});
+
+test('rejected pre-signed allocation preserves an existing account reservation', async t => {
+  const { makePortfolioKit, getCallLog, vowTools } = makeTestSetup();
+  const { manager, reader, delegationHelper } = makePortfolioKit({
+    portfolioId: 27,
+  });
+  manager.setTargetAllocation({ Aave_Arbitrum: 50n, Compound_Arbitrum: 50n });
+  await manager.grantDelegation('agoric1delegate', {
+    allocation: { maxWeightBps: 6_000n },
+  });
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  const { ready } = manager.reserveAccountState('Arbitrum');
+  void vowTools.when(ready).catch(() => {});
+  manager.initAccountInfo({
+    chainName: 'Arbitrum',
+    chainId: 'eip155:42161',
+    namespace: 'eip155',
+    remoteAddress: '0x1234',
+  });
+  const syncState = harden({ policyVersion: 2, rebalanceCount: 0 });
+  t.throws(
+    () =>
+      delegationHelper.submitTargetAllocation(
+        client,
+        1,
+        {
+          syncState,
+          targetAllocation: { Aave_Arbitrum: 100n, Compound_Arbitrum: 0n },
+          plan: { flow: [] },
+        },
+        harden({
+          portfolioId: 27,
+          syncState,
+          observations: { balances: { '@Arbitrum': 0n }, instrumentTvls: {} },
+          issuedAt: 0n,
+          deadline: 300n,
+        }),
+      ),
+    { message: /mandate\.maxWeight:"Aave_Arbitrum"/ },
+  );
+  t.is(getCallLog().length, 1, 'no executePlan call');
+  t.falsy(
+    reader.getGMPInfo('Arbitrum').err,
+    'a rejected allocation must not fail an account another flow is provisioning',
+  );
+  t.is(manager.reserveAccountState('Arbitrum').state, 'pending');
 });
 
 test('allocation delegation cannot use rebalance', async t => {

@@ -24,6 +24,7 @@ import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
+import { vetNoSwaps } from './delegation-limits.ts';
 import type { PortfolioObservationsVerifier } from './observation-verifier.ts';
 import { TargetAllocationShape } from './type-guards.ts';
 import type { makeOfferArgsShapes } from './type-guards-steps.ts';
@@ -99,6 +100,9 @@ const makeDelegationClientI = (
     ),
   });
 
+/**
+ * Prepare per-agent delegation facets using the supplied interface shapes.
+ */
 export const preparePortfolioDelegationKit = (
   zone: Zone,
   {
@@ -177,6 +181,7 @@ export const preparePortfolioDelegationKit = (
           const { signedObservations, ...allocationParams } = params;
           (params.plan === undefined) === (signedObservations === undefined) ||
             Fail`a plan requires signed observations, and vice versa`;
+          if (params.plan) vetNoSwaps(params.plan);
           // Resolves promptly. Everything below is checked after it does.
           const verifiedObservations = await (signedObservations &&
             verifyPortfolioObservations(signedObservations));
