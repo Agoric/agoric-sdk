@@ -16,6 +16,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 import { type AccountId, type Orchestrator } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
+import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   decodeFunctionData,
   getAbiItem,
@@ -35,6 +36,8 @@ import {
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeTokenIdKey } from '@agoric/portfolio-api/src/type-guards.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
+import type { ZCF } from '@agoric/zoe';
+import { Far } from '@endo/far';
 import { passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 import { hexToBytes } from '@noble/hashes/utils';
@@ -2808,6 +2811,61 @@ test.todo(
 test.todo(
   'openPortfolio from EVM with Permit2 rejects permit with zero amount',
 );
+
+test('the inert seat refuses a payout before the LCA is debited', async t => {
+  const { orch, ctx, inertSeat } = mocks({});
+  // Real zoeTools, so its seat checks are what's under test. Only
+  // `hasExited()` should be reached, so zcf is a bare stub.
+  const zoeTools = makeZoeTools(
+    {} as ZCF,
+    {
+      when: async p => p,
+      allVows: ps => Promise.all(ps),
+      allSettled: ps => Promise.allSettled(ps),
+      asVow: async thunk => thunk(),
+    } as any,
+  );
+  // Spy on withdrawals from the portfolio's Agoric LCA.
+  const withdrawals: unknown[] = [];
+  const spyOrch = harden({
+    ...orch,
+    async getChain(name: string) {
+      const chain = await orch.getChain(name);
+      if (name !== 'agoric') return chain;
+      return harden({
+        ...chain,
+        async makeAccount(): Promise<unknown> {
+          const account = await chain.makeAccount();
+          return Far('SpiedAccount', {
+            ...account,
+            async withdraw(amount) {
+              withdrawals.push(amount);
+              return harden({});
+            },
+          });
+        },
+      });
+    },
+  }) as Orchestrator;
+  const kit = await ctx.makePortfolioKit({
+    sourceAccountId: 'eip155:42161:0x1111111111111111111111111111111111111111',
+  });
+
+  const amount = make(USDC, 1_000_000n);
+  // A user-supplied flow skips plan vetting, isolating the seat itself.
+  await t.throwsAsync(
+    executePlan(
+      spyOrch,
+      { ...ctx, zoeTools: zoeTools as any },
+      inertSeat,
+      { flow: [{ src: '@agoric', dest: '<Cash>', amount }] },
+      kit,
+      { type: 'rebalance' },
+    ),
+    { message: /withdrawToSeat.*seat cannot have exited/ },
+  );
+  t.deepEqual(withdrawals, [], 'no withdrawal from the LCA');
+});
 
 // #region wayFromSrcToDest withdraw tests
 
