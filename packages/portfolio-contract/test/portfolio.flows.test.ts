@@ -2893,6 +2893,20 @@ test('wayFromSrcToDest rejects @agoric -> -Arbitrum (invalid src for withdraw)',
   );
 });
 
+test('wayFromSrcToDest handles @agoric -> <Cash>', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  const actual = wayFromSrcToDest({ src: '@agoric', dest: '<Cash>', amount });
+  t.deepEqual(actual, { how: 'withdrawToSeat' });
+});
+
+test('wayFromSrcToDest rejects @Arbitrum -> <Cash> (seat is fed from @agoric)', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  t.throws(
+    () => wayFromSrcToDest({ src: '@Arbitrum', dest: '<Cash>', amount }),
+    { message: /src for "<Cash>" must be @agoric, not "@Arbitrum"/ },
+  );
+});
+
 // #endregion
 
 // #region wayFromSrcToDest swap tests
