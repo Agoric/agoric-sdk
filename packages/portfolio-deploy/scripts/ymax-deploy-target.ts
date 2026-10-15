@@ -2772,15 +2772,15 @@ export const main = async (
     now = Date.now,
   } = {},
 ) => {
-  const { GITHUB_TOKEN: ghToken, ...walletAdminEnv } = env;
+  const { GITHUB_TOKEN: GH_TOKEN, ...walletAdminEnv } = env;
   const {
     AGORIC_NET,
-    GRANTEE,
+    GRANTEE: grantee,
     MNEMONIC,
     YMAX_INSTALL_BUNDLE_MNEMONIC,
     PRIVATE_ARGS_OVERRIDES,
   } = env;
-  if (!ghToken) {
+  if (!GH_TOKEN) {
     throw Error('GITHUB_TOKEN must be set');
   }
   const installationEnv = {
@@ -2790,7 +2790,7 @@ export const main = async (
   const delay = (ms: number) =>
     new Promise<void>(resolve => setTimeout(resolve, ms));
 
-  const gh = makeCmdRunner('gh', { execFile }).withEnv({ GH_TOKEN: ghToken });
+  const gh = makeCmdRunner('gh', { execFile }).withEnv({ GH_TOKEN });
   const git = makeCmdRunner('git', { execFile });
   const installBundle = makeCmdRunner(
     `${agoricSdk.join('packages/portfolio-deploy/scripts/install-bundle.ts')}`,
@@ -2853,7 +2853,7 @@ export const main = async (
     return buildUpgradeRequestBuilder({
       contract,
       networkConfig: config,
-      grantee: GRANTEE,
+      grantee,
       queryClient: await connectRpc(rpcAddr),
       walletKit,
       clock: () => new Date(now()),
@@ -2898,7 +2898,7 @@ export const main = async (
       makeVstorageApiForTarget,
       setTimeout,
       now,
-      grantee: GRANTEE,
+      grantee,
     },
   );
 
@@ -2908,24 +2908,24 @@ export const main = async (
       break;
     }
     case 'phase-upgrade-generate': {
-      const record = detachedUnsignedTxAssetName(target, GRANTEE);
-      if (GRANTEE && hasAsset(await release.readOnly().get(), record)) {
-        await ensureGranteeMatchesUnsignedTx({
-          release,
-          unsignedTxAssetName: record,
-          grantee: GRANTEE,
-        });
+      const unsignedTxAssetName = detachedUnsignedTxAssetName(target, grantee);
+      if (grantee) {
+        const releaseInfo = await release.readOnly().get();
+        if (hasAsset(releaseInfo, unsignedTxAssetName)) {
+          const verificationInputs = { release, unsignedTxAssetName, grantee };
+          await ensureGranteeMatchesUnsignedTx(verificationInputs);
+        }
       }
-      const generated = await graph.ensureNode<object>(record);
-      const signedTxAssetName = detachedSignedTxAssetName(target, GRANTEE);
+      const generated = await graph.ensureNode<object>(unsignedTxAssetName);
+      const signedTxAssetName = detachedSignedTxAssetName(target, grantee);
       const releaseInfo = await release.readOnly().get();
       const alreadySigned = hasAsset(releaseInfo, signedTxAssetName);
       const combineResult: CombineSignaturesResult | undefined =
-        !alreadySigned && GRANTEE
+        !alreadySigned && grantee
           ? await tryCombineDetachedSignatures({
               target,
               release,
-              unsignedTxAssetName: record,
+              unsignedTxAssetName,
               signedTxAssetName,
               connectTargetRpc,
             })
@@ -2936,24 +2936,21 @@ export const main = async (
         : await rebuildAgdSignCommand({
             target,
             releaseTag: tag,
-            unsignedTxAssetName: record,
+            unsignedTxAssetName,
             signedTxAssetName,
             release,
             connectTargetRpc,
-            grantee: GRANTEE,
+            grantee,
           });
       writeJson(stdout, {
         target,
         phase: 'upgrade-generate',
-        record,
-        detail: {
-          ...generated,
-          ...(agdSignCommand ? { agdSignCommand } : {}),
-        },
+        record: unsignedTxAssetName,
+        detail: { ...generated, ...(agdSignCommand && { agdSignCommand }) },
         readyToBroadcast,
         ...(combineResult && !combineResult.ready
           ? { reason: combineResult.reason }
-          : {}),
+          : undefined),
       });
       break;
     }
