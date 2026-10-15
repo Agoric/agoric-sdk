@@ -24,7 +24,7 @@ import type {
 import { pubkeyToAddress } from '@cosmjs/amino';
 import { decodePubkey } from '@cosmjs/proto-signing';
 import { StargateClient } from '@cosmjs/stargate';
-import { assert as endoAssert, Fail } from '@endo/errors';
+import { assert as endoAssert, Fail, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 import { execa } from 'execa';
 import fs from 'node:fs';
@@ -32,7 +32,6 @@ import * as fsp from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import assert from 'node:assert/strict';
 import {
   encodeAuthInfoBytes,
   encodeJsonPublicKey,
@@ -2823,12 +2822,8 @@ export const main = async (
       const { network } = targetInfo;
       const baseConfig = await fetchNetworkConfig(network, { fetch: fetchFn });
       const config = { apiAddrs: [] as string[], ...baseConfig };
-      if (!(config.rpcAddrs?.length >= 1)) {
-        throw Error(`missing rpcAddrs for ${network}`);
-      }
-      if (!(config.apiAddrs?.length >= 1)) {
-        throw Error(`missing apiAddrs for ${network}`);
-      }
+      config.rpcAddrs?.length >= 1 || Fail`missing rpcAddrs for ${q(network)}`;
+      config.apiAddrs?.length >= 1 || Fail`missing apiAddrs for ${q(network)}`;
       return { ...targetInfo, config };
     });
   const connectTargetRpc = async (upgradeTarget: Target) => {
@@ -2862,14 +2857,11 @@ export const main = async (
   const submitWalletAdmin =
     subcommand === 'phase-upgrade-submit'
       ? walletAdmin
-      : ({
-          ...walletAdmin,
-          exec: async () => assert.fail('unauthorized'),
-        } as CmdRunner);
+      : ({ ...walletAdmin, exec: async () => Fail`unauthorized` } as CmdRunner);
   const submitTargetRpc =
     subcommand === 'phase-upgrade-submit'
       ? connectTargetRpc
-      : async (_upgradeTarget: Target) => assert.fail('unauthorized');
+      : async (_upgradeTarget: Target) => Fail`unauthorized`;
 
   const commit =
     subcommand === 'phase-pre-upgrade'
