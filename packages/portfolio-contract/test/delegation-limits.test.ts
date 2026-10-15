@@ -614,20 +614,20 @@ test('balance observations report all missing places together', t => {
       vetObservationPlaces(
         ['@Base', 'Aave_Base', 'Compound_Base'],
         { flow: [] },
-        { balances: { '@Base': 100n }, instrumentTvls: {} },
+        { balances: { '@Base': 100n, '@Arbitrum': 0n }, instrumentTvls: {} },
       ),
     { message: /missing balance observation.*Aave_Base.*Compound_Base/ },
   );
 });
 
-test('balance observations report all extra places together', t => {
+test('balance observations report all nonzero extra places together', t => {
   t.throws(
     () =>
       vetObservationPlaces(
         ['@Base'],
         { flow: [] },
         {
-          balances: { '@Base': 100n, Aave_Base: 0n, Compound_Base: 0n },
+          balances: { '@Base': 100n, Aave_Base: 1n, Compound_Base: 2n },
           instrumentTvls: {},
         },
       ),
@@ -635,7 +635,7 @@ test('balance observations report all extra places together', t => {
   );
 });
 
-test('balance observations exactly cover current and plan places', t => {
+test('balance observations require every current and plan place', t => {
   const observations: PlanObservations = {
     balances: { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n },
     instrumentTvls: {},
@@ -673,18 +673,33 @@ test('balance observations exactly cover current and plan places', t => {
       ),
     { message: /missing balance observation.*@Base/ },
   );
+});
 
+test('balance observations accept extra zero-balance accounts and instruments', t => {
+  t.notThrows(() =>
+    vetObservationPlaces(
+      ['Aave_Arbitrum'],
+      { flow: [] },
+      {
+        balances: { Aave_Arbitrum: 100n, '@Base': 0n, Aave_Base: 0n },
+        instrumentTvls: {},
+      },
+    ),
+  );
+});
+
+test('balance observations reject a nonzero extra account among zero extras', t => {
   t.throws(
     () =>
       vetObservationPlaces(
-        harden(['Aave_Arbitrum']),
-        harden({ flow: [] }),
-        harden({
-          balances: { Aave_Arbitrum: 100n, '@Base': 0n },
+        ['Aave_Arbitrum'],
+        { flow: [] },
+        {
+          balances: { Aave_Arbitrum: 100n, '@Base': 1n, Aave_Base: 0n },
           instrumentTvls: {},
-        }),
+        },
       ),
-    { message: /unexpected balance observation.*@Base/ },
+    { message: 'unexpected balance observation for ["@Base"]' },
   );
 });
 

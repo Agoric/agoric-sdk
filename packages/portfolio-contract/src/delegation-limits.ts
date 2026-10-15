@@ -192,7 +192,7 @@ const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
   });
 };
 
-/** Require exactly one balance for every current or plan-referenced place. */
+/** Require every current or plan-referenced balance; allow only zero-balance extras. */
 export const vetObservationPlaces = (
   currentPlaces: Iterable<PortfolioBalancePlaceRef>,
   plan: FundsFlowPlan,
@@ -212,7 +212,10 @@ export const vetObservationPlaces = (
   );
   const missing = [...expected].filter(place => !observed.has(place));
   missing.length === 0 || Fail`missing balance observation for ${missing}`;
-  const extra = [...observed].filter(place => !expected.has(place));
+  // Nonzero extras would inflate the portfolio total used by mandate checks.
+  const extra = [...observed].filter(
+    place => !expected.has(place) && observations.balances[place] !== 0n,
+  );
   extra.length === 0 || Fail`unexpected balance observation for ${extra}`;
 };
 harden(vetObservationPlaces);

@@ -1347,6 +1347,40 @@ test('delegated plans: the signed observations are verified and checked against 
   t.is(afterMissingObservation.flowCount, before.flowCount);
   t.deepEqual(getSyncState(afterMissingObservation), syncState);
   t.deepEqual(afterMissingObservation.flowsRunning, before.flowsRunning);
+
+  t.is(before.accountIdByChain.Arbitrum, undefined);
+  t.false(before.positionKeys.includes('Compound_Arbitrum'));
+  // The attestor includes target instruments and their chain accounts even
+  // when they have no position/account and this plan does not touch them.
+  const signedObservations = await signObservations({
+    portfolioId,
+    syncState,
+    observations: {
+      balances: {
+        '@agoric': 10_000_000n,
+        '@Arbitrum': 0n,
+        Aave_Arbitrum: 0n,
+        Compound_Arbitrum: 0n,
+      },
+      instrumentTvls: {},
+    },
+  });
+  const flowKey = await submit({
+    plan: emptyPlan,
+    signedObservations,
+  });
+  await eventLoopIteration();
+  const afterAccepted = await peteKit.evmTrader.getPortfolioStatus();
+  t.is(afterAccepted.flowCount, before.flowCount + 1);
+  t.deepEqual(afterAccepted.targetAllocation, planTargetAllocation);
+  const flow = await peteKit.readPublished(
+    `portfolios.portfolio${portfolioId}.flows.${flowKey}`,
+  );
+  t.like(flow, {
+    state: 'done',
+    agent: 'agent1',
+    initiatingOperation: { type: 'setTargetAllocation', status: 'ok' },
+  });
 });
 
 test('delegated plans: signed TVL mandate failure creates no flow', async t => {
