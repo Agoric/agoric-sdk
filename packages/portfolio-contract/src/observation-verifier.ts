@@ -39,6 +39,15 @@ import type { RecoverTypedDataAddressParameters } from 'viem';
  */
 export const MAX_OBSERVATION_AGE_SECONDS = 15n * 60n;
 
+/**
+ * How far in the future of the chain's time signed observations may have been
+ * issued.
+ *
+ * The attestor's clock may run a little ahead of the chain's time, which is
+ * the time of the last block, not the current time.
+ */
+export const MAX_OBSERVATION_CLOCK_SKEW_SECONDS = 30n;
+
 export type VerifiedPortfolioObservations = PortfolioObservationsContent & {
   /** When the observations were issued, in seconds since the epoch. */
   issuedAt: bigint;
@@ -94,7 +103,7 @@ export const makePortfolioObservationsVerifier = ({
    * @param signedObservations
    * @throws {Error} if the message is not a valid `PortfolioObservations` signed by the
    *   attestor for one of the valid verifying contracts, or if its deadline
-   *   has passed or it was issued in the future or too long ago.
+   *   has passed or it was issued too far in the future or too long ago.
    */
   const verifyPortfolioObservations = async (
     signedObservations: SignedPortfolioObservations,
@@ -126,7 +135,7 @@ export const makePortfolioObservationsVerifier = ({
     const { absValue: now } = await E(timerService).getCurrentTimestamp();
     now <= deadline ||
       Fail`observations deadline has passed: ${q(deadline)} vs ${q(now)}`;
-    issuedAt <= now ||
+    issuedAt <= now + MAX_OBSERVATION_CLOCK_SKEW_SECONDS ||
       Fail`observations issued in the future: ${q(issuedAt)} vs ${q(now)}`;
     now <= issuedAt + MAX_OBSERVATION_AGE_SECONDS ||
       Fail`observations issued too long ago: ${q(issuedAt)} vs ${q(now)}`;

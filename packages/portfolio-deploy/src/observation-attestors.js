@@ -5,12 +5,6 @@
  */
 
 /**
- * Placeholder until the observation service's keys are provisioned: nobody
- * holds the key of this address, so any signed observations are rejected.
- */
-const PLACEHOLDER_ATTESTOR = '0x000000000000000000000000000000000000dEaD';
-
-/**
  * Instances deployed through `ymaxControl` get theirs from the private args
  * overrides (see `test/privateArgs-ymax*.json`), which must agree with these.
  *
@@ -20,6 +14,9 @@ const PLACEHOLDER_ATTESTOR = '0x000000000000000000000000000000000000dEaD';
  * }}
  */
 export const observationAttestors = harden({
-  ymax0: { mainnet: PLACEHOLDER_ATTESTOR, testnet: PLACEHOLDER_ATTESTOR },
-  ymax1: { mainnet: PLACEHOLDER_ATTESTOR },
+  ymax0: {
+    mainnet: '0x0EBa3dDE817375354CdE3d05D3c97a72B0AAf8BB',
+    testnet: '0x000000000000000000000000000000000000dEaD',
+  },
+  ymax1: { mainnet: '0xFE5CC60b9F6bc06004e3c8169BB7460DdD70c7a9' },
 });
