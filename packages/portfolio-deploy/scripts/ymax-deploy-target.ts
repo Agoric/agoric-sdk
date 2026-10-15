@@ -1380,7 +1380,7 @@ const rebuildAgdSignCommand = async ({
   const authInfo = AuthInfo.decode(authInfoBytes);
   const signerInfo =
     authInfo.signerInfos[0] || Fail`unsigned tx missing signer_info`;
-  const { contract, network } = getTargetInfo(target);
+  const { contract, network, chainId } = getTargetInfo(target);
   const signerAddress = grantee
     ? resolveGranteeAddress(grantee)
     : getControlAddress(contract, network);
@@ -1398,7 +1398,7 @@ const rebuildAgdSignCommand = async ({
       signerData: {
         accountNumber: account.accountNumber,
         sequence: Number(signerInfo.sequence),
-        chainId: getTargetInfo(target).chainId,
+        chainId,
       },
     } as unknown as UnsignedUpgradeArtifact,
     unsignedTxAssetName,
@@ -1982,6 +1982,26 @@ type GraphNode = {
   ) => Promise<unknown>;
 };
 
+type MakeGraphPowers = {
+  deployPackage: ReturnType<typeof makeDeployPackage>;
+  release: ReleaseRW;
+  installBundle: CmdRunner;
+  upgradeLogs: CmdRunner;
+  walletAdmin: CmdRunner;
+  connectTargetRpc: (upgradeTarget: Target) => Promise<StargateClient>;
+  makeUpgradeRequestBuilder: (
+    upgradeTarget: Target,
+  ) => Promise<UpgradeRequestBuilder>;
+  makeTxApiForTarget: (
+    upgradeTarget: Target,
+  ) => Promise<ReturnType<typeof makeCosmosTxApi>>;
+  makeVstorageApiForTarget: (
+    upgradeTarget: Target,
+  ) => Promise<ReturnType<typeof makeAgoricVstorageApi>>;
+  setTimeout: typeof globalThis.setTimeout;
+  now: () => number;
+  grantee?: string;
+};
 export const makeGraph = (
   target: Target,
   tag: string,
@@ -2002,26 +2022,7 @@ export const makeGraph = (
     setTimeout,
     now,
     grantee,
-  }: {
-    deployPackage: ReturnType<typeof makeDeployPackage>;
-    release: ReleaseRW;
-    installBundle: CmdRunner;
-    upgradeLogs: CmdRunner;
-    walletAdmin: CmdRunner;
-    connectTargetRpc: (upgradeTarget: Target) => Promise<StargateClient>;
-    makeUpgradeRequestBuilder: (
-      upgradeTarget: Target,
-    ) => Promise<UpgradeRequestBuilder>;
-    makeTxApiForTarget: (
-      upgradeTarget: Target,
-    ) => Promise<ReturnType<typeof makeCosmosTxApi>>;
-    makeVstorageApiForTarget: (
-      upgradeTarget: Target,
-    ) => Promise<ReturnType<typeof makeAgoricVstorageApi>>;
-    setTimeout: typeof globalThis.setTimeout;
-    now: () => number;
-    grantee?: string;
-  },
+  }: MakeGraphPowers,
 ) => {
   const cache = new Map<string, Promise<unknown>>();
 
@@ -2771,8 +2772,8 @@ export const main = async (
     now = Date.now,
   } = {},
 ) => {
+  const { GITHUB_TOKEN: ghToken, ...walletAdminEnv } = env;
   const {
-    GITHUB_TOKEN: ghToken,
     AGORIC_NET,
     GRANTEE,
     MNEMONIC,
@@ -2782,23 +2783,21 @@ export const main = async (
   if (!ghToken) {
     throw Error('GITHUB_TOKEN must be set');
   }
-  const gh = makeCmdRunner('gh', { execFile }).withEnv({
-    GH_TOKEN: ghToken,
-  });
-  const git = makeCmdRunner('git', { execFile });
-  const networkEnv = AGORIC_NET ? { AGORIC_NET } : {};
+  const installationEnv = {
+    ...(AGORIC_NET && { AGORIC_NET }),
+    YMAX_INSTALL_BUNDLE_MNEMONIC,
+  };
+  const delay = (ms: number) =>
+    new Promise<void>(resolve => setTimeout(resolve, ms));
 
+  const gh = makeCmdRunner('gh', { execFile }).withEnv({ GH_TOKEN: ghToken });
+  const git = makeCmdRunner('git', { execFile });
   const installBundle = makeCmdRunner(
     agoricSdk
       .join('packages/portfolio-deploy/scripts/install-bundle.ts')
       .toString(),
-    {
-      execFile,
-      defaultEnv: { ...networkEnv, YMAX_INSTALL_BUNDLE_MNEMONIC },
-    },
+    { execFile, defaultEnv: installationEnv },
   );
-
-  const { GITHUB_TOKEN: _g, ...walletAdminEnv } = env;
   const walletAdmin = makeCmdRunner(
     agoricSdk
       .join('packages/portfolio-deploy/scripts/wallet-admin.ts')
@@ -2818,11 +2817,8 @@ export const main = async (
     gh,
     scratchDir: deployPackage.distDir,
   });
-  const commit =
-    subcommand === 'phase-pre-upgrade'
-      ? (await git.exec(['rev-parse', 'HEAD'])).stdout.trim()
-      : '';
   const fetch = fetchFn;
+
   const connectTargetRpc = async (upgradeTarget: Target) => {
     const { network } = getTargetInfo(upgradeTarget);
     const config = await fetchNetworkConfig(network, { fetch });
@@ -2859,13 +2855,7 @@ export const main = async (
     if (!rpcAddr) {
       throw Error(`missing rpcAddr for ${network}`);
     }
-    const walletKit = await makeWalletKit(
-      {
-        fetch: fetchFn,
-        delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
-      },
-      config,
-    );
+    const walletKit = await makeWalletKit({ fetch: fetchFn, delay }, config);
     return buildUpgradeRequestBuilder({
       contract,
       networkConfig: config,
@@ -2875,6 +2865,7 @@ export const main = async (
       clock: () => new Date(now()),
     });
   };
+
   const detached =
     subcommand === 'phase-upgrade-generate' ||
     (subcommand === 'phase-upgrade-submit' && !MNEMONIC);
@@ -2890,6 +2881,10 @@ export const main = async (
       ? connectTargetRpc
       : async (_upgradeTarget: Target) => assert.fail('unauthorized');
 
+  const commit =
+    subcommand === 'phase-pre-upgrade'
+      ? (await git.exec(['rev-parse', 'HEAD'])).stdout.trim()
+      : '';
   const graph = makeGraph(
     target,
     tag,
