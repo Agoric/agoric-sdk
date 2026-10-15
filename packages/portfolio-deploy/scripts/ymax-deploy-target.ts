@@ -8,11 +8,13 @@ import {
   fetchNetworkConfig,
   makeSmartWalletKit,
   retryUntilCondition,
+  type MinimalNetworkConfig,
 } from '@agoric/client-utils';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { MsgExec } from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/tx.js';
 import { LegacyAminoPubKey } from '@agoric/cosmic-proto/codegen/cosmos/crypto/multisig/keys.js';
 import { AuthInfo } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+import { provideLazyMap } from '@agoric/internal/src/js-utils.js';
 import { makeCmdRunner, makeFileRd, makeFileRW } from '@agoric/pola-io';
 import { getControlAddress } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import type {
@@ -2811,50 +2813,44 @@ export const main = async (
     gh,
     scratchDir: deployPackage.distDir,
   });
-  const fetch = fetchFn;
 
+  type NetworkConfig = MinimalNetworkConfig & { apiAddrs: string[] };
+  type TargetContext = TargetInfo & { config: NetworkConfig };
+  const contextCache = new Map<Target, Promise<TargetContext>>();
+  const fetchContextForTarget = (upgradeTarget: Target) =>
+    provideLazyMap(contextCache, upgradeTarget, async () => {
+      const targetInfo = getTargetInfo(upgradeTarget);
+      const { network } = targetInfo;
+      const baseConfig = await fetchNetworkConfig(network, { fetch: fetchFn });
+      const config = { apiAddrs: [] as string[], ...baseConfig };
+      if (!(config.rpcAddrs?.length >= 1)) {
+        throw Error(`missing rpcAddrs for ${network}`);
+      }
+      if (!(config.apiAddrs?.length >= 1)) {
+        throw Error(`missing apiAddrs for ${network}`);
+      }
+      return { ...targetInfo, config };
+    });
   const connectTargetRpc = async (upgradeTarget: Target) => {
-    const { network } = getTargetInfo(upgradeTarget);
-    const config = await fetchNetworkConfig(network, { fetch });
-    const rpcAddr = config.rpcAddrs?.[0];
-    if (!rpcAddr) {
-      throw Error(`missing rpcAddr for ${network}`);
-    }
-    return connectRpc(rpcAddr);
+    const { config } = await fetchContextForTarget(upgradeTarget);
+    return connectRpc(config.rpcAddrs[0]);
   };
   const makeTxApiForTarget = async (upgradeTarget: Target) => {
-    const { network } = getTargetInfo(upgradeTarget);
-    const config = await fetchNetworkConfig(network, { fetch });
-    const { apiAddrs = [] } = config as typeof config & {
-      apiAddrs?: string[];
-    };
-    if (apiAddrs.length < 1) {
-      throw Error(`missing apiAddrs for ${network}`);
-    }
-    return makeCosmosTxApi(apiAddrs, { fetchFn, setTimeout });
+    const { config } = await fetchContextForTarget(upgradeTarget);
+    return makeCosmosTxApi(config.apiAddrs, { fetchFn, setTimeout });
   };
   const makeVstorageApiForTarget = async (upgradeTarget: Target) => {
-    const { network } = getTargetInfo(upgradeTarget);
-    const config = await fetchNetworkConfig(network, { fetch });
-    const { apiAddrs = [] } = config as { apiAddrs?: string[] };
-    if (apiAddrs.length < 1) {
-      throw Error(`missing apiAddrs for ${network}`);
-    }
-    return makeAgoricVstorageApi(apiAddrs, { fetchFn, setTimeout });
+    const { config } = await fetchContextForTarget(upgradeTarget);
+    return makeAgoricVstorageApi(config.apiAddrs, { fetchFn, setTimeout });
   };
   const makeUpgradeRequestBuilder = async (upgradeTarget: Target) => {
-    const { network, contract } = getTargetInfo(upgradeTarget);
-    const config = await fetchNetworkConfig(network, { fetch });
-    const rpcAddr = config.rpcAddrs?.[0];
-    if (!rpcAddr) {
-      throw Error(`missing rpcAddr for ${network}`);
-    }
+    const { contract, config } = await fetchContextForTarget(upgradeTarget);
     const walletKit = await makeWalletKit({ fetch: fetchFn, delay }, config);
     return buildUpgradeRequestBuilder({
       contract,
       networkConfig: config,
       grantee,
-      queryClient: await connectRpc(rpcAddr),
+      queryClient: await connectRpc(config.rpcAddrs[0]),
       walletKit,
       clock: () => new Date(now()),
     });
