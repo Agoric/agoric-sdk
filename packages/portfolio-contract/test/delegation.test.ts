@@ -1204,7 +1204,10 @@ const setupPlanDelegation = async (
     observationAttestor: attestor.address,
   },
 ) => {
-  const deployed = await deploy(t, overrides);
+  const deployed = await deploy(t, {
+    'features.agenticPlanning': true,
+    ...overrides,
+  });
   const { receiver, peteKit, peteArbitrum, portfolioId } =
     await openPetePortfolio(deployed);
   const grantStatus = await peteArbitrum.grant(
@@ -1266,6 +1269,55 @@ const someObservations: PlanObservations = harden({
   balances: { Aave_Arbitrum: 6_000_000n, Compound_Arbitrum: 4_000_000n },
   instrumentTvls: {},
 });
+
+for (const enabled of [false, undefined]) {
+  test(`delegated plans: agentic planning ${enabled} rejects plans but allows planner requests`, async t => {
+    const { peteKit, portfolioId, delegationClient, signObservations } =
+      await setupPlanDelegation(t, {
+        observationAttestor: attestor.address,
+        'features.agenticPlanning': enabled,
+      });
+    const before = await peteKit.evmTrader.getPortfolioStatus();
+    const syncState = getSyncState(before);
+    const params = harden({
+      targetAllocation: planTargetAllocation,
+      syncState,
+    });
+    const signedObservations = await signObservations({
+      portfolioId,
+      syncState,
+      observations: {
+        balances: {
+          '@agoric': 10_000_000n,
+          '@Arbitrum': 0n,
+          Aave_Arbitrum: 0n,
+          Compound_Arbitrum: 0n,
+        },
+        instrumentTvls: {},
+      },
+    });
+    await t.throwsAsync(
+      E(delegationClient).setTargetAllocation({
+        ...params,
+        plan: emptyPlan,
+        signedObservations,
+      }),
+      { message: /agentic planning is disabled/ },
+    );
+    await eventLoopIteration();
+    const after = await peteKit.evmTrader.getPortfolioStatus();
+    t.is(after.flowCount, before.flowCount);
+    t.deepEqual(getSyncState(after), syncState);
+    t.deepEqual(after.flowsRunning, before.flowsRunning);
+    t.deepEqual(after.targetAllocation, before.targetAllocation);
+
+    const flowKey = await E(delegationClient).setTargetAllocation(params);
+    t.regex(flowKey, /^flow\d+$/);
+    await eventLoopIteration();
+    const afterPlannerRequest = await peteKit.evmTrader.getPortfolioStatus();
+    t.is(afterPlannerRequest.flowCount, before.flowCount + 1);
+  });
+}
 
 test('delegated plans: the signed observations are verified and checked against the portfolio', async t => {
   const { peteKit, portfolioId, delegationClient, signObservations } =

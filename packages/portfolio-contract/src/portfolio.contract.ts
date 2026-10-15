@@ -574,17 +574,21 @@ export const contract = async (
   });
 
   // As for contract addresses, `0x` is a placeholder for "not configured".
+  // Only agent-supplied plans use signed observations. Keep delegation and
+  // requests for plans from the existing planner available without this flag.
   const verifyPortfolioObservations: PortfolioObservationsVerifier =
-    observationAttestor && observationAttestor.length > 2
-      ? makePortfolioObservationsVerifier({
-          attestorAddress: observationAttestor,
-          verifyingContracts: extractObservationVerifyingContracts(
-            eip155ChainIdToAxelarChain,
-            contracts,
-          ),
-          timerService,
-        })
-      : async () => Fail`no observation attestor configured`;
+    contractFeatures.agenticPlanning !== true
+      ? async () => Fail`agentic planning is disabled`
+      : observationAttestor && observationAttestor.length > 2
+        ? makePortfolioObservationsVerifier({
+            attestorAddress: observationAttestor,
+            verifyingContracts: extractObservationVerifyingContracts(
+              eip155ChainIdToAxelarChain,
+              contracts,
+            ),
+            timerService,
+          })
+        : async () => Fail`no observation attestor configured`;
 
   const validateOpenMessageRepresentativeInfo =
     makeValidateOpenMessageRepresentativeInfo(
