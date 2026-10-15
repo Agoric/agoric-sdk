@@ -2793,21 +2793,15 @@ export const main = async (
   const gh = makeCmdRunner('gh', { execFile }).withEnv({ GH_TOKEN: ghToken });
   const git = makeCmdRunner('git', { execFile });
   const installBundle = makeCmdRunner(
-    agoricSdk
-      .join('packages/portfolio-deploy/scripts/install-bundle.ts')
-      .toString(),
+    `${agoricSdk.join('packages/portfolio-deploy/scripts/install-bundle.ts')}`,
     { execFile, defaultEnv: installationEnv },
   );
   const walletAdmin = makeCmdRunner(
-    agoricSdk
-      .join('packages/portfolio-deploy/scripts/wallet-admin.ts')
-      .toString(),
+    `${agoricSdk.join('packages/portfolio-deploy/scripts/wallet-admin.ts')}`,
     { execFile, defaultEnv: walletAdminEnv },
   );
   const upgradeLogs = makeCmdRunner(
-    agoricSdk
-      .join('packages/portfolio-deploy/scripts/ymax-upgrade-run-logs.ts')
-      .toString(),
+    `${agoricSdk.join('packages/portfolio-deploy/scripts/ymax-upgrade-run-logs.ts')}`,
     { execFile, defaultEnv: walletAdminEnv },
   );
   const deployPackage = makeDeployPackage({ agoricSdk });
