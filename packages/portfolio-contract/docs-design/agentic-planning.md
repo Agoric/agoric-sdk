@@ -81,11 +81,12 @@ allocation ceilings and partial-failure exposure limits.
 
 `verifyPortfolioObservations` rejects observations that are not signed by the
 attestor account, are for another domain or verifying contract, have expired,
-were issued in the future, or were issued more than 15 minutes ago
-(`MAX_OBSERVATION_AGE_SECONDS`). `assertAttestationContext` stands for the
-portfolio's checks that the verified observations are for this portfolio and at
-the submitted sync state, and `assertMandate` for the mandate checks of the
-target allocation and plan.
+were issued more than 30 seconds in the future, to allow for the chain's time
+lagging behind (`MAX_OBSERVATION_CLOCK_SKEW_SECONDS`), or were issued more than
+15 minutes ago (`MAX_OBSERVATION_AGE_SECONDS`). `assertAttestationContext`
+stands for the portfolio's checks that the verified observations are for this
+portfolio and at the submitted sync state, and `assertMandate` for the mandate
+checks of the target allocation and plan.
 
 For compactness in the diagram, `XYZ`, `ABC`, and `PDQ` abbreviate the
 corresponding Morpho vaults.

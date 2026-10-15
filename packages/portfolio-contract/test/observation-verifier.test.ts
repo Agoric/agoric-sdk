@@ -14,6 +14,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import {
   makePortfolioObservationsVerifier,
   MAX_OBSERVATION_AGE_SECONDS,
+  MAX_OBSERVATION_CLOCK_SKEW_SECONDS,
 } from '../src/observation-verifier.ts';
 import { evmTrader0PrivateKey, evmTrader1PrivateKey } from './mocks.ts';
 
@@ -205,8 +206,15 @@ test('accepts observations issued now', async t => {
   t.is(verified.issuedAt, NOW);
 });
 
+test('accepts observations issued slightly ahead of the chain time', async t => {
+  const issuedAt = NOW + MAX_OBSERVATION_CLOCK_SKEW_SECONDS;
+  const verified = await verify(await sign(makeMessage({ issuedAt })));
+  t.is(verified.issuedAt, issuedAt);
+});
+
 test('rejects observations issued in the future', async t => {
-  await t.throwsAsync(verify(await sign(makeMessage({ issuedAt: NOW + 1n }))), {
+  const issuedAt = NOW + MAX_OBSERVATION_CLOCK_SKEW_SECONDS + 1n;
+  await t.throwsAsync(verify(await sign(makeMessage({ issuedAt }))), {
     message: /observations issued in the future/,
   });
 });
