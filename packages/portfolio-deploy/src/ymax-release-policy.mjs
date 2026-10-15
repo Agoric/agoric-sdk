@@ -1,11 +1,27 @@
 /**
  * @file define ymax release targets, prerequisite policy, and release-artifact validation helpers
  *
- * @import { InstallRecord, PendingUpgradeRecord, Target, UpgradeRecord } from '../scripts/ymax-deploy-target.ts'
+ * @import { InstallRecord, PendingUpgradeRecord, UpgradeRecord } from '../scripts/ymax-deploy-target.ts'
  */
 
 import { createHash } from 'node:crypto';
 
+/**
+ * @typedef {'ymax0' | 'ymax1'} YmaxContractName
+ * cf. \@agoric/portfolio-api/src/portfolio-constants.js PORTFOLIO_CONTRACT_NAMES
+ *
+ * @typedef {'devnet' | 'main'} YmaxContractNetwork
+ *
+ * @typedef {'ymax0-devnet' | 'ymax0-main' | 'ymax1-main'} Target
+ *
+ * @typedef {{
+ *   contract: YmaxContractName;
+ *   network: YmaxContractNetwork;
+ *   chainId: string;
+ * }} TargetInfo
+ */
+
+/** @type {Record<Target, TargetInfo>} */
 export const targetInfo = {
   'ymax0-devnet': {
     contract: 'ymax0',

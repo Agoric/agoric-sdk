@@ -58,6 +58,8 @@ import {
   validateNamedInstallRecord,
   validateNamedPendingUpgradeRecord,
   validateNamedUpgradeRecord,
+  type Target,
+  type TargetInfo,
 } from '../src/ymax-release-policy.mjs';
 
 const usage = `Usage:
@@ -66,7 +68,6 @@ const usage = `Usage:
   ymax-deploy-target.ts phase-upgrade-submit --target <target> --tag <tag>
   ymax-deploy-target.ts phase-upgrade-confirm --target <target> --tag <tag>`;
 
-export type Target = 'ymax0-devnet' | 'ymax0-main' | 'ymax1-main';
 type Env = Record<string, string | undefined>;
 type FileRd = ReturnType<typeof makeFileRd>;
 type FileRW = ReturnType<typeof makeFileRW>;
@@ -174,11 +175,6 @@ type CosmosTxResponse = {
   };
 };
 
-const typedTargetInfo = targetInfo as Record<
-  Target,
-  { contract: 'ymax0' | 'ymax1'; network: 'devnet' | 'main'; chainId: string }
->;
-
 type Cli =
   | {
       subcommand: 'phase-pre-upgrade';
@@ -247,11 +243,9 @@ const flags = (spec: Record<string, string | undefined>) =>
     value === undefined ? [] : [`--${name}`, value],
   );
 
-const getTargetInfo = (target: string) => {
-  if (!(target in targetInfo)) {
-    throw Error(`unsupported target: ${target}`);
-  }
-  return typedTargetInfo[target as Target];
+const getTargetInfo = (target: Target) => {
+  Object.hasOwn(targetInfo, target) || Fail`unsupported target: ${q(target)}`;
+  return targetInfo[target];
 };
 
 const writeJson = (
@@ -473,7 +467,7 @@ const makeInstallRecord = async (
     target,
     releaseTag,
     commit,
-    ...typedTargetInfo[target],
+    ...targetInfo[target],
     bundleId,
     installTxHash: result.txHash,
     installBlockHeight: result.blockHeight,
@@ -501,7 +495,7 @@ const makeUpgradeRecord = (
   }
   return {
     target,
-    ...typedTargetInfo[target],
+    ...targetInfo[target],
     privateArgsOverridesPath: privateArgsPath,
     ...result,
   };
@@ -1114,7 +1108,7 @@ const preparePendingUpgrade = async (
   const pending: PendingUpgradeRecord = {
     target: upgradeTarget,
     releaseTag,
-    ...typedTargetInfo[upgradeTarget],
+    ...targetInfo[upgradeTarget],
     bundleId: install.bundleId,
     privateArgsOverridesPath: overrides.assetName,
     invocationId,
@@ -1192,7 +1186,7 @@ const buildDetachedPendingRecord = async (
   return {
     target: upgradeTarget,
     releaseTag,
-    ...typedTargetInfo[upgradeTarget],
+    ...targetInfo[upgradeTarget],
     bundleId: install.bundleId,
     privateArgsOverridesPath: overrides.assetName,
     invocationId: invocation.invocationId,
@@ -1446,7 +1440,7 @@ const generateAuthzOperatorUpgrade = async (
   const pending: PendingUpgradeRecord = {
     target: upgradeTarget,
     releaseTag,
-    ...typedTargetInfo[upgradeTarget],
+    ...targetInfo[upgradeTarget],
     bundleId: install.bundleId,
     privateArgsOverridesPath: overrides.assetName,
     invocationId,
