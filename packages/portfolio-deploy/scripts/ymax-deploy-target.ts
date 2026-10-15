@@ -2918,28 +2918,25 @@ export const main = async (
       }
       const generated = await graph.ensureNode<object>(unsignedTxAssetName);
       const signedTxAssetName = detachedSignedTxAssetName(target, grantee);
+      const signatureInputs = {
+        target,
+        release,
+        unsignedTxAssetName,
+        signedTxAssetName,
+        connectTargetRpc,
+      };
       const releaseInfo = await release.readOnly().get();
       const alreadySigned = hasAsset(releaseInfo, signedTxAssetName);
       const combineResult: CombineSignaturesResult | undefined =
         !alreadySigned && grantee
-          ? await tryCombineDetachedSignatures({
-              target,
-              release,
-              unsignedTxAssetName,
-              signedTxAssetName,
-              connectTargetRpc,
-            })
+          ? await tryCombineDetachedSignatures(signatureInputs)
           : undefined;
       const readyToBroadcast = alreadySigned || combineResult?.ready === true;
       const agdSignCommand = readyToBroadcast
         ? undefined
         : await rebuildAgdSignCommand({
-            target,
+            ...signatureInputs,
             releaseTag: tag,
-            unsignedTxAssetName,
-            signedTxAssetName,
-            release,
-            connectTargetRpc,
             grantee,
           });
       writeJson(stdout, {
