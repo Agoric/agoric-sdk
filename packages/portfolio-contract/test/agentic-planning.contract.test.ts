@@ -190,7 +190,10 @@ const initialAllocation: TargetAllocation[] = harden([
 ]);
 
 const setupTest = async (t: ExecutionContext) => {
-  const deployed = await deploy(t, { observationAttestor: attestor.address });
+  const deployed = await deploy(t, {
+    observationAttestor: attestor.address,
+    'features.agenticPlanning': true,
+  });
   const { zoe, common, timerService } = deployed;
   const walletFactory = makeWalletFactory(
     common.bootstrap.namesByAddressAdmin,
