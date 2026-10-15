@@ -71,6 +71,14 @@ together with `signedObservations`: an EIP-712 `PortfolioObservations` message
 - when the observations were issued (`issuedAt`, as the message `nonce`) and
   when they expire (`deadline`), both in seconds since the epoch.
 
+Balances must cover every provisioned chain account, current position, and
+place referenced by the plan. The ymax data service also includes
+allowed target instruments without positions and their unprovisioned chain
+accounts, even when the plan does not touch them. The contract accepts such
+extra places only with a zero balance. It rejects missing required places and
+nonzero extras: a nonzero extra would inflate the portfolio total and loosen
+allocation ceilings and partial-failure exposure limits.
+
 `verifyPortfolioObservations` rejects observations that are not signed by the
 attestor account, are for another domain or verifying contract, have expired,
 were issued in the future, or were issued more than 15 minutes ago
