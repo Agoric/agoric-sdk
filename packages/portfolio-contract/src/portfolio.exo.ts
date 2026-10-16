@@ -78,6 +78,7 @@ import {
   preparePortfolioDelegationKit,
   type PortfolioDelegationClient,
 } from './delegation.exo.ts';
+import { vetFlowPlanPlaces } from './flow-plan-places.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import {
   assertMandateForAllocation,
@@ -418,6 +419,7 @@ export const preparePortfolioKit = (
     offerArgsShapes,
     vowTools,
     zcf,
+    inertSeat,
     portfoliosNode,
     marshaller,
     usdcBrand,
@@ -454,6 +456,13 @@ export const preparePortfolioKit = (
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
     zcf: ZCF;
+    /**
+     * An already-exited seat for flows that have no user seat to pay out to
+     * (EVM-originated and delegated flows). Steps that move funds to or from a
+     * seat fail on it before touching any account, rather than stranding a
+     * payout in a seat whose `userSeat` nobody holds.
+     */
+    inertSeat: ZCFSeat;
     portfoliosNode: ERemote<StorageNode>;
     marshaller: ERemote<EMarshaller>;
     usdcBrand: Brand<'nat'>;
@@ -758,7 +767,6 @@ export const preparePortfolioKit = (
               observations,
             );
           }
-          const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
@@ -773,7 +781,7 @@ export const preparePortfolioKit = (
           const startedFlow = manager.startFlow(flowDetail);
           // Rely on platform-level unhandled Vow reporting rather than ad-hoc
           // contract logging. See https://github.com/Agoric/agoric-sdk/issues/10576
-          void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
           try {
@@ -824,7 +832,6 @@ export const preparePortfolioKit = (
               ? (reader.getTargetAllocation() ??
                 Fail`delegated rebalance requires target allocation`)
               : undefined;
-          const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
 
           const flowDetail: FlowDetail = {
             type: 'rebalance',
@@ -835,7 +842,7 @@ export const preparePortfolioKit = (
           const startedFlow = manager.startFlow(flowDetail);
           // Rely on platform-level unhandled Vow reporting rather than ad-hoc
           // contract logging. See https://github.com/Agoric/agoric-sdk/issues/10576
-          void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
           if (targetAllocation) {
@@ -862,7 +869,6 @@ export const preparePortfolioKit = (
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
-          const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
 
           const flowDetail: FlowDetail = {
             type: 'claimRewards',
@@ -871,7 +877,7 @@ export const preparePortfolioKit = (
           };
           const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
-          void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
           return `flow${flowId}`;
@@ -1074,6 +1080,25 @@ export const preparePortfolioKit = (
           const { resolver, ...sync } = detail.sync;
           if (!resolver) {
             throw Fail`flow${flowId} has already been resolved`;
+          }
+          try {
+            vetFlowPlanPlaces(
+              {
+                flowType: detail.type,
+                isEvmPortfolio: !!this.state.sourceAccountId,
+                ...(detail.type === 'deposit' && {
+                  fromChain: detail.fromChain,
+                }),
+                ...(detail.type === 'withdraw' && { toChain: detail.toChain }),
+              },
+              steps,
+            );
+          } catch (reason) {
+            // Fail the flow rather than leave it waiting for another plan.
+            const message =
+              reason instanceof Error ? reason.message : String(reason);
+            this.facets.planner.rejectFlowPlan(flowId, message);
+            throw reason;
           }
           resolver.resolve(steps);
           flowsRunning.set(flowId, { ...detail, sync });
@@ -1786,10 +1811,8 @@ export const preparePortfolioKit = (
           const amount = AmountMath.make(usdcBrand, depositDetails.amount);
           const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
           const startedFlow = this.facets.manager.startFlow(flowDetail);
-          const seat = zcf.makeEmptySeatKit().zcfSeat;
-
           void executePlan(
-            seat,
+            inertSeat,
             {},
             this.facets,
             undefined,
@@ -1847,9 +1870,7 @@ export const preparePortfolioKit = (
             ...(initiatingOperation && { initiatingOperation }),
           };
           const startedFlow = this.facets.manager.startFlow(flowDetail);
-          const seat = zcf.makeEmptySeatKit().zcfSeat;
-
-          void executePlan(seat, {}, this.facets, undefined, startedFlow);
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
         /**
@@ -1903,9 +1924,7 @@ export const preparePortfolioKit = (
             toChain,
           } satisfies FlowDetail;
           const startedFlow = this.facets.manager.startFlow(flowDetail);
-          const seat = zcf.makeEmptySeatKit().zcfSeat;
-
-          void executePlan(seat, {}, this.facets, undefined, startedFlow);
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
         /**

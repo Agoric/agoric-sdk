@@ -905,6 +905,7 @@ test('planner allows EVM-based portfolio to withdraw to -Chain via @chain accoun
   const { stepsP, flowId } = aPortfolio.manager.startFlow({
     type: 'withdraw',
     amount,
+    toChain: 'Arbitrum',
   });
 
   t.notThrows(

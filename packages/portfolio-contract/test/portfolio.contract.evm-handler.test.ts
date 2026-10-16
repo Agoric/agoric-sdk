@@ -7,6 +7,7 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { type Bech32Address } from '@agoric/orchestration';
 import { E } from '@endo/far';
@@ -28,6 +29,11 @@ import {
   keys,
   type RunningFlowKey,
 } from './contract-test-support.ts';
+
+const expectUnhandled = makeExpectUnhandledRejectionMacro({
+  test,
+  importMetaUrl: import.meta.url,
+});
 
 test('evmHandler.withdraw starts and completes a withdraw flow', async t => {
   const shared = await setupPlanner(t);
@@ -678,3 +684,52 @@ test('evmHandler.setAutoFeatures enables planner-initiated rebalance', async t =
     );
   }
 });
+
+test(
+  'EVM flows cannot route funds into a seat',
+  expectUnhandled(1),
+  async t => {
+    const shared = await setupPlanner(t);
+    const { common } = shared;
+    const { usdc } = common.brands;
+    const inputs = {
+      fromChain: 'Arbitrum' as const,
+      depositAmount: usdc.units(1000),
+      allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+    };
+    const { powers } = await makeEvmPlannerPowers(t, shared, 0, false, true);
+    const { evmTrader, planner1 } = powers;
+    await doOpenEvmPortfolio(shared, inputs, powers);
+
+    const { policyVersion, rebalanceCount } =
+      await evmTrader.getPortfolioStatus();
+    const flowKey = await evmTrader.forChain(inputs.fromChain).rebalance();
+    const flowNum = Number(flowKey.replace('flow', ''));
+
+    // EVM flows have no user seat, so a payout to `<Cash>` would be stranded.
+    const steps = [{ src: '@agoric', dest: '<Cash>', amount: usdc.make(100n) }];
+    await t.throwsAsync(
+      E(planner1.stub).resolvePlan(
+        evmTrader.getPortfolioId(),
+        flowNum,
+        { flow: steps },
+        policyVersion,
+        rebalanceCount,
+      ),
+      { message: 'EVM portfolio has no seat for "<Cash>"' },
+    );
+    await eventLoopIteration();
+
+    const { contents } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+    const flowHistory = contents[
+      `${evmTrader.getPortfolioPath()}.flows.${flowKey}`
+    ] as { state: string; error?: string }[];
+    const failure = flowHistory.find(entry => entry.state === 'fail');
+    t.regex(failure?.error ?? '', /EVM portfolio has no seat/);
+    t.deepEqual((await evmTrader.getPortfolioStatus()).flowsRunning, {});
+  },
+);

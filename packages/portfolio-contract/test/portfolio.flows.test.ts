@@ -16,6 +16,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 import { type AccountId, type Orchestrator } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
+import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   decodeFunctionData,
   getAbiItem,
@@ -35,6 +36,8 @@ import {
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeTokenIdKey } from '@agoric/portfolio-api/src/type-guards.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
+import type { ZCF } from '@agoric/zoe';
+import { Far } from '@endo/far';
 import { passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 import { hexToBytes } from '@noble/hashes/utils';
@@ -2702,7 +2705,10 @@ test('openPortfolio from EVM with Permit2 completes a deposit flow', async t => 
 
   const { orch, ctx, offer, cosmosId, storage, txResolver } = mocks();
   const { log, seat } = offer;
-  const kit = await ctx.makePortfolioKit();
+  // EVM-opened portfolios have a sourceAccountId (cf. openPortfolioFromEVM)
+  const kit = await ctx.makePortfolioKit({
+    sourceAccountId: 'eip155:42161:0x1111111111111111111111111111111111111111',
+  });
   const portfolioId = kit.reader.getPortfolioId();
   const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
   let flowNum: number | undefined;
@@ -2809,6 +2815,61 @@ test.todo(
   'openPortfolio from EVM with Permit2 rejects permit with zero amount',
 );
 
+test('the inert seat refuses a payout before the LCA is debited', async t => {
+  const { orch, ctx, inertSeat } = mocks({});
+  // Real zoeTools, so its seat checks are what's under test. Only
+  // `hasExited()` should be reached, so zcf is a bare stub.
+  const zoeTools = makeZoeTools(
+    {} as ZCF,
+    {
+      when: async p => p,
+      allVows: ps => Promise.all(ps),
+      allSettled: ps => Promise.allSettled(ps),
+      asVow: async thunk => thunk(),
+    } as any,
+  );
+  // Spy on withdrawals from the portfolio's Agoric LCA.
+  const withdrawals: unknown[] = [];
+  const spyOrch = harden({
+    ...orch,
+    async getChain(name: string) {
+      const chain = await orch.getChain(name);
+      if (name !== 'agoric') return chain;
+      return harden({
+        ...chain,
+        async makeAccount(): Promise<unknown> {
+          const account = await chain.makeAccount();
+          return Far('SpiedAccount', {
+            ...account,
+            async withdraw(amount) {
+              withdrawals.push(amount);
+              return harden({});
+            },
+          });
+        },
+      });
+    },
+  }) as Orchestrator;
+  const kit = await ctx.makePortfolioKit({
+    sourceAccountId: 'eip155:42161:0x1111111111111111111111111111111111111111',
+  });
+
+  const amount = make(USDC, 1_000_000n);
+  // A user-supplied flow skips plan vetting, isolating the seat itself.
+  await t.throwsAsync(
+    executePlan(
+      spyOrch,
+      { ...ctx, zoeTools: zoeTools as any },
+      inertSeat,
+      { flow: [{ src: '@agoric', dest: '<Cash>', amount }] },
+      kit,
+      { type: 'rebalance' },
+    ),
+    { message: /withdrawToSeat.*seat cannot have exited/ },
+  );
+  t.deepEqual(withdrawals, [], 'no withdrawal from the LCA');
+});
+
 // #region wayFromSrcToDest withdraw tests
 
 test('wayFromSrcToDest handles @Arbitrum -> -Arbitrum (same-chain withdraw)', t => {
@@ -2832,6 +2893,20 @@ test('wayFromSrcToDest rejects @agoric -> -Arbitrum (invalid src for withdraw)',
   t.throws(
     () => wayFromSrcToDest({ src: '@agoric', dest: '-Arbitrum', amount }),
     { message: /src for withdraw to "Arbitrum" must be same chain or noble/ },
+  );
+});
+
+test('wayFromSrcToDest handles @agoric -> <Cash>', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  const actual = wayFromSrcToDest({ src: '@agoric', dest: '<Cash>', amount });
+  t.deepEqual(actual, { how: 'withdrawToSeat' });
+});
+
+test('wayFromSrcToDest rejects @Arbitrum -> <Cash> (seat is fed from @agoric)', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  t.throws(
+    () => wayFromSrcToDest({ src: '@Arbitrum', dest: '<Cash>', amount }),
+    { message: /src for "<Cash>" must be @agoric, not "@Arbitrum"/ },
   );
 });
 
@@ -4241,7 +4316,10 @@ test('pure EVM deposit does not provision an unused Noble account', async t => {
   const targetAllocation = { Aave_Arbitrum: 10_000n };
   const { orch, ctx, offer, storage, txResolver } = mocks();
   const { seat } = offer;
-  const kit = await ctx.makePortfolioKit();
+  // EVM-opened portfolios have a sourceAccountId (cf. openPortfolioFromEVM)
+  const kit = await ctx.makePortfolioKit({
+    sourceAccountId: 'eip155:42161:0x1111111111111111111111111111111111111111',
+  });
   const portfolioId = kit.reader.getPortfolioId();
   const { getPortfolioStatus } = makeStorageTools(storage);
 
@@ -4360,7 +4438,10 @@ test('openPortfolio from EVM: Noble registration failure fails the flow, not the
     transfer: Error('forwarding registration refused; axelar relay healthy'),
   });
   const { seat } = offer;
-  const kit = await ctx.makePortfolioKit();
+  // EVM-opened portfolios have a sourceAccountId (cf. openPortfolioFromEVM)
+  const kit = await ctx.makePortfolioKit({
+    sourceAccountId: 'eip155:42161:0x1111111111111111111111111111111111111111',
+  });
   const portfolioId = kit.reader.getPortfolioId();
   const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
 

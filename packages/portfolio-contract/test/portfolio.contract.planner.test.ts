@@ -337,8 +337,9 @@ test('simple rebalance using planner', async t => {
 
     const amount = AmountMath.make(usdc.brand, 1_000n);
 
+    // A rebalance moves funds between the portfolio's own accounts.
     const plan: FundsFlowPlan = {
-      flow: [{ src: '@agoric', dest: '<Cash>', amount }],
+      flow: [{ src: '@agoric', dest: '@noble', amount }],
       order: [[0, []]],
     };
     await E(planner1.stub).resolvePlan(
@@ -349,6 +350,7 @@ test('simple rebalance using planner', async t => {
       rebalanceCount,
     );
     t.log('planner resolved plan');
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   })();
 
   await Promise.all([traderP, plannerP]);
@@ -360,11 +362,14 @@ test('simple rebalance using planner', async t => {
     [obj.sender, obj.recipient].includes(addr),
   );
   t.log('bankBridge for', addr, myVBankIO);
-  t.like(myVBankIO, [
-    { type: 'VBANK_GIVE', amount: '3333330000' },
-    { type: 'VBANK_GRAB', amount: '1000' },
-  ]);
-  t.is(833332500n, (3333330000n * 25n) / 100n);
+  t.like(myVBankIO, [{ type: 'VBANK_GIVE', amount: '3333330000' }]);
+
+  const [transfer] = common.utils
+    .inspectLocalBridge()
+    .flatMap(obj => obj.messages ?? [])
+    .filter(msg => msg['@type'] === '/ibc.applications.transfer.v1.MsgTransfer')
+    .slice(-1);
+  t.like(transfer, { sender: addr, token: { amount: '1000' } });
 });
 
 test('create portfolio and deposit using planner', async t => {

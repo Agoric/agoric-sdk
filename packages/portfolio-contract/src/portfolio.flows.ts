@@ -884,7 +884,10 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
       const destKind = getAssetPlaceRefKind(dest);
       switch (destKind) {
         case 'seat':
-          return { how: 'withdrawToSeat' }; // XXX check that src is agoric
+          // withdrawToSeat always draws from the Agoric LCA
+          srcChain === 'agoric' ||
+            Fail`src for ${q(dest)} must be @agoric, not ${q(src)}`;
+          return { how: 'withdrawToSeat' };
 
         case 'withdrawAddr': {
           const destChain = getWithdrawChainOfPlaceRef(dest);

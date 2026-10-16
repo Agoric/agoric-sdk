@@ -577,8 +577,11 @@ export const mocks = (
       options,
     );
 
+  const { zcfSeat: inertSeat } = mockZCF.makeEmptySeatKit();
+  inertSeat.exit();
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
+    inertSeat,
     axelarIds: axelarIdsMock,
     gmpAddresses,
     vowTools,
@@ -708,6 +711,7 @@ export const mocks = (
     tapPK,
     ctx: { ...ctx1, makePortfolioKit: makePortfolioKitGuest },
     offer: { log: buf, seat, factoryPK, kinks },
+    inertSeat,
     storage: {
       ...storage,
       getDeserialized,

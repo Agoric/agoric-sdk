@@ -757,8 +757,17 @@ export const contract = async (
     await E(ps).deliverPayment(grantee, invitation);
   };
 
+  // Shared by all flows without a user seat. Exited once, on first
+  // incarnation, so no payout can ever be routed into it.
+  const inertSeat = zone.makeOnce('inertSeat', () => {
+    const { zcfSeat } = zcf.makeEmptySeatKit();
+    zcfSeat.exit();
+    return zcfSeat;
+  });
+
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
+    inertSeat,
     vowTools,
     executePlan,
     rebalance,
@@ -1002,10 +1011,8 @@ export const contract = async (
         );
       }
 
-      const seat = zcf.makeEmptySeatKit().zcfSeat;
-
       void orchFns2.openPortfolio(
-        seat,
+        inertSeat,
         { targetAllocation },
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
         // @ts-ignore XXX Guest...
