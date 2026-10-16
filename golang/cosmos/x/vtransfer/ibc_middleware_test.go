@@ -324,14 +324,17 @@ func (s *IntegrationTestSuite) assertActionQueue(chain *ibctesting.TestChain, ex
 }
 
 func (s *IntegrationTestSuite) RegisterBridgeTarget(chain *ibctesting.TestChain, target string) {
+	var reply string
+	var response vm.HandlerResponse
+
 	agdServer := s.GetApp(chain).AgdServer
 	defer agdServer.SetControllerContext(chain.GetContext())()
-	var reply string
 	bz, err := json.Marshal(struct {
 		Type   string
 		Target string
 	}{"BRIDGE_TARGET_REGISTER", target})
 	s.Require().NoError(err)
+
 	err = agdServer.ReceiveMessage(
 		&vm.Message{
 			Port: agdServer.GetPort("vtransfer"),
@@ -340,7 +343,11 @@ func (s *IntegrationTestSuite) RegisterBridgeTarget(chain *ibctesting.TestChain,
 		&reply,
 	)
 	s.Require().NoError(err)
-	s.Require().Equal("true", reply)
+
+	err = json.Unmarshal([]byte(reply), &response)
+	s.Require().NoError(err)
+
+	s.Require().Equal("true", response.Response)
 }
 
 func (s *IntegrationTestSuite) TransferFromEndpoint(
