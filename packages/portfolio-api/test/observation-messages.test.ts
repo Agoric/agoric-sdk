@@ -9,6 +9,7 @@ import {
   type PortfolioObservationsEIP712,
   type PortfolioObservationsContent,
 } from '../src/observation-messages.ts';
+import { runWithoutLockdown } from './without-lockdown.ts';
 
 const observation: PortfolioObservationsContent = harden({
   portfolioId: 12,
@@ -110,3 +111,28 @@ for (const [label, data, message] of [
     );
   });
 }
+
+test('usable without lockdown', async t => {
+  const script = `
+    const m = await import('@agoric/portfolio-api/src/observation-messages.js');
+    const message = m.ymaxObservationMessageKit.getStandaloneOperationData(
+      {
+        ...m.portfolioObservationsToEIP712({
+          portfolioId: 12,
+          syncState: { policyVersion: 3, rebalanceCount: 7 },
+          observations: {
+            balances: { '@Base': 200n },
+            instrumentTvls: { Aave_Base: { tvlUsd: 12n } },
+          },
+        }),
+        nonce: 1n,
+        deadline: 2n,
+      },
+      'PortfolioObservations',
+      1n,
+      '0x${'1'.repeat(40)}',
+    ).message;
+    m.portfolioObservationsFromEIP712(message);
+  `;
+  await t.notThrowsAsync(runWithoutLockdown(script));
+});
