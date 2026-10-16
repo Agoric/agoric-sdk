@@ -15,6 +15,9 @@ export const GAS_UNITS_PER_CLAIM: Record<string, bigint> = harden({
   // COMP on Optimism
   '0x7e7d4467112689329f7e06571ed0e8cbad4910ee': 1_000_000n,
 
+  // FXN on Ethereum
+  '0x365accfca291e7d3914637abf1f7635db165bb09': 1_000_000n,
+
   // MORPHO on Arbitrum
   '0x40bd670a58238e6e230c430bbb5ce6ec0d40df48': 1_000_000n,
   // MORPHO on Ethereum
