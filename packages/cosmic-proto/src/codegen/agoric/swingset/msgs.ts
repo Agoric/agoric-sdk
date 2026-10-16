@@ -1,7 +1,10 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   ChunkedArtifact,
   type ChunkedArtifactSDKType,
+  Params,
+  type ParamsSDKType,
   ChunkInfo,
   type ChunkInfoSDKType,
 } from './swingset.js';
@@ -314,6 +317,54 @@ export interface MsgCoreEvalResponseProtoMsg {
 export interface MsgCoreEvalResponseSDKType {
   result: string;
 }
+/**
+ * MsgUpdateParams defines an SDK message for updating swingset params.
+ * @name MsgUpdateParams
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgUpdateParams
+ */
+export interface MsgUpdateParams {
+  /**
+   * authority is the address that controls the module (defaults to x/gov unless overwritten).
+   */
+  authority: string;
+  /**
+   * params defines the parameters to update.
+   */
+  params: Params;
+}
+export interface MsgUpdateParamsProtoMsg {
+  typeUrl: '/agoric.swingset.MsgUpdateParams';
+  value: Uint8Array;
+}
+/**
+ * MsgUpdateParams defines an SDK message for updating swingset params.
+ * @name MsgUpdateParamsSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgUpdateParams
+ */
+export interface MsgUpdateParamsSDKType {
+  authority: string;
+  params: ParamsSDKType;
+}
+/**
+ * MsgUpdateParamsResponse is an empty reply.
+ * @name MsgUpdateParamsResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgUpdateParamsResponse
+ */
+export interface MsgUpdateParamsResponse {}
+export interface MsgUpdateParamsResponseProtoMsg {
+  typeUrl: '/agoric.swingset.MsgUpdateParamsResponse';
+  value: Uint8Array;
+}
+/**
+ * MsgUpdateParamsResponse is an empty reply.
+ * @name MsgUpdateParamsResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgUpdateParamsResponse
+ */
+export interface MsgUpdateParamsResponseSDKType {}
 /**
  * MsgInstallBundleResponse is either an empty acknowledgement that a bundle
  * installation message has been queued for the SwingSet kernel's
@@ -1381,7 +1432,7 @@ function createBaseMsgCoreEval(): MsgCoreEval {
  */
 export const MsgCoreEval = {
   typeUrl: '/agoric.swingset.MsgCoreEval' as const,
-  aminoType: 'cosmos-sdk/x/swingset/MsgCoreEval' as const,
+  aminoType: 'swingset/CoreEval' as const,
   is(o: any): o is MsgCoreEval {
     return (
       o &&
@@ -1556,6 +1607,177 @@ export const MsgCoreEvalResponse = {
     return {
       typeUrl: '/agoric.swingset.MsgCoreEvalResponse',
       value: MsgCoreEvalResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgUpdateParams(): MsgUpdateParams {
+  return {
+    authority: '',
+    params: Params.fromPartial({}),
+  };
+}
+/**
+ * MsgUpdateParams defines an SDK message for updating swingset params.
+ * @name MsgUpdateParams
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgUpdateParams
+ */
+export const MsgUpdateParams = {
+  typeUrl: '/agoric.swingset.MsgUpdateParams' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
+  aminoType: 'swingset/UpdateParams' as const,
+  is(o: any): o is MsgUpdateParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.authority === 'string' && Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.authority === 'string' && Params.isSDK(o.params)))
+    );
+  },
+  encode(
+    message: MsgUpdateParams,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.authority !== '') {
+      writer.uint32(10).string(message.authority);
+    }
+    if (message.params !== undefined) {
+      Params.encode(message.params, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgUpdateParams {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgUpdateParams();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.authority = reader.string();
+          break;
+        case 2:
+          message.params = Params.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgUpdateParams {
+    return {
+      authority: isSet(object.authority) ? String(object.authority) : '',
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+    };
+  },
+  toJSON(message: MsgUpdateParams): JsonSafe<MsgUpdateParams> {
+    const obj: any = {};
+    message.authority !== undefined && (obj.authority = message.authority);
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<MsgUpdateParams>): MsgUpdateParams {
+    const message = createBaseMsgUpdateParams();
+    message.authority = object.authority ?? '';
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: MsgUpdateParamsProtoMsg): MsgUpdateParams {
+    return MsgUpdateParams.decode(message.value);
+  },
+  toProto(message: MsgUpdateParams): Uint8Array {
+    return MsgUpdateParams.encode(message).finish();
+  },
+  toProtoMsg(message: MsgUpdateParams): MsgUpdateParamsProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.MsgUpdateParams',
+      value: MsgUpdateParams.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
+  return {};
+}
+/**
+ * MsgUpdateParamsResponse is an empty reply.
+ * @name MsgUpdateParamsResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.MsgUpdateParamsResponse
+ */
+export const MsgUpdateParamsResponse = {
+  typeUrl: '/agoric.swingset.MsgUpdateParamsResponse' as const,
+  is(o: any): o is MsgUpdateParamsResponse {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  encode(
+    _: MsgUpdateParamsResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgUpdateParamsResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgUpdateParamsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): MsgUpdateParamsResponse {
+    return {};
+  },
+  toJSON(_: MsgUpdateParamsResponse): JsonSafe<MsgUpdateParamsResponse> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(_: Partial<MsgUpdateParamsResponse>): MsgUpdateParamsResponse {
+    const message = createBaseMsgUpdateParamsResponse();
+    return message;
+  },
+  fromProtoMsg(
+    message: MsgUpdateParamsResponseProtoMsg,
+  ): MsgUpdateParamsResponse {
+    return MsgUpdateParamsResponse.decode(message.value);
+  },
+  toProto(message: MsgUpdateParamsResponse): Uint8Array {
+    return MsgUpdateParamsResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: MsgUpdateParamsResponse,
+  ): MsgUpdateParamsResponseProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.MsgUpdateParamsResponse',
+      value: MsgUpdateParamsResponse.encode(message).finish(),
     };
   },
 };

@@ -7,6 +7,8 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
+	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
@@ -167,6 +169,10 @@ func (app *GaiaApp) RegisterUpgradeHandlers() {
 			keyTable = icahosttypes.ParamKeyTable() //nolint:staticcheck
 		case ibctransfertypes.ModuleName:
 			keyTable = ibctransfertypes.ParamKeyTable() //nolint:staticcheck
+		case swingsettypes.ModuleName:
+			keyTable = swingsettypes.ParamKeyTable()
+		case vbanktypes.ModuleName:
+			keyTable = vbanktypes.ParamKeyTable()
 		default:
 			continue
 		}
