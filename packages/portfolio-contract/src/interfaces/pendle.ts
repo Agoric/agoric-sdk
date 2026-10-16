@@ -1,0 +1,197 @@
+/**
+ * @file ABI fragments for Pendle router interactions used by the prototype.
+ *
+ * Pendle: RouterV4
+ * https://arbiscan.io/address/0x888888888889758f76e7103c6cbf23abbf58f946
+ *
+ * implementation:
+ *
+ * Pendle: Action Swap PT V3
+ * https://arbiscan.io/address/0xd8d200d9a713a1c71cf1e7f694b14e5f1d948b15
+ *
+ * For post-expiry PT redemption, the Router docs expose `redeemPyToToken`:
+ * https://docs.pendle.finance/pendle-v2/Developers/Contracts/PendleRouter/ApiReference/MiscFunctions
+ */
+import type { Abi } from 'viem';
+
+const swapDataComponents = [
+  { name: 'swapType', type: 'uint8' },
+  { name: 'extRouter', type: 'address' },
+  { name: 'extCalldata', type: 'bytes' },
+  { name: 'needScale', type: 'bool' },
+] as const;
+
+const tokenOutputComponents = [
+  { name: 'tokenOut', type: 'address' },
+  { name: 'minTokenOut', type: 'uint256' },
+  { name: 'tokenRedeemSy', type: 'address' },
+  { name: 'pendleSwap', type: 'address' },
+  {
+    name: 'swapData',
+    type: 'tuple',
+    components: swapDataComponents,
+  },
+] as const;
+
+const orderComponents = [
+  { name: 'salt', type: 'uint256' },
+  { name: 'expiry', type: 'uint256' },
+  { name: 'nonce', type: 'uint256' },
+  { name: 'orderType', type: 'uint8' },
+  { name: 'token', type: 'address' },
+  { name: 'YT', type: 'address' },
+  { name: 'maker', type: 'address' },
+  { name: 'receiver', type: 'address' },
+  { name: 'makingAmount', type: 'uint256' },
+  { name: 'lnImpliedRate', type: 'uint256' },
+  { name: 'failSafeRate', type: 'uint256' },
+  { name: 'permit', type: 'bytes' },
+] as const;
+
+const fillOrderParamsComponents = [
+  {
+    name: 'order',
+    type: 'tuple',
+    components: orderComponents,
+  },
+  { name: 'signature', type: 'bytes' },
+  { name: 'makingAmount', type: 'uint256' },
+] as const;
+
+const fillOrderParamsComponentsForPtToToken = [
+  {
+    components: orderComponents,
+    name: 'order',
+    type: 'tuple',
+  },
+  { name: 'signature', type: 'bytes' },
+  { name: 'makingAmount', type: 'uint256' },
+] as const;
+
+const limitOrderDataComponents = [
+  { name: 'limitRouter', type: 'address' },
+  { name: 'epsSkipMarket', type: 'uint256' },
+  {
+    name: 'normalFills',
+    type: 'tuple[]',
+    components: fillOrderParamsComponents,
+  },
+  {
+    name: 'flashFills',
+    type: 'tuple[]',
+    components: fillOrderParamsComponents,
+  },
+  { name: 'optData', type: 'bytes' },
+] as const;
+
+const limitOrderDataComponentsForPtToToken = [
+  { name: 'limitRouter', type: 'address' },
+  { name: 'epsSkipMarket', type: 'uint256' },
+  {
+    components: fillOrderParamsComponentsForPtToToken,
+    name: 'normalFills',
+    type: 'tuple[]',
+  },
+  {
+    components: fillOrderParamsComponentsForPtToToken,
+    name: 'flashFills',
+    type: 'tuple[]',
+  },
+  { name: 'optData', type: 'bytes' },
+] as const;
+
+export const pendleRouterABI = [
+  {
+    type: 'function',
+    name: 'swapExactTokenForPt',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'receiver', type: 'address' },
+      { name: 'market', type: 'address' },
+      { name: 'minPtOut', type: 'uint256' },
+      {
+        name: 'guessPtOut',
+        type: 'tuple',
+        components: [
+          { name: 'guessMin', type: 'uint256' },
+          { name: 'guessMax', type: 'uint256' },
+          { name: 'guessOffchain', type: 'uint256' },
+          { name: 'maxIteration', type: 'uint256' },
+          { name: 'eps', type: 'uint256' },
+        ],
+      },
+      {
+        name: 'input',
+        type: 'tuple',
+        components: [
+          { name: 'tokenIn', type: 'address' },
+          { name: 'netTokenIn', type: 'uint256' },
+          { name: 'tokenMintSy', type: 'address' },
+          { name: 'pendleSwap', type: 'address' },
+          {
+            name: 'swapData',
+            type: 'tuple',
+            components: swapDataComponents,
+          },
+        ],
+      },
+      {
+        name: 'limit',
+        type: 'tuple',
+        components: limitOrderDataComponents,
+      },
+    ],
+    outputs: [
+      { name: 'netPtOut', type: 'uint256' },
+      { name: 'netSyFee', type: 'uint256' },
+      { name: 'netSyInterm', type: 'uint256' },
+    ],
+  },
+
+  {
+    inputs: [
+      { name: 'receiver', type: 'address' },
+      { name: 'market', type: 'address' },
+      { name: 'exactPtIn', type: 'uint256' },
+      {
+        components: tokenOutputComponents,
+        name: 'output',
+        type: 'tuple',
+      },
+      {
+        components: limitOrderDataComponentsForPtToToken,
+        name: 'limit',
+        type: 'tuple',
+      },
+    ],
+    name: 'swapExactPtForToken',
+    outputs: [
+      { name: 'netTokenOut', type: 'uint256' },
+      { name: 'netSyFee', type: 'uint256' },
+      { name: 'netSyInterm', type: 'uint256' },
+    ],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    type: 'function',
+    name: 'redeemPyToToken',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'receiver', type: 'address' },
+      { name: 'YT', type: 'address' },
+      { name: 'netPyIn', type: 'uint256' },
+      {
+        name: 'output',
+        type: 'tuple',
+        components: tokenOutputComponents,
+      },
+    ],
+    outputs: [
+      { name: 'netTokenOut', type: 'uint256' },
+      { name: 'netSyInterm', type: 'uint256' },
+    ],
+  },
+] as const satisfies Abi;
+
+harden(pendleRouterABI);
