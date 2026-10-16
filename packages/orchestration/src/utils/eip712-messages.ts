@@ -35,7 +35,7 @@ import {
   makeWitness,
   PermitTransferFromTypeParams,
 } from './permit2.ts';
-import { isEvmAddressShape, sameEvmAddress } from './address.js';
+import { isEvmAddressShape, sameEvmAddress } from './evm-address.js';
 import { normalizeAndValidateEIP712Data } from './viem-utils/eip712-normalize.ts';
 
 type TypedDataRecord = Record<string, readonly TypedDataParameter[]>;

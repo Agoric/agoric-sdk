@@ -2,6 +2,7 @@ import { encodeRemoteIbcAddress } from '@agoric/network/ibc/utils.js';
 import { fromBech32, fromHex } from '@cosmjs/encoding';
 import { Fail, q } from '@endo/errors';
 import bs58 from 'bs58';
+import { isEvmAddressShape, sameEvmAddress } from './evm-address.js';
 
 /**
  * @import {IBCConnectionID, RemoteIbcAddress} from '@agoric/network/ibc';
@@ -117,25 +118,8 @@ export const getBech32Prefix = address => {
   return address.slice(0, split);
 };
 
-/**
- * Compare two EVM addresses for equality, case-insensitive.
- *
- * @param {EvmAddress} a
- * @param {EvmAddress | undefined} b
- * @returns {boolean}
- */
-export const sameEvmAddress = (a, b) => a.toLowerCase() === b?.toLowerCase();
+export { sameEvmAddress, isEvmAddressShape };
 harden(sameEvmAddress);
-
-/**
- * Whether `x` has the shape of an EVM address: `0x` followed by 40 hex
- * digits, in any casing (an EIP-55 checksum is not verified).
- *
- * @param {unknown} x
- * @returns {x is EvmAddress}
- */
-export const isEvmAddressShape = x =>
-  typeof x === 'string' && /^0x[0-9a-fA-F]{40}$/u.test(x);
 harden(isEvmAddressShape);
 
 /**

@@ -27,7 +27,7 @@ import {
   permitWitnessTransferFromTypes,
   TokenPermissionTypeParams,
 } from './signatureTransfer.ts';
-import { isEvmAddressShape, sameEvmAddress } from '../address.js';
+import { isEvmAddressShape, sameEvmAddress } from '../evm-address.js';
 
 const PrimaryTypes = keyMirror({
   PermitBatchWitnessTransferFrom: null,

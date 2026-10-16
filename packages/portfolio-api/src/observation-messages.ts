@@ -17,6 +17,10 @@
  * The generic machinery lives in `@agoric/orchestration`; this module defines
  * the {@link YmaxObservationMessageSchema} and converts between its messages
  * and the application-level {@link PlanObservations}.
+ *
+ * This module has no runtime dependency on Endo, so that it can be used
+ * outside of a locked-down (SES) environment, e.g. by the attestor. In
+ * particular, the values it returns are not hardened.
  */
 
 import type {
@@ -32,10 +36,8 @@ import {
   type StandaloneOperationData,
 } from '@agoric/orchestration/src/utils/eip712-messages.ts';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
-import { Fail, q } from '@endo/errors';
 import type { InstrumentId } from './instruments.js';
-import { isInstrumentId } from './places.ts';
-import { isPortfolioBalancePlaceRef } from './type-guards.ts';
+import { isInstrumentId, isPortfolioBalancePlaceRef } from './places.ts';
 import type {
   PlanObservations,
   PortfolioBalancePlaceRef,
@@ -133,8 +135,9 @@ export type PortfolioObservationsContent = {
 };
 
 const toSafeNumber = (value: bigint, what: string): number => {
-  value <= BigInt(Number.MAX_SAFE_INTEGER) ||
-    Fail`${q(what)} out of range: ${value}`;
+  if (!(value <= BigInt(Number.MAX_SAFE_INTEGER))) {
+    throw RangeError(`${JSON.stringify(what)} out of range: ${value}`);
+  }
   return Number(value);
 };
 
@@ -148,18 +151,16 @@ export const portfolioObservationsToEIP712 = ({
   portfolioId,
   syncState: { policyVersion, rebalanceCount },
   observations: { balances, instrumentTvls },
-}: PortfolioObservationsContent): PortfolioObservationsEIP712Input =>
-  harden({
-    portfolio: portfolioId,
-    syncState: { policyVersion, rebalanceCount },
-    holdings: Object.entries(balances).flatMap(([place, balanceUsdc]) =>
-      balanceUsdc === undefined ? [] : [{ place, balanceUsdc }],
-    ),
-    instruments: Object.entries(instrumentTvls).flatMap(
-      ([instrumentId, tvl]) =>
-        tvl === undefined ? [] : [{ instrumentId, tvlUsd: tvl.tvlUsd }],
-    ),
-  });
+}: PortfolioObservationsContent): PortfolioObservationsEIP712Input => ({
+  portfolio: portfolioId,
+  syncState: { policyVersion, rebalanceCount },
+  holdings: Object.entries(balances).flatMap(([place, balanceUsdc]) =>
+    balanceUsdc === undefined ? [] : [{ place, balanceUsdc }],
+  ),
+  instruments: Object.entries(instrumentTvls).flatMap(([instrumentId, tvl]) =>
+    tvl === undefined ? [] : [{ instrumentId, tvlUsd: tvl.tvlUsd }],
+  ),
+});
 
 /**
  * Convert the data of a signed `PortfolioObservations` message to its
@@ -180,27 +181,32 @@ export const portfolioObservationsFromEIP712 = ({
 }: PortfolioObservationsEIP712): PortfolioObservationsContent => {
   const balances: Partial<Record<PortfolioBalancePlaceRef, bigint>> = {};
   for (const { place, balanceUsdc } of holdings) {
-    isPortfolioBalancePlaceRef(place) ||
-      Fail`invalid holding place ${q(place)}`;
-    !Object.hasOwn(balances, place) ||
-      Fail`duplicate holding place ${q(place)}`;
+    if (!isPortfolioBalancePlaceRef(place)) {
+      throw TypeError(`invalid holding place ${JSON.stringify(place)}`);
+    }
+    if (Object.hasOwn(balances, place)) {
+      throw TypeError(`duplicate holding place ${JSON.stringify(place)}`);
+    }
     balances[place] = balanceUsdc;
   }
 
   const instrumentTvls: PlanObservations['instrumentTvls'] = {};
   for (const { instrumentId, tvlUsd } of instruments) {
-    isInstrumentId(instrumentId) || Fail`invalid instrument ${q(instrumentId)}`;
-    !Object.hasOwn(instrumentTvls, instrumentId) ||
-      Fail`duplicate instrument ${q(instrumentId)}`;
+    if (!isInstrumentId(instrumentId)) {
+      throw TypeError(`invalid instrument ${JSON.stringify(instrumentId)}`);
+    }
+    if (Object.hasOwn(instrumentTvls, instrumentId)) {
+      throw TypeError(`duplicate instrument ${JSON.stringify(instrumentId)}`);
+    }
     instrumentTvls[instrumentId as InstrumentId] = { tvlUsd };
   }
 
-  return harden({
+  return {
     portfolioId: toSafeNumber(portfolio, 'portfolio'),
     syncState: {
       policyVersion: toSafeNumber(syncState.policyVersion, 'policyVersion'),
       rebalanceCount: toSafeNumber(syncState.rebalanceCount, 'rebalanceCount'),
     },
     observations: { balances, instrumentTvls },
-  });
+  };
 };

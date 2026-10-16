@@ -14,6 +14,7 @@ import {
   type TargetAllocation,
   type YmaxOperationType,
 } from '../src/evm-wallet/eip712-messages.ts';
+import { runWithoutLockdown } from './without-lockdown.ts';
 
 test('PortfolioPermissions EIP-712 fields are exact and ordered', t => {
   t.deepEqual(getYmaxOperationTypes('Grant').PortfolioPermissions, [
@@ -715,4 +716,46 @@ test('YmaxOperationType types are correctly inferred', t => {
     allocations: [{ instrument: 'test', portion: 100n }],
     portfolio: 0n,
   });
+});
+
+test('usable without lockdown, standalone or as permit2 witness', async t => {
+  const permit2Address = `0x${'2'.repeat(40)}`;
+  const script = `
+    const ymax = await import('@agoric/portfolio-api/src/evm-wallet/eip712-messages.js');
+    const permit2 = await import('@agoric/orchestration/src/utils/permit2.js');
+    const allocations = [{ instrument: 'Aave_Arbitrum', portion: 10000n }];
+
+    const standalone = ymax.getYmaxStandaloneOperationData(
+      { allocations, nonce: 1n, deadline: 2n },
+      'OpenPortfolio',
+      42161n,
+      '${MOCK_CONTRACT_ADDRESS}',
+    );
+    ymax.validateYmaxDomain(standalone.domain, {
+      '42161': '${MOCK_CONTRACT_ADDRESS}',
+    });
+
+    const witness = ymax.getYmaxWitness('OpenPortfolio', { allocations });
+    const permitted = { token: '${MOCK_TOKEN_ADDRESS}', amount: 1_000_000n };
+    const permit = {
+      spender: '${MOCK_CONTRACT_ADDRESS}',
+      nonce: 1n,
+      deadline: 2n,
+    };
+    const single = permit2.getPermitWitnessTransferFromData(
+      { ...permit, permitted },
+      '${permit2Address}',
+      42161n,
+      witness,
+    );
+    permit2.validatePermit2Domain(single.domain, { '42161': '${permit2Address}' });
+    const batch = permit2.getPermitBatchWitnessTransferFromData(
+      { ...permit, permitted: [permitted] },
+      '${permit2Address}',
+      42161n,
+      witness,
+    );
+    permit2.validatePermit2Domain(batch.domain, { '42161': '${permit2Address}' });
+  `;
+  await t.notThrowsAsync(runWithoutLockdown(script));
 });
