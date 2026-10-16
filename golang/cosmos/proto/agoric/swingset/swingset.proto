@@ -104,6 +104,23 @@ message Params {
 
   // The maximum size of a bundle or artifact chunk (0 implies default 490000 bytes)
   int64 chunk_size_limit_bytes = 10;
+
+  // Per-message-type bean price menu, keyed by proto type URL.
+  repeated MsgTypeBeans msg_type_beans_per_unit = 11 [(gogoproto.nullable) = false];
+
+  // Disposition of collected bean fees: burn fraction by denom.
+  repeated cosmos.base.v1beta1.DecCoin bean_fee_burn_fraction = 12
+      [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins", (gogoproto.nullable) = false];
+
+  // Module account receiving the unburned bean-fee remainder.
+  string bean_fee_collector = 13;
+
+  // Consensus minimum gas price used to translate bean fees into gas.
+  repeated cosmos.base.v1beta1.DecCoin min_gas_price = 14
+      [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins", (gogoproto.nullable) = false];
+
+  // Complete substitute prices, in descending preference after fee_unit_price.
+  repeated FeeUnitPriceAlternative fee_unit_price_alternatives = 15 [(gogoproto.nullable) = false];
 }
 
 // The current state of the module.
@@ -134,6 +151,22 @@ message StringBeans {
 
   // The actual bean value.
   string beans = 2 [(gogoproto.customtype) = "cosmossdk.io/math.Uint", (gogoproto.nullable) = false];
+}
+
+// Per-message-type bean price menu.
+message MsgTypeBeans {
+  option (gogoproto.equal) = true;
+
+  string msg_type_url = 1;
+  repeated StringBeans beans = 2 [(gogoproto.nullable) = false];
+}
+
+// A complete substitute price for one fee quantum.
+message FeeUnitPriceAlternative {
+  option (gogoproto.equal) = true;
+
+  repeated cosmos.base.v1beta1.Coin price = 1
+      [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins", (gogoproto.nullable) = false];
 }
 
 // Map a provisioning power flag to its corresponding fee.

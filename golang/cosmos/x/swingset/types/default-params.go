@@ -27,6 +27,8 @@ const (
 	// PowerFlags.
 	PowerFlagSmartWallet = "SMART_WALLET"
 
+	DefaultBeanFeeCollector = "vbank/reserve"
+
 	// QueueSize keys.
 	// Keep up-to-date with updateQueueAllowed() in packages/cosmic-swingset/src/launch-chain.js
 	QueueInbound        = "inbound"
@@ -82,6 +84,11 @@ var (
 		NewPowerFlagFee(PowerFlagSmartWallet, sdk.NewCoins(sdk.NewInt64Coin("ubld", 10_000_000))),
 	}
 
+	DefaultBeanFeeBurnFraction = sdk.DecCoins{}
+	DefaultMinGasPrice         = sdk.DecCoins{}
+
+	DefaultFeeUnitPriceAlternatives = []FeeUnitPriceAlternative{}
+
 	DefaultInboundQueueMax = int32(1_000)
 	DefaultQueueMax        = []QueueSize{
 		NewQueueSize(QueueInbound, DefaultInboundQueueMax),
@@ -111,6 +118,17 @@ var (
 	DefaultChunkSizeLimitBytes              int64 = 490_000
 )
 
+func NewMsgTypeBeans(msgTypeURL string, beans []StringBeans) MsgTypeBeans {
+	return MsgTypeBeans{
+		MsgTypeUrl: msgTypeURL,
+		Beans:      beans,
+	}
+}
+
+func NewFeeUnitPriceAlternative(price sdk.Coins) FeeUnitPriceAlternative {
+	return FeeUnitPriceAlternative{Price: price}
+}
+
 // move DefaultBeansPerUnit to a function to allow for boot overriding of the Default params
 func DefaultBeansPerUnit() []StringBeans {
 	return []StringBeans{
@@ -125,5 +143,15 @@ func DefaultBeansPerUnit() []StringBeans {
 		NewStringBeans(BeansPerMinFeeDebit, DefaultBeansPerMinFeeDebit),
 		NewStringBeans(BeansPerStorageByte, DefaultBeansPerStorageByte),
 		NewStringBeans(BeansPerSmartWalletProvision, DefaultBeansPerSmartWalletProvision),
+	}
+}
+
+func DefaultMsgTypeBeansPerUnit() []MsgTypeBeans {
+	return []MsgTypeBeans{
+		NewMsgTypeBeans("/agoric.swingset.MsgDeliverInbound", nil),
+		NewMsgTypeBeans("/agoric.swingset.MsgWalletAction", nil),
+		NewMsgTypeBeans("/agoric.swingset.MsgWalletSpendAction", nil),
+		NewMsgTypeBeans("/agoric.swingset.MsgInstallBundle", nil),
+		NewMsgTypeBeans("/agoric.swingset.MsgSendChunk", nil),
 	}
 }
