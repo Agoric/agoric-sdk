@@ -65,6 +65,7 @@
  *   than converted to the equivalent hex string.
  */
 import type { TypedDataParameter } from '../abitype.ts';
+import { isEvmAddressShape } from '../evm-address.js';
 import { describeValue, quoteName, quoteNameList } from '../meta.ts';
 
 type TypesRecord = Record<string, readonly TypedDataParameter[]>;
@@ -108,11 +109,6 @@ const splitArrayType = (
   };
 };
 
-// Same shape as `isEvmAddressShape` in `../address.js`, duplicated rather
-// than imported: this module must have no runtime imports (see the module
-// doc comment; `eip712-normalize.xs.test.js` also evaluates its source
-// directly), and `address.js` has runtime dependencies of its own.
-const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/u;
 // Solidity `(u)int<M>`: (un)signed integer of `M` bits, `0 < M <= 256`,
 // `M % 8 === 0`. Unlike viem's `integerRegex` (utils/regex.ts), the width
 // is required: EIP-712 has no bare `uint`/`int` aliases, and viem and
@@ -237,7 +233,7 @@ export const normalizeEIP712Primitive = (
   const quotedType = quoteName(fieldType);
 
   if (fieldType === 'address') {
-    if (typeof value !== 'string' || !ADDRESS_REGEX.test(value)) {
+    if (!isEvmAddressShape(value)) {
       throw new Error(`Invalid EIP-712 address value: ${describeValue(value)}`);
     }
     return value;
