@@ -63,7 +63,7 @@ export const orchestrationAccountMethods = {
 /**
  * @param {CaipChainId} srcChain
  * @param {CaipChainId} dstChain
- * @param {IBCConnectionInfo['transferChannel']} ibcChannel
+ * @param {Pick<IBCConnectionInfo['transferChannel'], 'portId' | 'channelId' | 'counterPartyPortId' | 'counterPartyChannelId'>} ibcChannel
  * @returns {(TrafficEntry<'ibc'> & { incomplete: true })[]}
  */
 const startIbcTransfer = (srcChain, dstChain, ibcChannel) =>
@@ -218,21 +218,42 @@ export const addTrafficEntries = (priorTraffic, newEntries) => {
 harden(addTrafficEntries);
 
 /**
- * @param {TrafficEntry[] | undefined} priorTraffic
- * @param {SliceDescriptor | undefined} sliceDescriptor
- * @param {(entries: TrafficEntry[]) => TrafficEntry[]} finisher
- * @returns {TrafficEntry[]}
+ * Call finisher on the specified slice of priorTraffic, replacing that
+ * (potentially zero-length) slice with the result.
+ *
+ * @param {TrafficEntry[] | undefined} priorTraffic the traffic entries to edit,
+ * or undefined to indicate no prior traffic
+ * @param {SliceDescriptor | undefined} sliceDescriptor the slice of
+ * priorTraffic to update, or undefined to indicate the entire prior traffic
+ * @param {(entries: TrafficEntry[]) => TrafficEntry[]} finisher called with a
+ * non-empty slice of priorTraffic, to return an updated slice of the same
+ * length
+ * @returns {TrafficEntry[]} the priorTraffic with the specified slice replaced
+ * by the finisher's result
  */
 export const finishTrafficEntries = (
   priorTraffic,
   sliceDescriptor,
   finisher,
 ) => {
-  const entries = priorTraffic ?? [];
-  const slice = sliceDescriptor ?? { start: 0, end: entries.length };
+  const entries = harden(priorTraffic ?? []);
+  const slice = harden(sliceDescriptor ?? { start: 0, end: entries.length });
 
+  Number.isSafeInteger(slice.start) ||
+    Fail`slice start ${slice.start} must be a safe integer`;
+  Number.isSafeInteger(slice.end) ||
+    Fail`slice end ${slice.end} must be a safe integer`;
+  slice.start >= 0 || Fail`slice start ${slice.start} must be non-negative`;
+  slice.end >= slice.start ||
+    Fail`slice end ${slice.end} must be greater than or equal to start ${slice.start}`;
+  slice.end <= entries.length ||
+    Fail`slice end ${slice.end} must be less than or equal to entries length ${entries.length}`;
   const toTransform = harden(entries.slice(slice.start, slice.end));
-  toTransform.length > 0 || Fail`no traffic entries to finish`;
+  if (!toTransform.length) {
+    // No entries to transform, so just return a shallow copy of the unchanged
+    // original entries (or an empty array if there was no prior traffic).
+    return entries;
+  }
 
   const transformed = harden(finisher(toTransform));
   transformed.length === toTransform.length ||
