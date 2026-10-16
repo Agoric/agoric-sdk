@@ -3,9 +3,12 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { ECallable } from '@agoric/vow/src/E.js';
 import type { EUnwrap } from '@agoric/vow/src/types.js';
 import type { Instance } from '@agoric/zoe';
-import type { DeliverTxResponse, SignerData, StdFee } from '@cosmjs/stargate';
+import type { DeliverTxResponse, SignerData } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
-import type { SigningSmartWalletKit } from './signing-smart-wallet-kit.ts';
+import type {
+  BroadcastFee,
+  SigningSmartWalletKit,
+} from './signing-smart-wallet-kit.ts';
 import { getInvocationUpdate, getOfferResult } from './smart-wallet-utils.js';
 import type { RetryOptionsAndPowers } from './sync-tools.js';
 
@@ -47,7 +50,7 @@ export type WalletStoreEntryProxy<T> = {
  * Options specific to a single invocation (i.e., not to be remembered/reused).
  */
 type SingleTxOptions = Partial<{
-  fee: StdFee;
+  fee: BroadcastFee;
   memo: string;
   signerData: SignerData;
   saveAs: string;
@@ -56,7 +59,7 @@ type SingleTxOptions = Partial<{
 
 /** Options for use across one or more invocations. */
 type TxOptions = RetryOptionsAndPowers & {
-  fee?: StdFee;
+  fee?: BroadcastFee;
   sendOnly?: boolean;
   makeNonce?: () => string;
 };
