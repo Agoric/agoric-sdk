@@ -373,9 +373,11 @@ export const makeReleasePlan = ({
   releaseTag,
   target,
 }) => {
-  if (!(target in targetInfo)) throw Error(`unsupported target: ${target}`);
+  if (!Object.hasOwn(targetInfo, target)) {
+    throw Error(`unsupported target: ${target}`);
+  }
   if (!['bundle-only', 'deploy'].includes(mode)) {
-    throw Error(`unsupported --mode: ${mode}`);
+    throw Error(`unsupported mode: ${mode}`);
   }
 
   const { assetNames, getAssetText, release } = reader;
