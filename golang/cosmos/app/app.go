@@ -17,6 +17,7 @@ import (
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
 	sdkioerrors "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/evidence"
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
@@ -504,7 +505,8 @@ func NewAgoricApp(
 	app.vstoragePort = app.AgdServer.MustRegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
 
 	// The SwingSetKeeper is the Keeper from the SwingSet module
-	app.SwingSetKeeper = swingset.NewKeeper(
+	var beanAccountant swingsetkeeper.BeanAccountant
+	app.SwingSetKeeper, beanAccountant = swingset.NewKeeperAndBeanAccountant(
 		appCodec, runtime.NewKVStoreService(keys[swingset.StoreKey]),
 		app.GetSubspace(swingset.ModuleName),
 		app.AccountKeeper, app.BankKeeper,
@@ -939,6 +941,38 @@ func NewAgoricApp(
 			AdmissionData:    app.SwingSetKeeper,
 			FeeCollectorName: vbanktypes.ReservePoolName,
 			SwingsetKeeper:   app.SwingSetKeeper,
+			BeanAccountant:   beanAccountant,
+			BeanDisposer: func(ctx sdk.Context, deductFrom sdk.AccAddress, beanFees sdk.Coins) error {
+				if beanFees.IsZero() {
+					return nil
+				}
+				if err := app.BankKeeper.SendCoinsFromAccountToModule(ctx, deductFrom, vbanktypes.ModuleName, beanFees); err != nil {
+					return err
+				}
+				params := app.SwingSetKeeper.GetParams(ctx)
+				burnCoins := sdk.NewCoins()
+				remainder := sdk.NewCoins()
+				for _, coin := range beanFees {
+					fraction := params.BeanFeeBurnFraction.AmountOf(coin.Denom)
+					burnAmount := sdkmath.LegacyNewDecFromInt(coin.Amount).Mul(fraction).TruncateInt()
+					if burnAmount.IsPositive() {
+						burnCoins = burnCoins.Add(sdk.NewCoin(coin.Denom, burnAmount))
+					}
+					remainderAmount := coin.Amount.Sub(burnAmount)
+					if remainderAmount.IsPositive() {
+						remainder = remainder.Add(sdk.NewCoin(coin.Denom, remainderAmount))
+					}
+				}
+				if !burnCoins.IsZero() {
+					if err := app.BankKeeper.BurnCoins(ctx, vbanktypes.ModuleName, burnCoins); err != nil {
+						return err
+					}
+				}
+				if !remainder.IsZero() {
+					return app.BankKeeper.SendCoinsFromModuleToModule(ctx, vbanktypes.ModuleName, params.BeanFeeCollector, remainder)
+				}
+				return nil
+			},
 		},
 	)
 	if err != nil {
