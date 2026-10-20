@@ -2062,10 +2062,9 @@ export const makeGraph = (
       find: (asset, { release: relInfo }) =>
         checkBundle(target, asset, relInfo as ReleaseInfo, deployPackage),
       create: async (_deps, asset, cause) => {
-        const it = cause as
+        const it = (cause ?? {}) as
           | { problem: unknown }
           | { localBundle: BundleEvidence };
-        if (typeof it !== 'object' || it === null) throw cause;
         if ('problem' in it) throw it.problem;
         if (!('localBundle' in it)) throw cause;
         await asset!.copyFrom(it.localBundle.bundleFile as FileRd);
