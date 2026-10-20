@@ -2721,31 +2721,25 @@ export const makeGraph = (
   };
 
   const ensureNode = <T>(name: string): Promise<T> => {
-    if (!nodes[name]) {
+    const node = nodes[name];
+    if (!node) {
       throw Error(`unknown step: ${name}`);
     }
-    if (!cache.has(name)) {
-      cache.set(
-        name,
-        (async () => {
-          const deps: Record<string, unknown> = {};
-          for (const [localName, depName] of Object.entries(nodes[name].deps)) {
-            deps[localName] = await ensureNode(depName);
-          }
-          const asset = name.endsWith('.json') ? release.join(name) : undefined;
-          try {
-            return await nodes[name].find(
-              (asset?.readOnly() as AssetRd | undefined) ??
-                (undefined as never),
-              deps,
-            );
-          } catch (cause) {
-            return nodes[name].create(deps, asset, cause);
-          }
-        })(),
-      );
-    }
-    return cache.get(name) as Promise<T>;
+    return provideLazyMap(cache, name, async () => {
+      const deps: Record<string, unknown> = {};
+      for (const [localName, depName] of Object.entries(node.deps)) {
+        deps[localName] = await ensureNode(depName);
+      }
+      const asset = name.endsWith('.json') ? release.join(name) : undefined;
+      try {
+        return await node.find(
+          (asset?.readOnly() as AssetRd | undefined) ?? (undefined as never),
+          deps,
+        );
+      } catch (cause) {
+        return node.create(deps, asset, cause);
+      }
+    }) as Promise<T>;
   };
 
   return { nodes, ensureNode };
