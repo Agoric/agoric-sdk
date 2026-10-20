@@ -28,7 +28,7 @@ import type {
 import { pubkeyToAddress } from '@cosmjs/amino';
 import { decodePubkey } from '@cosmjs/proto-signing';
 import { StargateClient } from '@cosmjs/stargate';
-import { assert as endoAssert, Fail, q } from '@endo/errors';
+import { assert as endoAssert, Fail, b, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 import { execa } from 'execa';
 import fs from 'node:fs';
@@ -396,61 +396,49 @@ const createRelease = async (
 };
 
 /**
- * At most one `${target}-privateArgsOverrides-*.json` asset should ever
+ * At most one `${target}-privateArgsOverrides-*.json` release asset should ever
  * exist per release: without this guard, a retry that omits
  * `privateArgs` (e.g. a rerun of a still-detached-signing wait that forgot
  * to re-supply the workflow's `privateArgsOverrides` input) would compute
- * the digest for `{}` and silently add a second, unrelated artifact
+ * the digest for `{}` and silently add a second, unrelated asset
  * alongside the real one instead of failing loudly or reusing it.
  */
-const createOverrides = async (
+const provideArgsFiles = async (
   target: Target,
-  privateArgs: string | undefined,
+  overrides: string | undefined,
   {
     distDir,
     release,
-  }: {
-    distDir: FileRW;
-    release: ReleaseRW;
-  },
+  }: Pick<StepTools, 'distDir' | 'release'>,
 ) => {
   const prefix = overridesAssetPrefix(target);
   const { assets } = await release.readOnly().get();
-  const existingNames = assets
+  const existingOverrides = assets
     .map(({ name }) => name)
     .filter(name => name.startsWith(prefix) && name.endsWith('.json'));
 
-  // No override given this run: reuse whatever's already on the release
-  // rather than materializing a fresh "{}" artifact that would discard the
-  // real overrides collected on an earlier attempt.
-  if (!isPrivateArgsSpecified(privateArgs) && existingNames.length > 0) {
-    if (existingNames.length > 1) {
-      throw Error(
-        `multiple ${prefix}*.json assets exist for ${target} (${existingNames.join(', ')}); remove the stale ones (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`,
-      );
-    }
-    const [assetName] = existingNames;
-    const text = await release.join(assetName).readText();
-    const assetWr = distDir.join(assetName);
-    await assetWr.writeText(text);
-    return { assetName, file: assetWr.readOnly() };
+  // No override given this run; prefer whatever's already on the release.
+  if (!isPrivateArgsSpecified(overrides) && existingOverrides.length > 0) {
+    existingOverrides.length === 1 ||
+      Fail`multiple ${q(`${prefix}*.json`)} assets exist for ${b(target)} (${q(existingOverrides)}); remove the stale ones (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`;
+    const assetName = existingOverrides[0];
+    const assetFile = distDir.join(assetName);
+    await release.join(assetName).copyTo(assetFile);
+    return { assetName, file: assetFile.readOnly() };
   }
 
-  const text = canonicalizePrivateArgs(privateArgs);
-  const assetName = expectedOverridesAssetName(target, privateArgs);
-  const stale = existingNames.filter(name => name !== assetName);
-  if (stale.length > 0) {
-    throw Error(
-      `${assetName} would be a new private-args-overrides asset for ${target}, but ${stale.join(', ')} already exists on the release; remove the stale asset (e.g. \`gh release delete-asset\`) or rerun with the matching privateArgsOverrides to reuse it`,
-    );
-  }
-  const assetWr = distDir.join(assetName);
-  await assetWr.writeText(text);
+  const assetName = expectedOverridesAssetName(target, overrides);
+  const stale = existingOverrides.filter(name => name !== assetName);
+  stale.length === 0 ||
+    Fail`${q(assetName)} would be a new private-args-overrides asset for ${b(target)}, but ${q(stale)} already exists on the release; remove the stale asset(s) (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`;
+  const overridesText = canonicalizePrivateArgs(overrides);
+  const assetFile = distDir.join(assetName);
+  await assetFile.writeText(overridesText);
   const asset = release.join(assetName);
   if (!(await asset.exists())) {
-    await asset.copyFrom(assetWr.readOnly());
+    await asset.copyFrom(assetFile.readOnly());
   }
-  return { assetName, file: assetWr.readOnly() };
+  return { assetName, file: assetFile.readOnly() };
 };
 
 const makeInstallRecord = async (
@@ -1047,10 +1035,7 @@ const submitUpgradeContract = async (
     release,
     walletAdmin,
     now,
-  }: StepTools & {
-    privateArgs: string | undefined;
-    walletAdmin: CmdRunner;
-  },
+  }: StepTools & { privateArgs: string | undefined; walletAdmin: CmdRunner },
 ) => {
   const { pending, overrides } = await preparePendingUpgrade(
     upgradeTarget,
@@ -1104,7 +1089,7 @@ const preparePendingUpgrade = async (
       `missing required release asset ${upgradeTarget}-upgrade-pending.json`,
     );
   }
-  const overrides = await createOverrides(upgradeTarget, privateArgs, {
+  const overrides = await provideArgsFiles(upgradeTarget, privateArgs, {
     distDir,
     release,
   });
@@ -1183,7 +1168,7 @@ const buildDetachedPendingRecord = async (
       `${unsignedTxAssetName} upgrades bundleId ${invocation.bundleId}, not ${install.bundleId}`,
     );
   }
-  const overrides = await createOverrides(upgradeTarget, privateArgs, {
+  const overrides = await provideArgsFiles(upgradeTarget, privateArgs, {
     distDir,
     release,
   });
@@ -1322,8 +1307,8 @@ const embeddedGranteeAddress = (authInfo: {
  * already-generated unsigned tx was built for would otherwise proceed
  * silently — showing a sign command for the wrong signer, or combining
  * uploaded signatures against the wrong grantee's multisig. Catch that
- * before it gets confusing, the same way {@link createOverrides} guards
- * against a conflicting `privateArgsOverrides` asset.
+ * before it gets confusing, the same way {@link provideArgsFiles} guards
+ * against a conflicting `privateArgsOverrides` release asset.
  */
 const ensureGranteeMatchesUnsignedTx = async ({
   release,
@@ -1989,7 +1974,6 @@ type GraphNode = {
 
 type MakeGraphPowers = {
   deployPackage: ReturnType<typeof makeDeployPackage>;
-  release: ReleaseRW;
   installBundle: CmdRunner;
   upgradeLogs: CmdRunner;
   walletAdmin: CmdRunner;
@@ -2003,10 +1987,8 @@ type MakeGraphPowers = {
   makeVstorageApiForTarget: (
     upgradeTarget: Target,
   ) => Promise<ReturnType<typeof makeAgoricVstorageApi>>;
-  setTimeout: typeof globalThis.setTimeout;
-  now: () => number;
   grantee?: string;
-};
+} & Pick<StepTools, 'release' | 'now' | 'setTimeout'>;
 export const makeGraph = (
   target: Target,
   tag: string,
@@ -2283,7 +2265,7 @@ export const makeGraph = (
             ),
           create: async ({ install }, asset, cause) => {
             grantee || Fail`GRANTEE must be set for phase-upgrade-generate`;
-            const overrides = await createOverrides(envName, privateArgs, {
+            const overrides = await provideArgsFiles(envName, privateArgs, {
               distDir: deployPackage.distDir,
               release,
             });
@@ -2357,7 +2339,7 @@ export const makeGraph = (
               relInfo as ReleaseInfo,
             ),
           create: async ({ install }, asset, cause) => {
-            const overrides = await createOverrides(envName, privateArgs, {
+            const overrides = await provideArgsFiles(envName, privateArgs, {
               distDir: deployPackage.distDir,
               release,
             });

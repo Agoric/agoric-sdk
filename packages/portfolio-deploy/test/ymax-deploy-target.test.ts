@@ -26,6 +26,10 @@ import {
   validateUpgradePrecondition,
 } from '../scripts/ymax-deploy-target.ts';
 
+const {
+  escape: RegExpEscape = str => str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+} = RegExp;
+
 const bundle = await bundleSource(
   new URL('./fixtures/ymax-fake-bundle-source.js', import.meta.url).pathname,
 );
@@ -3073,7 +3077,7 @@ test('phase-upgrade-generate rejects a conflicting privateArgsOverrides asset in
     ),
     {
       message: new RegExp(
-        `^${expectedOverridesAssetName('ymax0-main', '{"oracle":"value-b"}').replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')} would be a new private-args-overrides asset for ymax0-main, but ${existingOverridesName.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')} already exists`,
+        `^${RegExpEscape(JSON.stringify(expectedOverridesAssetName('ymax0-main', '{"oracle":"value-b"}')))} would be a new private-args-overrides asset for ymax0-main, but ${RegExpEscape(JSON.stringify([existingOverridesName]))} already exists`,
       ),
     },
   );
