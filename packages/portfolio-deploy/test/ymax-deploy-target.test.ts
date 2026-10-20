@@ -1175,34 +1175,30 @@ const renderGraphTree = (
   root: string,
 ): string => {
   const expanded = new Set<string>();
+
   const visit = (
     name: string,
     prefix: string,
     branch: string,
     ancestors: Set<string>,
   ): string[] => {
-    const cycle = ancestors.has(name);
-    const line = `${prefix}${branch}${name}${cycle ? ' (cycle)' : ''}`;
-    if (cycle) {
-      return [line];
-    }
-    if (expanded.has(name)) {
-      return [`${prefix}${branch}${name} (seen)`];
-    }
+    const line = `${prefix}${branch}${name}`;
+    if (ancestors.has(name)) return [`${line} (cycle)`];
+    if (expanded.has(name)) return [`${line} (seen)`];
     expanded.add(name);
+
     const deps = Object.values(nodes[name]?.deps || {});
+    const lastIdx = deps.length - 1;
+    const newPrefix = `${prefix}${branch === '└─ ' ? '   ' : branch === '├─ ' ? '│  ' : ''}`;
+    const newAncestors = new Set([...ancestors, name]);
     return [
       line,
-      ...deps.flatMap((dep, index) =>
-        visit(
-          dep,
-          `${prefix}${branch === '└─ ' ? '   ' : branch === '├─ ' ? '│  ' : ''}`,
-          index === deps.length - 1 ? '└─ ' : '├─ ',
-          new Set([...ancestors, name]),
-        ),
+      ...deps.flatMap((dep, idx) =>
+        visit(dep, newPrefix, idx === lastIdx ? '└─ ' : '├─ ', newAncestors),
       ),
     ];
   };
+
   return visit(root, '', '', new Set()).join('\n');
 };
 
