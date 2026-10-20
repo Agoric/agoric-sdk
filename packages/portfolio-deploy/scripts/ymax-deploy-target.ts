@@ -14,7 +14,11 @@ import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.
 import { MsgExec } from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/tx.js';
 import { LegacyAminoPubKey } from '@agoric/cosmic-proto/codegen/cosmos/crypto/multisig/keys.js';
 import { AuthInfo } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import { provideLazyMap } from '@agoric/internal/src/js-utils.js';
+import {
+  fromTypedEntries,
+  provideLazyMap,
+  typedEntries,
+} from '@agoric/internal/src/js-utils.js';
 import { makeCmdRunner, makeFileRd, makeFileRW } from '@agoric/pola-io';
 import { getControlAddress } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import type {
@@ -2072,651 +2076,333 @@ export const makeGraph = (
       },
     },
 
-    'ymax0-devnet-install.json': {
-      deps: { release: 'release', bundle: 'bundle-ymax0.json' },
-      find: (asset, { release: relInfo, bundle }) =>
-        findInstall(
-          'ymax0-devnet',
-          asset,
-          relInfo as ReleaseInfo,
-          bundle as BundleEvidence,
-        ),
-      create: async ({ bundle }, asset, cause) =>
-        recordBundleInstall('ymax0-devnet', bundle as BundleEvidence, {
-          asset: asset!,
-          installBundle,
-          cause,
-          ...tools,
-        }),
-    },
-    'ymax0-main-install.json': {
-      deps: { release: 'release', bundle: 'bundle-ymax0.json' },
-      find: (asset, { release: relInfo, bundle }) =>
-        findInstall(
-          'ymax0-main',
-          asset,
-          relInfo as ReleaseInfo,
-          bundle as BundleEvidence,
-        ),
-      create: ({ bundle }, asset, cause) =>
-        recordBundleInstall('ymax0-main', bundle as BundleEvidence, {
-          asset: asset!,
-          cause,
-          installBundle,
-          ...tools,
-        }),
-    },
-    'phase-pre-upgrade:ymax0-devnet': {
-      deps: {
-        release: 'release',
-        bundle: 'bundle-ymax0.json',
-        install: 'ymax0-devnet-install.json',
-      },
-      find: async () => Promise.reject(Error('synthetic')),
-      create: async ({ release: ensuredRelease, install }) => ({
-        target: 'ymax0-devnet',
-        phase: 'pre-upgrade',
-        detail: {
-          url: (ensuredRelease as ReleaseInfo).url,
-          ...(install as InstallRecord),
+    // ymax0-devnet-install.json, ymax0-main-install.json
+    ...fromTypedEntries(
+      (['ymax0-devnet', 'ymax0-main'] as const).map(envName => [
+        `${envName}-install.json`,
+        {
+          deps: { release: 'release', bundle: 'bundle-ymax0.json' },
+          find: (asset, { release: relInfo, bundle }) =>
+            findInstall(
+              envName,
+              asset,
+              relInfo as ReleaseInfo,
+              bundle as BundleEvidence,
+            ),
+          create: async ({ bundle }, asset, cause) =>
+            recordBundleInstall(envName, bundle as BundleEvidence, {
+              asset: asset!,
+              installBundle,
+              cause,
+              ...tools,
+            }),
         },
-      }),
-    },
-    'phase-pre-upgrade:ymax0-main': {
-      deps: {
-        release: 'release',
-        bundle: 'bundle-ymax0.json',
-        devnetInstall: 'ymax0-devnet-install.json',
-        devnetUpgrade: 'ymax0-devnet-upgrade.json',
-        install: 'ymax0-main-install.json',
-      },
-      find: async () => Promise.reject(Error('synthetic')),
-      create: async ({ release: ensuredRelease, install }) => ({
-        target: 'ymax0-main',
-        phase: 'pre-upgrade',
-        detail: {
-          url: (ensuredRelease as ReleaseInfo).url,
-          ...(install as InstallRecord),
-        },
-      }),
-    },
-    'phase-pre-upgrade:ymax1-main': {
-      deps: {
-        release: 'release',
-        bundle: 'bundle-ymax0.json',
-        install: 'ymax0-main-install.json',
-        upgrade: 'ymax0-main-upgrade.json',
-      },
-      find: async () => Promise.reject(Error('synthetic')),
-      create: async ({ release: ensuredRelease }) => ({
-        target: 'ymax1-main',
-        phase: 'pre-upgrade',
-        detail: {
-          url: (ensuredRelease as ReleaseInfo).url,
-        },
-      }),
-    },
-    'ymax0-devnet-upgrade.json': {
-      deps:
-        target === 'ymax0-devnet'
-          ? {
-              release: 'release',
-              install: 'ymax0-devnet-install.json',
-              pending: 'ymax0-devnet-upgrade-pending.json',
-            }
-          : { release: 'release', install: 'ymax0-devnet-install.json' },
-      find: (asset, { release: relInfo, install }) =>
-        findUpgrade(
-          'ymax0-devnet',
-          asset,
-          relInfo as ReleaseInfo,
-          install as InstallRecord,
-          target,
-          privateArgs,
-        ),
-      create: ({ install, pending }, asset, cause) =>
-        confirmUpgradeContract(
-          'ymax0-devnet',
-          install as InstallRecord,
-          pending as PendingUpgradeRecord,
-          asset!,
-          {
-            cause,
-            upgradeLogs,
-            makeTxApiForTarget,
-            makeVstorageApiForTarget,
-            ...tools,
-          },
-        ),
-    },
-    'ymax0-devnet-upgrade-pending.json': {
-      deps: {
-        release: 'release',
-        install: 'ymax0-devnet-install.json',
-        ...detachedTxDeps('ymax0-devnet'),
-      },
-      find: (asset, { release: relInfo, install }) =>
-        findPendingUpgrade(
-          'ymax0-devnet',
-          asset,
-          relInfo as ReleaseInfo,
-          (install as InstallRecord).bundleId,
-          privateArgs,
-          tag,
-        ),
-      create: async ({ install, signedTx }, asset, cause) => {
-        if (detached) {
-          const pending = await buildDetachedPendingRecord(
-            'ymax0-devnet',
-            install as InstallRecord,
-            { cause, privateArgs, ...tools },
-          );
-          await requireMatchingDetachedSignedTx(
-            'ymax0-devnet',
-            signedTx as SignedTxRecord,
-            tools,
-          );
-          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
-          await submitAuthzOperatorUpgrade(
-            'ymax0-devnet',
-            (signedTx as SignedTxRecord).txBytes,
-            { connectRpc: connectTargetRpc },
-          );
-          return pending;
-        }
-        return submitUpgradeContract(
-          'ymax0-devnet',
-          install as InstallRecord,
-          asset!,
-          {
-            cause,
-            privateArgs,
-            walletAdmin,
-            ...tools,
-          },
-        );
-      },
-    },
-    'ymax0-main-upgrade.json': {
-      deps:
-        target === 'ymax0-main'
-          ? {
-              release: 'release',
-              devnetInstall: 'ymax0-devnet-install.json',
-              devnetUpgrade: 'ymax0-devnet-upgrade.json',
-              install: 'ymax0-main-install.json',
-              pending: 'ymax0-main-upgrade-pending.json',
-            }
-          : { release: 'release', install: 'ymax0-main-install.json' },
-      find: (asset, { release: relInfo, install }) =>
-        findUpgrade(
-          'ymax0-main',
-          asset,
-          relInfo as ReleaseInfo,
-          install as InstallRecord,
-          target,
-          privateArgs,
-        ),
-      create: ({ install, pending }, asset, cause) =>
-        confirmUpgradeContract(
-          'ymax0-main',
-          install as InstallRecord,
-          pending as PendingUpgradeRecord,
-          asset!,
-          {
-            cause,
-            upgradeLogs,
-            makeTxApiForTarget,
-            makeVstorageApiForTarget,
-            ...tools,
-          },
-        ),
-    },
-    'ymax0-main-upgrade-pending.json': {
-      deps: {
-        release: 'release',
-        devnetInstall: 'ymax0-devnet-install.json',
-        devnetUpgrade: 'ymax0-devnet-upgrade.json',
-        install: 'ymax0-main-install.json',
-        ...detachedTxDeps('ymax0-main'),
-      },
-      find: (asset, { release: relInfo, install }) =>
-        findPendingUpgrade(
-          'ymax0-main',
-          asset,
-          relInfo as ReleaseInfo,
-          (install as InstallRecord).bundleId,
-          privateArgs,
-          tag,
-        ),
-      create: async ({ install, signedTx }, asset, cause) => {
-        if (detached) {
-          const pending = await buildDetachedPendingRecord(
-            'ymax0-main',
-            install as InstallRecord,
-            { cause, privateArgs, ...tools },
-          );
-          await requireMatchingDetachedSignedTx(
-            'ymax0-main',
-            signedTx as SignedTxRecord,
-            tools,
-          );
-          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
-          await submitAuthzOperatorUpgrade(
-            'ymax0-main',
-            (signedTx as SignedTxRecord).txBytes,
-            { connectRpc: connectTargetRpc },
-          );
-          return pending;
-        }
-        return submitUpgradeContract(
-          'ymax0-main',
-          install as InstallRecord,
-          asset!,
-          {
-            cause,
-            privateArgs,
-            walletAdmin,
-            ...tools,
-          },
-        );
-      },
-    },
-    'ymax1-main-upgrade.json': {
-      deps:
-        target === 'ymax1-main'
-          ? {
-              release: 'release',
-              install: 'ymax0-main-install.json',
-              priorUpgrade: 'ymax0-main-upgrade.json',
-              pending: 'ymax1-main-upgrade-pending.json',
-            }
-          : { release: 'release', install: 'ymax0-main-install.json' },
-      find: (asset, { release: relInfo, install }) =>
-        findUpgrade(
-          'ymax1-main',
-          asset,
-          relInfo as ReleaseInfo,
-          install as InstallRecord,
-          target,
-          privateArgs,
-        ),
-      create: ({ install, pending }, asset, cause) =>
-        confirmUpgradeContract(
-          'ymax1-main',
-          install as InstallRecord,
-          pending as PendingUpgradeRecord,
-          asset!,
-          {
-            cause,
-            upgradeLogs,
-            makeTxApiForTarget,
-            makeVstorageApiForTarget,
-            ...tools,
-          },
-        ),
-    },
-    'ymax1-main-upgrade-pending.json': {
-      deps: {
-        release: 'release',
-        install: 'ymax0-main-install.json',
-        priorUpgrade: 'ymax0-main-upgrade.json',
-        ...detachedTxDeps('ymax1-main'),
-      },
-      find: (asset, { release: relInfo, install }) =>
-        findPendingUpgrade(
-          'ymax1-main',
-          asset,
-          relInfo as ReleaseInfo,
-          (install as InstallRecord).bundleId,
-          privateArgs,
-          tag,
-        ),
-      create: async ({ install, signedTx }, asset, cause) => {
-        if (detached) {
-          const pending = await buildDetachedPendingRecord(
-            'ymax1-main',
-            install as InstallRecord,
-            { cause, privateArgs, ...tools },
-          );
-          await requireMatchingDetachedSignedTx(
-            'ymax1-main',
-            signedTx as SignedTxRecord,
-            tools,
-          );
-          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
-          await submitAuthzOperatorUpgrade(
-            'ymax1-main',
-            (signedTx as SignedTxRecord).txBytes,
-            { connectRpc: connectTargetRpc },
-          );
-          return pending;
-        }
-        return submitUpgradeContract(
-          'ymax1-main',
-          install as InstallRecord,
-          asset!,
-          {
-            cause,
-            privateArgs,
-            walletAdmin,
-            ...tools,
-          },
-        );
-      },
-    },
+      ]),
+    ),
 
-    'ymax0-devnet-authz-unsigned-tx.json': {
-      deps: {
-        release: 'release',
-        install: 'ymax0-devnet-install.json',
-      },
-      find: (asset, { release: relInfo }) =>
-        findUnsignedTx(
-          'ymax0-devnet-authz-unsigned-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async ({ install }, asset, cause) => {
-        if (!grantee) {
-          throw Fail`GRANTEE must be set for phase-upgrade-generate`;
-        }
-        const overrides = await createOverrides('ymax0-devnet', privateArgs, {
-          distDir: deployPackage.distDir,
-          release,
-        });
-        return generateAuthzOperatorUpgrade(
-          'ymax0-devnet',
-          install as InstallRecord,
-          {
-            overrides,
-            unsignedTxAsset: asset!,
-            unsignedTxAssetName: 'ymax0-devnet-authz-unsigned-tx.json',
+    // phase-pre-upgrade:ymax0-devnet, phase-pre-upgrade:ymax0-main,
+    // phase-pre-upgrade:ymax1-main
+    ...fromTypedEntries(
+      typedEntries({
+        'ymax0-devnet': {
+          install: 'ymax0-devnet-install.json',
+        },
+        'ymax0-main': {
+          devnetInstall: 'ymax0-devnet-install.json',
+          devnetUpgrade: 'ymax0-devnet-upgrade.json',
+          install: 'ymax0-main-install.json',
+        },
+        'ymax1-main': {
+          install: 'ymax0-main-install.json',
+          upgrade: 'ymax0-main-upgrade.json',
+        },
+      }).map(([envName, extraDeps]) => [
+        `phase-pre-upgrade:${envName}`,
+        {
+          deps: {
+            release: 'release',
+            bundle: 'bundle-ymax0.json',
+            ...extraDeps,
           },
-          {
-            cause,
-            target,
-            releaseTag: tag,
-            now,
-            makeUpgradeRequestBuilder,
+          find: async () => Promise.reject(Error('synthetic')),
+          create: async ({ release: ensuredRelease, install }) => ({
+            target: envName,
+            phase: 'pre-upgrade',
+            detail: {
+              url: (ensuredRelease as ReleaseInfo).url,
+              ...(envName !== 'ymax1-main' && (install as InstallRecord)),
+            },
+          }),
+        },
+      ]),
+    ),
+
+    // ymax0-devnet-upgrade.json, ymax0-main-upgrade.json,
+    // ymax1-main-upgrade.json,
+    ...fromTypedEntries(
+      typedEntries({
+        'ymax0-devnet': {
+          install: 'ymax0-devnet-install.json',
+          pending: 'ymax0-devnet-upgrade-pending.json',
+        },
+        'ymax0-main': {
+          devnetInstall: 'ymax0-devnet-install.json',
+          devnetUpgrade: 'ymax0-devnet-upgrade.json',
+          install: 'ymax0-main-install.json',
+          pending: 'ymax0-main-upgrade-pending.json',
+        },
+        'ymax1-main': {
+          install: 'ymax0-main-install.json',
+          priorUpgrade: 'ymax0-main-upgrade.json',
+          pending: 'ymax1-main-upgrade-pending.json',
+        },
+      }).map(([envName, extraDeps]) => [
+        `${envName}-upgrade.json`,
+        {
+          deps: {
+            release: 'release',
+            ...(target === envName && extraDeps),
+            install: extraDeps.install,
           },
-        );
-      },
-    },
-    'ymax0-devnet-authz-signed-tx.json': {
-      deps: {
-        release: 'release',
-      },
-      find: (asset, { release: relInfo }) =>
-        findSignedTx(
-          'ymax0-devnet-authz-signed-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async () => {
-        throw Error(
-          'missing required release asset ymax0-devnet-authz-signed-tx.json',
-        );
-      },
-    },
-    'ymax0-main-authz-unsigned-tx.json': {
-      deps: {
-        release: 'release',
-        devnetInstall: 'ymax0-devnet-install.json',
-        devnetUpgrade: 'ymax0-devnet-upgrade.json',
-        install: 'ymax0-main-install.json',
-      },
-      find: (asset, { release: relInfo }) =>
-        findUnsignedTx(
-          'ymax0-main-authz-unsigned-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async ({ install }, asset, cause) => {
-        if (!grantee) {
-          throw Fail`GRANTEE must be set for phase-upgrade-generate`;
-        }
-        const overrides = await createOverrides('ymax0-main', privateArgs, {
-          distDir: deployPackage.distDir,
-          release,
-        });
-        return generateAuthzOperatorUpgrade(
-          'ymax0-main',
-          install as InstallRecord,
-          {
-            overrides,
-            unsignedTxAsset: asset!,
-            unsignedTxAssetName: 'ymax0-main-authz-unsigned-tx.json',
+          find: (asset, { release: relInfo, install }) =>
+            findUpgrade(
+              envName,
+              asset,
+              relInfo as ReleaseInfo,
+              install as InstallRecord,
+              target,
+              privateArgs,
+            ),
+          create: ({ install, pending }, asset, cause) =>
+            confirmUpgradeContract(
+              envName,
+              install as InstallRecord,
+              pending as PendingUpgradeRecord,
+              asset!,
+              {
+                cause,
+                upgradeLogs,
+                makeTxApiForTarget,
+                makeVstorageApiForTarget,
+                ...tools,
+              },
+            ),
+        },
+      ]),
+    ),
+
+    // ymax0-devnet-upgrade-pending.json, ymax0-main-upgrade-pending.json,
+    // ymax1-main-upgrade-pending.json,
+    ...fromTypedEntries(
+      typedEntries({
+        'ymax0-devnet': {
+          install: 'ymax0-devnet-install.json',
+        },
+        'ymax0-main': {
+          devnetInstall: 'ymax0-devnet-install.json',
+          devnetUpgrade: 'ymax0-devnet-upgrade.json',
+          install: 'ymax0-main-install.json',
+        },
+        'ymax1-main': {
+          install: 'ymax0-main-install.json',
+          priorUpgrade: 'ymax0-main-upgrade.json',
+        },
+      }).map(([envName, extraDeps]) => [
+        `${envName}-upgrade-pending.json`,
+        {
+          deps: {
+            release: 'release',
+            ...extraDeps,
+            ...detachedTxDeps(envName),
           },
-          {
-            cause,
-            target,
-            releaseTag: tag,
-            now,
-            makeUpgradeRequestBuilder,
+          find: (asset, { release: relInfo, install }) =>
+            findPendingUpgrade(
+              envName,
+              asset,
+              relInfo as ReleaseInfo,
+              (install as InstallRecord).bundleId,
+              privateArgs,
+              tag,
+            ),
+          create: async ({ install, signedTx }, asset, cause) => {
+            if (detached) {
+              const pending = await buildDetachedPendingRecord(
+                envName,
+                install as InstallRecord,
+                { cause, privateArgs, ...tools },
+              );
+              await requireMatchingDetachedSignedTx(
+                envName,
+                signedTx as SignedTxRecord,
+                tools,
+              );
+              await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
+              await submitAuthzOperatorUpgrade(
+                envName,
+                (signedTx as SignedTxRecord).txBytes,
+                { connectRpc: connectTargetRpc },
+              );
+              return pending;
+            }
+            return submitUpgradeContract(
+              envName,
+              install as InstallRecord,
+              asset!,
+              { cause, privateArgs, walletAdmin, ...tools },
+            );
           },
-        );
-      },
-    },
-    'ymax0-main-authz-signed-tx.json': {
-      deps: {
-        release: 'release',
-      },
-      find: (asset, { release: relInfo }) =>
-        findSignedTx(
-          'ymax0-main-authz-signed-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async () => {
-        throw Error(
-          'missing required release asset ymax0-main-authz-signed-tx.json',
-        );
-      },
-    },
-    'ymax1-main-authz-unsigned-tx.json': {
-      deps: {
-        release: 'release',
-        install: 'ymax0-main-install.json',
-        priorUpgrade: 'ymax0-main-upgrade.json',
-      },
-      find: (asset, { release: relInfo }) =>
-        findUnsignedTx(
-          'ymax1-main-authz-unsigned-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async ({ install }, asset, cause) => {
-        if (!grantee) {
-          throw Fail`GRANTEE must be set for phase-upgrade-generate`;
-        }
-        const overrides = await createOverrides('ymax1-main', privateArgs, {
-          distDir: deployPackage.distDir,
-          release,
-        });
-        return generateAuthzOperatorUpgrade(
-          'ymax1-main',
-          install as InstallRecord,
-          {
-            overrides,
-            unsignedTxAsset: asset!,
-            unsignedTxAssetName: 'ymax1-main-authz-unsigned-tx.json',
+        },
+      ]),
+    ),
+
+    // ymax0-devnet-authz-unsigned-tx.json, ymax0-main-authz-unsigned-tx.json,
+    // ymax1-main-authz-unsigned-tx.json
+    ...fromTypedEntries(
+      typedEntries({
+        'ymax0-devnet': {
+          install: 'ymax0-devnet-install.json',
+        },
+        'ymax0-main': {
+          devnetInstall: 'ymax0-devnet-install.json',
+          devnetUpgrade: 'ymax0-devnet-upgrade.json',
+          install: 'ymax0-main-install.json',
+        },
+        'ymax1-main': {
+          install: 'ymax0-main-install.json',
+          priorUpgrade: 'ymax0-main-upgrade.json',
+        },
+      }).map(([envName, extraDeps]) => [
+        `${envName}-authz-unsigned-tx.json`,
+        {
+          deps: { release: 'release', ...extraDeps },
+          find: (asset, { release: relInfo }) =>
+            findUnsignedTx(
+              `${envName}-authz-unsigned-tx.json`,
+              asset,
+              relInfo as ReleaseInfo,
+            ),
+          create: async ({ install }, asset, cause) => {
+            grantee || Fail`GRANTEE must be set for phase-upgrade-generate`;
+            const overrides = await createOverrides(envName, privateArgs, {
+              distDir: deployPackage.distDir,
+              release,
+            });
+            return generateAuthzOperatorUpgrade(
+              envName,
+              install as InstallRecord,
+              {
+                overrides,
+                unsignedTxAsset: asset!,
+                unsignedTxAssetName: `${envName}-authz-unsigned-tx.json`,
+              },
+              {
+                cause,
+                target,
+                releaseTag: tag,
+                now,
+                makeUpgradeRequestBuilder,
+              },
+            );
           },
-          {
-            cause,
-            target,
-            releaseTag: tag,
-            now,
-            makeUpgradeRequestBuilder,
+        },
+      ]),
+    ),
+
+    // ymax0-devnet-authz-signed-tx.json, ymax0-main-authz-signed-tx.json,
+    // ymax1-main-authz-signed-tx.json
+    ...fromTypedEntries(
+      (['ymax0-devnet', 'ymax0-main', 'ymax1-main'] as const).map(envName => [
+        `${envName}-authz-signed-tx.json`,
+        {
+          deps: { release: 'release' },
+          find: (asset, { release: relInfo }) =>
+            findSignedTx(
+              `${envName}-authz-signed-tx.json`,
+              asset,
+              relInfo as ReleaseInfo,
+            ),
+          create: async () => {
+            throw Error(
+              `missing required release asset ${envName}-authz-signed-tx.json`,
+            );
           },
-        );
-      },
-    },
-    'ymax1-main-authz-signed-tx.json': {
-      deps: {
-        release: 'release',
-      },
-      find: (asset, { release: relInfo }) =>
-        findSignedTx(
-          'ymax1-main-authz-signed-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async () => {
-        throw Error(
-          'missing required release asset ymax1-main-authz-signed-tx.json',
-        );
-      },
-    },
-    'ymax0-devnet-unsigned-tx.json': {
-      deps: {
-        release: 'release',
-        install: 'ymax0-devnet-install.json',
-      },
-      find: (asset, { release: relInfo }) =>
-        findUnsignedTx(
-          'ymax0-devnet-unsigned-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async ({ install }, asset, cause) => {
-        const overrides = await createOverrides('ymax0-devnet', privateArgs, {
-          distDir: deployPackage.distDir,
-          release,
-        });
-        return generateAuthzOperatorUpgrade(
-          'ymax0-devnet',
-          install as InstallRecord,
-          {
-            overrides,
-            unsignedTxAsset: asset!,
-            unsignedTxAssetName: 'ymax0-devnet-unsigned-tx.json',
+        },
+      ]),
+    ),
+
+    // ymax0-devnet-unsigned-tx.json, ymax0-main-unsigned-tx.json,
+    // ymax1-main-unsigned-tx.json
+    ...fromTypedEntries(
+      typedEntries({
+        'ymax0-devnet': {
+          install: 'ymax0-devnet-install.json',
+        },
+        'ymax0-main': {
+          devnetInstall: 'ymax0-devnet-install.json',
+          devnetUpgrade: 'ymax0-devnet-upgrade.json',
+          install: 'ymax0-main-install.json',
+        },
+        'ymax1-main': {
+          install: 'ymax0-main-install.json',
+          priorUpgrade: 'ymax0-main-upgrade.json',
+        },
+      }).map(([envName, extraDeps]) => [
+        `${envName}-unsigned-tx.json`,
+        {
+          deps: { release: 'release', ...extraDeps },
+          find: (asset, { release: relInfo }) =>
+            findUnsignedTx(
+              `${envName}-unsigned-tx.json`,
+              asset,
+              relInfo as ReleaseInfo,
+            ),
+          create: async ({ install }, asset, cause) => {
+            const overrides = await createOverrides(envName, privateArgs, {
+              distDir: deployPackage.distDir,
+              release,
+            });
+            return generateAuthzOperatorUpgrade(
+              envName,
+              install as InstallRecord,
+              {
+                overrides,
+                unsignedTxAsset: asset!,
+                unsignedTxAssetName: `${envName}-unsigned-tx.json`,
+              },
+              {
+                cause,
+                target,
+                releaseTag: tag,
+                now,
+                makeUpgradeRequestBuilder,
+              },
+            );
           },
-          {
-            cause,
-            target,
-            releaseTag: tag,
-            now,
-            makeUpgradeRequestBuilder,
+        },
+      ]),
+    ),
+
+    // ymax0-devnet-signed-tx.json, ymax0-main-signed-tx.json,
+    // ymax1-main-signed-tx.json
+    ...fromTypedEntries(
+      (['ymax0-devnet', 'ymax0-main', 'ymax1-main'] as const).map(envName => [
+        `${envName}-signed-tx.json`,
+        {
+          deps: { release: 'release' },
+          find: (asset, { release: relInfo }) =>
+            findSignedTx(
+              `${envName}-signed-tx.json`,
+              asset,
+              relInfo as ReleaseInfo,
+            ),
+          create: async () => {
+            throw Error(
+              `missing required release asset ${envName}-signed-tx.json`,
+            );
           },
-        );
-      },
-    },
-    'ymax0-devnet-signed-tx.json': {
-      deps: {
-        release: 'release',
-      },
-      find: (asset, { release: relInfo }) =>
-        findSignedTx(
-          'ymax0-devnet-signed-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async () => {
-        throw Error(
-          'missing required release asset ymax0-devnet-signed-tx.json',
-        );
-      },
-    },
-    'ymax0-main-unsigned-tx.json': {
-      deps: {
-        release: 'release',
-        devnetInstall: 'ymax0-devnet-install.json',
-        devnetUpgrade: 'ymax0-devnet-upgrade.json',
-        install: 'ymax0-main-install.json',
-      },
-      find: (asset, { release: relInfo }) =>
-        findUnsignedTx(
-          'ymax0-main-unsigned-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async ({ install }, asset, cause) => {
-        const overrides = await createOverrides('ymax0-main', privateArgs, {
-          distDir: deployPackage.distDir,
-          release,
-        });
-        return generateAuthzOperatorUpgrade(
-          'ymax0-main',
-          install as InstallRecord,
-          {
-            overrides,
-            unsignedTxAsset: asset!,
-            unsignedTxAssetName: 'ymax0-main-unsigned-tx.json',
-          },
-          {
-            cause,
-            target,
-            releaseTag: tag,
-            now,
-            makeUpgradeRequestBuilder,
-          },
-        );
-      },
-    },
-    'ymax0-main-signed-tx.json': {
-      deps: {
-        release: 'release',
-      },
-      find: (asset, { release: relInfo }) =>
-        findSignedTx(
-          'ymax0-main-signed-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async () => {
-        throw Error('missing required release asset ymax0-main-signed-tx.json');
-      },
-    },
-    'ymax1-main-unsigned-tx.json': {
-      deps: {
-        release: 'release',
-        install: 'ymax0-main-install.json',
-        priorUpgrade: 'ymax0-main-upgrade.json',
-      },
-      find: (asset, { release: relInfo }) =>
-        findUnsignedTx(
-          'ymax1-main-unsigned-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async ({ install }, asset, cause) => {
-        const overrides = await createOverrides('ymax1-main', privateArgs, {
-          distDir: deployPackage.distDir,
-          release,
-        });
-        return generateAuthzOperatorUpgrade(
-          'ymax1-main',
-          install as InstallRecord,
-          {
-            overrides,
-            unsignedTxAsset: asset!,
-            unsignedTxAssetName: 'ymax1-main-unsigned-tx.json',
-          },
-          {
-            cause,
-            target,
-            releaseTag: tag,
-            now,
-            makeUpgradeRequestBuilder,
-          },
-        );
-      },
-    },
-    'ymax1-main-signed-tx.json': {
-      deps: {
-        release: 'release',
-      },
-      find: (asset, { release: relInfo }) =>
-        findSignedTx(
-          'ymax1-main-signed-tx.json',
-          asset,
-          relInfo as ReleaseInfo,
-        ),
-      create: async () => {
-        throw Error('missing required release asset ymax1-main-signed-tx.json');
-      },
-    },
+        },
+      ]),
+    ),
   };
 
   const ensureNode = <T>(name: string): Promise<T> => {
