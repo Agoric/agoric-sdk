@@ -239,7 +239,7 @@ export const makeValidateOpenMessageRepresentativeInfo =
   (chainId: number | bigint, representativeContract: EvmAddress) => {
     const fromChain = eip155ChainIdToAxelarChain[`${chainId}`];
     if (!fromChain) {
-      throw Fail`no Axelar chain for EIP-155 chainId ${chainId}`;
+      throw Fail`no Axelar chain for EIP-155 chainId ${q(chainId)}`;
     }
     const addresses = contracts[fromChain];
 
@@ -249,7 +249,7 @@ export const makeValidateOpenMessageRepresentativeInfo =
       (addresses.depositFactory &&
         addresses.depositFactory.length > 2 &&
         sameEvmAddress(representativeContract, addresses.depositFactory)) ||
-      Fail`${representativeContract} does not match any supported representative address ${[addresses.remoteAccountRouter, addresses.depositFactory].filter(address => address && address.length > 2)} for chain ${fromChain}`;
+      Fail`${q(representativeContract)} does not match any supported representative address ${q([addresses.remoteAccountRouter, addresses.depositFactory].filter(address => address && address.length > 2))} for chain ${q(fromChain)}`;
   };
 
 /**
@@ -388,15 +388,16 @@ const assertExternalDelegationTarget = (
   agentId: number,
 ) => {
   const { delegations, plannerAgentId } = state;
-  delegations?.has(agentId) || Fail`no delegation found for agent ${agentId}`;
+  delegations?.has(agentId) ||
+    Fail`no delegation found for agent ${q(agentId)}`;
   const delegation = delegations!.get(agentId);
   agentId !== plannerAgentId ||
     Fail`planner delegation cannot be changed or revoked externally`;
   delegation.grantee !== PortfolioPlannerAgent ||
     delegation.state === 'revoked' ||
-    Fail`active planner delegation agent${agentId} is not current`;
+    Fail`active planner delegation agent ${q(agentId)} is not current`;
   delegation.state === 'active' ||
-    Fail`delegation agent${agentId} cannot be changed or revoked while ${delegation.state}`;
+    Fail`delegation agent ${q(agentId)} cannot be changed or revoked while ${q(delegation.state)}`;
 };
 
 export type PublishStatusFn = <K extends keyof StatusFor>(
@@ -667,9 +668,9 @@ export const preparePortfolioKit = (
         checkVersion(versionPre: number, countPre: number) {
           const { policyVersion, rebalanceCount } = this.state;
           policyVersion === versionPre ||
-            Fail`expected policyVersion ${policyVersion}; got ${versionPre}`;
+            Fail`expected policyVersion ${q(policyVersion)}; got ${q(versionPre)}`;
           rebalanceCount === countPre ||
-            Fail`expected rebalanceCount ${rebalanceCount}; got ${countPre}`;
+            Fail`expected rebalanceCount ${q(rebalanceCount)}; got ${q(countPre)}`;
         },
       },
       delegationHelper: {
@@ -680,19 +681,19 @@ export const preparePortfolioKit = (
         ) {
           const { delegations, portfolioId } = this.state;
           if (!delegations) {
-            throw Fail`delegation client is not active for portfolio ${portfolioId}`;
+            throw Fail`delegation client is not active for portfolio ${q(portfolioId)}`;
           }
           const status = delegations.get(agentId);
           status.activeClient === client ||
-            Fail`delegation client is not active for agent${agentId}`;
+            Fail`delegation client is not active for agent ${q(agentId)}`;
           status.state === 'active' ||
-            Fail`delegation agent${agentId} is not active; current state is ${status.state}`;
+            Fail`delegation agent ${q(agentId)} is not active; current state is ${q(status.state)}`;
 
           for (const permission of Object.keys(
             required,
           ) as (keyof PortfolioPermissions)[]) {
             status.permissions[permission] ||
-              Fail`delegation agent${agentId} does not have required permission ${permission}`;
+              Fail`delegation agent ${q(agentId)} does not have required permission ${q(permission)}`;
           }
           return status;
         },
@@ -1005,10 +1006,10 @@ export const preparePortfolioKit = (
           }
           const agentId = Number(stripPrefix('agent', agent));
           Number.isSafeInteger(agentId) ||
-            Fail`invalid flow agent reference ${agent}`;
+            Fail`invalid flow agent reference ${q(agent)}`;
           const permissions =
             delegations?.get(agentId).permissions ??
-            Fail`missing mandate for ${agent}`;
+            Fail`missing mandate for ${q(agent)}`;
           const pendingTargetAllocation =
             detail.type === 'rebalance' &&
             detail.initiatingOperation?.type === 'setTargetAllocation' &&
@@ -1055,10 +1056,10 @@ export const preparePortfolioKit = (
             detail.type !== 'rebalance' ||
             initiatingOperation?.type !== 'setTargetAllocation'
           ) {
-            throw Fail`flow${flowId} has no pending setTargetAllocation operation`;
+            throw Fail`flow ${q(flowId)} has no pending setTargetAllocation operation`;
           }
           if (initiatingOperation.status !== 'pending') {
-            throw Fail`flow${flowId} setTargetAllocation operation is not pending`;
+            throw Fail`flow ${q(flowId)} setTargetAllocation operation is not pending`;
           }
           flowsRunning.set(
             flowId,
@@ -1079,7 +1080,7 @@ export const preparePortfolioKit = (
           const detail = flowsRunning.get(flowId);
           const { resolver, ...sync } = detail.sync;
           if (!resolver) {
-            throw Fail`flow${flowId} has already been resolved`;
+            throw Fail`flow ${q(flowId)} has already been resolved`;
           }
           try {
             vetFlowPlanPlaces(
@@ -1452,10 +1453,10 @@ export const preparePortfolioKit = (
         ): PortfolioDelegationLifecycleResult {
           const { delegations, portfolioId } = this.state;
           delegations?.has(agentId) ||
-            Fail`no delegation found for agent ${agentId}`;
+            Fail`no delegation found for agent ${q(agentId)}`;
           const delegation = delegations!.get(agentId);
           delegation.state === 'active' ||
-            Fail`delegation agent${agentId} is ${delegation.state}`;
+            Fail`delegation agent ${q(agentId)} is ${q(delegation.state)}`;
 
           const updatedAtPolicyVersion =
             this.facets.manager.bumpPolicyVersion();
@@ -1481,7 +1482,7 @@ export const preparePortfolioKit = (
           }
           const delegation = delegations.get(agentId);
           if (!delegation) {
-            throw Fail`no delegation found for agent ${agentId}`;
+            throw Fail`no delegation found for agent ${q(agentId)}`;
           }
           // A revoke is always a policy change.
           const updatedAtPolicyVersion =
@@ -1647,7 +1648,7 @@ export const preparePortfolioKit = (
 
           const fromChain = eip155ChainIdToAxelarChain[`${chainId}`];
           if (!fromChain) {
-            throw Fail`no Axelar chain for EIP-155 chainId ${chainId}`;
+            throw Fail`no Axelar chain for EIP-155 chainId ${q(chainId)}`;
           }
 
           const addresses = contracts[fromChain];
@@ -1745,7 +1746,7 @@ export const preparePortfolioKit = (
             ) {
               const expectedAddress = representativeConfig.predictAddress();
               sameEvmAddress(gmpInfo.remoteAddress, expectedAddress) ||
-                Fail`account address ${gmpInfo.remoteAddress} does not match ${representativeConfig.name} generated address ${expectedAddress} for chain ${fromChain}`;
+                Fail`account address ${q(gmpInfo.remoteAddress)} does not match ${q(representativeConfig.name)} generated address ${q(expectedAddress)} for chain ${q(fromChain)}`;
             }
           } else {
             // This is only used to provide a diagnostic for the expected remote account address
@@ -1761,7 +1762,7 @@ export const preparePortfolioKit = (
               ) ?? defaultRepresentativeConfig;
 
             if (!representativeConfig) {
-              throw Fail`no representative available for chain ${fromChain}`;
+              throw Fail`no representative available for chain ${q(fromChain)}`;
             }
 
             remoteAccountAddress = representativeConfig.predictAddress();
@@ -1772,7 +1773,7 @@ export const preparePortfolioKit = (
             representativeConfig?.address,
           ) ||
             sameEvmAddress(representativeContract, remoteAccountAddress) ||
-            Fail`${bare(strictForDeposit ? 'permit spender' : 'verifying contract')} ${representativeContract} does not match remote account ${remoteAccountAddress} or ${bare(representativeConfig?.name ?? 'missing representative')} ${representativeConfig?.address ?? '0x'} for chain ${fromChain}`;
+            Fail`${bare(strictForDeposit ? 'permit spender' : 'verifying contract')} ${q(representativeContract)} does not match remote account ${q(remoteAccountAddress)} or ${bare(representativeConfig?.name ?? 'missing representative')} ${q(representativeConfig?.address ?? '0x')} for chain ${q(fromChain)}`;
         },
         /**
          * Initiate a deposit from an EVM account using Permit2.
@@ -1791,7 +1792,7 @@ export const preparePortfolioKit = (
 
           const owner = depositDetails.permit2Payload.owner;
           sameEvmAddress(owner, accountAddress as EvmAddress) ||
-            Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
+            Fail`permit owner ${q(owner)} does not match portfolio source address ${q(accountAddress)}`;
 
           this.facets.evmHandler.validateRepresentativeInfo(
             depositDetails.chainId,
@@ -1802,11 +1803,11 @@ export const preparePortfolioKit = (
           const fromChain =
             eip155ChainIdToAxelarChain[`${depositDetails.chainId}`];
           if (!fromChain) {
-            throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
+            throw Fail`no Axelar chain for EIP-155 chainId ${q(depositDetails.chainId)}`;
           }
 
           sameEvmAddress(depositDetails.token, contracts[fromChain].usdc) ||
-            Fail`permit token address ${depositDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
+            Fail`permit token address ${q(depositDetails.token)} does not match usdc contract address ${q(contracts[fromChain].usdc)} for chain ${q(fromChain)}`;
 
           const amount = AmountMath.make(usdcBrand, depositDetails.amount);
           const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
@@ -1897,7 +1898,7 @@ export const preparePortfolioKit = (
             parseAccountId(sourceAccountId);
 
           namespace === 'eip155' ||
-            Fail`withdraw sourceAccountId must be in eip155 namespace: ${sourceAccountId}`;
+            Fail`withdraw sourceAccountId must be in eip155 namespace: ${q(sourceAccountId)}`;
           const evmAddress = accountAddress as EvmAddress;
 
           const chainIdStr = String(
@@ -1907,15 +1908,15 @@ export const preparePortfolioKit = (
           const toChain = eip155ChainIdToAxelarChain[chainIdStr];
 
           if (!toChain) {
-            throw Fail`destination chainId ${chainIdStr} is not supported for withdraw`;
+            throw Fail`destination chainId ${q(chainIdStr)} is not supported for withdraw`;
           }
 
           !address ||
             sameEvmAddress(evmAddress, address) ||
-            Fail`withdraw address ${address} does not match source account address ${evmAddress}`;
+            Fail`withdraw address ${q(address)} does not match source account address ${q(evmAddress)}`;
 
           sameEvmAddress(withdrawDetails.token, contracts[toChain].usdc) ||
-            Fail`withdraw token address ${withdrawDetails.token} does not match usdc contract address ${contracts[toChain].usdc} for chain ${toChain}`;
+            Fail`withdraw token address ${q(withdrawDetails.token)} does not match usdc contract address ${q(contracts[toChain].usdc)} for chain ${q(toChain)}`;
           const amount = AmountMath.make(usdcBrand, withdrawDetails.amount);
 
           const flowDetail = {

@@ -413,7 +413,7 @@ test('owner-signed grant, full replacement, revoke, and re-grant govern the rede
       },
       syncState: getSyncState(beforeRevoke),
     }),
-    { message: /delegation client is not active for agent1/ },
+    { message: /delegation client is not active for agent "?1/ },
   );
 
   const agentsAfterRevoke = await peteKit.readPublished(
@@ -545,7 +545,7 @@ const testSignedGlobalLimits = async (t: ExecutionContext) => {
   );
   await rejectedWeightRequest.expectRejected(
     t,
-    'mandate.maxWeight:"Aave_Arbitrum"',
+    'mandate.maxWeight:"Aave_Arbitrum": portion "[50n]" of total "[100n]" exceeds maxWeightBps "[4000n]"',
   );
   await rejectedWeightRequest.expectNoSteps(t);
 
@@ -588,7 +588,7 @@ const testSignedGlobalLimits = async (t: ExecutionContext) => {
   );
   await rejectedTvlRequest.expectRejected(
     t,
-    'mandate.minVaultTvl:"Aave_Arbitrum"',
+    'mandate.minVaultTvl:"Aave_Arbitrum": tvlUsd "[20000000n]" is below minVaultTvlUsd "[20000001n]"',
   );
 };
 
@@ -1474,7 +1474,7 @@ test('delegated plans: signed TVL mandate failure creates no flow', async t => {
       plan: emptyPlan,
       signedObservations,
     }),
-    { message: 'mandate.minVaultTvl:"Aave_Arbitrum"' },
+    { message: /^mandate\.minVaultTvl:"Aave_Arbitrum": tvlUsd/ },
   );
   await eventLoopIteration();
   const after = await peteKit.evmTrader.getPortfolioStatus();
@@ -1547,7 +1547,7 @@ test('delegated plans: an unauthorized client causes no verification', async t =
         privateKeyToAccount(evmTrader0PrivateKey),
       ),
     }),
-    { message: /delegation client is not active for agent1/ },
+    { message: /delegation client is not active for agent "?1/ },
   );
 });
 

@@ -153,11 +153,11 @@ const assertSwapTokensConfigured = (
   const tokenInKey = makeTokenIdKey(tokenIn);
   const tokenOutKey = makeTokenIdKey(tokenOut);
   tokenMetadataById[tokenInKey]?.usage?.includes('swapFrom') ||
-    Fail`swap tokenIn ${tokenIn} is not configured as a source token on ${q(chainName)}`;
+    Fail`swap tokenIn ${q(tokenIn)} is not configured as a source token on ${q(chainName)}`;
   tokenInKey !== tokenOutKey ||
-    Fail`swap tokenIn ${tokenIn} cannot be the same as tokenOut`;
+    Fail`swap tokenIn ${q(tokenIn)} cannot be the same as tokenOut`;
   tokenMetadataById[tokenOutKey]?.usage?.includes('swapTo') ||
-    Fail`swap tokenOut ${tokenOut} is not configured as a destination token on ${q(chainName)}`;
+    Fail`swap tokenOut ${q(tokenOut)} is not configured as a destination token on ${q(chainName)}`;
 };
 harden(assertSwapTokensConfigured);
 
@@ -262,7 +262,7 @@ export const CCTP = {
     const { chainId, remoteAddress } = dest;
     traceTransfer('transfer', denomAmount, 'to', remoteAddress);
     amount.value >= CCTP_OUTBOUND_THRESHOLD ||
-      Fail`too small to relay: ${q(amount)} below ${CCTP_OUTBOUND_THRESHOLD}`;
+      Fail`too small to relay: ${q(amount)} below ${q(CCTP_OUTBOUND_THRESHOLD)}`;
     const destinationAddress: AccountId = `${chainId}:${remoteAddress}`;
     const { ica } = src;
 

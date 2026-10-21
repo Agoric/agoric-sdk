@@ -788,7 +788,7 @@ const getAssetPlaceRefKind = (
   // +agoric or +Arbitrum etc. - all deposit sources
   if (ref.startsWith('+')) return 'depositAddr';
   if (getWithdrawChainOfPlaceRef(ref)) return 'withdrawAddr';
-  throw Fail`bad ref: ${ref}`;
+  throw Fail`bad ref: ${q(ref)}`;
 };
 
 type Way =
@@ -952,12 +952,12 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
         }
 
         default:
-          throw Fail`unreachable:${destKind} ${dest}`;
+          throw Fail`unreachable: ${q(destKind)} ${q(dest)}`;
       }
     }
 
     default:
-      throw Fail`unreachable: ${srcKind} ${src}`;
+      throw Fail`unreachable: ${q(srcKind)} ${q(src)}`;
   }
 };
 
@@ -1475,7 +1475,7 @@ const stepFlow = async (
           throw Fail`depositFromEVM requires evmDepositDetail`;
         }
         if (evmDepositDetail.fromChain !== srcChain) {
-          throw Fail`depositFromEVM chain mismatch: expected ${srcChain}, got ${evmDepositDetail.fromChain}`;
+          throw Fail`depositFromEVM chain mismatch: expected ${q(srcChain)}, got ${q(evmDepositDetail.fromChain)}`;
         }
 
         const { permit2Payload } = evmDepositDetail;
@@ -1495,7 +1495,7 @@ const stepFlow = async (
             await gInfo.ready;
 
             sameEvmAddress(gInfo.remoteAddress, evmDepositDetail.spender) ||
-              Fail`depositFromEVM spender ${evmDepositDetail.spender} must be the same as the remote account address ${gInfo.remoteAddress}`;
+              Fail`depositFromEVM spender ${q(evmDepositDetail.spender)} must be the same as the remote account address ${q(gInfo.remoteAddress)}`;
 
             // Create EVM context for GMP call
             const evmCtx = await makeEVMCtx(
@@ -1575,7 +1575,7 @@ const stepFlow = async (
       }
 
       default:
-        throw Fail`unreachable: ${way}`;
+        throw Fail`unreachable: ${q(way)}`;
     }
   }
 
@@ -2145,10 +2145,10 @@ const queuePermit2Step = async (
     step => step.src === `+${fromChain}` && step.dest === `@${fromChain}`,
   );
   if (!permitStep) {
-    throw Fail`permit2 step missing for ${fromChain}`;
+    throw Fail`permit2 step missing for ${q(fromChain)}`;
   }
   if (!permitStep.fee) {
-    throw Fail`permit2 step missing fee for ${fromChain}`;
+    throw Fail`permit2 step missing fee for ${q(fromChain)}`;
   }
   const feeAmount = permitStep.fee;
   const lca = pKit.reader.getLocalAccount();

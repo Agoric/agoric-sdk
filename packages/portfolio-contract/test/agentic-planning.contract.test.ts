@@ -283,7 +283,7 @@ const promptInjectionScenario = async (t: ExecutionContext) => {
   const before = await portfolioRead.getPortfolioStatus();
   await agent.redeem();
   await t.throwsAsync(agent.wake(), {
-    message: 'mandate.maxWeight:"Aave_Avalanche"',
+    message: /^mandate\.maxWeight:"Aave_Avalanche": portion/,
   });
   await pendingVstorageWrites();
   const after = await portfolioRead.getPortfolioStatus();
