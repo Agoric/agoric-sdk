@@ -428,6 +428,9 @@ const mockGh = (
     opts?: { encoding?: BufferEncoding | 'buffer'; reject?: boolean },
   ) => {
     const [sub1, sub2, tag] = args;
+    if (sub1 === 'release' && sub2 === 'list') {
+      return { stdout: '[]' };
+    }
     if (sub1 === 'release' && sub2 === 'view') {
       const release = releases.get(tag);
       if (!release && opts?.reject === false) {

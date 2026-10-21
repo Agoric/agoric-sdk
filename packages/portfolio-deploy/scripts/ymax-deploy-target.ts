@@ -54,9 +54,12 @@ import {
 import {
   bundleIdFromBundleRecord,
   canonicalizePrivateArgs,
-  expectedOverridesAssetName,
+  digestJson,
+  extractOverridesDiscriminator,
   isPrivateArgsSpecified,
   overridesAssetPrefix,
+  previousPrivateArgsAssetPrefix,
+  privateArgsAssetPrefix,
   requireAsset,
   targetInfo,
   validateExpectedOverridesAsset,
@@ -118,6 +121,10 @@ export type PendingUpgradeRecord = BaseRecord & {
   submitTime: string;
 };
 export type ReleaseAssetInfo = { name: string };
+type PrivateArgsInfo = {
+  releaseUrl: string;
+  allegedPrivateArgs: Record<string, any>;
+};
 type ReleaseInfo = { assets: ReleaseAssetInfo[]; url: string };
 type UpgradeRequestBuilder = ReturnType<typeof buildUpgradeRequestBuilder>;
 type StepTools = {
@@ -128,6 +135,12 @@ type StepTools = {
   deployPackage: ReturnType<typeof makeDeployPackage>;
   distDir: FileRW;
   release: ReleaseRW;
+  fetchReleaseByAsset: (
+    assetName: string,
+  ) => Promise<
+    { ref: ReleaseRW; info: Awaited<ReturnType<ReleaseRd['get']>> } | undefined
+  >;
+  diff: CmdRunner;
   setTimeout: typeof globalThis.setTimeout;
   now: () => number;
 };
@@ -409,10 +422,12 @@ const provideArgsFiles = async (
   {
     distDir,
     release,
-  }: Pick<StepTools, 'distDir' | 'release'>,
+    fetchReleaseByAsset,
+    diff,
+  }: Pick<StepTools, 'distDir' | 'release' | 'fetchReleaseByAsset' | 'diff'>,
 ) => {
   const prefix = overridesAssetPrefix(target);
-  const { assets } = await release.readOnly().get();
+  const { assets, url: releaseUrl } = await release.readOnly().get();
   const existingOverrides = assets
     .map(({ name }) => name)
     .filter(name => name.startsWith(prefix) && name.endsWith('.json'));
@@ -427,10 +442,72 @@ const provideArgsFiles = async (
     return { assetName, file: assetFile.readOnly() };
   }
 
-  const assetName = expectedOverridesAssetName(target, overrides);
+  const discriminator = digestJson(overrides);
+  // A ${target}-upgrade.json release asset indicates upgrade completion.
+  const prevRelease = await fetchReleaseByAsset(`${target}-upgrade.json`);
+  const prevPrivateArgsFile = await (async () => {
+    if (!prevRelease) return undefined;
+    const prevAssetNames = prevRelease.info.assets.map(({ name }) => name);
+    const prevPrivateArgsOverrides = prevAssetNames.filter(
+      name => name.startsWith(prefix) && name.endsWith('.json'),
+    );
+    prevPrivateArgsOverrides.length === 1 ||
+      Fail`could not find previous privateArgsOverrides ${q(`${prefix}*.json`)} in ${q(prevAssetNames)}`;
+    const prevDiscriminator = extractOverridesDiscriminator(
+      target,
+      prevPrivateArgsOverrides[0],
+    );
+    const prevPrivateArgsName = `${privateArgsAssetPrefix(target)}${prevDiscriminator}.json`;
+    const matches = prevAssetNames.filter(name => name === prevPrivateArgsName);
+    if (matches.length === 0) return undefined;
+    matches.length === 1 ||
+      Fail`too many alleged previous privateArgs ${q(prevPrivateArgsName)} in ${q(prevAssetNames)}`;
+    const localCopy = distDir.join(
+      `${previousPrivateArgsAssetPrefix(target)}${discriminator}.json`,
+    );
+    await prevRelease.ref.join(matches[0]).copyTo(localCopy);
+    return localCopy.readOnly();
+  })();
+  const prevPrivateArgs = (await prevPrivateArgsFile?.readJSON()) as
+    | PrivateArgsInfo
+    | undefined;
+  const privateArgsInfo: typeof prevPrivateArgs = prevPrivateArgs && {
+    releaseUrl,
+    allegedPrivateArgs: {
+      ...prevPrivateArgs.allegedPrivateArgs,
+      ...(overrides && JSON.parse(overrides)),
+    },
+  };
+  const privateArgsFile =
+    privateArgsInfo &&
+    distDir.join(`${privateArgsAssetPrefix(target)}${discriminator}.json`);
+  await privateArgsFile?.writeText(
+    canonicalizePrivateArgs(JSON.stringify(privateArgsInfo)),
+  );
+  const diffFile =
+    privateArgsFile &&
+    distDir.join(`${privateArgsAssetPrefix(target)}${discriminator}.diff`);
+  const diffResult = await (prevPrivateArgsFile &&
+    diff.exec([
+      '-u',
+      prevPrivateArgsFile.toString(),
+      privateArgsFile!.toString(),
+    ]));
+  const diffText = diffResult?.stdout;
+  if (diffText?.trim()) {
+    logger?.info(
+      'privateArgs changes',
+      // https://github.com/actions/toolkit/issues/193
+      `diff -u\n${diffText}`.replaceAll('\n', '%0A'),
+    );
+  }
+  await diffFile?.writeText(diffText);
+
+  const assetName = `${overridesAssetPrefix(target)}${discriminator}.json`;
   const stale = existingOverrides.filter(name => name !== assetName);
   stale.length === 0 ||
     Fail`${q(assetName)} would be a new private-args-overrides asset for ${b(target)}, but ${q(stale)} already exists on the release; remove the stale asset(s) (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`;
+
   const overridesText = canonicalizePrivateArgs(overrides);
   const assetFile = distDir.join(assetName);
   await assetFile.writeText(overridesText);
@@ -438,6 +515,18 @@ const provideArgsFiles = async (
   if (!(await asset.exists())) {
     await asset.copyFrom(assetFile.readOnly());
   }
+  await Promise.all(
+    [
+      prevPrivateArgsFile,
+      privateArgsFile?.readOnly(),
+      diffFile?.readOnly(),
+    ].map(async fileRd => {
+      if (!fileRd) return;
+      const subAsset = release.join(fileRd.basename());
+      if (await subAsset.exists()) return;
+      await subAsset.copyFrom(fileRd);
+    }),
+  );
   return { assetName, file: assetFile.readOnly() };
 };
 
@@ -1033,6 +1122,8 @@ const submitUpgradeContract = async (
     releaseTag,
     distDir,
     release,
+    fetchReleaseByAsset,
+    diff,
     walletAdmin,
     now,
   }: StepTools & { privateArgs: string | undefined; walletAdmin: CmdRunner },
@@ -1041,7 +1132,17 @@ const submitUpgradeContract = async (
     upgradeTarget,
     install,
     { asset },
-    { cause, target, privateArgs, releaseTag, distDir, release, now },
+    {
+      cause,
+      target,
+      privateArgs,
+      releaseTag,
+      distDir,
+      release,
+      fetchReleaseByAsset,
+      diff,
+      now,
+    },
   );
   const info = getTargetInfo(upgradeTarget);
   const resultFile = distDir.join(`${upgradeTarget}-upgrade-result.json`);
@@ -1072,10 +1173,19 @@ const preparePendingUpgrade = async (
     releaseTag,
     distDir,
     release,
+    fetchReleaseByAsset,
+    diff,
     now,
   }: Pick<
     StepTools,
-    'cause' | 'target' | 'releaseTag' | 'distDir' | 'release' | 'now'
+    | 'cause'
+    | 'target'
+    | 'releaseTag'
+    | 'distDir'
+    | 'release'
+    | 'fetchReleaseByAsset'
+    | 'diff'
+    | 'now'
   > & {
     privateArgs: string | undefined;
   },
@@ -1092,6 +1202,8 @@ const preparePendingUpgrade = async (
   const overrides = await provideArgsFiles(upgradeTarget, privateArgs, {
     distDir,
     release,
+    fetchReleaseByAsset,
+    diff,
   });
   const submitTime = new Date(now()).toISOString();
   const invocationId = makeInvocationId(upgradeTarget, submitTime);
@@ -1128,11 +1240,20 @@ const buildDetachedPendingRecord = async (
     releaseTag,
     distDir,
     release,
+    fetchReleaseByAsset,
+    diff,
     now,
     grantee,
   }: Pick<
     StepTools,
-    'cause' | 'target' | 'releaseTag' | 'distDir' | 'release' | 'now'
+    | 'cause'
+    | 'target'
+    | 'releaseTag'
+    | 'distDir'
+    | 'release'
+    | 'fetchReleaseByAsset'
+    | 'diff'
+    | 'now'
   > & {
     privateArgs: string | undefined;
     grantee: string | undefined;
@@ -1171,6 +1292,8 @@ const buildDetachedPendingRecord = async (
   const overrides = await provideArgsFiles(upgradeTarget, privateArgs, {
     distDir,
     release,
+    fetchReleaseByAsset,
+    diff,
   });
   const submitTime = new Date(now()).toISOString();
   return {
@@ -1988,7 +2111,10 @@ type MakeGraphPowers = {
     upgradeTarget: Target,
   ) => Promise<ReturnType<typeof makeAgoricVstorageApi>>;
   grantee?: string;
-} & Pick<StepTools, 'release' | 'now' | 'setTimeout'>;
+} & Pick<
+  StepTools,
+  'release' | 'fetchReleaseByAsset' | 'diff' | 'now' | 'setTimeout'
+>;
 export const makeGraph = (
   target: Target,
   tag: string,
@@ -1999,6 +2125,8 @@ export const makeGraph = (
   {
     deployPackage,
     release,
+    fetchReleaseByAsset,
+    diff,
     installBundle,
     upgradeLogs,
     walletAdmin,
@@ -2031,6 +2159,8 @@ export const makeGraph = (
     deployPackage,
     distDir: deployPackage.distDir,
     release,
+    fetchReleaseByAsset,
+    diff,
     setTimeout,
     now,
     grantee,
@@ -2268,6 +2398,8 @@ export const makeGraph = (
             const overrides = await provideArgsFiles(envName, privateArgs, {
               distDir: deployPackage.distDir,
               release,
+              fetchReleaseByAsset,
+              diff,
             });
             return generateAuthzOperatorUpgrade(
               envName,
@@ -2342,6 +2474,8 @@ export const makeGraph = (
             const overrides = await provideArgsFiles(envName, privateArgs, {
               distDir: deployPackage.distDir,
               release,
+              fetchReleaseByAsset,
+              diff,
             });
             return generateAuthzOperatorUpgrade(
               envName,
@@ -2454,6 +2588,16 @@ export const main = async (
 
   const gh = makeCmdRunner('gh', { execFile }).withEnv({ GH_TOKEN });
   const git = makeCmdRunner('git', { execFile });
+  const diff = makeCmdRunner('diff', {
+    execFile: async (file, args, opts) => {
+      if ('reject' in (opts || {})) return execFile(file, args, opts);
+      // Don't reject for exit status 1, which indicates non-identical inputs.
+      const result = await execFile(file, args, { ...opts, reject: false });
+      const exitCode = result?.exitCode;
+      if (exitCode === 0 || exitCode === 1) return result;
+      throw result;
+    },
+  });
   const installBundle = makeCmdRunner(
     `${agoricSdk.join('packages/portfolio-deploy/scripts/install-bundle.ts')}`,
     { execFile, defaultEnv: installationEnv },
@@ -2469,10 +2613,27 @@ export const main = async (
   const deployPackage = makeDeployPackage({ agoricSdk });
   const cli = parseCli(argv);
   const { subcommand, tag, target } = cli;
-  const release = makeReleaseRW(tag, {
-    gh,
-    scratchDir: deployPackage.distDir,
-  });
+  const scratchDir = deployPackage.distDir;
+  const release = makeReleaseRW(tag, { gh, scratchDir });
+  const fetchReleaseByAsset: MakeGraphPowers['fetchReleaseByAsset'] =
+    async assetName => {
+      const { stdout: ymaxReleasesJson } = await gh.exec([
+        'release',
+        'list',
+        ...['-L', '100'],
+        ...['--json', 'name,tagName,createdAt,publishedAt'],
+        ...['--jq', 'map(select(.tagName | startswith("ymax-")))'],
+      ]);
+      const releases = JSON.parse(ymaxReleasesJson || '[]');
+      for (const releaseDesc of releases) {
+        const ref = makeReleaseRW(releaseDesc.tagName, { gh, scratchDir });
+        const info = await ref.readOnly().get();
+        if (info.assets.some(asset => asset.name === assetName)) {
+          return { ref, info };
+        }
+      }
+      return undefined;
+    };
 
   type NetworkConfig = MinimalNetworkConfig & { apiAddrs: string[] };
   type TargetContext = TargetInfo & { config: NetworkConfig };
@@ -2538,6 +2699,8 @@ export const main = async (
     {
       deployPackage,
       release,
+      fetchReleaseByAsset,
+      diff,
       installBundle,
       upgradeLogs,
       walletAdmin: submitWalletAdmin,

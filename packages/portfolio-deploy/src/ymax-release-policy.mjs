@@ -65,16 +65,48 @@ export const canonicalizePrivateArgs = specimen => {
 };
 
 /** @param {Target} target */
+export const previousPrivateArgsAssetPrefix = target =>
+  `${target}-allegedPreviousPrivateArgs-`;
+
+/** @param {Target} target */
+export const privateArgsAssetPrefix = target => `${target}-allegedPrivateArgs-`;
+
+/** @param {Target} target */
 export const overridesAssetPrefix = target => `${target}-privateArgsOverrides-`;
+
+/**
+ * @param {string | undefined} json
+ * @returns {string}
+ */
+export const digestJson = json => {
+  const text = canonicalizePrivateArgs(json);
+  const digest = createHash('sha256').update(text).digest('hex').slice(0, 12);
+  return digest;
+};
 
 /**
  * @param {Target} target
  * @param {string | undefined} specimen
  */
-export const expectedOverridesAssetName = (target, specimen) => {
-  const text = canonicalizePrivateArgs(specimen);
-  const digest = createHash('sha256').update(text).digest('hex').slice(0, 12);
-  return `${overridesAssetPrefix(target)}${digest}.json`;
+export const expectedOverridesAssetName = (target, specimen) =>
+  `${overridesAssetPrefix(target)}${digestJson(specimen)}.json`;
+
+/**
+ * @param {Target} target
+ * @param {ReturnType<typeof expectedOverridesAssetName>} filename
+ */
+export const extractOverridesDiscriminator = (target, filename) => {
+  const prefix = overridesAssetPrefix(target);
+  if (!filename.startsWith(prefix)) {
+    throw Error(`release asset ${filename} is missing prefix ${prefix}`);
+  }
+  const leftTrimmed = filename.slice(prefix.length);
+  const suffix = '.json';
+  if (!leftTrimmed.endsWith(suffix)) {
+    throw Error(`release asset ${filename} is missing suffix ${suffix}`);
+  }
+  const rightTrimmed = leftTrimmed.slice(0, -suffix.length);
+  return rightTrimmed;
 };
 
 export const bundleIdFromBundleRecord = (
