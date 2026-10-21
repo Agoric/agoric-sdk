@@ -142,7 +142,8 @@ jobs:
             phase-pre-upgrade \
             --target "$TARGET" \
             --tag "$RELEASE_TAG" \
-            --branch "$BRANCH"
+            --branch "$BRANCH" \
+            2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2)
 
   # Does everything short of actually broadcasting: validates inputs, generates
   # or re-validates the unsigned/detached artifacts, and reports whether a
@@ -209,7 +210,8 @@ jobs:
               generate_output="$(packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
                 phase-upgrade-generate \
                 --target "$TARGET" \
-                --tag "$RELEASE_TAG")"
+                --tag "$RELEASE_TAG" \
+                2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2))"
               printf '%s\n' "$generate_output"
 
               ready="$(jq -r '.readyToBroadcast' <<<"$generate_output")"
@@ -304,7 +306,8 @@ jobs:
           packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
             phase-upgrade-submit \
             --target "$TARGET" \
-            --tag "$RELEASE_TAG"
+            --tag "$RELEASE_TAG" \
+            2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2)
           echo "upgrade_submitted=true" >> "$GITHUB_OUTPUT"
 
   upgrade-confirm:
@@ -338,4 +341,5 @@ jobs:
           packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
             phase-upgrade-confirm \
             --target "$TARGET" \
-            --tag "$RELEASE_TAG"
+            --tag "$RELEASE_TAG" \
+            2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2)

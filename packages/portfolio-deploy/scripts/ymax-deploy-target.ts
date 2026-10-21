@@ -127,6 +127,14 @@ type PrivateArgsInfo = {
 };
 type ReleaseInfo = { assets: ReleaseAssetInfo[]; url: string };
 type UpgradeRequestBuilder = ReturnType<typeof buildUpgradeRequestBuilder>;
+/** https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#setting-a-notice-message */
+type Annotater = ((title: string, message: string) => void) &
+  ((message: string) => void);
+type Logger = {
+  info: Annotater;
+  warn: Annotater;
+  error: Annotater;
+};
 type StepTools = {
   cause: unknown;
   target: Target;
@@ -141,6 +149,7 @@ type StepTools = {
     { ref: ReleaseRW; info: Awaited<ReturnType<ReleaseRd['get']>> } | undefined
   >;
   diff: CmdRunner;
+  logger?: Logger;
   setTimeout: typeof globalThis.setTimeout;
   now: () => number;
 };
@@ -190,6 +199,33 @@ type CosmosTxResponse = {
     body?: {
       messages?: AnyJson[];
     };
+  };
+};
+
+/** https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#setting-a-notice-message */
+const makeAnnotationLogger = (
+  writer: Pick<typeof process.stderr, 'write'>,
+): Logger => {
+  const annotatedWrite = (
+    level: 'notice' | 'warning' | 'error',
+    args: string[],
+  ) => {
+    if (args.length === 2) {
+      const [title, message] = args;
+      if (title.match(/[:\\\r\n]/)) {
+        throw Error('annotation title must not contain special characters');
+      }
+      writer.write(`::${level} title=${title}::${message}\n`);
+    } else if (args.length === 1) {
+      writer.write(`::${level}::${args[0]}\n`);
+    } else {
+      throw Error(`invalid argument count ${args.length}`);
+    }
+  };
+  return {
+    info: (...args) => annotatedWrite('notice', args),
+    warn: (...args) => annotatedWrite('warning', args),
+    error: (...args) => annotatedWrite('error', args),
   };
 };
 
@@ -424,7 +460,11 @@ const provideArgsFiles = async (
     release,
     fetchReleaseByAsset,
     diff,
-  }: Pick<StepTools, 'distDir' | 'release' | 'fetchReleaseByAsset' | 'diff'>,
+    logger,
+  }: Pick<
+    StepTools,
+    'distDir' | 'release' | 'fetchReleaseByAsset' | 'diff' | 'logger'
+  >,
 ) => {
   const prefix = overridesAssetPrefix(target);
   const { assets, url: releaseUrl } = await release.readOnly().get();
@@ -445,6 +485,13 @@ const provideArgsFiles = async (
   const discriminator = digestJson(overrides);
   // A ${target}-upgrade.json release asset indicates upgrade completion.
   const prevRelease = await fetchReleaseByAsset(`${target}-upgrade.json`);
+  if (!prevRelease) {
+    logger?.warn(
+      `could not find previous release containing ${target}-upgrade.json`,
+    );
+  } else {
+    logger?.info('previous release', prevRelease.info.url);
+  }
   const prevPrivateArgsFile = await (async () => {
     if (!prevRelease) return undefined;
     const prevAssetNames = prevRelease.info.assets.map(({ name }) => name);
@@ -459,7 +506,12 @@ const provideArgsFiles = async (
     );
     const prevPrivateArgsName = `${privateArgsAssetPrefix(target)}${prevDiscriminator}.json`;
     const matches = prevAssetNames.filter(name => name === prevPrivateArgsName);
-    if (matches.length === 0) return undefined;
+    if (matches.length === 0) {
+      logger?.warn(
+        `could not find alleged previous privateArgs ${q(prevPrivateArgsName)} in ${q(prevAssetNames)}`,
+      );
+      return undefined;
+    }
     matches.length === 1 ||
       Fail`too many alleged previous privateArgs ${q(prevPrivateArgsName)} in ${q(prevAssetNames)}`;
     const localCopy = distDir.join(
@@ -523,7 +575,10 @@ const provideArgsFiles = async (
     ].map(async fileRd => {
       if (!fileRd) return;
       const subAsset = release.join(fileRd.basename());
-      if (await subAsset.exists()) return;
+      if (await subAsset.exists()) {
+        logger?.warn('release asset already exists', fileRd.basename());
+        return;
+      }
       await subAsset.copyFrom(fileRd);
     }),
   );
@@ -1124,6 +1179,7 @@ const submitUpgradeContract = async (
     release,
     fetchReleaseByAsset,
     diff,
+    logger,
     walletAdmin,
     now,
   }: StepTools & { privateArgs: string | undefined; walletAdmin: CmdRunner },
@@ -1141,6 +1197,7 @@ const submitUpgradeContract = async (
       release,
       fetchReleaseByAsset,
       diff,
+      logger,
       now,
     },
   );
@@ -1175,6 +1232,7 @@ const preparePendingUpgrade = async (
     release,
     fetchReleaseByAsset,
     diff,
+    logger,
     now,
   }: Pick<
     StepTools,
@@ -1185,6 +1243,7 @@ const preparePendingUpgrade = async (
     | 'release'
     | 'fetchReleaseByAsset'
     | 'diff'
+    | 'logger'
     | 'now'
   > & {
     privateArgs: string | undefined;
@@ -1204,6 +1263,7 @@ const preparePendingUpgrade = async (
     release,
     fetchReleaseByAsset,
     diff,
+    logger,
   });
   const submitTime = new Date(now()).toISOString();
   const invocationId = makeInvocationId(upgradeTarget, submitTime);
@@ -1242,6 +1302,7 @@ const buildDetachedPendingRecord = async (
     release,
     fetchReleaseByAsset,
     diff,
+    logger,
     now,
     grantee,
   }: Pick<
@@ -1253,6 +1314,7 @@ const buildDetachedPendingRecord = async (
     | 'release'
     | 'fetchReleaseByAsset'
     | 'diff'
+    | 'logger'
     | 'now'
   > & {
     privateArgs: string | undefined;
@@ -1294,6 +1356,7 @@ const buildDetachedPendingRecord = async (
     release,
     fetchReleaseByAsset,
     diff,
+    logger,
   });
   const submitTime = new Date(now()).toISOString();
   return {
@@ -2113,7 +2176,7 @@ type MakeGraphPowers = {
   grantee?: string;
 } & Pick<
   StepTools,
-  'release' | 'fetchReleaseByAsset' | 'diff' | 'now' | 'setTimeout'
+  'release' | 'fetchReleaseByAsset' | 'diff' | 'logger' | 'now' | 'setTimeout'
 >;
 export const makeGraph = (
   target: Target,
@@ -2127,6 +2190,7 @@ export const makeGraph = (
     release,
     fetchReleaseByAsset,
     diff,
+    logger,
     installBundle,
     upgradeLogs,
     walletAdmin,
@@ -2161,6 +2225,7 @@ export const makeGraph = (
     release,
     fetchReleaseByAsset,
     diff,
+    logger,
     setTimeout,
     now,
     grantee,
@@ -2400,6 +2465,7 @@ export const makeGraph = (
               release,
               fetchReleaseByAsset,
               diff,
+              logger,
             });
             return generateAuthzOperatorUpgrade(
               envName,
@@ -2476,6 +2542,7 @@ export const makeGraph = (
               release,
               fetchReleaseByAsset,
               diff,
+              logger,
             });
             return generateAuthzOperatorUpgrade(
               envName,
@@ -2564,6 +2631,7 @@ export const main = async (
     connectRpc = StargateClient.connect,
     makeWalletKit = makeSmartWalletKit,
     stdout = process.stdout as Pick<typeof process.stdout, 'write'>,
+    stderr = undefined as undefined | Pick<typeof process.stderr, 'write'>,
     setTimeout = globalThis.setTimeout,
     now = Date.now,
   } = {},
@@ -2585,6 +2653,7 @@ export const main = async (
   };
   const delay = (ms: number) =>
     new Promise<void>(resolve => setTimeout(resolve, ms));
+  const logger = stderr ? makeAnnotationLogger(stderr) : undefined;
 
   const gh = makeCmdRunner('gh', { execFile }).withEnv({ GH_TOKEN });
   const git = makeCmdRunner('git', { execFile });
@@ -2701,6 +2770,7 @@ export const main = async (
       release,
       fetchReleaseByAsset,
       diff,
+      logger,
       installBundle,
       upgradeLogs,
       walletAdmin: submitWalletAdmin,
@@ -2796,7 +2866,7 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  main().catch(err => {
+  main(undefined, undefined, { stderr: process.stderr }).catch(err => {
     console.error(err);
     process.exit(1);
   });
