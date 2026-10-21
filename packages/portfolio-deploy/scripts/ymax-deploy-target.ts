@@ -14,12 +14,14 @@ import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.
 import { MsgExec } from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/tx.js';
 import { LegacyAminoPubKey } from '@agoric/cosmic-proto/codegen/cosmos/crypto/multisig/keys.js';
 import { AuthInfo } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+import type { ClusterName } from '@agoric/internal';
 import {
   fromTypedEntries,
   provideLazyMap,
   typedEntries,
 } from '@agoric/internal/src/js-utils.js';
 import { makeCmdRunner, makeFileRd, makeFileRW } from '@agoric/pola-io';
+import type { ChainTokenMetadata } from '@agoric/portfolio-api';
 import { getControlAddress } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import type {
   BridgeAction,
@@ -36,6 +38,8 @@ import * as fsp from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import type { PortfolioDeployConfig } from '../src/portfolio-start.core.js';
+import { updateConfigFromYds } from '../src/token-meta.js';
 import {
   encodeAuthInfoBytes,
   encodeJsonPublicKey,
@@ -148,6 +152,7 @@ type StepTools = {
   ) => Promise<
     { ref: ReleaseRW; info: Awaited<ReturnType<ReleaseRd['get']>> } | undefined
   >;
+  fetchChainMetadata: () => Promise<ChainTokenMetadata>;
   diff: CmdRunner;
   logger?: Logger;
   setTimeout: typeof globalThis.setTimeout;
@@ -454,16 +459,22 @@ const createRelease = async (
  */
 const provideArgsFiles = async (
   target: Target,
-  overrides: string | undefined,
+  overridesText: string | undefined,
   {
     distDir,
     release,
     fetchReleaseByAsset,
+    fetchChainMetadata,
     diff,
     logger,
   }: Pick<
     StepTools,
-    'distDir' | 'release' | 'fetchReleaseByAsset' | 'diff' | 'logger'
+    | 'distDir'
+    | 'release'
+    | 'fetchReleaseByAsset'
+    | 'fetchChainMetadata'
+    | 'diff'
+    | 'logger'
   >,
 ) => {
   const prefix = overridesAssetPrefix(target);
@@ -473,7 +484,7 @@ const provideArgsFiles = async (
     .filter(name => name.startsWith(prefix) && name.endsWith('.json'));
 
   // No override given this run; prefer whatever's already on the release.
-  if (!isPrivateArgsSpecified(overrides) && existingOverrides.length > 0) {
+  if (!isPrivateArgsSpecified(overridesText) && existingOverrides.length > 0) {
     existingOverrides.length === 1 ||
       Fail`multiple ${q(`${prefix}*.json`)} assets exist for ${b(target)} (${q(existingOverrides)}); remove the stale ones (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`;
     const assetName = existingOverrides[0];
@@ -482,7 +493,16 @@ const provideArgsFiles = async (
     return { assetName, file: assetFile.readOnly() };
   }
 
-  const discriminator = digestJson(overrides);
+  // Fingerprint the overrides *before* supplementing them with a fresh
+  // `chainMetadata` default.
+  const discriminator = digestJson(overridesText);
+  let overridesJson = overridesText;
+  const overrides = overridesJson ? JSON.parse(overridesJson) : {};
+  if (!overrides.chainMetadata) {
+    overrides.chainMetadata = await fetchChainMetadata();
+    overridesJson = JSON.stringify(overrides);
+  }
+
   // A ${target}-upgrade.json release asset indicates upgrade completion.
   const prevRelease = await fetchReleaseByAsset(`${target}-upgrade.json`);
   if (!prevRelease) {
@@ -525,10 +545,7 @@ const provideArgsFiles = async (
     | undefined;
   const privateArgsInfo: typeof prevPrivateArgs = prevPrivateArgs && {
     releaseUrl,
-    allegedPrivateArgs: {
-      ...prevPrivateArgs.allegedPrivateArgs,
-      ...(overrides && JSON.parse(overrides)),
-    },
+    allegedPrivateArgs: { ...prevPrivateArgs.allegedPrivateArgs, ...overrides },
   };
   const privateArgsFile =
     privateArgsInfo &&
@@ -560,9 +577,8 @@ const provideArgsFiles = async (
   stale.length === 0 ||
     Fail`${q(assetName)} would be a new private-args-overrides asset for ${b(target)}, but ${q(stale)} already exists on the release; remove the stale asset(s) (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`;
 
-  const overridesText = canonicalizePrivateArgs(overrides);
   const assetFile = distDir.join(assetName);
-  await assetFile.writeText(overridesText);
+  await assetFile.writeText(canonicalizePrivateArgs(overridesJson));
   const asset = release.join(assetName);
   if (!(await asset.exists())) {
     await asset.copyFrom(assetFile.readOnly());
@@ -1178,6 +1194,7 @@ const submitUpgradeContract = async (
     distDir,
     release,
     fetchReleaseByAsset,
+    fetchChainMetadata,
     diff,
     logger,
     walletAdmin,
@@ -1196,6 +1213,7 @@ const submitUpgradeContract = async (
       distDir,
       release,
       fetchReleaseByAsset,
+      fetchChainMetadata,
       diff,
       logger,
       now,
@@ -1231,6 +1249,7 @@ const preparePendingUpgrade = async (
     distDir,
     release,
     fetchReleaseByAsset,
+    fetchChainMetadata,
     diff,
     logger,
     now,
@@ -1242,6 +1261,7 @@ const preparePendingUpgrade = async (
     | 'distDir'
     | 'release'
     | 'fetchReleaseByAsset'
+    | 'fetchChainMetadata'
     | 'diff'
     | 'logger'
     | 'now'
@@ -1262,6 +1282,7 @@ const preparePendingUpgrade = async (
     distDir,
     release,
     fetchReleaseByAsset,
+    fetchChainMetadata,
     diff,
     logger,
   });
@@ -1301,6 +1322,7 @@ const buildDetachedPendingRecord = async (
     distDir,
     release,
     fetchReleaseByAsset,
+    fetchChainMetadata,
     diff,
     logger,
     now,
@@ -1313,6 +1335,7 @@ const buildDetachedPendingRecord = async (
     | 'distDir'
     | 'release'
     | 'fetchReleaseByAsset'
+    | 'fetchChainMetadata'
     | 'diff'
     | 'logger'
     | 'now'
@@ -1355,6 +1378,7 @@ const buildDetachedPendingRecord = async (
     distDir,
     release,
     fetchReleaseByAsset,
+    fetchChainMetadata,
     diff,
     logger,
   });
@@ -2176,7 +2200,13 @@ type MakeGraphPowers = {
   grantee?: string;
 } & Pick<
   StepTools,
-  'release' | 'fetchReleaseByAsset' | 'diff' | 'logger' | 'now' | 'setTimeout'
+  | 'release'
+  | 'fetchReleaseByAsset'
+  | 'fetchChainMetadata'
+  | 'diff'
+  | 'logger'
+  | 'now'
+  | 'setTimeout'
 >;
 export const makeGraph = (
   target: Target,
@@ -2189,6 +2219,7 @@ export const makeGraph = (
     deployPackage,
     release,
     fetchReleaseByAsset,
+    fetchChainMetadata,
     diff,
     logger,
     installBundle,
@@ -2224,6 +2255,7 @@ export const makeGraph = (
     distDir: deployPackage.distDir,
     release,
     fetchReleaseByAsset,
+    fetchChainMetadata,
     diff,
     logger,
     setTimeout,
@@ -2464,6 +2496,7 @@ export const makeGraph = (
               distDir: deployPackage.distDir,
               release,
               fetchReleaseByAsset,
+              fetchChainMetadata,
               diff,
               logger,
             });
@@ -2541,6 +2574,7 @@ export const makeGraph = (
               distDir: deployPackage.distDir,
               release,
               fetchReleaseByAsset,
+              fetchChainMetadata,
               diff,
               logger,
             });
@@ -2703,6 +2737,22 @@ export const main = async (
       }
       return undefined;
     };
+  const fetchChainMetadata = async () => {
+    const networkData: Record<Target, [ClusterName, string]> = {
+      'ymax0-devnet': ['testnet', 'https://dev0.ymax.app'],
+      'ymax0-main': ['mainnet', 'https://main0.ymax.app'],
+      'ymax1-main': ['mainnet', 'https://ymax.app'],
+    };
+    const [cluster, yds] =
+      networkData[target] || Fail`missing network data for ${b(target)}`;
+    const config: Partial<PortfolioDeployConfig> = { cluster };
+    const updatedConfig = await updateConfigFromYds({
+      config: config as PortfolioDeployConfig,
+      yds,
+      fetch: fetchFn,
+    });
+    return (updatedConfig as Required<typeof updatedConfig>).chainMetadata;
+  };
 
   type NetworkConfig = MinimalNetworkConfig & { apiAddrs: string[] };
   type TargetContext = TargetInfo & { config: NetworkConfig };
@@ -2769,6 +2819,7 @@ export const main = async (
       deployPackage,
       release,
       fetchReleaseByAsset,
+      fetchChainMetadata,
       diff,
       logger,
       installBundle,
