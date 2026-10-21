@@ -8,12 +8,16 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { makeInstall } from '../../src/install.js';
 
+/**
+ * @import {InstallationManager} from '../../src/startInstance.js';
+ */
+
 test('install', async t => {
   const zoe = makeZoeForTest();
 
   let addedInstallation;
 
-  /** @type {import('../../src/startInstance.js').InstallationManager} */
+  /** @type {InstallationManager} */
   // @ts-expect-error mock
   const installationManager = {
     add: (_petname, installation) => {

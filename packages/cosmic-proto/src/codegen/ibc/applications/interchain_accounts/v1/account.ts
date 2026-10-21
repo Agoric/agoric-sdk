@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   BaseAccount,
   type BaseAccountSDKType,
@@ -6,7 +7,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain */
+/**
+ * An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain
+ * @name InterchainAccount
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccount
+ */
 export interface InterchainAccount {
   $typeUrl?: '/ibc.applications.interchain_accounts.v1.InterchainAccount';
   baseAccount?: BaseAccount;
@@ -16,7 +22,12 @@ export interface InterchainAccountProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.v1.InterchainAccount';
   value: Uint8Array;
 }
-/** An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain */
+/**
+ * An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain
+ * @name InterchainAccountSDKType
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccount
+ */
 export interface InterchainAccountSDKType {
   $typeUrl?: '/ibc.applications.interchain_accounts.v1.InterchainAccount';
   base_account?: BaseAccountSDKType;
@@ -29,9 +40,34 @@ function createBaseInterchainAccount(): InterchainAccount {
     accountOwner: '',
   };
 }
+/**
+ * An InterchainAccount is defined as a BaseAccount & the address of the account owner on the controller chain
+ * @name InterchainAccount
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccount
+ */
 export const InterchainAccount = {
   typeUrl:
     '/ibc.applications.interchain_accounts.v1.InterchainAccount' as const,
+  annotations: {
+    'gogoproto.embed': { base_account: 'baseAccount' },
+    typeUrlFromField: { baseAccount: () => BaseAccount },
+  } as const satisfies FieldAnnotationsRecord,
+  aminoType: 'cosmos-sdk/InterchainAccount' as const,
+  is(o: any): o is InterchainAccount {
+    return (
+      o &&
+      (o.$typeUrl === InterchainAccount.typeUrl ||
+        typeof o.accountOwner === 'string')
+    );
+  },
+  isSDK(o: any): o is InterchainAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InterchainAccount.typeUrl ||
+        typeof o.account_owner === 'string')
+    );
+  },
   encode(
     message: InterchainAccount,
     writer: BinaryWriter = BinaryWriter.create(),

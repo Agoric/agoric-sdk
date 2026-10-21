@@ -1,11 +1,11 @@
 {
   "name": "@agoric/sparse-ints",
-  "version": "0.2.2",
+  "version": "0.2.3-pre.0",
   "description": "Share code across vat boundaries",
   "type": "module",
   "main": "src/sparseInts.js",
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11 || ^24.14"
   },
   "scripts": {
     "build": "exit 0",
@@ -13,7 +13,7 @@
     "test:xs": "exit 0",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint:eslint": "yarn run -T eslint ."
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "repository": {
     "type": "git",

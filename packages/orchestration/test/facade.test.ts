@@ -39,10 +39,10 @@ test('calls between flows', async t => {
   const { vt, orchestrateAll } = t.context;
 
   const flows = {
-    outer(orch, ctx, ...recipients) {
+    outer(_orch, ctx, ...recipients) {
       return ctx.peerFlows.inner('Hello', ...recipients);
     },
-    inner(orch, ctx, ...strs) {
+    inner(_orch, _ctx, ...strs) {
       return Promise.resolve(strs.join(' '));
     },
   } as Record<string, OrchestrationFlow<any>>;
@@ -59,10 +59,10 @@ test('context mapping individual flows', async t => {
   const { vt, orchestrateAll } = t.context;
 
   const flows = {
-    outer(orch, ctx, ...recipients) {
+    outer(_orch, ctx, ...recipients) {
       return ctx.peerFlows.inner('Hello', ...recipients);
     },
-    inner(orch, ctx, ...strs) {
+    inner(_orch, _ctx, ...strs) {
       return Promise.resolve(strs.join(' '));
     },
   } as Record<string, OrchestrationFlow<any>>;

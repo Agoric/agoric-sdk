@@ -1,8 +1,8 @@
 /* global globalThis */
 import '@endo/init/debug.js';
 import test from 'ava';
-import fs from 'fs';
-import anylogger from 'anylogger';
+import fs from 'node:fs';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 import main from '../src/main.js';
 

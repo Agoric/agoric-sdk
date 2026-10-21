@@ -1,13 +1,9 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {},
   "include": [
     "src",
     "test",
     "testing",
     "tools"
-  ],
-  "exclude": [
-    "src/vendor/viem/viem-abi.bundle.js",
   ]
 }

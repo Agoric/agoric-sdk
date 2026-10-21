@@ -2,24 +2,26 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import anyTest from 'ava';
-import { spawn as ambientSpawn } from 'child_process';
-import { promises as fsPromises } from 'fs';
+import { spawn as ambientSpawn } from 'node:child_process';
+import { promises as fsPromises } from 'node:fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import path from 'path';
+import path from 'node:path';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
-import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+
+/**
+ * @import {TestFn} from 'ava';
+ */
 
 const importConfig = async configName =>
   new URL(importMetaResolve(`@agoric/vm-config/${configName}`, import.meta.url))
     .pathname;
 
 const test =
-  /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (
-    anyTest
-  );
+  /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (anyTest);
 
 const PROD_CONFIG_FILES = [
   'decentral-main-vaults-config.json',
@@ -35,6 +37,23 @@ const CONFIG_FILES = [
 
 const NON_UPGRADEABLE_VATS = ['pegasus', 'mints'];
 
+// Like `makeAtomicProvider`, but tolerates non-Passable cached values
+// (e.g. Maps from `extractCoreProposalBundles`). Rejected promises are
+// evicted so the next call retries instead of replaying the failure.
+const makeMemoizedPromise = makeFn => {
+  const cache = new Map();
+  return key => {
+    if (!cache.has(key)) {
+      const p = makeFn(key).catch(err => {
+        cache.delete(key);
+        throw err;
+      });
+      cache.set(key, p);
+    }
+    return cache.get(key);
+  };
+};
+
 /**
  * @param {string} bin
  * @param {{ spawn: typeof import('child_process').spawn }} io
@@ -42,7 +61,7 @@ const NON_UPGRADEABLE_VATS = ['pegasus', 'mints'];
 export const pspawn =
   (bin, { spawn }) =>
   (args = [], opts = {}) => {
-    /** @type {ReturnType<typeof import('child_process').spawn> | undefined} */
+    /** @type {ReturnType<typeof spawn> | undefined} */
     let child;
     const exit = new Promise((resolve, reject) => {
       // console.debug('spawn', bin, args, { cwd: makefileDir, ...opts });
@@ -63,18 +82,48 @@ const makeTestContext = async () => {
   const pathname = new URL(import.meta.url).pathname;
   const dirname = path.dirname(pathname);
   const pathResolve = (...ps) => path.join(dirname, ...ps);
+  const configPaths = new Map();
 
-  const cacheDir = pathResolve('..', 'bundles');
-  const bundleCache = await provideBundleCache(cacheDir, {}, s => import(s));
+  const bundleCache = await unsafeSharedBundleCache;
 
-  const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
+  const vizTool = pathResolve('..', 'scripts', 'authorityViz.js');
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });
+
+  const getConfigPath = makeMemoizedPromise(async configName => {
+    const fullPath = await importConfig(configName);
+    configPaths.set(configName, fullPath);
+    return fullPath;
+  });
+  const getConfigText = makeMemoizedPromise(async configName =>
+    fsPromises.readFile(await getConfigPath(configName), 'utf-8'),
+  );
+  const getProdConfig = makeMemoizedPromise(async configName => {
+    const config = await loadSwingsetConfigFile(
+      await getConfigPath(configName),
+    );
+    if (!config) {
+      throw Error(`missing config ${configName}`);
+    }
+    return config;
+  });
+  const getProposalBundles = makeMemoizedPromise(async configName => {
+    const config = await getProdConfig(configName);
+    const { coreProposals } = /** @type {any} */ (config);
+    const proposals = coreProposals || [];
+    return extractCoreProposalBundles(proposals);
+  });
+  const checkedBundles = new Map();
 
   return {
     bundleCache,
-    cacheDir,
-    pathResolve,
+    checkedBundles,
     basename: path.basename,
+    configPaths,
+    getConfigPath,
+    getConfigText,
+    getProdConfig,
+    getProposalBundles,
+    pathResolve,
     runViz,
   };
 };
@@ -87,7 +136,7 @@ test.before(async t => {
 test('Bootstrap SwingSet config file syntax', async t => {
   await Promise.all(
     CONFIG_FILES.map(async f => {
-      const txt = await fsPromises.readFile(await importConfig(f), 'utf-8');
+      const txt = await t.context.getConfigText(f);
       const config = harden(JSON.parse(txt));
       t.notThrows(() => mustMatch(config, ssShape.SwingSetConfig), f);
     }),
@@ -112,7 +161,7 @@ const hashCode = s => {
 };
 
 const checkBundle = async (t, sourceSpec, seen, name, configSpec) => {
-  const { bundleCache, basename } = t.context;
+  const { bundleCache, basename, checkedBundles } = t.context;
 
   const targetName = `${hashCode(sourceSpec)}-${basename(sourceSpec, '.js')}`;
 
@@ -125,17 +174,27 @@ const checkBundle = async (t, sourceSpec, seen, name, configSpec) => {
 
   if (!seen.has(targetName)) {
     seen.add(targetName);
+    if (!checkedBundles.has(targetName)) {
+      checkedBundles.set(
+        targetName,
+        (async () => {
+          t.log(configSpec, ': check bundle:', name, basename(sourceSpec));
+          const meta = await bundleCache.validateOrAdd(
+            sourceSpec,
+            targetName,
+            noLog,
+          );
+          t.truthy(meta, name);
 
-    t.log(configSpec, ': check bundle:', name, basename(sourceSpec));
-    await bundleCache.load(sourceSpec, targetName, noLog);
-    const meta = await bundleCache.validate(targetName);
-    t.truthy(meta, name);
-
-    for (const item of meta.contents) {
-      if (item.relativePath.includes('magic-cookie-test-only')) {
-        t.fail(`${configSpec} bundle ${name}: ${item.relativePath}`);
-      }
+          for (const item of meta.contents) {
+            if (item.relativePath.includes('magic-cookie-test-only')) {
+              t.fail(`${configSpec} bundle ${name}: ${item.relativePath}`);
+            }
+          }
+        })(),
+      );
     }
+    await checkedBundles.get(targetName);
   }
 };
 
@@ -144,43 +203,39 @@ test('no test-only code is in production configs', async t => {
 
   const seen = new Set();
 
-  for await (const configSpec of PROD_CONFIG_FILES) {
-    t.log('checking config', configSpec);
-    const fullPath = await importConfig(configSpec);
-    const config = await loadSwingsetConfigFile(fullPath);
-    if (!config) throw t.truthy(config, configSpec); // if/throw refines type
-    const { bundles } = config;
-    if (!bundles) throw t.truthy(bundles, configSpec);
+  await Promise.all(
+    PROD_CONFIG_FILES.map(async configSpec => {
+      t.log('checking config', configSpec);
+      const config = await t.context.getProdConfig(configSpec);
+      const { bundles } = config;
+      if (!bundles) throw t.truthy(bundles, configSpec);
 
-    for await (const [name, spec] of entries(bundles)) {
-      if (!('sourceSpec' in spec)) throw t.fail();
+      await Promise.all(
+        entries(bundles).map(async ([name, spec]) => {
+          if (!('sourceSpec' in spec)) throw t.fail();
 
-      await checkBundle(t, spec.sourceSpec, seen, name, configSpec);
-    }
-  }
+          await checkBundle(t, spec.sourceSpec, seen, name, configSpec);
+        }),
+      );
+    }),
+  );
 });
 
 test('no test-only code is in production proposals', async t => {
   const seen = new Set();
 
-  for await (const configSpec of PROD_CONFIG_FILES) {
-    t.log('checking config', configSpec);
-    const getProposals = async () => {
-      const fullPath = await importConfig(configSpec);
-      const config = await loadSwingsetConfigFile(fullPath);
-      if (!config) throw t.truthy(config, configSpec); // if/throw refines type
-      const { coreProposals } = /** @type {any} */ (config);
-      return coreProposals || [];
-    };
-
-    const coreProposals = await getProposals();
-    const { bundles } = await extractCoreProposalBundles(coreProposals);
-
-    const { entries } = Object;
-    for await (const [name, spec] of entries(bundles)) {
-      await checkBundle(t, spec.sourceSpec, seen, name, configSpec);
-    }
-  }
+  await Promise.all(
+    PROD_CONFIG_FILES.map(async configSpec => {
+      t.log('checking config', configSpec);
+      const { bundles } = await t.context.getProposalBundles(configSpec);
+      const { entries } = Object;
+      await Promise.all(
+        entries(bundles).map(async ([name, spec]) =>
+          checkBundle(t, spec.sourceSpec, seen, name, configSpec),
+        ),
+      );
+    }),
+  );
 });
 
 test('bootstrap permit visualization snapshot', async t => {

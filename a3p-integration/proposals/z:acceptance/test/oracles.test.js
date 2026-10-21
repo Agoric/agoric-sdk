@@ -1,4 +1,3 @@
-/* eslint-env node */
 import test from 'ava';
 
 import {

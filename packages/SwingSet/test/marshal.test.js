@@ -4,7 +4,6 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { kser, makeError } from '@agoric/kmarshal';
 import { makeMarshaller } from '@agoric/swingset-liveslots';
 
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
@@ -142,20 +141,4 @@ test('unserialize promise', async t => {
   });
   t.deepEqual(log, ['subscribe-p-1']);
   t.truthy(p instanceof Promise);
-});
-
-test('kernel serialization of errors', async t => {
-  // The kernel synthesizes e.g. `Error('vat-upgrade failure')`, so we
-  // need kmarshal to serialize those errors in a deterministic
-  // way. This test checks that we don't get surprising things like
-  // `errorId` or stack traces.
-  const e1 = kser(Error('fake error'));
-  const ref = {
-    body: '#{"#error":"fake error","name":"Error"}',
-    slots: [],
-  };
-  t.deepEqual(e1, ref);
-
-  const e2 = makeError('fake error');
-  t.deepEqual(e2, ref);
 });

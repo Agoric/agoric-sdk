@@ -3,11 +3,8 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
 import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
-import {
-  loadBasedir,
-  initializeSwingset,
-  makeSwingsetController,
-} from '../src/index.js';
+import { loadBasedir, makeSwingsetController } from '../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
 
 async function main(basedir, argv) {
   const config = await loadBasedir(basedir);

@@ -2,6 +2,10 @@ import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 
+/**
+ * @import {Device} from '../../types-external.js';
+ */
+
 function sanitize(data) {
   if (data === undefined) {
     return undefined;
@@ -63,4 +67,4 @@ export function buildRootDeviceNode(tools) {
   });
 }
 
-/** @typedef {import('../../types-external.js').Device<ReturnType<typeof buildRootDeviceNode>>} BridgeDevice */
+/** @typedef {Device<ReturnType<typeof buildRootDeviceNode>>} BridgeDevice */

@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:1d4b013b895602cdb0193e1e649dff1a5da4917f9930f7129cd17866b08d3a54
+package:
+  name: "@cosmology/ast"
+  version: 2.2.0
+upstream:
+  repo: hyperweb-io/telescope
+  issue:
+  pr:
+status: localonly
+notes:
+createdAt: 2026-04-16T18:00:49.978Z
+updatedAt: 2026-04-16T18:00:49.978Z

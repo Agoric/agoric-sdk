@@ -24,9 +24,30 @@ export function assertValidVatstoreKey(key) {
  * @import {VatDeliveryStartVat} from '@agoric/swingset-liveslots'
  * @import {VatDeliveryStopVat} from '@agoric/swingset-liveslots'
  * @import {VatDeliveryBringOutYourDead} from '@agoric/swingset-liveslots'
- *
  * @import {VatOneResolution} from '@agoric/swingset-liveslots'
+ * @import {KernelDeliveryObject} from '../types-external.js'
+ * @import {KernelDeliveryMessage} from '../types-external.js'
+ * @import {KernelDeliveryOneNotify} from '../types-external.js'
+ * @import {SwingSetCapData} from '../types-external.js'
+ * @import {KernelSyscallObject} from '../types-external.js'
+ * @import {KernelSyscallResult} from '../types-external.js'
+ * @import {KernelSyscallSend} from '../types-external.js'
+ * @import {KernelSyscallExit} from '../types-external.js'
+ * @import {KernelSyscallVatstoreGet} from '../types-external.js'
+ * @import {KernelSyscallVatstoreSet} from '../types-external.js'
+ * @import {KernelSyscallVatstoreGetNextKey} from '../types-external.js'
+ * @import {KernelSyscallVatstoreDelete} from '../types-external.js'
+ * @import {KernelSyscallDropImports} from '../types-external.js'
+ * @import {KernelSyscallRetireImports} from '../types-external.js'
+ * @import {KernelSyscallRetireExports} from '../types-external.js'
+ * @import {KernelSyscallInvoke} from '../types-external.js'
+ * @import {KernelSyscallSubscribe} from '../types-external.js'
+ * @import {KernelSyscallResolve} from '../types-external.js'
+ * @import {KernelOneResolution} from '../types-external.js'
+ * @import {VatID} from '../types-internal.js'
+ * @import {KernelKeeper} from './state/kernelKeeper.js'
  *
+ * @import {KernelSyscallAbandonExports} from '../types-external.js';
  */
 
 /**
@@ -56,6 +77,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     const inputSlots = msg.methargs.slots.map(slot =>
       mapKernelSlotToVatSlot(slot),
     );
+    /** @type {string | null} */
     let resultSlot = null;
     if (msg.result) {
       insistKernelType('promise', msg.result);
@@ -297,6 +319,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       mapVatSlotToKernelSlot(slot),
     );
     const kernelArgs = harden({ ...methargs, slots: kernelSlots });
+    /** @type {string | null} */
     let result = null;
     if (resultSlot) {
       insistVatType('promise', resultSlot);
@@ -475,7 +498,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   /**
    *
    * @param {string[]} vrefs
-   * @returns {import('../types-external.js').KernelSyscallAbandonExports}
+   * @returns {KernelSyscallAbandonExports}
    */
   function translateAbandonExports(vrefs) {
     Array.isArray(vrefs) || Fail`abandonExports() given non-Array ${vrefs}`;
@@ -719,3 +742,7 @@ export function makeVatTranslators(vatID, kernelKeeper) {
     kernelSyscallResultToVatSyscallResult: mKSR(vatID, kernelKeeper),
   });
 }
+
+/**
+ * @typedef { ReturnType<typeof makeVatTranslators> } VatTranslators
+ */

@@ -48,3 +48,5 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     },
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} NetworkVat */

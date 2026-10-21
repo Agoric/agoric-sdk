@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import {
   annihilate,
   getBaggage,
@@ -9,10 +11,13 @@ import { makeDurableZone } from '../durable.js';
 import { makeHeapZone } from '../heap.js';
 import { makeVirtualZone } from '../virtual.js';
 
-/** @import {Zone} from '../src/index.js' */
+/**
+ * @import {Zone} from '../src/index.js'
+ * @import {Assertions} from 'ava';
+ */
 
 /**
- * @param {import('ava').Assertions} t
+ * @param {Assertions} t
  * @param {Zone} rootZone
  */
 const testOnce = (t, rootZone) => {

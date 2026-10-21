@@ -22,27 +22,31 @@ jobs:
       matrix:
         mode: [no-failure]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
         with:
-          go-version: '1.22'
+          go-version: '1.24'
           cache: false
           check-latest: true
         # https://github.com/golangci/golangci-lint/issues/3862#issuecomment-1572973588
+
       - run: echo "GOROOT=$(go env GOROOT)" >> $GITHUB_ENV
+
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v9
         with:
           version: latest
+          # golangci-lint v2 (required by golangci-lint-action v7+) removed
+          # the --out-format and --exclude flags.
           args: --timeout=8m
-            --out-format=colored-line-number
-            ${{ matrix.mode == 'no-deprecations' && '--exclude=^SA1019' || '' }}
             ${{ matrix.mode == 'no-failure' && '--issues-exit-code=0' || '' }}
           # for pull requests, show only new issues
           # Too bad it's incompatible with working-directory.
           # only-new-issues: true
           only-new-issues: false
           working-directory: ./golang/cosmos
+
       - name: forbid %w error-wrapping format specifier
         run: |
           set -e

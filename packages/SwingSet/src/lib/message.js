@@ -2,7 +2,8 @@ import { assert, Fail } from '@endo/errors';
 import { insistCapData } from './capdata.js';
 
 /**
- * @import {VatSyscallObject, VatSyscallResult, VatDeliveryResult} from '@agoric/swingset-liveslots';
+ * @import {VatSyscallObject, VatSyscallResult, VatDeliveryObject, VatDeliveryResult} from '@agoric/swingset-liveslots';
+ * @import {Message} from '../types-external.js';
  */
 
 /**
@@ -16,7 +17,7 @@ import { insistCapData } from './capdata.js';
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
- * @returns {asserts message is import('../types-external.js').Message}
+ * @returns {asserts message is Message}
  */
 
 export function insistMessage(message) {

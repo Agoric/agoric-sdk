@@ -10,10 +10,19 @@ import {
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 
 /**
- * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {StreamCell} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
+ */
+
+/**
+ * @typedef {{
+ *   code?: number;
+ *   codespace?: string;
+ *   height?: string | number;
+ *   log?: string;
+ *   value?: string;
+ * }} AbciQueryResponse
  */
 
 const kindToRpc = /** @type {const} */ ({
@@ -56,6 +65,12 @@ export const makeAbciQuery = (
 };
 
 /**
+ * @typedef {{ blockHeight?: bigint, log?: string }} QueryMetaResponseBase
+ * @typedef {QueryMetaResponseBase & { result: QueryChildrenResponse }} QueryChildrenMetaResponse
+ * @typedef {QueryMetaResponseBase & { result: QueryDataResponse }} QueryDataMetaResponse
+ */
+
+/**
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
  * @param {MinimalNetworkConfig} config
@@ -76,13 +91,25 @@ export const makeVStorage = ({ fetch }, config) => {
     const url =
       config.rpcAddrs[0] + makeAbciQuery(vstoragePath, { kind, height });
     const res = await fetch(url, { keepalive: true });
+    // `res.ok === false` (not just falsy) so a minimal fetch-like mock
+    // that omits `ok` entirely still falls through to `res.json()` below.
+    if (res.ok === false) {
+      // e.g. an RPC-provider proxy's own 429/5xx, not a CometBFT ABCI
+      // response — surface `status` so callers can distinguish a retryable
+      // transport error from the JSON-parseable ABCI-level errors handled
+      // below.
+      /** @type {any} */
+      const err = Error(`HTTP ${res.status} querying ${url}`);
+      err.status = res.status;
+      throw err;
+    }
     return res.json();
   };
 
   /**
    * Make a vstorage Children or Data query, returning the decoded result along
    * with response metadata derived from fields documented at
-   * https://docs.cometbft.com/v1.0/spec/abci/abci++_methods#query (for
+   * https://docs.cometbft.com/v0.38/spec/abci/abci++_methods#query (for
    * successful responses, `log` and `height` [as `blockHeight`], and for error
    * responses, `codespace` and `code`).
    *
@@ -91,7 +118,7 @@ export const makeVStorage = ({ fetch }, config) => {
    * @param {object} [opts]
    * @param {T} [opts.kind]
    * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
-   * @returns {Promise<{ blockHeight?: bigint, log?: string, result: T extends 'children' ? QueryChildrenResponse : QueryDataResponse }>}
+   * @returns {Promise<T extends 'children' ? QueryChildrenMetaResponse : QueryDataMetaResponse>}
    */
   const readStorageMeta = async (
     path = 'published',
@@ -107,7 +134,12 @@ export const makeVStorage = ({ fetch }, config) => {
     try {
       data = await getVstorageJson(path, { kind, height });
     } catch (err) {
-      throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
+      /** @type {any} */
+      const wrapped = Error(`cannot read ${kind} of ${path}: ${err.message}`);
+      if (err.status !== undefined) {
+        wrapped.status = err.status;
+      }
+      throw wrapped;
     }
 
     const {
@@ -124,14 +156,18 @@ export const makeVStorage = ({ fetch }, config) => {
     }
 
     const { value: b64Value } = response;
+    if (typeof b64Value !== 'string') {
+      throw Error(`missing value reading ${kind} of ${path}`);
+    }
     const result = codec.response.decode(decodeBase64(b64Value));
-    return {
+    /** @type {QueryMetaResponseBase} */
+    const metaResponseBase = {
       blockHeight:
         response.height === undefined ? undefined : BigInt(response.height),
       log: response.log,
-      // @ts-expect-error cast
-      result,
     };
+    // @ts-expect-error cast
+    return { ...metaResponseBase, result };
   };
 
   /**
@@ -144,6 +180,7 @@ export const makeVStorage = ({ fetch }, config) => {
    */
   const readStorage = async (path = 'published', opts = {}) => {
     const respWithMetadata = await readStorageMeta(path, opts);
+    // @ts-expect-error cast
     return respWithMetadata.result;
   };
 

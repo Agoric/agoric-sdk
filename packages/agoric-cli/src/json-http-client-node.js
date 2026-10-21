@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-env node */
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();

@@ -1,9 +1,15 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../json-safe.js';
+/**
+ * @name MsgDepositForBurn
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurn
+ */
 export interface MsgDepositForBurn {
   from: string;
   amount: string;
@@ -15,6 +21,11 @@ export interface MsgDepositForBurnProtoMsg {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurn';
   value: Uint8Array;
 }
+/**
+ * @name MsgDepositForBurnSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurn
+ */
 export interface MsgDepositForBurnSDKType {
   from: string;
   amount: string;
@@ -22,6 +33,11 @@ export interface MsgDepositForBurnSDKType {
   mint_recipient: Uint8Array;
   burn_token: string;
 }
+/**
+ * @name MsgDepositForBurnResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnResponse
+ */
 export interface MsgDepositForBurnResponse {
   nonce: bigint;
 }
@@ -29,9 +45,19 @@ export interface MsgDepositForBurnResponseProtoMsg {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgDepositForBurnResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnResponse
+ */
 export interface MsgDepositForBurnResponseSDKType {
   nonce: bigint;
 }
+/**
+ * @name MsgDepositForBurnWithCaller
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCaller
+ */
 export interface MsgDepositForBurnWithCaller {
   from: string;
   amount: string;
@@ -44,6 +70,11 @@ export interface MsgDepositForBurnWithCallerProtoMsg {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller';
   value: Uint8Array;
 }
+/**
+ * @name MsgDepositForBurnWithCallerSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCaller
+ */
 export interface MsgDepositForBurnWithCallerSDKType {
   from: string;
   amount: string;
@@ -52,6 +83,11 @@ export interface MsgDepositForBurnWithCallerSDKType {
   burn_token: string;
   destination_caller: Uint8Array;
 }
+/**
+ * @name MsgDepositForBurnWithCallerResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCallerResponse
+ */
 export interface MsgDepositForBurnWithCallerResponse {
   nonce: bigint;
 }
@@ -59,6 +95,11 @@ export interface MsgDepositForBurnWithCallerResponseProtoMsg {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCallerResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgDepositForBurnWithCallerResponseSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCallerResponse
+ */
 export interface MsgDepositForBurnWithCallerResponseSDKType {
   nonce: bigint;
 }
@@ -71,8 +112,41 @@ function createBaseMsgDepositForBurn(): MsgDepositForBurn {
     burnToken: '',
   };
 }
+/**
+ * @name MsgDepositForBurn
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurn
+ */
 export const MsgDepositForBurn = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurn' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
+  aminoType: 'cctp/DepositForBurn' as const,
+  is(o: any): o is MsgDepositForBurn {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurn.typeUrl ||
+        (typeof o.from === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.destinationDomain === 'number' &&
+          (o.mintRecipient instanceof Uint8Array ||
+            typeof o.mintRecipient === 'string') &&
+          typeof o.burnToken === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgDepositForBurnSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurn.typeUrl ||
+        (typeof o.from === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.destination_domain === 'number' &&
+          (o.mint_recipient instanceof Uint8Array ||
+            typeof o.mint_recipient === 'string') &&
+          typeof o.burn_token === 'string'))
+    );
+  },
   encode(
     message: MsgDepositForBurn,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -179,8 +253,27 @@ function createBaseMsgDepositForBurnResponse(): MsgDepositForBurnResponse {
     nonce: BigInt(0),
   };
 }
+/**
+ * @name MsgDepositForBurnResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnResponse
+ */
 export const MsgDepositForBurnResponse = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnResponse' as const,
+  is(o: any): o is MsgDepositForBurnResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnResponse.typeUrl ||
+        typeof o.nonce === 'bigint')
+    );
+  },
+  isSDK(o: any): o is MsgDepositForBurnResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnResponse.typeUrl ||
+        typeof o.nonce === 'bigint')
+    );
+  },
   encode(
     message: MsgDepositForBurnResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -261,8 +354,45 @@ function createBaseMsgDepositForBurnWithCaller(): MsgDepositForBurnWithCaller {
     destinationCaller: new Uint8Array(),
   };
 }
+/**
+ * @name MsgDepositForBurnWithCaller
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCaller
+ */
 export const MsgDepositForBurnWithCaller = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
+  aminoType: 'cctp/DepositForBurnWithCaller' as const,
+  is(o: any): o is MsgDepositForBurnWithCaller {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnWithCaller.typeUrl ||
+        (typeof o.from === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.destinationDomain === 'number' &&
+          (o.mintRecipient instanceof Uint8Array ||
+            typeof o.mintRecipient === 'string') &&
+          typeof o.burnToken === 'string' &&
+          (o.destinationCaller instanceof Uint8Array ||
+            typeof o.destinationCaller === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgDepositForBurnWithCallerSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnWithCaller.typeUrl ||
+        (typeof o.from === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.destination_domain === 'number' &&
+          (o.mint_recipient instanceof Uint8Array ||
+            typeof o.mint_recipient === 'string') &&
+          typeof o.burn_token === 'string' &&
+          (o.destination_caller instanceof Uint8Array ||
+            typeof o.destination_caller === 'string')))
+    );
+  },
   encode(
     message: MsgDepositForBurnWithCaller,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -396,8 +526,27 @@ function createBaseMsgDepositForBurnWithCallerResponse(): MsgDepositForBurnWithC
     nonce: BigInt(0),
   };
 }
+/**
+ * @name MsgDepositForBurnWithCallerResponse
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.MsgDepositForBurnWithCallerResponse
+ */
 export const MsgDepositForBurnWithCallerResponse = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCallerResponse' as const,
+  is(o: any): o is MsgDepositForBurnWithCallerResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnWithCallerResponse.typeUrl ||
+        typeof o.nonce === 'bigint')
+    );
+  },
+  isSDK(o: any): o is MsgDepositForBurnWithCallerResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDepositForBurnWithCallerResponse.typeUrl ||
+        typeof o.nonce === 'bigint')
+    );
+  },
   encode(
     message: MsgDepositForBurnWithCallerResponse,
     writer: BinaryWriter = BinaryWriter.create(),

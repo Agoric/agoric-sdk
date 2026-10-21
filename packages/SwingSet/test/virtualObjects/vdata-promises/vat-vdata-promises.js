@@ -1,9 +1,9 @@
-/* global VatData */
+/* global globalThis */
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 
 // import { makeScalarBigMapStore } from '@agoric/vat-data';
-const { makeScalarBigMapStore } = VatData;
+const { makeScalarBigMapStore } = /** @type {any} */ (globalThis).VatData;
 
 export function buildRootObject() {
   const vc = makeScalarBigMapStore('vc');

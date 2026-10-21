@@ -2,6 +2,7 @@
  * @file Stake BLD contract
  */
 import { makeTracer } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
@@ -13,6 +14,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import fetchedChainInfo from '../fetched-chain-info.js';
 import { makeZoeTools } from '../utils/zoe-tools.js';
+import { prepareProgressTracker } from '../utils/progress.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -20,6 +22,10 @@ import { makeZoeTools } from '../utils/zoe-tools.js';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ZCF} from '@agoric/zoe';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('StakeBld');
@@ -29,20 +35,28 @@ const trace = makeTracer('StakeBld');
  * @param {{
  *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
- *   marshaller: Marshaller;
- *   storageNode: StorageNode;
+ *   marshaller: Remote<Marshaller>;
+ *   storageNode: Remote<StorageNode>;
  *   timerService: TimerService;
  * }} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
 
+  const { marshaller: remoteMarshaller } = privateArgs;
+  //  withOrchestration() provides this but this contract shows how to use orchestration without that
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
   const vowTools = prepareVowTools(zone.subZone('vows'));
+  const makeProgressTracker = await prepareProgressTracker(
+    zone.subZone('orchestration'),
+    { vowTools },
+  );
 
   const chainHub = makeChainHub(
     zone.subZone('chainHub'),
@@ -55,6 +69,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     {
+      makeProgressTracker,
       makeRecorderKit,
       zcf,
       timerService,

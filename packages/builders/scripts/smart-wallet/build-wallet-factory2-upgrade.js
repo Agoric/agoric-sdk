@@ -1,13 +1,18 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
 /**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/**
  * @file
  *   `agoric run scripts/smart-wallet/build-wallet-factory2-upgrade.js`
  * produces a proposal and permit file, as well as the necessary bundles. It
  * also prints helpful instructions for copying the files and installing them.
  */
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     sourceSpec:
@@ -22,7 +27,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
     ],
   });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('upgrade-wallet-factory', defaultProposalBuilder);

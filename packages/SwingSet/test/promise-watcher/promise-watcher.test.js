@@ -1,14 +1,12 @@
-import process from 'process';
-
-import { handleUnhandledRejections } from './unhandledRejectionDetector.js';
-
+// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
-import { assert } from '@endo/errors';
-// eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { assert } from '@endo/errors';
+import process from 'node:process';
+import { makeSwingsetController } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
+import { handleUnhandledRejections } from './unhandledRejectionDetector.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;

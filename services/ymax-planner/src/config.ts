@@ -1,23 +1,77 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 /// <reference types="ses" />
-import { Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
-const GCP_PROJECT_ID = 'simulationlab';
-const GCP_SECRET_NAME = 'YMAX_CONTROL_MNEMONIC';
+import { AxelarChainIdMap } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import * as AgoricClientUtils from '@agoric/client-utils';
+import { objectMap } from '@agoric/internal';
+import type { ClusterName } from '@agoric/internal';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import type { AutoClaimConfig } from './auto.ts';
+import {
+  GAS_STATE_WINDOW_DURATIONS,
+  GAS_STATE_WINDOW_METRICS,
+} from './gas-estimation.ts';
+import { ONEINCH_API_BASE_URL } from './oneinch.ts';
+import { parseGraphqlEndpoints } from './utils.ts';
+
+export const DEFAULT_AUTO_CLAIM_MAX_GAS_COST_SPIKE = '1.5:P30D:p50';
+export const DEFAULT_AUTO_CLAIM_MAX_SLIPPAGE_BPS = 200;
+export const DEFAULT_AUTO_CLAIM_MIN_REWARD_PER_GAS = 2;
+
+export const DEFAULT_AUTO_REBALANCE_DRIFT_BPS = 100n;
+export const DEFAULT_AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC = 25_000_000n;
+export const DEFAULT_AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC = 25_000_000n;
+
+export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
+  harden({
+    local: AgoricClientUtils.LOCAL_CONFIG_KEY,
+    testnet: 'devnet',
+    mainnet: 'main',
+  });
+
+/** `maxRetries` is a count; all other numbers are in milliseconds. */
+export type RequestLimits = {
+  timeout: number;
+  maxRetries: number;
+  backoffBase: number;
+  maxBackoff: number;
+};
+
+export const FETCH_HEADERS = harden({
+  'User-Agent': 'Agoric-YMax-Planner/1.0.0',
+});
 
 export interface YmaxPlannerConfig {
+  readonly clusterName: ClusterName;
+  readonly contractInstance: 'ymax0' | 'ymax1';
   readonly mnemonic: string;
-  readonly alchemy: string;
-  readonly spectrum: {
-    readonly apiUrl?: string;
-    readonly timeout: number;
-    readonly retries: number;
+  readonly alchemyApiKey: string;
+  readonly requestLimits: Partial<RequestLimits>;
+  readonly spectrumBlockchainEndpoints: string[];
+  readonly agoricNetworkSpec: string;
+  readonly axelar: {
+    readonly apiUrl: string;
+    readonly chainIdMap: Record<AxelarChain, string>;
   };
-  readonly cosmosRest: {
-    readonly agoricNetwork: string;
-    readonly timeout: number;
-    readonly retries: number;
+  readonly oneInch: {
+    readonly apiUrl: string;
+    readonly apiKey?: string;
+  };
+  readonly sqlite: {
+    readonly dbPath: string;
+  };
+  readonly yds: {
+    readonly url?: string;
+    readonly apiKey?: string;
+  };
+  readonly autoClaim: AutoClaimConfig;
+  readonly autoRebalance: {
+    // TODO: `driftBps` should probably be of type number rather than bigint.
+    readonly driftBps: bigint;
+    readonly driftMinMoveUusdc: bigint;
+    readonly cashMinMoveUusdc: bigint;
   };
 }
 
@@ -26,106 +80,258 @@ export type SecretManager = Pick<
   'accessSecretVersion'
 >;
 
-const getMnemonicFromGCP = async (client: SecretManager): Promise<string> => {
-  const name = `projects/${GCP_PROJECT_ID}/secrets/${GCP_SECRET_NAME}/versions/latest`;
+const getMnemonicFromGCP = async (
+  client: SecretManager,
+  projectId: string,
+  secretName: string,
+): Promise<string> => {
+  const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
 
   const [version] = await client.accessSecretVersion({ name });
-  const payload = version.payload?.data?.toString();
-
-  if (!payload) {
-    throw new Error('Missing secret payload');
-  }
+  const payload =
+    version.payload?.data?.toString() ||
+    Fail`GCP accessSecretVersion response missing payload data`;
 
   return payload;
 };
 
-const parsePositiveInteger = (
-  env: Record<string, string | undefined>,
-  defaultValue: number,
+// XXX: Similar to @endo/cli `parseNumber`, candidate for @agoric/internal.
+const nonnegativeNumberFromString = (
+  value: string,
   fieldName: string,
 ): number => {
-  const value = env[fieldName];
-  if (value === undefined) return defaultValue;
-
-  const parsed = parseInt(value, 10);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw Fail`${fieldName} must be a positive integer, got: ${value}`;
+  const number = /[0-9]/.test(value)
+    ? Number(value.replace(/([0-9a-f])_([0-9a-f])(_(?=[0-9a-f]))?/gi, '$1$2'))
+    : NaN;
+  if (!(number >= 0)) {
+    throw Fail`${q(fieldName)} must be a non-negative number, got: ${value}`;
   }
-  return parsed;
+  return number;
+};
+
+// XXX: Similar to @endo/cli `parseNumber`, candidate for @agoric/internal.
+const positiveIntegerFromString = (
+  value: string,
+  fieldName: string,
+): number => {
+  const number = /[0-9]/.test(value)
+    ? Number(value.replace(/([0-9a-f])_([0-9a-f])(_(?=[0-9a-f]))?/gi, '$1$2'))
+    : NaN;
+  if (!Number.isInteger(number) || number <= 0) {
+    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
+  }
+  return number;
+};
+
+const parseNonnegativeNumber = (
+  env: Record<string, string | undefined>,
+  fieldName: string,
+  defaultValue: number,
+): number => {
+  const value = env[fieldName]?.trim();
+  return value === undefined
+    ? defaultValue
+    : nonnegativeNumberFromString(value, fieldName);
+};
+
+const parsePositiveInteger = (
+  env: Record<string, string | undefined>,
+  fieldName: string,
+  defaultValue: number,
+): number => {
+  const value = env[fieldName]?.trim();
+  return value === undefined
+    ? defaultValue
+    : positiveIntegerFromString(value, fieldName);
+};
+
+const parsePositiveBigint = (
+  env: Record<string, string | undefined>,
+  fieldName: string,
+  defaultValue: bigint,
+): bigint => {
+  const value = env[fieldName]?.trim();
+  return value === undefined
+    ? defaultValue
+    : BigInt(positiveIntegerFromString(value, fieldName));
 };
 
 const validateRequired = (
   env: Record<string, string | undefined>,
   fieldName: string,
 ): string => {
-  const value = env[fieldName];
-  if (!value || value.trim() === '') {
-    throw Fail`${fieldName} is required but not provided`;
-  }
-  return value.trim();
+  const value = env[fieldName]?.trim();
+  return value || Fail`${q(fieldName)} is required`;
 };
 
-const validateOptionalUrl = (
+const validateUrl = (
   env: Record<string, string | undefined>,
   fieldName: string,
+  defaultValue: string | undefined,
 ): string | undefined => {
-  const value = env[fieldName];
-  if (!value || value.trim() === '') return undefined;
+  const value = env[fieldName]?.trim();
+  if (!value) return defaultValue;
 
-  const trimmed = value.trim();
   try {
-    void new URL(trimmed);
-    return trimmed;
+    void new URL(value);
+    return value;
   } catch {
-    throw Fail`${fieldName} must be a valid URL, got: ${value}`;
+    throw Fail`${q(fieldName)} must be a valid URL, got: ${value}`;
   }
 };
 
 export const loadConfig = async (
   env: Record<string, string | undefined>,
-  secretManager: SecretManager,
+  secretManager: SecretManager = new SecretManagerServiceClient(),
 ): Promise<YmaxPlannerConfig> => {
-  try {
-    const mnemonic = env.MNEMONIC
-      ? env.MNEMONIC.trim()
-      : await getMnemonicFromGCP(secretManager);
-    if (!mnemonic) {
-      throw new Error('Mnemonic is required but not provided');
-    }
-
-    const config: YmaxPlannerConfig = harden({
-      mnemonic,
-      alchemy: validateRequired(env, 'ALCHEMY_API_KEY'),
-      spectrum: {
-        apiUrl: validateOptionalUrl(env, 'SPECTRUM_API_URL'),
-        timeout: parsePositiveInteger(env, 30000, 'SPECTRUM_API_TIMEOUT'),
-        retries: parsePositiveInteger(env, 3, 'SPECTRUM_API_RETRIES'),
-      },
-      cosmosRest: {
-        agoricNetwork: env.AGORIC_NET?.trim() || 'local',
-        timeout: parsePositiveInteger(env, 15000, 'COSMOS_REST_TIMEOUT'),
-        retries: parsePositiveInteger(env, 3, 'COSMOS_REST_RETRIES'),
-      },
-    });
-
-    return config;
-  } catch (error) {
-    throw Error(`Configuration validation failed: ${error.message}`);
+  // CLUSTER and AGORIC_NET can each be derived from the other (e.g., CLUSTER
+  // "testnet" implies default AGORIC_NET "devnet", and an AGORIC_NET
+  // subdomain other than "local" or "main" implies default CLUSTER "testnet".
+  let clusterName = env.CLUSTER as ClusterName;
+  !clusterName ||
+    Object.hasOwn(defaultAgoricNetworkSpecForCluster, clusterName) ||
+    Fail`CLUSTER must be one of ${q(Object.keys(defaultAgoricNetworkSpecForCluster))}`;
+  const agoricNetworkSpec =
+    env.AGORIC_NET?.trim() ||
+    defaultAgoricNetworkSpecForCluster[clusterName || 'local'] ||
+    Fail`Could not default AGORIC_NET`;
+  const { subdomain: agoricNetSubdomain } =
+    AgoricClientUtils.parseNetworkSpec(agoricNetworkSpec);
+  if (agoricNetSubdomain === AgoricClientUtils.LOCAL_CONFIG_KEY) {
+    clusterName ||= 'local';
+  } else if (agoricNetSubdomain === 'main') {
+    clusterName ||= 'mainnet';
+  } else {
+    clusterName ||= 'testnet';
   }
+
+  const gcpProjectId = env.GCP_PROJECT_ID?.trim() || 'simulationlab';
+  const gcpSecretName = env.GCP_SECRET_NAME?.trim() || 'YMAX_CONTROL_MNEMONIC';
+  const mnemonic =
+    env.MNEMONIC?.trim() ||
+    (await getMnemonicFromGCP(secretManager, gcpProjectId, gcpSecretName)) ||
+    Fail`Mnemonic is required`;
+
+  const isMainnet = clusterName === 'mainnet';
+  /** @see {@link https://docs.axelarscan.io/gmp#estimateGasFee} */
+  const axelarApiAddress = isMainnet
+    ? 'https://api.axelarscan.io/'
+    : 'https://testnet.api.axelarscan.io/';
+  const axelarChainIdMap = objectMap(AxelarChainIdMap, ids =>
+    isMainnet ? ids.mainnet : ids.testnet,
+  );
+
+  const contractInstance = validateRequired(env, 'CONTRACT_INSTANCE');
+  if (contractInstance !== 'ymax0' && contractInstance !== 'ymax1') {
+    throw Fail`CONTRACT_INSTANCE must be 'ymax0' or 'ymax1', got: ${contractInstance}`;
+  }
+
+  const timeout = parsePositiveInteger(env, 'REQUEST_TIMEOUT', 10000);
+  const maxRetries = parsePositiveInteger(env, 'REQUEST_RETRIES', 3);
+
+  const graphqlEndpoints = parseGraphqlEndpoints(
+    env.GRAPHQL_ENDPOINTS as string,
+    'GRAPHQL_ENDPOINTS',
+  );
+  const { 'api-spectrum-blockchain': spectrumBlockchainEndpoints } =
+    graphqlEndpoints;
+  spectrumBlockchainEndpoints ||
+    Fail`GRAPHQL_ENDPOINTS configuration for api-spectrum-blockchain is required`;
+  const sqliteDbPath = validateRequired(env, 'SQLITE_DB_PATH');
+
+  const oneInchApiUrl = validateUrl(
+    env,
+    'ONEINCH_API_URL',
+    ONEINCH_API_BASE_URL,
+  ) as string;
+  const oneInchApiKey = env.ONEINCH_API_KEY?.trim();
+
+  const ydsUrl = validateUrl(env, 'YDS_URL', undefined);
+  const ydsApiKey = env.YDS_API_KEY?.trim();
+  !ydsUrl || ydsApiKey || Fail`YDS_API_KEY is required with YDS_URL`;
+  const gasCostSpikeThresholds =
+    env.AUTO_CLAIM_MAX_GAS_COST_SPIKE?.trim() ||
+    DEFAULT_AUTO_CLAIM_MAX_GAS_COST_SPIKE;
+  const autoClaim = harden({
+    maxGasCostSpike: (() => {
+      type GasSpikeCriterion = AutoClaimConfig['maxGasCostSpike'][number];
+      try {
+        const criteria = gasCostSpikeThresholds.split(',').map((fields, i) => {
+          const [factorStr, duration, metric, ...rest] = fields.split(':');
+          const factor = nonnegativeNumberFromString(
+            factorStr,
+            `AUTO_CLAIM_MAX_GAS_COST_SPIKE[${i}][0]`,
+          );
+          GAS_STATE_WINDOW_DURATIONS.includes(duration as any) ||
+            Fail`invalid duration`;
+          GAS_STATE_WINDOW_METRICS.includes(metric as any) ||
+            Fail`invalid metric`;
+          rest.length === 0 || Fail`extra fields`;
+          return [factor, duration, metric] as GasSpikeCriterion;
+        });
+        return harden(criteria);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_err) {
+        throw Fail`AUTO_CLAIM_MAX_GAS_COST_SPIKE must be a comma-separated list of "$factor:{PT15M,PT24H,P30D}:{min,mean,p50,p90,max}", got: ${gasCostSpikeThresholds}`;
+      }
+    })(),
+    maxSlippageBps: parseNonnegativeNumber(
+      env,
+      'AUTO_CLAIM_MAX_SLIPPAGE_BPS',
+      DEFAULT_AUTO_CLAIM_MAX_SLIPPAGE_BPS,
+    ),
+    minRewardPerGas: parseNonnegativeNumber(
+      env,
+      'AUTO_CLAIM_MIN_REWARD_PER_GAS',
+      DEFAULT_AUTO_CLAIM_MIN_REWARD_PER_GAS,
+    ),
+  });
+  autoClaim.maxSlippageBps <= 10_000 ||
+    Fail`AUTO_CLAIM_MAX_SLIPPAGE_BPS must not exceed 10_000; got ${autoClaim.maxSlippageBps}`;
+  const autoRebalance = harden({
+    driftBps: parsePositiveBigint(
+      env,
+      'AUTO_REBALANCE_DRIFT_BPS',
+      DEFAULT_AUTO_REBALANCE_DRIFT_BPS,
+    ),
+    driftMinMoveUusdc: parsePositiveBigint(
+      env,
+      'AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC',
+      DEFAULT_AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC,
+    ),
+    cashMinMoveUusdc: parsePositiveBigint(
+      env,
+      'AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC',
+      DEFAULT_AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC,
+    ),
+  });
+
+  const config: YmaxPlannerConfig = harden({
+    clusterName,
+    contractInstance,
+    mnemonic,
+    alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
+    requestLimits: { timeout, maxRetries },
+    spectrumBlockchainEndpoints,
+    agoricNetworkSpec,
+    axelar: {
+      apiUrl: axelarApiAddress,
+      chainIdMap: axelarChainIdMap,
+    },
+    oneInch: {
+      apiUrl: oneInchApiUrl,
+      apiKey: oneInchApiKey,
+    },
+    sqlite: {
+      dbPath: sqliteDbPath,
+    },
+    yds: {
+      url: ydsUrl,
+      apiKey: ydsApiKey,
+    },
+    autoClaim,
+    autoRebalance,
+  });
+
+  return config;
 };
-
-export const getConfig = (() => {
-  let cachedConfig: YmaxPlannerConfig | undefined;
-
-  return async (
-    env: Record<string, string | undefined> = process.env,
-    powers: { secretManager?: SecretManager } = {},
-  ): Promise<YmaxPlannerConfig> => {
-    if (!cachedConfig) {
-      const secretManager =
-        powers.secretManager || new SecretManagerServiceClient();
-      cachedConfig = await loadConfig(env, secretManager);
-    }
-    return cachedConfig;
-  };
-})();

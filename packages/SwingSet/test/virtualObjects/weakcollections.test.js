@@ -4,8 +4,13 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { makeSwingsetController } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import makeNextLog from '../make-nextlog.js';
+
+/**
+ * @import {SwingSetConfig} from '../../src/types-external.js';
+ */
 
 test('weakMap in vat', async t => {
   /** @type {SwingSetConfig} */

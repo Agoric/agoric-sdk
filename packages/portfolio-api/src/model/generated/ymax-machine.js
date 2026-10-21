@@ -1,0 +1,1292 @@
+// @ts-check
+/**
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: ../ymax-machine.yaml
+ * To regenerate: yarn run -T tsx scripts/gen-ymax-machine.mts
+ */
+
+/**
+ * @typedef {object} TransitionTarget
+ * @property {string} target
+ * @property {string} [description]
+ */
+
+/**
+ * @typedef {object} StateNode
+ * @property {string} description
+ * @property {string} [type]
+ * @property {string} [initial]
+ * @property {Record<string, StateNode>} [states]
+ * @property {Record<string, TransitionTarget | TransitionTarget[]>} [on]
+ * @property {TransitionTarget} [onDone]
+ * @property {TransitionTarget} [onError]
+ * @property {Record<string, TransitionTarget>} [after]
+ * @property {string[]} [entry]
+ * @property {string[]} [exit]
+ * @property {string[]} [tags]
+ * @property {{ wayMachines?: string[] } & Record<string, unknown>} [meta]
+ */
+
+/**
+ * @typedef {object} MachineDefinition
+ * @property {string} description
+ * @property {string} [category]
+ * @property {string} initial
+ * @property {Record<string, StateNode>} states
+ */
+
+/**
+ * @typedef {object} YmaxSpec
+ * @property {string} [version]
+ * @property {Record<string, MachineDefinition>} machines
+ */
+
+/** @type {YmaxSpec} */
+export const ymaxMachine = {
+  version: '0.2.0',
+  machines: {
+    YmaxFlow: {
+      description:
+        'Canonical lifecycle for Ymax portfolio movements (deposit, withdraw, rebalance) across planner, contract, and resolver.',
+      category: 'flow',
+      initial: 'transaction_defined',
+      states: {
+        transaction_defined: {
+          description:
+            'User specifies their portfolio offer in a transaction (usually in the Ymax web UI)',
+          meta: {
+            row: 'Cosmos Realm',
+          },
+          on: {
+            'transaction.signed': {
+              target: 'transaction_committed',
+              description:
+                'User signed a transaction with the offer and broadcast it',
+            },
+          },
+        },
+        transaction_committed: {
+          description: "The user's transaction is in consensus",
+          meta: {
+            row: 'Cosmos Realm',
+            observedFrom: ["Agoric tx history for the user's wallet address"],
+          },
+          on: {
+            'transaction.handled': {
+              description:
+                'Agoric contract machinery forwards it from smart-wallet bridge to the Portfolio Contract',
+              target: 'flow_inited',
+            },
+          },
+        },
+        flow_inited: {
+          description:
+            'Flow basic details recorded in flowsRunning (type and optional amount). Virtual FlowStatus=init, not yet FlowStatus=run',
+          on: {
+            'flow.discovered': {
+              description:
+                'Planner service observes the new key in `flowsRunning`',
+              target: 'planning',
+            },
+          },
+          meta: {
+            row: 'Portfolio Contract',
+            observedFrom: [
+              'published.{instance}.portfolios.portfolio{n} status.flowsRunning',
+            ],
+            userMessage: 'Request received; building plan.',
+          },
+        },
+        planning: {
+          description:
+            'Planner computes steps/order from balances + targetAllocation and posts flow{n}.steps.',
+          meta: {
+            row: 'Planner Service',
+            observedFrom: [
+              'services/ymax-planner log messages (planRebalanceFlow/planDepositToAllocations)',
+            ],
+            invariants: [
+              'deposit/withdraw amounts reconcile with portfolio status and balances',
+            ],
+          },
+          on: {
+            'planner.steps_submitted': {
+              target: 'planned',
+              description:
+                'Planner submits a transaction to the contract and the contract handles it.',
+            },
+            'planner.failed': {
+              target: 'failed',
+              description: 'Planner/solver errored or allocation infeasible.',
+            },
+          },
+        },
+        planned: {
+          description:
+            'Planner has submitted transaction to the contract with the steps for the flow.',
+          meta: {
+            row: 'Planner Service',
+            observedFrom: ['Agoric tx history for the planner address'],
+          },
+          on: {
+            'flow.plan_resolved': {
+              target: 'executing',
+              description:
+                'executePlan() begins; FlowStatus state=run emitted.',
+            },
+          },
+        },
+        executing: {
+          description:
+            'Contract performing ordered movements; publishes FlowStatus run/fail/done.',
+          meta: {
+            row: 'Orchestration',
+            observedFrom: [
+              'published.{instance}.portfolios.portfolio{n}.flows.flow{n}.steps',
+            ],
+            userMessage: 'Plan ready; executing transfers.',
+          },
+          initial: 'provisioning',
+          states: {
+            provisioning: {
+              description:
+                'Make/resolve accounts (Agoric, Noble, EVM) and register resolver pending transactions when needed.',
+              on: {
+                'provision.complete': {
+                  target: 'moving',
+                  description:
+                    'provideCosmosAccount/provideEVMAccount resolved; accountsPending empty.',
+                },
+                'provision.failed': {
+                  target: 'failed',
+                  description:
+                    'Account creation or resolver registerTransaction failed.',
+                },
+              },
+              meta: {
+                row: 'Orchestration',
+                observedFrom: [
+                  'FlowStatus state=run with how=makeAccounts(...)',
+                ],
+                invariants: ['accountsPending empty'],
+              },
+            },
+            moving: {
+              description:
+                'Execute MovementDesc steps concurrently. Each step runs as one of the Way types below.',
+              type: 'parallel',
+              onDone: {
+                target: 'completed',
+                description: 'All active steps reached their completed state',
+              },
+              onError: {
+                target: 'failed',
+                description: 'Any step reached a failure/timeout state',
+              },
+              meta: {
+                row: 'Orchestration',
+                observedFrom: [
+                  'published.{instance}.portfolios.portfolio{n}.flows.flow{n} (state=run|fail|done, steps=[])',
+                ],
+                invariants: ['proposal satisfied for give/want seats'],
+                wayMachines: [
+                  'localTransfer',
+                  'withdrawToSeat',
+                  'send',
+                  'IBC_agoric_noble',
+                  'IBC_noble_agoric',
+                  'CCTP_noble_EVM',
+                  'CCTP_EVM_agoric',
+                  'GMP_protocol_supply',
+                  'GMP_protocol_withdraw',
+                  'USDN_supply',
+                  'USDN_withdraw',
+                ],
+              },
+            },
+          },
+          on: {
+            'flow.failed': {
+              target: 'failed',
+              description: 'FlowStatus state=fail emitted.',
+            },
+            'flow.done': {
+              target: 'completed',
+              description:
+                'FlowStatus state=done and all relevant pendingTxs are success.',
+            },
+          },
+        },
+        completed: {
+          description:
+            'Flow finished; balances/positions updated; pendingTxs (if any) marked success.',
+          type: 'final',
+          meta: {
+            row: 'Final States',
+            userMessage: 'Flow finished.',
+          },
+        },
+        failed: {
+          description:
+            'Flow halted; partial effects possible; operator or planner must retry/correct.',
+          type: 'final',
+          meta: {
+            row: 'Final States',
+            severity: 'error',
+            userMessage:
+              'Flow failed; inspect flow{n} status and pendingTx logs.',
+          },
+        },
+      },
+    },
+    localTransfer: {
+      description:
+        'Transfer assets from a ZCF seat to an Agoric local chain account (LCA). Synchronous Zoe operation.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description: 'localTransfer() called with seat and target account',
+          meta: {
+            row: 'Zoe',
+            observedFrom: ['FlowStatus state=run with how=localTransfer'],
+          },
+          on: {
+            'transfer.complete': {
+              target: 'completed',
+              description: 'zoeTools.localTransfer() returned successfully',
+            },
+            'transfer.failed': {
+              target: 'failed',
+              description:
+                'Zoe transfer threw an error (e.g., insufficient funds, wrong brand)',
+            },
+          },
+        },
+        completed: {
+          description: 'Assets moved from seat to LCA',
+          type: 'final',
+          meta: {
+            row: 'Zoe',
+            observedFrom: [
+              'ZCF seat allocation updated',
+              'LCA balance increased',
+            ],
+          },
+        },
+        failed: {
+          description: 'Transfer failed; seat allocation unchanged',
+          type: 'final',
+          meta: {
+            row: 'Zoe',
+            severity: 'error',
+            observedFrom: ['FlowStatus state=fail with error message'],
+          },
+        },
+      },
+    },
+    withdrawToSeat: {
+      description:
+        'Withdraw assets from an Agoric LCA back to a ZCF seat. Synchronous Zoe operation.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description: 'withdrawToSeat() called with account and target seat',
+          meta: {
+            row: 'Zoe',
+            observedFrom: ['FlowStatus state=run with how=withdrawToSeat'],
+          },
+          on: {
+            'withdraw.complete': {
+              target: 'completed',
+              description: 'zoeTools.withdrawToSeat() returned successfully',
+            },
+            'withdraw.failed': {
+              target: 'failed',
+              description: 'Zoe withdraw threw an error',
+            },
+          },
+        },
+        completed: {
+          description: 'Assets moved from LCA to seat',
+          type: 'final',
+          meta: {
+            row: 'Zoe',
+            observedFrom: [
+              'ZCF seat allocation increased (Cash keyword)',
+              'LCA balance decreased',
+            ],
+          },
+        },
+        failed: {
+          description: 'Withdraw failed; LCA balance unchanged',
+          type: 'final',
+          meta: {
+            row: 'Zoe',
+            severity: 'error',
+            observedFrom: ['FlowStatus state=fail with error message'],
+          },
+        },
+      },
+    },
+    send: {
+      description:
+        'Internal cosmos send between two Agoric LCAs. Main use is sending BLD from the contract fee account to an LCA in preparation for an IBC GMP message to Axelar.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description: 'lcaIn.send(lca.getAddress(), amount) called',
+          meta: {
+            row: 'Agoric Chain',
+            observedFrom: ['FlowStatus state=run with how=send'],
+          },
+          on: {
+            'send.complete': {
+              target: 'completed',
+              description: 'send() returned successfully',
+            },
+            'send.failed': {
+              target: 'failed',
+              description: 'send() threw an error',
+            },
+          },
+        },
+        completed: {
+          description: 'Assets moved between LCAs',
+          type: 'final',
+          meta: {
+            row: 'Agoric Chain',
+            observedFrom: [
+              'Agoric tx history showing MsgSend',
+              'LCA balances updated',
+            ],
+          },
+        },
+        failed: {
+          description: 'Send failed',
+          type: 'final',
+          meta: {
+            row: 'Agoric Chain',
+            severity: 'error',
+            observedFrom: ['FlowStatus state=fail with error message'],
+          },
+        },
+      },
+    },
+    IBC_agoric_noble: {
+      description:
+        'IBC transfer from Agoric LCA to Noble ICA. Uses lca.transfer() which sends MsgTransfer.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description: 'lca.transfer(noble_ica_address, denomAmount) called',
+          meta: {
+            row: 'Agoric Chain',
+            observedFrom: ['FlowStatus state=run with how=IBC to Noble'],
+            protocol: 'IBC',
+          },
+          on: {
+            'packet.sent': {
+              target: 'packet_in_flight',
+              description: 'MsgTransfer submitted and included in Agoric block',
+            },
+            'transfer.failed': {
+              target: 'failed',
+              description:
+                'MsgTransfer rejected (e.g., invalid channel, insufficient funds)',
+            },
+          },
+        },
+        packet_in_flight: {
+          description:
+            'IBC packet sent from Agoric, waiting for relayer to deliver to Noble',
+          meta: {
+            row: 'IBC Relayer',
+            observedFrom: [
+              'Agoric tx history showing MsgTransfer with packet sequence',
+              'Relayer logs (Hermes/rly) showing SendPacket event',
+            ],
+            observabilityTodo:
+              'TODO: Add relayer metrics endpoint to monitor packet delivery latency',
+            protocol: 'IBC',
+          },
+          on: {
+            'packet.received': {
+              target: 'ack_pending',
+              description: 'Relayer delivered packet to Noble chain',
+            },
+            'packet.timeout': {
+              target: 'timed_out',
+              description: 'Packet not delivered within timeout period',
+            },
+          },
+        },
+        ack_pending: {
+          description:
+            'Packet received on Noble, waiting for acknowledgement to be relayed back',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: ['Noble tx history showing RecvPacket'],
+            observabilityTodo:
+              'TODO: Index Noble RecvPacket events for correlation',
+            protocol: 'IBC',
+          },
+          on: {
+            'ack.received': {
+              target: 'completed',
+              description:
+                'Acknowledgement received on Agoric confirming successful transfer',
+            },
+            'ack.error': {
+              target: 'failed',
+              description:
+                "Noble returned error acknowledgement (e.g., account doesn't exist)",
+            },
+          },
+        },
+        completed: {
+          description: 'IBC transfer complete; funds on Noble ICA',
+          type: 'final',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: [
+              'Noble ICA balance increased',
+              'Agoric LCA balance decreased',
+            ],
+          },
+        },
+        timed_out: {
+          description: 'IBC packet timed out; funds refunded on source chain',
+          type: 'final',
+          meta: {
+            row: 'Agoric Chain',
+            severity: 'error',
+            observedFrom: [
+              'MsgTimeout on Agoric',
+              'Agoric LCA balance restored',
+            ],
+            notes: 'Relayer may be down or slow. Check Hermes/rly status.',
+          },
+        },
+        failed: {
+          description: 'IBC transfer failed',
+          type: 'final',
+          meta: {
+            row: 'Agoric Chain',
+            severity: 'error',
+            observedFrom: ['FlowStatus state=fail with error message'],
+          },
+        },
+      },
+    },
+    IBC_noble_agoric: {
+      description:
+        'IBC transfer from Noble ICA to Agoric LCA. Uses ica.transfer() which sends MsgTransfer.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description:
+            'noble_ica.transfer(agoric_lca_address, denomAmount) called via ICS-27',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: ['FlowStatus state=run with how=IBC from Noble'],
+            protocol: 'IBC',
+          },
+          on: {
+            'ica_tx.submitted': {
+              target: 'ica_tx_pending',
+              description: 'ICA host tx submitted on Noble',
+            },
+            'ica_tx.failed': {
+              target: 'failed',
+              description: 'ICA execution failed',
+            },
+          },
+        },
+        ica_tx_pending: {
+          description: 'Waiting for Noble to execute the ICA transfer message',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: ['Noble tx history for ICA controller'],
+            observabilityTodo: 'TODO: Add ICA tx indexing for Noble chain',
+            protocol: 'IBC',
+          },
+          on: {
+            'packet.sent': {
+              target: 'packet_in_flight',
+              description:
+                'Noble executed MsgTransfer, packet in flight to Agoric',
+            },
+            'ica_tx.error': {
+              target: 'failed',
+              description: 'ICA execution returned error',
+            },
+          },
+        },
+        packet_in_flight: {
+          description:
+            'IBC packet sent from Noble, waiting for relayer to deliver to Agoric',
+          meta: {
+            row: 'IBC Relayer',
+            observedFrom: [
+              'Noble tx history showing MsgTransfer with packet sequence',
+              'Relayer logs showing SendPacket event',
+            ],
+            protocol: 'IBC',
+          },
+          on: {
+            'packet.received': {
+              target: 'ack_pending',
+              description: 'Relayer delivered packet to Agoric chain',
+            },
+            'packet.timeout': {
+              target: 'timed_out',
+              description: 'Packet not delivered within timeout period',
+            },
+          },
+        },
+        ack_pending: {
+          description: 'Packet received on Agoric, waiting for acknowledgement',
+          meta: {
+            row: 'Agoric Chain',
+            observedFrom: ['Agoric tx history showing RecvPacket'],
+            protocol: 'IBC',
+          },
+          on: {
+            'ack.received': {
+              target: 'completed',
+              description: 'Transfer acknowledged successfully',
+            },
+            'ack.error': {
+              target: 'failed',
+              description: 'Agoric returned error acknowledgement',
+            },
+          },
+        },
+        completed: {
+          description: 'IBC transfer complete; funds on Agoric LCA',
+          type: 'final',
+          meta: {
+            row: 'Agoric Chain',
+            observedFrom: [
+              'Agoric LCA balance increased',
+              'Noble ICA balance decreased',
+            ],
+          },
+        },
+        timed_out: {
+          description: 'IBC packet timed out; funds refunded on Noble',
+          type: 'final',
+          meta: {
+            row: 'Noble Chain',
+            severity: 'error',
+            observedFrom: ['MsgTimeout on Noble', 'Noble ICA balance restored'],
+          },
+        },
+        failed: {
+          description: 'IBC transfer failed',
+          type: 'final',
+          meta: {
+            row: 'Noble Chain',
+            severity: 'error',
+            observedFrom: ['FlowStatus state=fail with error message'],
+          },
+        },
+      },
+    },
+    CCTP_noble_EVM: {
+      description:
+        'CCTP transfer from Noble to EVM chain. Burns USDC on Noble, Circle attestation, mint on EVM.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description:
+            'noble_ica.depositForBurn(destinationAddress, denomAmount) called',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: ['FlowStatus state=run with how=CCTP'],
+            txType: 'CCTP_TO_EVM',
+            protocol: 'Circle CCTP',
+          },
+          on: {
+            'burn.submitted': {
+              target: 'burn_pending',
+              description: 'depositForBurn ICA tx submitted',
+            },
+            'burn.failed': {
+              target: 'failed',
+              description: 'depositForBurn submission failed',
+            },
+          },
+        },
+        burn_pending: {
+          description: 'Waiting for Noble to confirm burn transaction',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: [
+              'Noble tx history showing depositForBurn',
+              'resolver pendingTxs with type=CCTP_TO_EVM, status=pending',
+            ],
+            protocol: 'Circle CCTP',
+          },
+          on: {
+            'burn.confirmed': {
+              target: 'attestation_pending',
+              description:
+                'Burn tx confirmed on Noble; waiting for Circle attestation',
+            },
+            'burn.error': {
+              target: 'failed',
+              description: 'Burn tx failed on Noble',
+            },
+          },
+        },
+        attestation_pending: {
+          description:
+            'Burn confirmed; waiting for Circle attestation (no protocol timeout; poll until available)',
+          meta: {
+            row: 'Circle Attestation',
+            observedFrom: [
+              'Circle Attestation API (iris-api.circle.com/v1/attestations)',
+            ],
+            observabilityTodo:
+              'TODO: Poll Circle attestation API and publish status',
+            protocol: 'Circle CCTP',
+            notes:
+              'Circle returns 404 until attestation is published; attested messages do not expire.',
+          },
+          on: {
+            'attestation.received': {
+              target: 'mint_pending',
+              description: 'Circle attestation fetched and verified',
+            },
+            'attestation.error': {
+              target: 'failed',
+              description: 'Attestation fetch/validation failed',
+            },
+          },
+        },
+        mint_pending: {
+          description:
+            'Attestation received; mint message ready on destination EVM chain',
+          meta: {
+            row: 'EVM Chain',
+            observedFrom: ['EVM mempool or pending transactions'],
+            observabilityTodo: 'TODO: Monitor EVM chain for receiveMessage tx',
+            protocol: 'Circle CCTP',
+          },
+          on: {
+            'mint.confirmed': {
+              target: 'completed',
+              description: 'USDC minted on EVM chain to destination address',
+            },
+            'mint.failed': {
+              target: 'failed',
+              description: 'Mint transaction failed on EVM',
+            },
+          },
+        },
+        completed: {
+          description: 'CCTP transfer complete; USDC on EVM wallet',
+          type: 'final',
+          meta: {
+            row: 'EVM Chain',
+            observedFrom: [
+              'EVM wallet balance increased',
+              'resolver pendingTxs status=success',
+            ],
+          },
+        },
+        failed: {
+          description: 'CCTP transfer failed',
+          type: 'final',
+          meta: {
+            row: 'Noble Chain',
+            severity: 'error',
+            observedFrom: [
+              'FlowStatus state=fail with error message',
+              'resolver pendingTxs status=failed',
+            ],
+          },
+        },
+      },
+    },
+    CCTP_EVM_agoric: {
+      description:
+        'CCTP transfer from EVM to Agoric via Noble. Burns on EVM, attestation, mints on Noble, forwards via NFA to Agoric.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description: 'GMP contract call to depositForBurn on EVM wallet',
+          meta: {
+            row: 'Agoric Chain',
+            observedFrom: ['FlowStatus state=run with how=CCTP'],
+            txType: 'CCTP_TO_AGORIC',
+            protocol: 'Circle CCTP + Axelar GMP',
+          },
+          on: {
+            'gmp.submitted': {
+              target: 'gmp_pending',
+              description: 'GMP message sent via Axelar',
+            },
+            'gmp.failed': {
+              target: 'failed',
+              description: 'GMP submission failed',
+            },
+          },
+        },
+        gmp_pending: {
+          description:
+            'GMP message in transit to EVM chain via Axelar (sent as IBC packet to Axelar gateway)',
+          meta: {
+            row: 'Axelar Network / IBC Relayer',
+            observedFrom: ['Axelar GMP explorer (axelarscan.io)'],
+            observabilityTodo: 'TODO: Poll Axelar API for GMP message status',
+            protocol: 'Axelar GMP over IBC',
+          },
+          on: {
+            'gmp.executed': {
+              target: 'burn_pending',
+              description: 'Axelar delivered and executed GMP payload on EVM',
+            },
+            'gmp.failed': {
+              target: 'gmp_failed',
+              description: 'GMP message delivery or execution failed',
+            },
+            'gmp.timeout': {
+              target: 'gmp_failed',
+              description: 'IBC packet to Axelar timed out',
+            },
+            'gmp.ack_error': {
+              target: 'gmp_failed',
+              description: 'Axelar gateway returned IBC acknowledgement error',
+            },
+          },
+        },
+        burn_pending: {
+          description: 'EVM wallet executing depositForBurn',
+          meta: {
+            row: 'EVM Chain',
+            observedFrom: ['EVM tx history for smart wallet'],
+            protocol: 'Circle CCTP',
+          },
+          on: {
+            'burn.confirmed': {
+              target: 'attestation_pending',
+              description: 'USDC burned on EVM; waiting for attestation',
+            },
+            'burn.failed': {
+              target: 'failed',
+              description: 'Burn transaction reverted on EVM',
+            },
+          },
+        },
+        attestation_pending: {
+          description: 'Waiting for Circle attestation',
+          meta: {
+            row: 'Circle Attestation',
+            observedFrom: ['Circle Attestation API'],
+            protocol: 'Circle CCTP',
+            expectedSlaMs: 60000,
+          },
+          on: {
+            'attestation.received': {
+              target: 'noble_mint_pending',
+              description: 'Attestation ready; mint can proceed on Noble',
+            },
+            'attestation.timeout': {
+              target: 'attestation_timeout',
+              description: 'Attestation timed out',
+            },
+          },
+        },
+        noble_mint_pending: {
+          description:
+            'USDC being minted on Noble to NFA (Noble Forwarding Account)',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: ['Noble tx history showing receiveMessage'],
+            observabilityTodo:
+              'TODO: Monitor Noble for CCTP receiveMessage events',
+            protocol: 'Circle CCTP',
+          },
+          on: {
+            'mint.confirmed': {
+              target: 'ibc_forward_pending',
+              description: 'USDC minted on Noble NFA',
+            },
+            'mint.failed': {
+              target: 'failed',
+              description: 'Noble mint failed',
+            },
+          },
+        },
+        ibc_forward_pending: {
+          description: 'NFA auto-forwarding USDC to Agoric via IBC',
+          meta: {
+            row: 'IBC Relayer',
+            observedFrom: [
+              'Noble tx history showing auto-forward',
+              'Relayer logs',
+            ],
+            protocol: 'IBC',
+          },
+          on: {
+            'forward.complete': {
+              target: 'completed',
+              description: 'Funds arrived on Agoric LCA',
+            },
+            'forward.timeout': {
+              target: 'ibc_timeout',
+              description: 'IBC forward timed out',
+            },
+          },
+        },
+        completed: {
+          description: 'CCTP+IBC transfer complete; USDC on Agoric LCA',
+          type: 'final',
+          meta: {
+            row: 'Agoric Chain',
+            observedFrom: [
+              'Agoric LCA balance increased',
+              'resolver pendingTxs status=success',
+            ],
+          },
+        },
+        gmp_failed: {
+          description: 'Axelar GMP delivery or execution failed',
+          type: 'final',
+          meta: {
+            row: 'Axelar Network',
+            severity: 'error',
+            observedFrom: ['Axelar GMP explorer showing failed status'],
+            notes:
+              'Check gas payment, destination contract. May need manual recovery.',
+          },
+        },
+        attestation_timeout: {
+          description: 'Circle attestation timed out',
+          type: 'final',
+          meta: {
+            row: 'Circle Attestation',
+            severity: 'error',
+          },
+        },
+        ibc_timeout: {
+          description: 'IBC forward from Noble to Agoric timed out',
+          type: 'final',
+          meta: {
+            row: 'IBC Relayer',
+            severity: 'error',
+            observedFrom: ['Funds stuck on Noble NFA'],
+            notes: 'Relayer may be down. Funds safe on Noble.',
+          },
+        },
+        failed: {
+          description: 'CCTP transfer failed',
+          type: 'final',
+          meta: {
+            row: 'EVM Chain',
+            severity: 'error',
+            observedFrom: [
+              'FlowStatus state=fail with error message',
+              'resolver pendingTxs status=failed',
+            ],
+          },
+        },
+      },
+    },
+    GMP_protocol_supply: {
+      description:
+        'Supply USDC to yield protocol (Aave/Compound/Beefy) on EVM via Axelar GMP. Encodes approve+supply calls.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description:
+            'GMP contract call payload encoded with approve + supply calls',
+          meta: {
+            row: 'Agoric Chain',
+            observedFrom: ['FlowStatus state=run with how=Aave|Compound|Beefy'],
+            txType: 'GMP',
+            protocol: 'Axelar GMP',
+          },
+          on: {
+            'gmp.submitted': {
+              target: 'gmp_pending',
+              description: 'GMP message sent to Axelar with supply payload',
+            },
+            'gmp.failed': {
+              target: 'failed',
+              description: 'GMP submission failed',
+            },
+          },
+        },
+        gmp_pending: {
+          description:
+            'GMP message in transit via Axelar to EVM chain (sent as IBC packet to Axelar gateway)',
+          meta: {
+            row: 'Axelar Network / IBC Relayer',
+            observedFrom: [
+              'Axelar GMP explorer',
+              'resolver pendingTxs with type=GMP, status=pending',
+            ],
+            protocol: 'Axelar GMP over IBC',
+            expectedSlaMs: 120000,
+          },
+          on: {
+            'gmp.delivered': {
+              target: 'contract_call_pending',
+              description: 'Axelar delivered payload to EVM smart wallet',
+            },
+            'gmp.failed': {
+              target: 'gmp_failed',
+              description:
+                'GMP delivery failed (insufficient gas, network issue)',
+            },
+            'gmp.timeout': {
+              target: 'gmp_failed',
+              description: 'IBC packet to Axelar timed out',
+            },
+            'gmp.ack_error': {
+              target: 'gmp_failed',
+              description: 'Axelar gateway returned IBC acknowledgement error',
+            },
+          },
+        },
+        contract_call_pending: {
+          description: 'Smart wallet executing multicall (approve + supply)',
+          meta: {
+            row: 'EVM Chain',
+            observedFrom: ['EVM tx history for smart wallet address'],
+            observabilityTodo:
+              'TODO: Index EVM events for protocol supply operations',
+            protocol: 'Aave/Compound/Beefy',
+          },
+          on: {
+            'calls.executed': {
+              target: 'completed',
+              description: 'All contract calls succeeded; position created',
+            },
+            'calls.reverted': {
+              target: 'contract_failed',
+              description: 'One or more contract calls reverted',
+            },
+          },
+        },
+        completed: {
+          description: 'Supply complete; position recorded on yield protocol',
+          type: 'final',
+          meta: {
+            row: 'EVM Chain',
+            observedFrom: [
+              'Protocol position balance (aToken, cToken, or vault shares)',
+              'resolver pendingTxs status=success',
+            ],
+          },
+        },
+        gmp_failed: {
+          description: 'Axelar GMP failed to deliver message',
+          type: 'final',
+          meta: {
+            row: 'Axelar Network',
+            severity: 'error',
+            observedFrom: [
+              'Axelar GMP explorer showing failed',
+              'resolver pendingTxs status=failed',
+            ],
+            notes: 'Check Axelar gas service, relayer status',
+          },
+        },
+        contract_failed: {
+          description: 'EVM contract calls reverted',
+          type: 'final',
+          meta: {
+            row: 'EVM Chain',
+            severity: 'error',
+            observedFrom: [
+              'EVM tx receipt showing revert',
+              'resolver pendingTxs status=failed',
+            ],
+            notes: 'Check protocol state, slippage, liquidity',
+          },
+        },
+        failed: {
+          description: 'Supply operation failed',
+          type: 'final',
+          meta: {
+            row: 'Agoric Chain',
+            severity: 'error',
+            observedFrom: ['FlowStatus state=fail with error message'],
+          },
+        },
+      },
+    },
+    GMP_protocol_withdraw: {
+      description:
+        'Withdraw USDC from yield protocol on EVM via Axelar GMP. Optionally claims rewards first.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description:
+            'GMP contract call payload encoded with optional claim + withdraw calls',
+          meta: {
+            row: 'Agoric Chain',
+            observedFrom: ['FlowStatus state=run with how=Aave|Compound|Beefy'],
+            txType: 'GMP',
+            protocol: 'Axelar GMP',
+          },
+          on: {
+            'gmp.submitted': {
+              target: 'gmp_pending',
+              description: 'GMP message sent to Axelar with withdraw payload',
+            },
+            'gmp.failed': {
+              target: 'failed',
+              description: 'GMP submission failed',
+            },
+          },
+        },
+        gmp_pending: {
+          description:
+            'GMP message in transit via Axelar to EVM chain (sent as IBC packet to Axelar gateway)',
+          meta: {
+            row: 'Axelar Network / IBC Relayer',
+            observedFrom: [
+              'Axelar GMP explorer',
+              'resolver pendingTxs with type=GMP, status=pending',
+            ],
+            protocol: 'Axelar GMP over IBC',
+            expectedSlaMs: 120000,
+          },
+          on: {
+            'gmp.delivered': {
+              target: 'contract_call_pending',
+              description: 'Axelar delivered payload to EVM smart wallet',
+            },
+            'gmp.failed': {
+              target: 'gmp_failed',
+              description: 'GMP delivery failed',
+            },
+            'gmp.timeout': {
+              target: 'gmp_failed',
+              description: 'IBC packet to Axelar timed out',
+            },
+            'gmp.ack_error': {
+              target: 'gmp_failed',
+              description: 'Axelar gateway returned IBC acknowledgement error',
+            },
+          },
+        },
+        contract_call_pending: {
+          description:
+            'Smart wallet executing multicall (optional claim + withdraw)',
+          meta: {
+            row: 'EVM Chain',
+            observedFrom: ['EVM tx history for smart wallet address'],
+            protocol: 'Aave/Compound/Beefy',
+          },
+          on: {
+            'calls.executed': {
+              target: 'completed',
+              description: 'Withdraw succeeded; USDC in smart wallet',
+            },
+            'calls.reverted': {
+              target: 'contract_failed',
+              description: 'Contract calls reverted',
+            },
+          },
+        },
+        completed: {
+          description:
+            'Withdraw complete; USDC available in EVM wallet for subsequent CCTP',
+          type: 'final',
+          meta: {
+            row: 'EVM Chain',
+            observedFrom: [
+              'EVM wallet USDC balance increased',
+              'Protocol position decreased',
+              'resolver pendingTxs status=success',
+            ],
+          },
+        },
+        gmp_failed: {
+          description: 'Axelar GMP failed',
+          type: 'final',
+          meta: {
+            row: 'Axelar Network',
+            severity: 'error',
+            observedFrom: ['resolver pendingTxs status=failed'],
+          },
+        },
+        contract_failed: {
+          description: 'EVM contract calls reverted',
+          type: 'final',
+          meta: {
+            row: 'EVM Chain',
+            severity: 'error',
+            observedFrom: ['EVM tx receipt showing revert'],
+            notes: 'Check withdrawal limits, protocol pause status',
+          },
+        },
+        failed: {
+          description: 'Withdraw operation failed',
+          type: 'final',
+          meta: {
+            row: 'Agoric Chain',
+            severity: 'error',
+            observedFrom: ['FlowStatus state=fail with error message'],
+          },
+        },
+      },
+    },
+    USDN_supply: {
+      description:
+        'Supply USDC to Noble Dollar (USDN) protocol. Swaps USDC→USDN and optionally locks in vault.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description:
+            'ICA executeEncodedTx called with MsgSwap (+ optional MsgLock) messages',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: ['FlowStatus state=run with how=USDN'],
+            protocol: 'Noble Dollar',
+          },
+          on: {
+            'ica_tx.submitted': {
+              target: 'tx_pending',
+              description: 'ICA messages submitted to Noble',
+            },
+            'ica_tx.failed': {
+              target: 'failed',
+              description: 'ICA submission failed',
+            },
+          },
+        },
+        tx_pending: {
+          description: 'Waiting for Noble to execute swap (and lock) messages',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: ['Noble tx history showing MsgSwap'],
+            observabilityTodo:
+              'TODO: Index Noble MsgSwap events for USDN tracking',
+            protocol: 'Noble Dollar',
+          },
+          on: {
+            'tx.confirmed': {
+              target: 'completed',
+              description: 'Swap (and optional lock) completed successfully',
+            },
+            'tx.failed': {
+              target: 'failed',
+              description:
+                'Transaction failed (e.g., slippage exceeded, insufficient funds)',
+            },
+          },
+        },
+        completed: {
+          description:
+            'USDN supply complete; position in USDN (and optionally vault)',
+          type: 'final',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: [
+              'Noble ICA uusdn balance increased',
+              'Noble vault balance (if locked)',
+            ],
+          },
+        },
+        failed: {
+          description: 'USDN supply failed',
+          type: 'final',
+          meta: {
+            row: 'Noble Chain',
+            severity: 'error',
+            observedFrom: [
+              'FlowStatus state=fail with error message',
+              'Noble tx showing failure reason',
+            ],
+          },
+        },
+      },
+    },
+    USDN_withdraw: {
+      description:
+        'Withdraw from Noble Dollar (USDN) protocol. Unlocks from vault (if locked) and swaps USDN→USDC.',
+      category: 'step',
+      initial: 'initiated',
+      states: {
+        initiated: {
+          description:
+            'ICA executeEncodedTx called with optional MsgUnlock + MsgSwap messages',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: ['FlowStatus state=run with how=USDN'],
+            protocol: 'Noble Dollar',
+          },
+          on: {
+            'ica_tx.submitted': {
+              target: 'tx_pending',
+              description: 'ICA messages submitted to Noble',
+            },
+            'ica_tx.failed': {
+              target: 'failed',
+              description: 'ICA submission failed',
+            },
+          },
+        },
+        tx_pending: {
+          description: 'Waiting for Noble to execute unlock and swap messages',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: ['Noble tx history showing MsgUnlock, MsgSwap'],
+            protocol: 'Noble Dollar',
+          },
+          on: {
+            'tx.confirmed': {
+              target: 'completed',
+              description: 'Unlock and swap completed; USDC available',
+            },
+            'tx.failed': {
+              target: 'failed',
+              description: 'Transaction failed',
+            },
+          },
+        },
+        completed: {
+          description:
+            'USDN withdraw complete; USDC on Noble ICA ready for IBC transfer',
+          type: 'final',
+          meta: {
+            row: 'Noble Chain',
+            observedFrom: [
+              'Noble ICA uusdc balance increased',
+              'USDN position decreased',
+            ],
+          },
+        },
+        failed: {
+          description: 'USDN withdraw failed',
+          type: 'final',
+          meta: {
+            row: 'Noble Chain',
+            severity: 'error',
+            observedFrom: ['FlowStatus state=fail with error message'],
+            notes: 'Check vault lock period, slippage settings',
+          },
+        },
+      },
+    },
+  },
+};
+
+export default ymaxMachine;

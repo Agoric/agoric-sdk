@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -11,6 +11,10 @@ import { setup } from '../setupBasicMints.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { assertPayoutAmount } from '../../zoeTestHelpers.js';
 
+/**
+ * @import {Payment} from '@agoric/ertp';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const root = `${dirname}/../../../src/contracts/otcDesk.js`;
@@ -19,8 +23,8 @@ let vatAdminState;
 
 const installCode = async zoe => {
   const bundle = await bundleSource(root);
-  vatAdminState.installBundle('b1-otcdesk', bundle);
-  const installation = await E(zoe).installBundleID('b1-otcdesk');
+  const b1otcdesk = vatAdminState.registerBundle('b1-otcdesk', bundle);
+  const installation = await E(zoe).installBundleID(b1otcdesk);
   return installation;
 };
 
@@ -28,8 +32,8 @@ const installCoveredCall = async zoe => {
   const bundle = await bundleSource(
     `${dirname}/../../../src/contracts/coveredCall`,
   );
-  vatAdminState.installBundle('b1-coveredcall', bundle);
-  const installation = await E(zoe).installBundleID('b1-coveredcall');
+  const b1coveredcall = vatAdminState.registerBundle('b1-coveredcall', bundle);
+  const installation = await E(zoe).installBundleID(b1coveredcall);
   return installation;
 };
 
@@ -104,7 +108,7 @@ const makeAlice = async (
 const makeBob = (
   t,
   zoe,
-  installation,
+  _installation,
   issuers,
   origPayments,
   coveredCallInstallation,

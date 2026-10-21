@@ -1,0 +1,62 @@
+diff --git a/blake3.js b/blake3.js
+index 607d7f0b0a40019febbbc44883779f35c5981bc1..12efd4c7c377e3aecebc1b63e173a33a4b758492 100644
+--- a/blake3.js
++++ b/blake3.js
+@@ -7,7 +7,8 @@ const _blake_js_1 = require("./_blake.js");
+ const blake2s_js_1 = require("./blake2s.js");
+ const utils_js_1 = require("./utils.js");
+ const SIGMA = /* @__PURE__ */ (() => {
+-    const Id = Array.from({ length: 16 }, (_, i) => i);
++    const Id = new Array(16);
++    for (let i = 0; i < 16; i++) Id[i] = i;
+     const permute = (arr) => [2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8].map((i) => arr[i]);
+     const res = [];
+     for (let i = 0, v = Id; i < 7; i++, v = permute(v))
+diff --git a/esm/blake3.js b/esm/blake3.js
+index 3577963fe71110efea50aab35377257b2464f9c0..1f5d11c76d365403c3f2024f3c8989341cc87162 100644
+--- a/esm/blake3.js
++++ b/esm/blake3.js
+@@ -4,7 +4,8 @@ import { BLAKE } from './_blake.js';
+ import { compress, B2S_IV } from './blake2s.js';
+ import { u8, u32, toBytes, wrapXOFConstructorWithOpts, isLE, byteSwap32, } from './utils.js';
+ const SIGMA = /* @__PURE__ */ (() => {
+-    const Id = Array.from({ length: 16 }, (_, i) => i);
++    const Id = new Array(16);
++    for (let i = 0; i < 16; i++) Id[i] = i;
+     const permute = (arr) => [2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8].map((i) => arr[i]);
+     const res = [];
+     for (let i = 0, v = Id; i < 7; i++, v = permute(v))
+diff --git a/esm/utils.js b/esm/utils.js
+index a6c6b9ac5cb94ceedb0ad0c7869af292989b7c32..8e507b60166a40a6adfd800e1995ccd4bdde96de 100644
+--- a/esm/utils.js
++++ b/esm/utils.js
+@@ -37,7 +37,11 @@ export function byteSwap32(arr) {
+     }
+ }
+ // Array where index 0xf0 (240) is mapped to string 'f0'
+-const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
++const hexes = /* @__PURE__ */ (() => {
++  const arr = new Array(256);
++  for (let i = 0; i < 256; i++) arr[i] = i.toString(16).padStart(2, '0');
++  return arr;
++})();
+ /**
+  * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
+  */
+diff --git a/utils.js b/utils.js
+index 106acd4f003510bc3c8bdbac255c329f0d409218..d1472cb309dc1012b0243e6d55b758bef0d4b025 100644
+--- a/utils.js
++++ b/utils.js
+@@ -59,7 +59,11 @@ function byteSwap32(arr) {
+     }
+ }
+ // Array where index 0xf0 (240) is mapped to string 'f0'
+-const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
++const hexes = /* @__PURE__ */ (() => {
++  const arr = new Array(256);
++  for (let i = 0; i < 256; i++) arr[i] = i.toString(16).padStart(2, '0');
++  return arr;
++})();
+ /**
+  * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
+  */

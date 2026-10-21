@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 
 import { Fail } from '@endo/errors';
 import { Far, isPassable } from '@endo/pass-style';
@@ -21,6 +20,8 @@ import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
 
 /**
  * @import {Zone} from './index.js';
+ * @import {Stores} from './index.js';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
  */
 
 /**
@@ -33,7 +34,7 @@ const isStorable = specimen => isPassable(specimen) && canBeDurable(specimen);
 harden(isStorable);
 
 /**
- * @param {() => import('@agoric/vat-data').Baggage} getBaggage
+ * @param {() => Baggage} getBaggage
  */
 const attachDurableStores = getBaggage => {
   /** @type {Zone['mapStore']} */
@@ -52,7 +53,7 @@ const attachDurableStores = getBaggage => {
   const weakMapStore = (label, options) =>
     provideDurableWeakMapStore(getBaggage(), label, options);
 
-  /** @type {import('./index.js').Stores} */
+  /** @type {Stores} */
   return Far('durableStores', {
     detached: () => detachedDurableStores,
     isStorable,
@@ -63,7 +64,7 @@ const attachDurableStores = getBaggage => {
   });
 };
 
-/** @type {import('./index.js').Stores} */
+/** @type {Stores} */
 const detachedDurableStores = attachDurableStores(() =>
   makeScalarMapStore('detached'),
 );
@@ -71,7 +72,7 @@ const detachedDurableStores = attachDurableStores(() =>
 /**
  * Create a zone whose objects persist between Agoric vat upgrades.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {string} [baseLabel]
  * @returns {Zone}
  */
@@ -86,20 +87,24 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
     baggage,
   );
 
+  // TS2556: the spread of an overloaded generic's `...args` isn't
+  // resolved to a single tuple type here, so forwarding to
+  // `prepareExoClass(baggage, ...args)` needs to bypass the check.
   /** @type {Zone['exoClass']} */
+  // @ts-expect-error spread over overloaded generic
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
   /** @type {Zone['exoClassKit']} */
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- happens only integrating with Endo master
-  // @ts-ignore FIXME in Endo
+  // @ts-expect-error spread over overloaded generic
   const exoClassKit = (...args) => prepareExoClassKit(baggage, ...args);
   /** @type {Zone['exo']} */
+  // @ts-expect-error spread over overloaded generic
   const exo = (...args) => prepareExo(baggage, ...args);
 
   const subZoneStore = wrapProvider(attachedStores.mapStore, keys.zone);
 
   /** @type {Zone['subZone']} */
   const subZone = (label, options = {}) => {
-    /** @type {import('@agoric/swingset-liveslots').Baggage} */
+    /** @type {Baggage} */
     const subBaggage = subZoneStore(label, options);
     return makeDurableZone(subBaggage, `${baseLabel}.${label}`);
   };

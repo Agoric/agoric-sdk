@@ -1,6 +1,6 @@
 import test from 'ava';
-import { spawnSync } from 'child_process';
-import { fileURLToPath } from 'url';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const binname = fileURLToPath(
   new URL('../src/create-dapp.js', import.meta.url),

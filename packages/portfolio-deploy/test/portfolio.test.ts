@@ -1,31 +1,49 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.ts';
-import { AckBehavior } from '@aglocal/boot/tools/supports.ts';
+import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.js';
+import {
+  insistManagerType,
+  makeSwingsetHarness,
+} from '@aglocal/boot/tools/supports.js';
 import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
-import { AmountMath } from '@agoric/ertp';
-import { BridgeId } from '@agoric/internal';
+import { AmountMath, type Brand } from '@agoric/ertp';
 import {
   defaultMarshaller,
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
-import type { ChainInfo } from '@agoric/orchestration';
-import type { CopyRecord } from '@endo/pass-style';
+import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+import {
+  getPermitWitnessTransferFromData,
+  type TokenPermissions,
+} from '@agoric/orchestration/src/utils/permit2.ts';
+import {
+  getYmaxWitness,
+  type TargetAllocation,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TestFn } from 'ava';
 import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
+import { axelarConfig } from '../src/axelar-configs.js';
+import {
+  beneficiary,
+  controllerAddr,
+  CURRENT_TIME,
+} from './portfolio-snapshot-setup.ts';
+import { loadOrCreatePortfolioSnapshot } from './portfolio-snapshots.ts';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from './walletFactory.ts';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
-
-const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
-const controllerAddr = 'agoric1ymax0-admin';
+const test: TestFn<
+  WalletFactoryTestContext & {
+    harness?: ReturnType<typeof makeSwingsetHarness>;
+  }
+> = anyTest;
 
 /** maps between on-chain identites and boardIDs */
 const showValue = (v: string) => defaultMarshaller.fromCapData(JSON.parse(v));
@@ -36,116 +54,37 @@ type ConsumeBootstrapItem = <N extends string>(
   ? PortfolioBootPowers['consume'][N]
   : unknown;
 
-/**
- * To facilitate deployment to environments other than devnet,
- * ../src/chain-info.build.js fetches chainInfo dynamically
- * using --net and --peer.
- *
- * This is an example of the sort of chain info that results.
- * Here we're testing that things work without using the static
- * fetched-chain-info.js.
- */
-const exampleDynamicChainInfo = {
-  agoric: {
-    bech32Prefix: 'agoric',
-    chainId: 'agoriclocal',
-    icqEnabled: false,
-    namespace: 'cosmos',
-    reference: 'agoriclocal',
-    stakingTokens: [{ denom: 'ubld' }],
-    connections: {
-      noblelocal: {
-        id: 'connection-0',
-        client_id: '07-tendermint-0',
-        counterparty: {
-          client_id: '07-tendermint-0',
-          connection_id: 'connection-0',
-        },
-        state: 3,
-        transferChannel: {
-          channelId: 'channel-0',
-          portId: 'transfer',
-          counterPartyChannelId: 'channel-0',
-          counterPartyPortId: 'transfer',
-          ordering: 0,
-          state: 3,
-          version: 'ics20-1',
-        },
-      },
-    },
-  },
-  noble: {
-    bech32Prefix: 'noble',
-    chainId: 'noblelocal',
-    icqEnabled: false,
-    namespace: 'cosmos',
-    reference: 'noblelocal',
-    stakingTokens: [{ denom: 'uusdc' }],
-    connections: {
-      agoriclocal: {
-        id: 'connection-0',
-        client_id: '07-tendermint-0',
-        counterparty: {
-          client_id: '07-tendermint-0',
-          connection_id: 'connection-0',
-        },
-        state: 3,
-        transferChannel: {
-          channelId: 'channel-0',
-          portId: 'transfer',
-          counterPartyChannelId: 'channel-0',
-          counterPartyPortId: 'transfer',
-          ordering: 0,
-          state: 3,
-          version: 'ics20-1',
-        },
-      },
-    },
-  },
-  Avalanche: {
-    namespace: 'eip155',
-    reference: '43114',
-    cctpDestinationDomain: 1,
-  },
-  Ethereum: {
-    namespace: 'eip155',
-    reference: '1',
-    cctpDestinationDomain: 0,
-  },
-  Optimism: {
-    namespace: 'eip155',
-    reference: '10',
-    cctpDestinationDomain: 2,
-  },
-  Arbitrum: {
-    namespace: 'eip155',
-    reference: '42161',
-    cctpDestinationDomain: 3,
-  },
-  Polygon: {
-    namespace: 'eip155',
-    reference: '137',
-    cctpDestinationDomain: 7,
-  },
-} satisfies Record<string, ChainInfo>;
+const {
+  SLOGFILE: slogFile,
+  SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
+} = process.env;
 
 test.before('bootstrap', async t => {
   const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
   // TODO: impact testing
-  const ctx = await makeWalletFactoryContext(t, config);
+  insistManagerType(defaultManagerType);
+  const harness = ['xs-worker', 'xsnap'].includes(defaultManagerType)
+    ? makeSwingsetHarness()
+    : undefined;
+  const snapshot = await loadOrCreatePortfolioSnapshot(
+    'portfolio-ready',
+    t.log,
+  );
+  const ctx = await makeWalletFactoryContext(t, config, {
+    slogFile,
+    defaultManagerType,
+    harness,
+    snapshot,
+  });
 
-  t.context = ctx;
+  t.context = { ...ctx, harness };
 });
 test.after.always(t => t.context.shutdown?.());
 
 test.serial('publish chainInfo etc.', async t => {
-  const { buildProposal, evalProposal, runUtils } = t.context;
-  const materials = buildProposal(
-    '@aglocal/portfolio-deploy/src/chain-info.build.js',
-    ['--chainInfo', JSON.stringify(exampleDynamicChainInfo)],
-  );
-  await evalProposal(materials);
-  const { EV } = runUtils;
+  const {
+    runUtils: { EV },
+  } = t.context;
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
   for (const chain of [
     'agoric',
@@ -153,7 +92,6 @@ test.serial('publish chainInfo etc.', async t => {
     'Avalanche',
     'Optimism',
     'Arbitrum',
-    'Polygon',
     'Ethereum',
   ]) {
     const info = await EV(agoricNames).lookup('chain', chain);
@@ -175,17 +113,9 @@ test.serial('publish chainInfo etc.', async t => {
 });
 
 test.serial('access token setup', async t => {
-  const { buildProposal, evalProposal, runUtils } = t.context;
-  const materials = buildProposal(
-    '@aglocal/portfolio-deploy/src/access-token-setup.build.js',
-    ['--beneficiary', beneficiary],
-  );
-
-  const { walletFactoryDriver: wfd } = t.context;
-  await wfd.provideSmartWallet(beneficiary);
-
-  await evalProposal(materials);
-  const { EV } = runUtils;
+  const {
+    runUtils: { EV },
+  } = t.context;
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
   const brand = await EV(agoricNames).lookup('brand', 'PoC26');
   t.log(brand);
@@ -212,42 +142,13 @@ test.serial('access token setup', async t => {
 });
 
 test.serial('resolve USDC issuer', async t => {
-  const { buildProposal, evalProposal } = t.context;
-  const materials = buildProposal(
-    '@aglocal/portfolio-deploy/src/usdc-resolve.build.js',
-  );
-
-  await evalProposal(materials);
-  t.pass('not straightforward to test promise space contents');
+  const { agoricNamesRemotes } = t.context;
+  t.truthy(agoricNamesRemotes.brand.USDC);
+  t.truthy(agoricNamesRemotes.issuer.USDC);
 });
 
 test.serial('contract starts; appears in agoricNames', async t => {
-  const {
-    agoricNamesRemotes,
-    bridgeUtils,
-    buildProposal,
-    evalProposal,
-    refreshAgoricNamesRemotes,
-    storage,
-  } = t.context;
-
-  // inbound `startChannelOpenInit` responses immediately.
-  // needed since the portfolio creation relies on an ICA being created
-  bridgeUtils.setAckBehavior(
-    BridgeId.DIBC,
-    'startChannelOpenInit',
-    AckBehavior.Immediate,
-  );
-  // TODO:  bridgeUtils.setBech32Prefix('noble');
-
-  const materials = buildProposal(
-    '@aglocal/portfolio-deploy/src/portfolio.build.js',
-    ['--net', 'mainnet'],
-  );
-  await evalProposal(materials);
-
-  // update now that contract is instantiated
-  refreshAgoricNamesRemotes();
+  const { agoricNamesRemotes, storage } = t.context;
   t.truthy(agoricNamesRemotes.instance.ymax0);
 
   await documentStorageSchema(t, storage, {
@@ -263,32 +164,10 @@ test.serial('contract starts; appears in agoricNames', async t => {
 });
 
 test.serial('delegate control', async t => {
-  const { buildProposal, evalProposal, refreshAgoricNamesRemotes } = t.context;
-
-  const materials = buildProposal(
-    '@aglocal/portfolio-deploy/src/portfolio-control.build.js',
-    ['--ymaxControlAddress', controllerAddr],
-  );
-
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = t.context;
 
   const wallet = await wfd.provideSmartWallet(controllerAddr);
-
-  await evalProposal(materials);
-  await refreshAgoricNamesRemotes();
   assert(agoricNamesRemotes.instance.postalService);
-
-  t.log('redeeming controller invitation');
-  await wallet.executeOffer({
-    id: `controller-1`,
-    invitationSpec: {
-      source: 'purse',
-      instance: agoricNamesRemotes.instance.postalService,
-      description: 'deliver ymaxControl',
-    },
-    proposal: {},
-    saveResult: { name: 'ymaxControl' },
-  });
 
   await wallet.invokeEntry({
     targetName: 'ymaxControl',
@@ -397,7 +276,12 @@ test.serial('restart contract', async t => {
   const kit = await (EV.vat('bootstrap').consumeItem as ConsumeBootstrapItem)(
     'ymax0Kit',
   );
-  const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
+
+  // Ensure we're no longer overriding the defaultFlowConfig.
+  const { defaultFlowConfig: _, ...noDefaultFlowConfigArgs } = kit.privateArgs;
+  const actual = await EV(kit.adminFacet).restartContract(
+    noDefaultFlowConfigArgs,
+  );
 
   // Expect incarnation 1: first restart from initial deployment
   // (The "remove old contract; start new contract" test creates a new contract
@@ -414,17 +298,16 @@ test.serial('restart contract', async t => {
   const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
   const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
 
-  const { USDC, PoC26, BLD } = agoricNamesRemotes.brand as unknown as Record<
+  const { USDC, PoC26 } = agoricNamesRemotes.brand as unknown as Record<
     string,
     Brand<'nat'>
   >;
   const give = harden({
     Deposit: make(USDC, 3_333n * 1_000_000n),
     Access: make(PoC26, 1n),
-    GmpFee: make(BLD, 1000n),
   });
 
-  const ps = makeProposalShapes(USDC, BLD, PoC26);
+  const ps = makeProposalShapes(USDC, PoC26);
   mustMatch(harden({ give, want: {} }), ps.openPortfolio);
 
   // XXX There is got to be a cleaner way to do this
@@ -519,6 +402,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
 
 test.serial('remove old contract; start new contract', async t => {
   const {
+    runUtils: { EV },
     agoricNamesRemotes,
     refreshAgoricNamesRemotes,
     walletFactoryDriver: wfd,
@@ -534,8 +418,14 @@ test.serial('remove old contract; start new contract', async t => {
     Fee: agoricNamesRemotes.issuer.BLD,
   };
 
+  const { privateArgs } = await (
+    EV.vat('bootstrap').consumeItem as ConsumeBootstrapItem
+  )('ymax0Kit');
+
   const oldBoardId = (instancePre as any).getBoardId();
   const wallet = await wfd.provideSmartWallet(controllerAddr);
+  const postalServiceInstance = agoricNamesRemotes.instance.postalService;
+  t.truthy(postalServiceInstance);
 
   t.log('Invoking ymaxControl to remove old contract');
   await wallet.invokeEntry({
@@ -545,12 +435,25 @@ test.serial('remove old contract; start new contract', async t => {
     args: [{ message: 'restarting contract', target: oldBoardId }],
   });
 
+  const privateArgsOverrides = harden({
+    assetInfo: privateArgs.assetInfo,
+    axelarIds: privateArgs.axelarIds,
+    chainInfo: privateArgs.chainInfo,
+    contracts: privateArgs.contracts,
+    gmpAddresses: privateArgs.gmpAddresses,
+    walletBytecode: privateArgs.walletBytecode,
+    postalServiceInstance,
+  }) satisfies CopyRecord;
+  t.is(passStyleOf(privateArgsOverrides), 'copyRecord');
+
   t.log('Invoking ymaxControl to start new contract');
   await wallet.invokeEntry({
     id: Date.now().toString(),
     targetName: 'ymaxControl',
     method: 'start',
-    args: [{ installation, issuers }],
+    // use privateArgsOverrides as portfolio-control no longer copies those from the kit
+    // @ts-expect-error chainInfo incompatible with Passable?
+    args: [{ installation, issuers, privateArgsOverrides }],
   });
 
   refreshAgoricNamesRemotes();
@@ -569,6 +472,267 @@ test.serial('remove old contract; start new contract', async t => {
     showValue,
   });
 });
+
+test.serial('invite planner', async t => {
+  const {
+    agoricNamesRemotes,
+    refreshAgoricNamesRemotes,
+    walletFactoryDriver: wfd,
+  } = t.context;
+
+  const controllerWallet = await wfd.provideSmartWallet(controllerAddr);
+
+  t.log('Getting new creator facet of ymax0');
+  await controllerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymaxControl',
+    method: 'getCreatorFacet',
+    args: [],
+    saveResult: { name: 'ymax0.creatorFacet-new', overwrite: true },
+  });
+
+  t.log('invite planner');
+  const plannerAddr = 'agoric1planner';
+  const plannerWallet = await wfd.provideSmartWallet(plannerAddr);
+  refreshAgoricNamesRemotes();
+  const postalService = agoricNamesRemotes.instance.postalService;
+
+  await controllerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymax0.creatorFacet-new',
+    method: 'deliverPlannerInvitation',
+    args: [plannerAddr, postalService],
+  });
+
+  t.log('redeem planner invitation');
+  const yInst = agoricNamesRemotes.instance.ymax0;
+  await plannerWallet.executeOffer({
+    id: Date.now().toString(),
+    invitationSpec: {
+      source: 'purse',
+      description: 'planner',
+      instance: yInst,
+    },
+    proposal: {},
+    saveResult: { name: 'planner' },
+  });
+
+  t.pass();
+});
+
+test.serial('invite evm handler', async t => {
+  const {
+    agoricNamesRemotes,
+    refreshAgoricNamesRemotes,
+    walletFactoryDriver: wfd,
+  } = t.context;
+
+  const controllerWallet = await wfd.provideSmartWallet(controllerAddr);
+
+  t.log('Getting new creator facet of ymax0');
+  await controllerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymaxControl',
+    method: 'getCreatorFacet',
+    args: [],
+    saveResult: { name: 'ymax0.creatorFacet-new', overwrite: true },
+  });
+
+  t.log('invite evm handler');
+  const evmHandlerAddr = 'agoric1evmhandler';
+  const evmHandlerWallet = await wfd.provideSmartWallet(evmHandlerAddr);
+  refreshAgoricNamesRemotes();
+  const postalService = agoricNamesRemotes.instance.postalService;
+
+  await controllerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymax0.creatorFacet-new',
+    method: 'deliverEVMWalletHandlerInvitation',
+    args: [evmHandlerAddr, postalService],
+  });
+
+  t.log('redeem evm handler invitation');
+  const yInst = agoricNamesRemotes.instance.ymax0;
+  await evmHandlerWallet.executeOffer({
+    id: Date.now().toString(),
+    invitationSpec: {
+      source: 'purse',
+      description: 'evmWalletHandler',
+      instance: yInst,
+    },
+    proposal: {},
+    saveResult: { name: 'evmWalletHandler' },
+  });
+
+  t.pass();
+});
+
+const evmOpen = test.macro(
+  async (t, spender: 'remoteAccountRouter' | 'depositFactory') => {
+    const wfd = t.context.walletFactoryDriver;
+
+    const evmHandlerAddr = 'agoric1evmhandler';
+    const evmHandlerWallet = await wfd.provideSmartWallet(evmHandlerAddr);
+
+    t.log('open portfolio', { spender });
+    // TODO: get from context, ambient random
+    const userPrivateKey = generatePrivateKey();
+    const userAccount = privateKeyToAccount(userPrivateKey);
+
+    const deadline = CURRENT_TIME + 3600n;
+    // not a secure nonce, but sufficient for test purposes
+    const nonce = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+
+    const deposit: TokenPermissions = {
+      token: axelarConfig.Arbitrum.contracts.usdc,
+      amount: 1_000n * 1_000_000n,
+    };
+
+    const allocations: TargetAllocation[] = [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ];
+
+    const witness = getYmaxWitness('OpenPortfolio', { allocations });
+
+    const spenderAddress = axelarConfig.Arbitrum.contracts[spender];
+    if (!spenderAddress || spenderAddress.length <= 2) {
+      t.log(`No address configured for spender ${spender}`);
+      t.pass();
+      return;
+    }
+
+    const openPortfolioMessage = getPermitWitnessTransferFromData(
+      {
+        permitted: deposit,
+        spender: spenderAddress,
+        nonce,
+        deadline,
+      },
+      axelarConfig.Arbitrum.contracts.permit2,
+      BigInt(axelarConfig.Arbitrum.chainInfo.reference),
+      witness,
+    );
+
+    const signature = await userAccount.signTypedData(openPortfolioMessage);
+
+    t.log('signed message', { ...openPortfolioMessage, signature });
+
+    await evmHandlerWallet.invokeEntry({
+      id: Date.now().toString(),
+      targetName: 'evmWalletHandler',
+      method: 'handleMessage',
+      args: [{ ...openPortfolioMessage, signature } as CopyRecord],
+    });
+
+    const walletUpdate = t.context.readPublished(
+      `ymax0.evmWallets.${userAccount.address}`,
+    );
+    t.like(walletUpdate, {
+      updated: 'messageUpdate',
+      nonce,
+      deadline,
+      status: 'ok',
+    });
+
+    // @ts-expect-error t.like doesn't narrow sufficiently
+    const portfolio = walletUpdate.result as `portfolio${number}`;
+
+    const portfolios = t.context.readPublished(
+      `ymax0.evmWallets.${userAccount.address}.portfolio`,
+    );
+
+    t.true(portfolios.some(p => p.endsWith(portfolio)));
+  },
+);
+
+test.serial(
+  'open portfolio from evm with depositFactory',
+  evmOpen,
+  'depositFactory',
+);
+test.serial(
+  'open portfolio from evm with remoteAccountRouter',
+  evmOpen,
+  'remoteAccountRouter',
+);
+
+test.serial(
+  'rejects a signed EIP-712 message with an invalid non-first array element',
+  async t => {
+    const wfd = t.context.walletFactoryDriver;
+    const evmHandlerAddr = 'agoric1evmhandler';
+    const evmHandlerWallet = await wfd.provideSmartWallet(evmHandlerAddr);
+
+    const userPrivateKey = generatePrivateKey();
+    const userAccount = privateKeyToAccount(userPrivateKey);
+
+    const deadline = CURRENT_TIME + 3600n;
+    const nonce = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+
+    const deposit: TokenPermissions = {
+      token: axelarConfig.Arbitrum.contracts.usdc,
+      amount: 1_000n * 1_000_000n,
+    };
+
+    const allocations: TargetAllocation[] = [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ];
+
+    // getYmaxWitness's own normalization already validated this data;
+    // corrupt it afterward to simulate an untrusted relay sending different
+    // data than what it validated, exercising handleMessage's own
+    // validation instead. The invalid element (a number, not a string, for
+    // `instrument`) is second, not first: regression coverage for an
+    // XS-only bug where eip712-normalize.ts's array handling silently
+    // skipped every element past the first -- see
+    // packages/xsnap/test/xs-js.test.js.
+    const witness = getYmaxWitness('OpenPortfolio', { allocations });
+    // @ts-expect-error deliberately violating the declared `string` type
+    witness.witness.allocations[1] = { instrument: 42, portion: 4000n };
+
+    const openPortfolioMessage = getPermitWitnessTransferFromData(
+      {
+        permitted: deposit,
+        spender: axelarConfig.Arbitrum.contracts.depositFactory,
+        nonce,
+        deadline,
+      },
+      axelarConfig.Arbitrum.contracts.permit2,
+      BigInt(axelarConfig.Arbitrum.chainInfo.reference),
+      witness,
+    );
+
+    const signature = await userAccount.signTypedData(openPortfolioMessage);
+
+    const id = Date.now().toString();
+    await evmHandlerWallet.invokeEntry({
+      id,
+      targetName: 'evmWalletHandler',
+      method: 'handleMessage',
+      args: [
+        {
+          ...openPortfolioMessage,
+          signature,
+          // Bypasses recoverTypedDataAddress, so this test targets
+          // handleMessage's own EIP-712 type validation specifically,
+          // independent of signature recovery.
+          verifiedSigner: userAccount.address,
+        } as CopyRecord,
+      ],
+    });
+
+    // handleMessage rejects before ever reaching the ymax0 contract's own
+    // status publishing, so the failure only shows up on the smart wallet's
+    // own generic invocation-result record, not `ymax0.evmWallets.*`.
+    const invocation = t.context.readPublished(`wallet.${evmHandlerAddr}`);
+    t.log('invocation result', invocation);
+    t.like(invocation, { updated: 'invocation', id });
+    // @ts-expect-error readPublished doesn't know this path's shape
+    t.regex(invocation.error, /Expected a string for EIP-712 type "string"/);
+  },
+);
 
 test.serial(
   'CCTP settlement with old invitation doesnt work with new contract instance',
@@ -706,10 +870,81 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
   });
 });
 
+test.serial(
+  'upgrade contract preserves portfolios and allows opening without Access',
+  async t => {
+    const {
+      runUtils: { EV },
+      agoricNamesRemotes,
+      walletFactoryDriver: wfd,
+    } = t.context;
+
+    t.truthy(agoricNamesRemotes.instance.ymax0);
+
+    const controllerWallet = await wfd.provideSmartWallet(controllerAddr);
+    const wallet = await wfd.provideSmartWallet(beneficiary);
+
+    const getPortfolioCount = () => {
+      try {
+        const portfolioData = t.context.readPublished('ymax0.portfolios');
+        const match = portfolioData.addPortfolio.match(/^portfolio(\d+)$/);
+        return parseInt(match![1], 10) + 1;
+      } catch {
+        return 0;
+      }
+    };
+
+    const portfolioCountBefore = getPortfolioCount();
+    t.log('Portfolios before upgrade:', portfolioCountBefore);
+
+    const zoe = await EV.vat('bootstrap').consumeItem('zoe');
+    const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+    // Scope choice for this test: upgrade-to-current-installation is intentional.
+    // This validates upgrade plumbing + state preservation + post-upgrade behavior,
+    // but does not attempt to prove an old-bundle -> new-bundle migration.
+    const installation = await EV(agoricNames).lookup('installation', 'ymax0');
+    const bundleId = await EV(zoe).getBundleIDFromInstallation(installation);
+    t.true(typeof bundleId === 'string' && bundleId.length > 0);
+
+    await controllerWallet.invokeEntry({
+      id: `upgrade-${Date.now()}`,
+      targetName: 'ymaxControl',
+      method: 'upgrade',
+      args: [{ bundleId }],
+    });
+
+    const portfolioCountAfterUpgrade = getPortfolioCount();
+    t.is(
+      portfolioCountAfterUpgrade,
+      portfolioCountBefore,
+      'Upgrade should preserve existing portfolios',
+    );
+
+    await wallet.sendOffer({
+      id: `open-after-upgrade-no-access`,
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['ymax0'],
+        callPipe: [['makeOpenPortfolioInvitation']],
+      },
+      proposal: { give: {} },
+      offerArgs: {},
+    });
+    await eventLoopIteration();
+
+    const portfolioCountAfterOpen = getPortfolioCount();
+    t.is(
+      portfolioCountAfterOpen,
+      portfolioCountBefore + 1,
+      'Should open one additional portfolio after upgrade without Access',
+    );
+  },
+);
+
 const { make } = AmountMath;
 
 // give: ...rest: {"Access":{"brand":"[Alleged: BoardRemotePoC26 brand]","value":"[1n]"}} - Must be: {}
-test.skip('open a USDN position', async t => {
+test.failing('open a USDN position', async t => {
   const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
 
   for (const { msg, ack } of Object.values(

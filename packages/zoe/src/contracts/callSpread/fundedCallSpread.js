@@ -1,18 +1,23 @@
-/// <reference path="./types-ambient.js" />
+/// <reference path="./types.js" />
 
-import { makePromiseKit } from '@endo/promise-kit';
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
+import { E } from '@endo/eventual-send';
+import { makePromiseKit } from '@endo/promise-kit';
 import {
+  assertNatAssetKind,
   assertProposalShape,
   depositToSeat,
-  assertNatAssetKind,
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
 
 /**
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
+ * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {PositionKind} from './types.js';
+ * @import {PayoffHandler} from './types.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 /**

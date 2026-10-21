@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import bundleSource from '@endo/bundle-source';
 
@@ -19,8 +19,8 @@ test('throw in offerHandler', async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  vatAdminState.installBundle('b1-throw', bundle);
-  const installation = await E(zoe).installBundleID('b1-throw');
+  const b1throw = vatAdminState.registerBundle('b1-throw', bundle);
+  const installation = await E(zoe).installBundleID(b1throw);
 
   const { creatorFacet } = await E(zoe).startInstance(installation);
 

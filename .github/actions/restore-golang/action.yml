@@ -16,12 +16,11 @@ runs:
     - name: set default environment variables
       run: echo GOPATH="$HOME/go" >> $GITHUB_ENV
       shell: bash
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         path: ${{ inputs.path }}
         clean: 'false'
-        submodules: 'true'
-    - uses: actions/setup-go@v5
+    - uses: actions/setup-go@v6
       with:
         cache-dependency-path: ${{ inputs.path }}/golang/cosmos/go.sum
         go-version: ${{ inputs.go-version }}

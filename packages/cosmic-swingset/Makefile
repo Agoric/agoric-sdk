@@ -58,19 +58,6 @@ $(EVAL_CLEAN): $(EVAL_CODE)
 	./scripts/clean-core-eval.js $< >$@.t || { rm -f $@.t; exit 1; }
 	mv $@.t $@
 
-INTER_PROTO=../inter-protocol
-
-start-committee: $(INTER_PROTO)/gov-econ-committee.js
-	make EVAL_CODE=$(INTER_PROTO)/gov-econ-committee.js \
-		EVAL_PERMIT=$(INTER_PROTO)/gov-econ-committee-permit.json \
-		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
-
-
-start-amm-etc: $(INTER_PROTO)/gov-amm-vaults-etc.js
-	make EVAL_CODE=$(INTER_PROTO)/gov-amm-vaults-etc.js \
-		EVAL_PERMIT=$(INTER_PROTO)/gov-amm-vaults-etc-permit.json \
-		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
-
 gov-q:
 	$(AGCH) query gov proposals --output json | \
 		jq -c '.proposals[] | [if .proposal_id == null then .id else .proposal_id end,.voting_end_time,.status]'
@@ -103,7 +90,7 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
-BOOT_COINS=1000000000000000ubld,500000000000000uist,100provisionpass,100sendpacketpass,1000000000000ibc/toyusdc,1000000000000ibc/toyatom
+BOOT_COINS=1500000000000000ubld,100provisionpass,100sendpacketpass,1000000000000ibc/toyusdc,1000000000000ibc/toyatom
 
 # Deprecated.
 scenario2-setup-nobuild: scenario2-setup
@@ -194,7 +181,7 @@ scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
 AGORIC_POWERS = agoric.ALL_THE_POWERS
-SOLO_COINS = 13000000ubld,12345000000uist,1122000000ibc/toyusdc,3344000000ibc/toyatom
+SOLO_COINS = 12345000000ubld,1122000000ibc/toyusdc,3344000000ibc/toyatom
 COSMOS_RPC_HOST = localhost
 COSMOS_RPC_PORT = 26657
 wait-for-cosmos:
@@ -247,7 +234,7 @@ t1-provision-one-with-powers: wait-for-cosmos
 fund-provision-pool:
 	PROVISION_POOL=$$($(AGCH) query auth module-account vbank/provision -ojson | \
 	  jq -e -r '.account | .value // .base_account | .address') && \
-	  $(MAKE) ACCT_ADDR="$$PROVISION_POOL" FUNDS=1000000000ibc/toyusdc fund-acct
+	  $(MAKE) ACCT_ADDR="$$PROVISION_POOL" FUNDS=1000000000ubld fund-acct
 
 fund-acct:
 	$(AGCH) \
@@ -304,7 +291,7 @@ t1/$(BASE_PORT)/cosmos-fee-account.setup:
 	test ! -f t1/$(BASE_PORT)/cosmos-fee-account || \
 	  $(AGCH) --home=t1/$(BASE_PORT)/owner --keyring-backend=test tx feegrant grant \
 		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) --from=owner \
-		--period=5 --period-limit=200uist $$(cat t1/$(BASE_PORT)/cosmos-fee-account) $$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address)
+		--period=5 --period-limit=200ubld $$(cat t1/$(BASE_PORT)/cosmos-fee-account) $$(cat t1/$(BASE_PORT)/ag-cosmos-helper-address)
 	date > $@
 
 # Actually start the ag-solo.
@@ -313,7 +300,7 @@ t1-start-ag-solo: t1/$(BASE_PORT)/cosmos-client-account.setup t1/$(BASE_PORT)/co
 	$(AGCH) query auth account $$addr >/dev/null 2>&1 || \
 		$(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
 		--gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
-		bootstrap $$addr 1uist
+		bootstrap $$addr 1ubld
 	cd t1/$(BASE_PORT) && \
 		SOLO_OTEL_EXPORTER_PROMETHEUS_PORT=$(SOLO_OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AG_SOLO) start

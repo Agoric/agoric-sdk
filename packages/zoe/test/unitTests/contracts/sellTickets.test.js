@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { assert } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
@@ -13,6 +13,10 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 import { defaultAcceptanceMsg } from '../../../src/contractSupport/index.js';
 
+/**
+ * @import {Amount} from '@agoric/ertp';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const mintAndSellNFTRoot = `${dirname}/../../../src/contracts/mintAndSellNFT.js`;
@@ -24,12 +28,15 @@ test(`mint and sell tickets for multiple shows`, async t => {
   const zoe = makeZoeForTest(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
-  vatAdminState.installBundle('b1-nft', mintAndSellNFTBundle);
-  const mintAndSellNFTInstallation = await E(zoe).installBundleID('b1-nft');
+  const b1nft = vatAdminState.registerBundle('b1-nft', mintAndSellNFTBundle);
+  const mintAndSellNFTInstallation = await E(zoe).installBundleID(b1nft);
 
   const sellItemsBundle = await bundleSource(sellItemsRoot);
-  vatAdminState.installBundle('b1-sell-items', sellItemsBundle);
-  const sellItemsInstallation = await E(zoe).installBundleID('b1-sell-items');
+  const b1sellitems = vatAdminState.registerBundle(
+    'b1-sell-items',
+    sellItemsBundle,
+  );
+  const sellItemsInstallation = await E(zoe).installBundleID(b1sellitems);
 
   const { issuer: moolaIssuer, brand: moolaBrand } = makeIssuerKit('moola');
 
@@ -152,12 +159,15 @@ test(`mint and sell opera tickets`, async t => {
   const zoe = makeZoeForTest(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
-  vatAdminState.installBundle('b1-nft', mintAndSellNFTBundle);
-  const mintAndSellNFTInstallation = await E(zoe).installBundleID('b1-nft');
+  const b1nft = vatAdminState.registerBundle('b1-nft', mintAndSellNFTBundle);
+  const mintAndSellNFTInstallation = await E(zoe).installBundleID(b1nft);
 
   const sellItemsBundle = await bundleSource(sellItemsRoot);
-  vatAdminState.installBundle('b1-sell-items', sellItemsBundle);
-  const sellItemsInstallation = await E(zoe).installBundleID('b1-sell-items');
+  const b1sellitems = vatAdminState.registerBundle(
+    'b1-sell-items',
+    sellItemsBundle,
+  );
+  const sellItemsInstallation = await E(zoe).installBundleID(b1sellitems);
 
   // === Initial Opera de Bordeaux part ===
 
@@ -560,12 +570,15 @@ test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   const zoe = makeZoeForTest(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
-  vatAdminState.installBundle('b1-nft', mintAndSellNFTBundle);
-  const mintAndSellNFTInstallation = await E(zoe).installBundleID('b1-nft');
+  const b1nft = vatAdminState.registerBundle('b1-nft', mintAndSellNFTBundle);
+  const mintAndSellNFTInstallation = await E(zoe).installBundleID(b1nft);
 
   const sellItemsBundle = await bundleSource(sellItemsRoot);
-  vatAdminState.installBundle('b1-sell-items', sellItemsBundle);
-  const sellItemsInstallation = await E(zoe).installBundleID('b1-sell-items');
+  const b1sellitems = vatAdminState.registerBundle(
+    'b1-sell-items',
+    sellItemsBundle,
+  );
+  const sellItemsInstallation = await E(zoe).installBundleID(b1sellitems);
 
   const { issuer: moolaIssuer, brand: moolaBrand } = makeIssuerKit('moola');
 

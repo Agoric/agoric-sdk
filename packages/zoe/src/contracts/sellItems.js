@@ -1,18 +1,25 @@
-import { Fail } from '@endo/errors';
-import { Far } from '@endo/marshal';
-import { Nat } from '@endo/nat';
 import { AmountMath } from '@agoric/ertp';
 import {
   makeNotifierKit,
   observeIteration,
   subscribeLatest,
 } from '@agoric/notifier';
+import { Fail } from '@endo/errors';
+import { Far } from '@endo/marshal';
+import { Nat } from '@endo/nat';
 import {
   assertIssuerKeywords,
-  defaultAcceptanceMsg,
-  assertProposalShape,
   assertNatAssetKind,
+  assertProposalShape,
+  defaultAcceptanceMsg,
 } from '../contractSupport/index.js';
+
+/**
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {SellItemsPublicFacet} from './types.js';
+ * @import {SellItemsCreatorFacet} from './types.js';
+ * @import {Amount} from '@agoric/ertp';
+ */
 
 /**
  * Sell items in exchange for money. Items may be fungible or

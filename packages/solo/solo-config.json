@@ -5,6 +5,9 @@
   "bundles":{
     "agoricNames": {
       "sourceSpec": "@agoric/vats/src/vat-agoricNames.js"
+    },
+    "spawn": {
+      "sourceSpec": "@agoric/spawner/src/vat-spawned.js"
     }
   },
   "vats": {

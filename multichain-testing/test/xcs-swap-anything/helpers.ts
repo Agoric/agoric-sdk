@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import { osmosis } from 'osmojs';
 import {
   MsgStoreCode,
@@ -12,9 +13,9 @@ import type { SigningStargateClient } from '@cosmjs/stargate';
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { toUtf8 } from '@cosmjs/encoding';
 import { $ } from 'execa';
-import { writeFileSync } from 'fs';
-import fs from 'fs/promises';
-import path from 'path';
+import { writeFileSync } from 'node:fs';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import {
   createFundedWalletAndClient,
   makeIBCTransferMsg,
@@ -43,7 +44,7 @@ export type SwapParty = { chain: string; denom: string; amount?: string };
 export type Pair = { tokenA: SwapParty; tokenB: SwapParty };
 
 type ContractInfoBase<TArgs> = {
-  codeId: number | null;
+  codeId: bigint | null;
   address: string | null;
   label: string;
   instantiateArgs: TArgs;
@@ -186,6 +187,7 @@ export const makeOsmosisSwapTools = async t => {
     }
     t.is(txRes.code, 0, `Transaction succeeded`);
 
+    // eslint-disable-next-line no-use-before-define
     const denom = await getDenomHash(
       destinationChain,
       issuingChain,
@@ -194,8 +196,7 @@ export const makeOsmosisSwapTools = async t => {
 
     const getDenomAmount = balances => {
       const balance = balances.find(coin => coin.denom === `ibc/${denom}`);
-      const amount = balance ? Number(balance.amount) : 0;
-      return amount;
+      return balance ? Number(balance.amount) : 0;
     };
 
     await retryUntilCondition(
@@ -266,7 +267,6 @@ export const makeOsmosisSwapTools = async t => {
   };
 
   const downloadXcsContracts = async (
-    xcsContracts: Contracts,
     branch: string = osmosisBranch,
     scriptPath: string = scriptLocalPath,
     artifactsPath: string = xcsArtifactsPath,
@@ -276,6 +276,7 @@ export const makeOsmosisSwapTools = async t => {
       wasmFiles.push(`${label}.wasm`);
     }
 
+    await null;
     try {
       await $`${scriptPath} osmosis-labs osmosis ${branch} tests/ibc-hooks/bytecode ${artifactsPath} ${wasmFiles}`;
     } catch (error) {
@@ -364,6 +365,7 @@ export const makeOsmosisSwapTools = async t => {
   };
 
   const persistXcsInfo = async () => {
+    await null;
     try {
       const sanitizedContracts = JSON.parse(
         JSON.stringify(xcsContracts, bigintReplacer),
@@ -380,7 +382,9 @@ export const makeOsmosisSwapTools = async t => {
   };
 
   const areContractsInstantiated = async () => {
+    await null;
     try {
+      // eslint-disable-next-line no-use-before-define
       await queryContractsInfo();
       return true;
     } catch {
@@ -389,6 +393,7 @@ export const makeOsmosisSwapTools = async t => {
   };
 
   const updateLocalXcsContracts = async () => {
+    // eslint-disable-next-line no-use-before-define
     const contractInfo = await queryContractsInfo();
 
     const sanitizedContracts = JSON.parse(
@@ -449,7 +454,7 @@ export const makeOsmosisSwapTools = async t => {
           {
             operation: 'set',
             chain_name: name,
-            prefix: prefix,
+            prefix,
           },
         ],
       },
@@ -483,6 +488,7 @@ export const makeOsmosisSwapTools = async t => {
     ]);
 
     await retryUntilCondition(
+      // eslint-disable-next-line no-use-before-define
       () => hasPacketForwarding(chain),
       (result: boolean) => result,
       `PFM not enabled for ${chain}`,
@@ -497,6 +503,7 @@ export const makeOsmosisSwapTools = async t => {
   const enablePfmInBatch = async (chains: SwapParty[]) => {
     for await (const { chain, denom } of chains) {
       console.log('Proposing PFM for', chain);
+      // eslint-disable-next-line no-use-before-define
       const chainHashOnOsmosis = await getDenomHash('osmosis', chain, denom);
       await setupPfmEnabled({
         chain,
@@ -507,8 +514,10 @@ export const makeOsmosisSwapTools = async t => {
   };
 
   const isXcsStateSet = async (channelList: Channel[]) => {
+    await null;
     try {
       for (const channel of channelList) {
+        // eslint-disable-next-line no-use-before-define
         await getXcsState(channel);
         console.log(
           `Xcs State verified for ${channel.primary} ${channel.counterParty}`,
@@ -534,7 +543,9 @@ export const makeOsmosisSwapTools = async t => {
       gas: '1000000',
     };
 
+    // eslint-disable-next-line no-use-before-define
     const inDenom = await getFinalDenom('osmosis', chainA);
+    // eslint-disable-next-line no-use-before-define
     const outDenom = await getFinalDenom('osmosis', chainB);
 
     const message = MsgCreateBalancerPool.fromPartial({
@@ -755,19 +766,20 @@ export const makeOsmosisSwapTools = async t => {
 
   const setupXcsContracts = async (forceInstall = false) => {
     console.log('Setting XCS contracts ...');
+    await null;
     if (!(await areContractsInstantiated()) || forceInstall) {
       console.log(`XCS contracts being downloaded ...`);
-      await downloadXcsContracts(xcsContracts);
+      await downloadXcsContracts();
 
       console.log(`XCS contracts being instantiated ...`);
-      for (const contract in xcsContracts) {
-        const { label, instantiateArgs } = xcsContracts[contract];
+      for (const contract of Object.values(xcsContracts)) {
+        const { label, instantiateArgs } = contract;
         const { codeId, address } = await instantiateSingleXcsContract(
           label,
           instantiateArgs,
         );
-        xcsContracts[contract].codeId = codeId;
-        xcsContracts[contract].address = address;
+        contract.codeId = codeId;
+        contract.address = address;
 
         if (label === 'swaprouter') {
           xcsContracts.crosschain_swaps.instantiateArgs.swap_contract = address;
@@ -793,21 +805,22 @@ export const makeOsmosisSwapTools = async t => {
     channelList: Channel[],
   ) => {
     console.log('Setting XCS state ...');
-
-    if (!(await isXcsStateSet(channelList))) {
-      for await (const { chain, prefix } of prefixList) {
-        console.log(`Setting Prefix for ${chain} ...`);
-        await setupXcsPrefix(chain, prefix);
-      }
-
-      for await (const { primary, counterParty } of channelList) {
-        console.log(
-          `Setting Channel Link for ${primary} and ${counterParty} ...`,
-        );
-        await setupXcsChannelLink(primary, counterParty);
-      }
-    } else {
+    const alreadyDone = await isXcsStateSet(channelList);
+    if (alreadyDone) {
       console.log('XCS contracts already set');
+      return;
+    }
+
+    for await (const { chain, prefix } of prefixList) {
+      console.log(`Setting Prefix for ${chain} ...`);
+      await setupXcsPrefix(chain, prefix);
+    }
+
+    for await (const { primary, counterParty } of channelList) {
+      console.log(
+        `Setting Channel Link for ${primary} and ${counterParty} ...`,
+      );
+      await setupXcsChannelLink(primary, counterParty);
     }
   };
 
@@ -817,6 +830,7 @@ export const makeOsmosisSwapTools = async t => {
   };
 
   const isRouteSet = async (chainA: SwapParty, chainB: SwapParty) => {
+    await null;
     try {
       await getPoolRoute(chainA, chainB);
       return true;
@@ -833,23 +847,25 @@ export const makeOsmosisSwapTools = async t => {
     chainA: SwapParty = { chain: 'agoric', denom: 'ubld', amount: '1000000' },
     chainB: SwapParty = { chain: 'osmosis', denom: 'uosmo', amount: '1000000' },
   ) => {
-    if (!(await isRouteSet(chainA, chainB))) {
-      console.log(
-        `Pool being created with assets ${chainA.denom} and ${chainB.denom}`,
-      );
-      await Promise.all([
-        fundRemoteIfNecessary(chainA),
-        fundRemoteIfNecessary(chainB),
-      ]);
-      const { poolId, inDenom, outDenom } = await createPool(chainA, chainB);
-      // Don't Promise.all here to avoid sequence number mismatch
-      await setPoolRoute(inDenom, outDenom, poolId.toString());
-      await setPoolRoute(outDenom, inDenom, poolId.toString());
-    } else {
+    const alreadyDone = await isRouteSet(chainA, chainB);
+    if (alreadyDone) {
       console.log(
         `Pool with assets ${chainA.denom} and ${chainB.denom} already exists`,
       );
+      return;
     }
+
+    console.log(
+      `Pool being created with assets ${chainA.denom} and ${chainB.denom}`,
+    );
+    await Promise.all([
+      fundRemoteIfNecessary(chainA),
+      fundRemoteIfNecessary(chainB),
+    ]);
+    const { poolId, inDenom, outDenom } = await createPool(chainA, chainB);
+    // Don't Promise.all here to avoid sequence number mismatch
+    await setPoolRoute(inDenom, outDenom, poolId.toString());
+    await setPoolRoute(outDenom, inDenom, poolId.toString());
   };
 
   const setupPoolsInBatch = async (pools: Pair[]) => {
@@ -908,10 +924,10 @@ export const makeWaitUntilIbcTransfer =
       ({ currentBalances, targetDenom }) => {
         // undefined if not received yet
         const targetBalanceBefore = balancesBefore.find(
-          ({ denom }) => denom === targetDenom,
+          entry => entry.denom === targetDenom,
         );
         const targetBalanceNow = currentBalances.find(
-          ({ denom }) => denom === targetDenom,
+          entry => entry.denom === targetDenom,
         );
         console.log('Balance change: ', {
           targetBalanceBefore,

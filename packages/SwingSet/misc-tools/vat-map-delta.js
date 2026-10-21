@@ -1,7 +1,7 @@
 // @ts-nocheck
 import '@endo/init';
-import fs from 'fs';
-import process from 'process';
+import fs from 'node:fs';
+import process from 'node:process';
 
 // run this against maps created by vat-map-from-swingstore.js, like:
 //  node vat-map-delta.js vat-map-04.json vat-map-05.json

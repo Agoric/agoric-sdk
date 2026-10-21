@@ -6,11 +6,8 @@ import { assert } from '@endo/errors';
 import { kser } from '@agoric/kmarshal';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
-import {
-  buildKernelBundles,
-  initializeSwingset,
-  makeSwingsetController,
-} from '../../src/index.js';
+import { buildKernelBundles, makeSwingsetController } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import { bundleOpts } from '../util.js';
 
 function bfile(name) {

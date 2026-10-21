@@ -1,16 +1,22 @@
 // @ts-check
 
 import { sendAction } from 'agoric/src/lib/index.js';
-import { inspect } from 'util';
+import { inspect } from 'node:util';
+
+/**
+ * @import {SmartWalletKit} from '@agoric/client-utils';
+ * @import {MinimalNetworkConfig} from '@agoric/client-utils';
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ */
 
 /**
  * Stop-gap using execFileSync until we have a pure JS signing client.
  *
  * @param {object} root0
  * @param {import('child_process')['execFileSync']} root0.execFileSync
- * @param {import('@agoric/client-utils').SmartWalletKit} root0.smartWalletKit
+ * @param {SmartWalletKit} root0.smartWalletKit
  * @param {any} root0.delay
- * @param {import('@agoric/client-utils').MinimalNetworkConfig} networkConfig
+ * @param {MinimalNetworkConfig} networkConfig
  */
 export const makeAgdWalletKit = async (
   { execFileSync, smartWalletKit, delay },
@@ -19,7 +25,7 @@ export const makeAgdWalletKit = async (
   /**
    *
    * @param {string} from
-   * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
+   * @param {BridgeAction} bridgeAction
    */
   const broadcastBridgeAction = async (from, bridgeAction) => {
     console.log('broadcastBridgeAction', inspect(bridgeAction, { depth: 10 }));

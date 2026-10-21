@@ -1,0 +1,88 @@
+name: Build Package Bundles
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+      branch:
+        required: false
+        type: string
+        default: master
+    outputs:
+      artifact-name:
+        description: Uploaded artifact name
+        value: ${{ jobs.build-bundle.outputs.artifact-name }}
+      bundle-id:
+        description: First bundle id emitted by the package, if any
+        value: ${{ jobs.build-bundle.outputs.bundle-id }}
+      branch:
+        description: Branch that was built
+        value: ${{ jobs.build-bundle.outputs.branch }}
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package name
+        required: true
+        type: string
+      branch:
+        description: Branch name to checkout
+        required: false
+        type: string
+        default: master
+
+jobs:
+  build-bundle:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.outputs.outputs.artifact-name }}
+      bundle-id: ${{ steps.outputs.outputs.bundle-id }}
+      branch: ${{ steps.outputs.outputs.branch }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.branch }}
+          persist-credentials: false
+
+      - name: Clean repository
+        run: git clean -xdf
+
+      - uses: ./.github/actions/setup-agoric-sdk-build
+
+      - name: Build package bundle
+        working-directory: packages/${{ inputs.package }}
+        run: |
+          set -euo pipefail
+          yarn build:bundle
+          if jq -e '.scripts["build:bundle-id"]' package.json >/dev/null; then
+            yarn build:bundle-id
+          fi
+
+      - name: Set outputs
+        id: outputs
+        env:
+          PACKAGE: ${{ inputs.package }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          artifact_name="package-artifacts-$PACKAGE"
+          echo "artifact-name=$artifact_name" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          shopt -s nullglob
+          bundle_id_files=(packages/"$PACKAGE"/dist/*.bundleId)
+          if [[ ${#bundle_id_files[@]} -ge 1 ]]; then
+            echo "bundle-id=$(cat "${bundle_id_files[0]}")" >> "$GITHUB_OUTPUT"
+          else
+            echo "bundle-id=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.outputs.outputs.artifact-name }}
+          path: packages/${{ inputs.package }}/dist/

@@ -1,21 +1,23 @@
-/* eslint-env node */
 /* eslint no-await-in-loop: ["off"] */
 
-import { finished } from 'stream/promises';
-import { PassThrough, Readable } from 'stream';
-import { promisify } from 'util';
-import { fileURLToPath } from 'url';
+import { finished } from 'node:stream/promises';
+import { PassThrough, Readable } from 'node:stream';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import { Fail, q } from '@endo/errors';
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
 import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
 import { makePromiseKit, racePromises } from '@endo/promise-kit';
-import { forever } from '@agoric/internal';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 
-/** @import {PromiseKit} from '@endo/promise-kit' */
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {spawn} from 'child_process';
+ * @import {TmpNameOptions} from 'tmp';
+ */
 
 /**
- * @typedef {typeof import('child_process').spawn} Spawn
+ * @typedef {typeof spawn} Spawn
  * @import {Writable} from 'stream'
  */
 
@@ -39,6 +41,46 @@ const SNAPSHOT_LOAD_FD = 8;
 const { freeze } = Object;
 
 const noop = freeze(() => {});
+
+/**
+ * Resolve the xsnap worker binary path.
+ *
+ * `XSNAP_WORKER` may override both modes.
+ * `XSNAP_WORKER_DEBUG` overrides debug mode only.
+ *
+ * @param {{
+ *   os: string,
+ *   debug: boolean,
+ *   env: Record<string, string | undefined>,
+ * }} options
+ */
+export function resolveXsnapWorkerPath({ os, debug, env }) {
+  const platform = {
+    Linux: 'lin',
+    Darwin: 'mac',
+    // Windows_NT: 'win', // One can dream.
+  }[os];
+
+  if (platform === undefined) {
+    throw Error(`xsnap does not support platform ${os}`);
+  }
+
+  if (debug && env.XSNAP_WORKER_DEBUG) {
+    return env.XSNAP_WORKER_DEBUG;
+  }
+  if (env.XSNAP_WORKER) {
+    return env.XSNAP_WORKER;
+  }
+
+  return fileURLToPath(
+    new URL(
+      `../xsnap-native/xsnap/build/bin/${platform}/${
+        debug ? 'debug' : 'release'
+      }/xsnap-worker`,
+      import.meta.url,
+    ),
+  );
+}
 
 /**
  * @param {Uint8Array} arg
@@ -67,7 +109,7 @@ const safeHintFromDescription = description =>
  * @callback MakeSnapshotLoader
  * @param {AsyncIterable<Uint8Array>} sourceBytes
  * @param {string} description
- * @param {{fs: Pick<typeof import('fs/promises'), 'open' | 'unlink'>, ptmpName: (opts: import('tmp').TmpNameOptions) => Promise<string>}} ioPowers
+ * @param {{fs: Pick<typeof import('fs/promises'), 'open' | 'unlink'>, ptmpName: (opts: TmpNameOptions) => Promise<string>}} ioPowers
  * @returns {Promise<SnapshotLoader>}
  */
 
@@ -165,31 +207,14 @@ export async function xsnap(options) {
     env = process.env,
   } = options;
 
-  const platform = {
-    Linux: 'lin',
-    Darwin: 'mac',
-    // Windows_NT: 'win', // One can dream.
-  }[os];
-
-  if (platform === undefined) {
-    throw Error(`xsnap does not support platform ${os}`);
-  }
-
-  let bin = fileURLToPath(
-    new URL(
-      `../xsnap-native/xsnap/build/bin/${platform}/${
-        debug ? 'debug' : 'release'
-      }/xsnap-worker`,
-      import.meta.url,
-    ),
-  );
+  let bin = resolveXsnapWorkerPath({ os, debug, env });
 
   /** @type {PromiseKit<void>} */
   const vatExit = makePromiseKit();
 
   assert(!/^-/.test(name), `name '${name}' cannot start with hyphen`);
 
-  /** @type {(opts: import('tmp').TmpNameOptions) => Promise<string>} */
+  /** @type {(opts: TmpNameOptions) => Promise<string>} */
   const ptmpName = fs.tmpName && promisify(fs.tmpName);
   const makeSnapshotLoader = snapshotUseFs
     ? makeSnapshotLoaderWithFS
@@ -280,6 +305,7 @@ export async function xsnap(options) {
         snapshotLoader = undefined;
         return cleanup();
       }
+      return undefined;
     });
   }
 
@@ -297,7 +323,8 @@ export async function xsnap(options) {
    * @returns {Promise<RunResult<Uint8Array>>}
    */
   async function runToIdle() {
-    for await (const _ of forever) {
+    await null;
+    for (;;) {
       const iteration = await messagesFromXsnap.next(undefined);
       if (snapshotLoader) {
         const { cleanup } = snapshotLoader;
@@ -354,7 +381,6 @@ export async function xsnap(options) {
         throw Error(`xsnap protocol error: received unknown message <<${m}>>`);
       }
     }
-    throw Error(`unreachable, but tools don't know that`);
   }
 
   /**
@@ -432,7 +458,7 @@ export async function xsnap(options) {
 
   /**
    * @param {string} description
-   * @param {import('@endo/promise-kit').PromiseKit<void>} batonKit
+   * @param {PromiseKit<void>} batonKit
    * @returns {AsyncGenerator<Uint8Array, void, undefined>}
    */
   async function* makeSnapshotInternal(description, batonKit) {

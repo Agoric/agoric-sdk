@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**
@@ -7,6 +5,15 @@ import { makePromiseKit } from '@endo/promise-kit';
  * of them (in order) is running at a time.
  */
 export const makeWithQueue = () => {
+  /**
+   * @type {Array<
+   *   [
+   *     thunk: (value?: unknown) => unknown,
+   *     resolve: (value: unknown) => void,
+   *     reject: (reason?: unknown) => void,
+   *   ]
+   * >}
+   */
   const queue = [];
 
   // Execute the thunk at the front of the queue.
@@ -41,6 +48,7 @@ export const makeWithQueue = () => {
     return function queueCall(...args) {
       // Curry the arguments into the inner function, and
       // resolve/reject with whatever the inner function does.
+      /** @param {unknown} _ */
       const thunk = _ => inner(...args);
       const pr = makePromiseKit();
       queue.push([thunk, pr.resolve, pr.reject]);

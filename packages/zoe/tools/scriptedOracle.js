@@ -3,7 +3,11 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /**
- * @import {ZoeService} from '../src/types-index.js';
+ * @import {Installation, ZoeService} from '@agoric/zoe';
+ * @import {OracleStart} from '../src/contracts/oracle.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {OracleHandler} from '../src/contracts/priceAggregatorTypes.js';
+ * @import {Issuer} from '@agoric/ertp';
  */
 
 /**
@@ -17,8 +21,8 @@ import { Far } from '@endo/marshal';
  * time, the event is 'nothing to report'.
  *
  * @param {Record<string, any>} script
- * @param {Installation<import('../src/contracts/oracle.js').OracleStart>} oracleInstallation
- * @param {import('@agoric/time').TimerService} timer
+ * @param {Installation<OracleStart>} oracleInstallation
+ * @param {TimerService} timer
  * @param {ZoeService} zoe
  * @param {Issuer} feeIssuer
  */

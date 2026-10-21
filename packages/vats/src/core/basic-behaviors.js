@@ -19,7 +19,30 @@ import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 import { makeScopedBridge } from '../bridge.js';
 
-/** @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js'; */
+/**
+ * @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js';
+ * @import {Zone} from '@agoric/zone';
+ * @import {TimerService} from '@agoric/time';
+ * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
+ * @import {InitMsg} from '@agoric/internal/src/chain-utils.js';
+ * @import {start} from '../centralSupply.js';
+ * @import {BootstrapManifest} from './lib-boot.js';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {IssuerKeywordRecord} from '@agoric/zoe';
+ * @import {MapStore} from '@agoric/store';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from './types.ts';
+ * @import {Producer} from './types.ts';
+ * @import {VatLoader} from './types.ts';
+ * @import {ChainBootstrapSpace} from './types.ts';
+ * @import {BootstrapSpace} from './types.ts';
+ * @import {StartedInstanceKitWithLabel} from './types.ts';
+ * @import {StartUpgradable} from './types.ts';
+ * @import {NamedVatPowers} from './types.ts';
+ */
 
 /**
  * TODO: review behaviors carefully for powers that go out of scope, since we
@@ -90,10 +113,12 @@ export const makeVatsFromBundles = async ({
     };
   };
 
-  loadVat.resolve(makeLazyVatLoader());
+  loadVat.resolve(/** @type {VatLoader} */ (makeLazyVatLoader()));
 
   const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
-  loadCriticalVat.resolve(makeLazyVatLoader({ critical: criticalVatKey }));
+  loadCriticalVat.resolve(
+    /** @type {VatLoader} */ (makeLazyVatLoader({ critical: criticalVatKey })),
+  );
 };
 harden(makeVatsFromBundles);
 
@@ -110,13 +135,13 @@ export const produceDiagnostics = async ({ produce }) => {
   produce.instancePrivateArgs.resolve(instancePrivateArgs);
 };
 
-/** @param {BootstrapSpace & { zone: import('@agoric/zone').Zone }} powers */
+/** @param {BootstrapSpace & { zone: Zone }} powers */
 export const produceStartUpgradable = async ({
   zone,
   consume: { diagnostics, zoe },
   produce, // startUpgradable, contractKits
 }) => {
-  /** @type {MapStore<Instance, StartedInstanceKitWithLabel>} */
+  /** @type {MapStore<Instance, StartedInstanceKitWithLabel<any>>} */
   const contractKits = zone.mapStore('ContractKits');
 
   /** @type {StartUpgradable} */
@@ -158,9 +183,9 @@ harden(produceStartUpgradable);
  * }} zoeArgs
  * @param {{
  *   governedParams: Record<string, unknown>;
- *   timer: ERef<import('@agoric/time').TimerService>;
+ *   timer: ERef<TimerService>;
  *   contractGovernor: ERef<Installation>;
- *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
+ *   economicCommitteeCreatorFacet: Promise<CommitteeElectorateCreatorFacet>;
  * }} govArgs
  * @returns {Promise<GovernanceFacetKit<SF>>}
  */
@@ -238,9 +263,9 @@ const startGovernedInstance = async (
 
 /**
  * @param {BootstrapSpace & {
- *   zone: import('@agoric/zone').Zone;
+ *   zone: Zone;
  *   consume: {
- *     economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
+ *     economicCommitteeCreatorFacet: Promise<CommitteeElectorateCreatorFacet>;
  *   };
  * }} powers
  */
@@ -265,7 +290,6 @@ export const produceStartGovernedUpgradable = async ({
    */
   const contractKits = zone.mapStore('GovernedContractKits');
 
-  /** @type {startGovernedUpgradable} */
   const startGovernedUpgradable = async ({
     installation,
     issuerKeywordRecord,
@@ -539,7 +563,7 @@ export const installBootContracts = async ({
  * @param {BootstrapPowers & {
  *   vatParameters: {
  *     argv: {
- *       bootMsg?: import('@agoric/internal/src/chain-utils.js').InitMsg;
+ *       bootMsg?: InitMsg;
  *     };
  *   };
  * }} powers
@@ -563,9 +587,7 @@ export const mintInitialSupply = async ({
   const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
 
   /**
-   * @type {Awaited<
-   *   ReturnType<typeof import('../centralSupply.js').start>
-   * >}
+   * @type {Awaited<ReturnType<typeof start>>}
    */
   const { creatorFacet } = await E(zoe).startInstance(
     centralSupply,
@@ -672,7 +694,7 @@ export const addBankAssets = async ({
 };
 harden(addBankAssets);
 
-/** @type {import('./lib-boot.js').BootstrapManifest} */
+/** @type {BootstrapManifest} */
 export const BASIC_BOOTSTRAP_PERMITS = {
   bridgeCoreEval: true, // Needs all the powers.
   [makeOracleBrands.name]: {

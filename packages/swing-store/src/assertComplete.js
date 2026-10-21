@@ -1,6 +1,11 @@
 /**
- * @param {Pick<import('./internal.js').SwingStoreInternal, 'bundleStore' | 'transcriptStore' | 'snapStore'>} internal
- * @param {Exclude<import('./internal.js').ArtifactMode, 'debug'>} checkMode
+ * @import {SwingStoreInternal} from './internal.js';
+ * @import {ArtifactMode} from './internal.js';
+ */
+
+/**
+ * @param {Pick<SwingStoreInternal, 'bundleStore' | 'transcriptStore' | 'snapStore'>} internal
+ * @param {Exclude<ArtifactMode, 'debug'>} checkMode
  * @returns {void}
  */
 export function assertComplete(internal, checkMode) {

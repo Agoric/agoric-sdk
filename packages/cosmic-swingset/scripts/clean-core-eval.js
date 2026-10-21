@@ -1,6 +1,5 @@
 #! /usr/bin/env node
 /* global globalThis */
-/* eslint-env node */
 import '@endo/init/debug.js';
 import * as farExports from '@endo/far';
 import { isEntrypoint } from '../src/helpers/is-entrypoint.js';
@@ -63,7 +62,7 @@ export const main = async (argv, { readFile, stdout }) => {
 };
 
 if (isEntrypoint(import.meta.url)) {
-  void farExports.E.when(import('fs/promises'), fsp =>
+  void farExports.E.when(import('node:fs/promises'), fsp =>
     main([...process.argv], {
       readFile: fsp.readFile,
       stdout: process.stdout,

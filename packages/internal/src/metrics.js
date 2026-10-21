@@ -123,7 +123,7 @@ export const BLOCK_HISTOGRAM_METRICS = /** @type {const} */ ({
   },
 });
 
-/** @enum {(typeof QueueMetricAspect)[keyof typeof QueueMetricAspect]} */
+/** @typedef {(typeof QueueMetricAspect)[keyof typeof QueueMetricAspect]} QueueMetricAspect */
 export const QueueMetricAspect = /** @type {const} */ ({
   Length: 'length',
   IncrementCount: 'increments',
@@ -230,6 +230,11 @@ export const makeQueueMetrics = ({
 
   let ready = false;
   const lengths = /** @type {TotalMap<string, number>} */ (new Map());
+  /**
+   * @param {string} queueName
+   * @param {number} delta
+   * @param {boolean} [init]
+   */
   const nudge = (queueName, delta, init = false) => {
     if (!lengths.has(queueName)) {
       if (!init) console?.warn('Unknown queue', queueName);
@@ -295,7 +300,7 @@ export const makeQueueMetrics = ({
 };
 
 // All the kernel metrics we are prepared for.
-/** @enum {(typeof MetricType)[keyof typeof MetricType]} MetricType */
+/** @typedef {(typeof MetricType)[keyof typeof MetricType]} MetricType */
 const MetricType = /** @type {const} */ ({
   Counter: 'counter',
   Gauge: 'gauge',

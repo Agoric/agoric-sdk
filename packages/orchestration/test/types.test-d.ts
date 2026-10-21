@@ -3,33 +3,44 @@
  */
 
 import type { HostInterface, HostOf } from '@agoric/async-flow';
-import { type AnyJson, CodecHelper, type JsonSafe } from '@agoric/cosmic-proto';
-import {
-  QueryAllBalancesRequest as QueryAllBalancesRequestType,
-  QueryBalanceRequest as QueryBalanceRequestType,
-  type QueryAllBalancesResponse,
-  type QueryBalanceResponse,
+import type {
+  AnyJson,
+  JsonSafe,
+  MessageBody,
+  Proto3CodecHelper,
+  ResponseTypeUrl,
+  TypeFromUrl,
+} from '@agoric/cosmic-proto';
+import type {
+  QueryAllBalancesResponse as QueryAllBalancesResponseType,
+  QueryBalanceResponse as QueryBalanceResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import {
-  MsgDelegate as MsgDelegateType,
-  type MsgDelegateResponse,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import type { MsgDelegateResponse as MsgDelegateResponseType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
-import { expectAssignable, expectNotType, expectType } from 'tsd';
+import { expectAssignable, expectError, expectNotType, expectType } from 'tsd';
+import type { TypedDataDomain } from 'abitype';
+import type {
+  EIP712MessageKit,
+  FullDomain,
+} from '../src/utils/eip712-messages.ts';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import type {
   TargetApp,
   TargetRegistration,
 } from '@agoric/vats/src/bridge-target.js';
-import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
+import {
+  prepareCosmosOrchestrationAccount as prepareCOA,
+  type CosmosOrchestrationAccount,
+} from '../src/exos/cosmos-orchestration-account.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import type { OrchestrationFacade } from '../src/facade.js';
 import type {
   AmountArg,
   Chain,
+  CosmosActionOptions,
   CosmosChainAddress,
   ChainInfo,
   CosmosChainInfo,
@@ -40,14 +51,26 @@ import type {
   StakingAccountActions,
   KnownChains,
 } from '../src/types.js';
+import { Any as OrchAny } from '../src/utils/codecs.js';
 import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
 import { withChainCapabilities } from '../src/chain-capabilities.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js';
 import cctpChainInfo from '../src/cctp-chain-info.js';
+import { tryDecodeResponses } from '../src/utils/cosmos.js';
 
-const MsgDelegate = CodecHelper(MsgDelegateType);
-const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
-const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
+const MsgDelegate: Proto3CodecHelper<'/cosmos.staking.v1beta1.MsgDelegate'> =
+  null as any;
+const MsgDelegateResponse: Proto3CodecHelper<'/cosmos.staking.v1beta1.MsgDelegateResponse'> =
+  null as any;
+const QueryAllBalancesRequest: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryAllBalancesRequest'> =
+  null as any;
+const QueryAllBalancesResponse: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryAllBalancesResponse'> =
+  null as any;
+const QueryBalanceRequest: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryBalanceRequest'> =
+  null as any;
+const QueryBalanceResponse: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryBalanceResponse'> =
+  null as any;
+const Any: typeof OrchAny = null as any;
 
 const anyVal = null as any;
 
@@ -88,12 +111,54 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
       address: 'agoric1pleab',
     }),
   ] as const);
-  expectType<MsgDelegateResponse>(results[0]);
-  expectType<QueryAllBalancesResponse>(results[1]);
+  expectType<MsgDelegateResponseType>(results[0]);
+  expectType<QueryAllBalancesResponseType>(results[1]);
 }
 
 // CosmosOrchestrationAccount interfaces
 {
+  const coa: CosmosOrchestrationAccount = null as any;
+  const resultP = coa.executeTxProto3([
+    Any.toJSON(
+      MsgDelegate.toProtoMsg({
+        amount: {
+          amount: '1',
+          denom: 'ubld',
+        },
+        validatorAddress: 'agoric1valoperhello',
+        delegatorAddress: 'agoric1pleab',
+      }),
+    ),
+    Any.toJSON(
+      QueryAllBalancesRequest.toProtoMsg({
+        address: 'agoric1pleab',
+      }),
+    ),
+  ] as const);
+
+  expectType<
+    Vow<
+      readonly [
+        MessageBody<typeof MsgDelegateResponse.typeUrl>,
+        MessageBody<typeof QueryAllBalancesResponse.typeUrl>,
+      ]
+    >
+  >(resultP);
+
+  const resps = await vt.when(resultP);
+  expectType<2>(resps.length);
+
+  // Check that the result is a tuple of the expected types.
+  expectType<readonly [MsgDelegateResponseType, QueryAllBalancesResponseType]>(
+    resps,
+  );
+
+  // Ensure the result is not widened to (MsgDelegateResponseType | QueryAllBalancesResponseType)[]
+  expectNotType<
+    readonly [QueryAllBalancesResponseType, MsgDelegateResponseType]
+  >(resps);
+
+  const prepareCosmosOrchestrationAccount: typeof prepareCOA = null as any;
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     anyVal,
     anyVal,
@@ -136,7 +201,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectType<Vow<ChainInfo>>(chainHostInterface.getChainInfo());
 
   const publicTopicRecord: HostInterface<
-    Record<string, ResolvedPublicTopic<unknown>>
+    Record<string, ResolvedPublicTopic<any>>
   > = {
     someTopic: {
       subscriber: null as any,
@@ -144,14 +209,14 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     },
   };
   // @ts-expect-error the promise from `subscriber.getUpdateSince` can't be used in a flow
-  expectType<Record<string, ResolvedPublicTopic<unknown>>>(publicTopicRecord);
+  expectType<Record<string, ResolvedPublicTopic<any>>>(publicTopicRecord);
 }
 
 // HostOf with TransferSteps
 {
   type TransferStepsVow = HostOf<OrchestrationAccount<any>['transferSteps']>;
 
-  const transferStepsVow: TransferStepsVow = (...args: any[]): Vow<any> =>
+  const transferStepsVow: TransferStepsVow = (..._args: any[]): Vow<any> =>
     ({}) as any;
   expectType<(...args: any[]) => Vow<any>>(transferStepsVow);
 }
@@ -168,7 +233,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
   const vowObject: VowObject = {
     foo: () => ({}) as Vow<number>,
-    bar: (x: string) => ({}) as Vow<boolean>,
+    bar: (_x: string) => ({}) as Vow<boolean>,
     bizz: () => ({ foo: 1 }),
   };
 
@@ -183,14 +248,17 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   // orchestrate()
 
   const facade: OrchestrationFacade = null as any;
-  const echo = <T extends number>(orc: Orchestrator, ctx: undefined, num: T) =>
-    num;
+  const echo = <T extends number>(
+    _orc: Orchestrator,
+    _ctx: undefined,
+    num: T,
+  ) => num;
   // @ts-expect-error requires an async function
   facade.orchestrate('name', undefined, echo);
 
   const slowEcho = <T extends number>(
-    orc: Orchestrator,
-    ctx: undefined,
+    _orc: Orchestrator,
+    _ctx: undefined,
     num: T,
   ) => Promise.resolve(num);
   {
@@ -225,8 +293,8 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   ] as const);
 
   expectType<ReturnType<ChainFacade['query']>>(results);
-  expectType<{ reply: JsonSafe<QueryBalanceResponse> }>(results[0]);
-  expectType<{ reply: JsonSafe<QueryAllBalancesResponse> }>(results[1]);
+  expectType<{ reply: JsonSafe<QueryBalanceResponseType> }>(results[0]);
+  expectType<{ reply: JsonSafe<QueryAllBalancesResponseType> }>(results[1]);
 }
 
 // Test RemoteCosmosChain.query() (icqEnabled: true)
@@ -269,6 +337,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
       prove: true,
     },
   ] as const);
+  results;
 }
 
 {
@@ -301,11 +370,11 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
   // Verify StakingAccountActions are available (StakingAccountQueries not yet supported)
   expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<unknown>
   >(account.delegate);
 
   // @ts-expect-error executeEncodedTx not available on localAccount
-  expectType<() => Promise<string>>(account.executeEncodedTx);
+  account.executeEncodedTx;
 }
 
 // Test CosmosChainAccountMethods
@@ -328,15 +397,24 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     ) => Promise<string>
   >(account.executeEncodedTx);
 
+  expectType<
+    <TUS extends readonly string[]>(
+      msgs: Readonly<{ [K in keyof TUS]: AnyJson<TUS[K]> }>,
+      opts?: CosmosActionOptions,
+    ) => Promise<{ [K in keyof TUS]: MessageBody<ResponseTypeUrl<TUS[K]>> }>
+  >(account.executeTxProto3);
+
   // Verify delegate is available via stakingTokens parameter
   expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+    (
+      validator: CosmosValidatorAddress,
+      amount: AmountArg,
+      opts?: CosmosActionOptions,
+    ) => Promise<unknown>
   >(account.delegate);
 
-  expectType<(destination, amount: AmountArg) => Promise<void>>(
-    // @ts-expect-error `depositForBurn` only available for noble
-    account.depositForBurn,
-  );
+  // @ts-expect-error `depositForBurn` only available for noble
+  account.depositForBurn;
 }
 
 // Test NobleAccountMethods
@@ -349,15 +427,12 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   const remoteChain: ChainFacade = null as any;
   const account = await remoteChain.makeAccount();
 
-  expectType<(destination, amount: AmountArg) => Promise<void>>(
+  expectType<(destination, amount: AmountArg) => Promise<unknown>>(
     account.depositForBurn,
   );
 
-  // Verify delegate is not available (no stakingTokens parameter)
-  expectType<
-    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
-    // @ts-expect-error StakingMethods not available on noble
-  >(account.delegate);
+  // @ts-expect-error StakingMethods not available on noble
+  account.delegate;
 }
 
 // KnownChains - Agoric
@@ -386,4 +461,37 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectType<'eip155'>(ethChainInfo.namespace);
   expectType<'1'>(ethChainInfo.reference);
   expectType<number>(ethChainInfo.cctpDestinationDomain);
+}
+
+// EIP-712 message schema domains
+{
+  // `expectType` doesn't distinguish `readonly`, so check strict identity.
+  type StrictEqual<A, B> =
+    (<G>() => G extends A ? 1 : 2) extends <G>() => G extends B ? 1 : 2
+      ? true
+      : false;
+  type Schema = {
+    domainName: 'Test';
+    domainVersion: '2';
+    operationTypes: { Op: [{ name: 'x'; type: 'uint256' }] };
+    subTypes: {};
+  };
+  const domainIsExact: StrictEqual<
+    FullDomain<Schema>,
+    {
+      readonly name: 'Test';
+      readonly version: '2';
+    } & {
+      chainId: bigint;
+      verifyingContract: `0x${string}`;
+    }
+  > = true;
+  expectType<true>(domainIsExact);
+
+  // Assertion methods can be called through a kit declared with the
+  // explicit `EIP712MessageKit` interface (TS2775 otherwise).
+  const kit: EIP712MessageKit<Schema> = null as any;
+  const domain: TypedDataDomain = null as any;
+  kit.validateDomain(domain);
+  expectType<FullDomain<Schema>>(domain);
 }

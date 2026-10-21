@@ -1,10 +1,9 @@
-import chalk from 'chalk';
-import path from 'path';
+import path from 'node:path';
 import { makePspawn, getSDKBinaries } from './helpers.js';
 
 const filename = new URL(import.meta.url).pathname;
 
-export default async function cosmosMain(progname, rawArgs, powers, opts) {
+export default async function cosmosMain(_progname, rawArgs, powers, opts) {
   const IMAGE = `ghcr.io/agoric/agoric-sdk`;
   const { anylogger, fs, spawn, process } = powers;
   const log = anylogger('agoric:cosmos');
@@ -20,7 +19,7 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
     pspawnEnv.DEBUG = 'agoric:none';
   }
 
-  const pspawn = makePspawn({ env: pspawnEnv, log, spawn, chalk });
+  const pspawn = makePspawn({ env: pspawnEnv, log, spawn });
 
   function helper(args, hopts = undefined) {
     if (!opts.dockerTag) {

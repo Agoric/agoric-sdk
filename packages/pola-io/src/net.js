@@ -3,7 +3,7 @@
 const { freeze } = Object;
 
 /**
- * @import {PathNode, FileRd, FileRW} from './file';
+ * @import {PathNode, FileRd, FileRW} from './file.js';
  *
  * XXX TODO: basename, relative
  * @typedef {Omit<PathNode, 'basename' | 'relative'> & Pick<FileRd, 'readText' | 'readJSON'>} TextRd
@@ -19,7 +19,7 @@ const dbg = label => x => {
  *
  * @param {string} root
  * @param {object} io
- * @param {typeof fetch} io.fetch
+ * @param {typeof globalThis.fetch} io.fetch
  * @param {(...msgs: any[]) => void} [io.log]
  * @returns {TextRd}
  */

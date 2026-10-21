@@ -1,5 +1,4 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
-/* eslint-env node */
 
 import '@endo/init';
 import starshipChainInfo from '../starship-chain-info.js';

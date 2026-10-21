@@ -8,10 +8,10 @@ import { publishFeedPolicy } from './utils/core-eval.js';
 const trace = makeTracer('FUSD-2', true);
 
 // avoid importing all of @agoric/ertp
-/** @type {typeof import('@agoric/ertp').AmountMath.make} */
+/** @type {typeof AmountMath.make} */
 // @ts-expect-error AssetKind conditionals aren't captured
 const make = (brand, value) => harden({ brand, value });
-/** @type {typeof import('@agoric/ertp/src/ratio.js').makeRatio} */
+/** @type {typeof ertpMakeRatio} */
 const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
   harden({
     numerator: make(numeratorBrand, numerator),
@@ -21,12 +21,17 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
 /**
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {Brand, Ratio} from '@agoric/ertp';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {CosmosChainInfo} from '@agoric/orchestration';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
  * @import {ContractRecord, FeeConfig, FeedPolicy} from '@agoric/fast-usdc/src/types.js';
+ * @import {AmountMath} from '@agoric/ertp';
+ * @import {makeRatio as ertpMakeRatio} from '@agoric/ertp/src/ratio.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 /**

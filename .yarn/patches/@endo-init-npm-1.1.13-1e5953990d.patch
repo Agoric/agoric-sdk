@@ -1,0 +1,37 @@
+diff --git a/src/node-async-local-storage-patch.js b/src/node-async-local-storage-patch.js
+index 02c1257662abc7e19cfac5188a01a3acb64cc2cc..3efc5c1b66d215d4771711e5d69889e30b327574 100644
+--- a/src/node-async-local-storage-patch.js
++++ b/src/node-async-local-storage-patch.js
+@@ -2,6 +2,11 @@
+ 
+ import { AsyncLocalStorage, executionAsyncResource } from 'node:async_hooks';
+ 
++const [major] = process.versions.node
++  .split('.')
++  .map(Number);
++if (major < 24) {
++
+ const { is: ObjectIs } = Object;
+ const { apply: ReflectApply } = Reflect;
+ 
+@@ -93,3 +98,5 @@ AsyncLocalStorage.prototype.getStore = function getStore() {
+     ? getStoreMap(this).get(executionAsyncResource())
+     : undefined;
+ };
++
++}
+\ No newline at end of file
+diff --git a/src/node-async_hooks-patch.js b/src/node-async_hooks-patch.js
+index b4ce6195d91b1b6b7b9122b39bb27114ee8c99af..f5e4e0cfc872b00b35c93d3553b47181129e22bb 100644
+--- a/src/node-async_hooks-patch.js
++++ b/src/node-async_hooks-patch.js
+@@ -1,4 +1,9 @@
+ import { setup } from './node-async_hooks.js';
+ import './node-async-local-storage-patch.js';
+ 
++const [major] = process.versions.node
++  .split('.')
++  .map(Number);
++if (major < 24) {
+ setup({ withDestroy: true });
++}

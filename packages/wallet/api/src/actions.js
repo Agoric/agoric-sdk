@@ -4,6 +4,10 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 
+/**
+ * @import {Purse} from '@agoric/ertp';
+ */
+
 export const makePaymentActions = ({
   getBrandRecord,
   getPurseByPetname,

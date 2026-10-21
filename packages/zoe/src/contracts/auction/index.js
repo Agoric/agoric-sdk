@@ -1,18 +1,23 @@
+import { RelativeTimeShape, TimeMath } from '@agoric/time';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { mustMatch } from '@endo/patterns';
 import { Far } from '@endo/marshal';
-import { TimeMath, RelativeTimeShape } from '@agoric/time';
+import { mustMatch } from '@endo/patterns';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
-  defaultAcceptanceMsg,
   assertIssuerKeywords,
   assertProposalShape,
+  defaultAcceptanceMsg,
 } from '../../contractSupport/index.js';
-import * as secondPriceLogic from './secondPriceLogic.js';
-import * as firstPriceLogic from './firstPriceLogic.js';
 import { assertBidSeat } from './assertBidSeat.js';
+import * as firstPriceLogic from './firstPriceLogic.js';
+import * as secondPriceLogic from './secondPriceLogic.js';
+
+/**
+ * @import {TimerService} from '@agoric/time';
+ * @import {OfferHandler, ZCF} from '@agoric/zoe';
+ */
 
 const FIRST_PRICE = 'first-price';
 const SECOND_PRICE = 'second-price';
@@ -35,8 +40,8 @@ const SECOND_PRICE = 'second-price';
  * null } want: { Asset: null } }.
  *
  * @param {ZCF<{
- * timeAuthority: import('@agoric/time').TimerService,
- * winnerPriceOption?: FIRST_PRICE | SECOND_PRICE,
+ * timeAuthority: TimerService,
+ * winnerPriceOption?: typeof FIRST_PRICE | typeof SECOND_PRICE,
  * bidDuration: bigint,
  * }>} zcf
  */
@@ -55,6 +60,7 @@ const start = zcf => {
   let sellSeat;
   let isTimerStarted = false;
   let isClosed = false;
+  /** @type {import('@agoric/time').Timestamp | null} */
   let closesAfter = null;
 
   const bidSeats = [];
@@ -162,4 +168,4 @@ const start = zcf => {
 };
 
 harden(start);
-export { start, FIRST_PRICE, SECOND_PRICE };
+export { FIRST_PRICE, SECOND_PRICE, start };

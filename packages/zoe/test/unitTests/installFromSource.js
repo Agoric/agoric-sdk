@@ -2,7 +2,7 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 
 /**
- * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
+ * @import {FeeIssuerConfig, Installation, ZoeService} from '@agoric/zoe';
  */
 
 /**

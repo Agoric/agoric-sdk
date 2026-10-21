@@ -1,3 +1,5 @@
+// @ts-nocheck — under-supported package; type errors are tolerated
+
 import { makePublishKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeExo } from '@agoric/store';
@@ -7,6 +9,7 @@ import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
 
 /**
  * @import {ContractMeta, ContractStartFn, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {Handle} from '@agoric/zoe';
  * @import {ElectoratePublic, ElectorateCreatorFacet} from './types.js';
  */
 

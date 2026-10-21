@@ -36,6 +36,8 @@ chains:
       memory: 4Gi
   - id: noblelocal
     name: noble
+    image: ghcr.io/agoric-labs/starship/noble:v10.1.2
+    #image: ghcr.io/agoric-labs/starship/noble:v11.1.0
     numValidators: 1
     genesis:
       app_state:
@@ -49,7 +51,7 @@ chains:
               allow_messages: ['*']
     scripts:
       updateGenesis:
-        file: scripts/noble-update-genesis.sh
+        file: scripts/noble-v10-update-genesis.sh
     faucet:
       enabled: true
       type: starship

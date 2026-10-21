@@ -7,9 +7,21 @@ import { E, Far } from '@endo/far';
 import { makeOncePromiseKit } from './once-promise-kit.js';
 
 /**
- * @import {DepositFacet} from '@agoric/ertp/src/types.js'
+ * @import {Brand, DepositFacet} from '@agoric/ertp/src/types.js'
  * @import {Connection} from '@agoric/network';
  * @import {Remote} from '@agoric/vow';
+ * @import {prepareVowTools} from '@agoric/vow';
+ * @import {Courier} from './types.js';
+ * @import {BoardDepositFacet} from './types.js';
+ * @import {Denom} from './types.js';
+ * @import {TransferProtocol} from './types.js';
+ * @import {Sender} from './types.js';
+ * @import {Receiver} from './types.js';
+ * @import {LegacyMap} from '@agoric/store';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {ZCFSeat} from '@agoric/zoe';
+ * @import {AmountKeywordRecord} from '@agoric/zoe';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 /**
@@ -46,7 +58,7 @@ export const getCourierPK = (key, keyToCourierPK) => {
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} retain
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} redeem
  * @property {Remote<TransferProtocol>} transferProtocol
- * @property {ReturnType<import('@agoric/vow').prepareVowTools>['when']} when
+ * @property {ReturnType<typeof prepareVowTools>['when']} when
  * @param {Remote<Connection>} connection
  * @returns {(args: CourierArgs) => Courier}
  */

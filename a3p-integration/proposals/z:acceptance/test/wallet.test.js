@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import test from 'ava';
 
 import { Fail } from '@endo/errors';

@@ -1,7 +1,11 @@
-/* eslint-env node */
 /* eslint-disable no-underscore-dangle */
 
 import { Transform } from 'node:stream';
+
+/**
+ * @import {TransformOptions} from 'node:stream';
+ * @import {TransformCallback} from 'node:stream';
+ */
 
 /**
  * @typedef {object} BufferLineTransformOptions
@@ -16,8 +20,7 @@ export default class BufferLineTransform extends Transform {
    * The BufferLineTransform is reading String or Buffer content from a Readable
    * stream and writing each line as a Buffer in object mode
    *
-   * @param {import('node:stream').TransformOptions &
-   *   BufferLineTransformOptions} [options]
+   * @param {TransformOptions & BufferLineTransformOptions} [options]
    */
   constructor(options) {
     const {
@@ -47,7 +50,7 @@ export default class BufferLineTransform extends Transform {
   /**
    * @param {any} chunk
    * @param {BufferEncoding | 'buffer'} encoding
-   * @param {import('node:stream').TransformCallback} cb
+   * @param {TransformCallback} cb
    * @override
    */
   _transform(chunk, encoding, cb) {
@@ -99,7 +102,7 @@ export default class BufferLineTransform extends Transform {
   }
 
   /**
-   * @param {import('node:stream').TransformCallback} cb
+   * @param {TransformCallback} cb
    * @override
    */
   _flush(cb) {

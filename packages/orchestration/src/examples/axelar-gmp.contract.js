@@ -13,7 +13,7 @@ import * as evmFlows from './axelar-gmp.flows.js';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
- * @import {ZCF} from '@agoric/zoe';
+ * @import {ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 const trace = makeTracer('AxelarGmp');
@@ -23,7 +23,7 @@ const trace = makeTracer('AxelarGmp');
  *
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  *   chainInfo?: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  *   storageNode: Remote<StorageNode>;

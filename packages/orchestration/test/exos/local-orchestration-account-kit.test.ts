@@ -8,9 +8,13 @@ import {
   LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE,
   SIMULATED_ERRORS,
 } from '@agoric/vats/tools/fake-bridge.js';
-import { heapVowE as VE } from '@agoric/vow/vat.js';
+import { heapVowTools, heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
+import { isVow } from '@agoric/vow/src/vow-utils.js';
+import type {
+  IBCMsgTransferOptions,
+  TrafficEntry,
+} from '../../src/cosmos-api.js';
 import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
@@ -22,9 +26,10 @@ import { assetOn } from '../../src/utils/asset.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
-import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
+import { UNBOND_PERIOD_SECONDS } from '../../tools/ibc-mock-fixtures.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
+import { ICS20_TRANSFER_SUCCESS_RESULT } from '../../src/exos/ibc-packet.js';
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
@@ -115,6 +120,8 @@ test('transfer', async t => {
     brands: { bld: stake },
     utils: { inspectLocalBridge, pourPayment, transmitVTransferEvent },
   } = common;
+  const { when } = heapVowTools;
+
   common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
@@ -163,8 +170,12 @@ test('transfer', async t => {
   t.is(await Promise.race([transferP, 'not yet']), 'not yet');
   // simulate incoming message so that the transfer promise resolves
   await transmitVTransferEvent('acknowledgementPacket');
-  const transferRes = await transferP;
-  t.true(transferRes === undefined, 'Successful transfer returns Vow<void>.');
+  const transferRes = await when(transferP);
+  t.is(
+    transferRes,
+    ICS20_TRANSFER_SUCCESS_RESULT,
+    'Successful transfer returns Vow<transferSuccess>.',
+  );
 
   t.log('testing timeout packet scenario...');
   const { transferP: timeoutTransferP } = await startTransfer(
@@ -265,6 +276,55 @@ test('transfer', async t => {
       timeout: '10m',
     },
   });
+
+  const progressTracker = await VE(account).makeProgressTracker();
+  const multiHopResult = await doTransfer(aDenomAmount, dydxDest, {
+    progressTracker,
+  });
+
+  t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
+  t.deepEqual(JSON.parse(latestTxMsg().memo), {
+    forward: {
+      receiver: 'dydx1test',
+      port: 'transfer',
+      channel: 'channel-33',
+      retries: 3,
+      timeout: '10m',
+    },
+  });
+
+  t.assert(!isVow(multiHopResult), 'multiHopResult is not vow');
+  t.is(
+    await when(multiHopResult),
+    ICS20_TRANSFER_SUCCESS_RESULT,
+    'multiHopResult resolves to ICS20_TRANSFER_SUCCESS',
+  );
+
+  const multiHopMeta = await VE(progressTracker).finish();
+  t.deepEqual(
+    multiHopMeta,
+    {
+      traffic: [
+        {
+          op: 'transfer',
+          src: [
+            'ibc',
+            ['chain', 'cosmos:agoric-3'],
+            ['port', 'transfer'],
+            ['channel', 'channel-62'],
+          ],
+          dst: [
+            'ibc',
+            ['chain', 'cosmos:noble-1'],
+            ['port', 'transfer'],
+            ['channel', 'channel-21'],
+          ],
+          seq: 7,
+        },
+      ] as TrafficEntry[],
+    },
+    'we only receive meta for the first hop of a PFM-forwarded transfer',
+  );
 
   t.log('accepts pfm `forwardOpts`');
   const intermediateRecipient: CosmosChainAddress = {

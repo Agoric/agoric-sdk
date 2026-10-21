@@ -2,7 +2,12 @@
 import { GrantAuthorization, type GrantAuthorizationSDKType } from './authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** GenesisState defines the authz module's genesis state. */
+/**
+ * GenesisState defines the authz module's genesis state.
+ * @name GenesisState
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.GenesisState
+ */
 export interface GenesisState {
   authorization: GrantAuthorization[];
 }
@@ -10,7 +15,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the authz module's genesis state. */
+/**
+ * GenesisState defines the authz module's genesis state.
+ * @name GenesisStateSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.GenesisState
+ */
 export interface GenesisStateSDKType {
   authorization: GrantAuthorizationSDKType[];
 }
@@ -19,8 +29,33 @@ function createBaseGenesisState(): GenesisState {
     authorization: [],
   };
 }
+/**
+ * GenesisState defines the authz module's genesis state.
+ * @name GenesisState
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/cosmos.authz.v1beta1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.authorization) &&
+          (!o.authorization.length ||
+            GrantAuthorization.is(o.authorization[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.authorization) &&
+          (!o.authorization.length ||
+            GrantAuthorization.isSDK(o.authorization[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

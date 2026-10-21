@@ -93,15 +93,14 @@ export const makeRatio = (
 };
 
 /**
- * @param {Amount} numeratorAmount
- * @param {Amount} denominatorAmount
+ * @param {Amount<'nat'>} numeratorAmount
+ * @param {Amount<'nat'>} denominatorAmount
  * @returns {Ratio}
  */
 export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
   AmountMath.coerce(numeratorAmount.brand, numeratorAmount);
   AmountMath.coerce(denominatorAmount.brand, denominatorAmount);
   return makeRatio(
-    // @ts-expect-error value can be any AmountValue but makeRatio() supports only bigint
     numeratorAmount.value,
     numeratorAmount.brand,
     denominatorAmount.value,
@@ -423,10 +422,10 @@ export const parseRatio = (
  * @param {unknown} specimen
  * @returns {asserts specimen is ParsableNumber}
  */
-export const assertParsableNumber = specimen => {
+export function assertParsableNumber(specimen) {
   const match = `${specimen}`.match(NUMERIC_RE);
   match || Fail`Invalid numeric data: ${specimen}`;
-};
+}
 
 /**
  * Ratios might be greater or less than one.

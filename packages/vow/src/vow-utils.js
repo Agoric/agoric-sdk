@@ -5,8 +5,10 @@ import { M, matches } from '@endo/patterns';
 
 /**
  * @import {PassableCap} from '@endo/pass-style';
+ * @import {Pattern} from '@endo/patterns';
  * @import {VowPayload, Vow, PromiseVow} from './types.js';
  * @import {MakeVowKit} from './vow.js';
+ * @import {CastedPattern} from '@endo/patterns';
  */
 
 export const sink = () => {};
@@ -14,12 +16,41 @@ harden(sink);
 
 export { basicE };
 
-export const VowShape = M.tagged(
-  'Vow',
-  M.splitRecord({
-    vowV0: M.remotable('VowV0'),
-  }),
+/**
+ * Runtime pattern that matches a Vow (a tagged record with a vowV0
+ * shortener). Typed as `CastedPattern<Vow>` so it carries the Vow<any>
+ * type through `@endo/patterns`' TypeFromPattern resolution when used
+ * in guards. Use {@link Vow$} to narrow the resolved value type:
+ *
+ *     query: M.call(...).returns(Vow$\<ResponseQuery[]\>(M.array()))
+ */
+export const VowShape = /** @type {CastedPattern<Vow>} */ (
+  M.tagged(
+    'Vow',
+    M.splitRecord({
+      vowV0: M.remotable('VowV0'),
+    }),
+  )
 );
+
+/**
+ * Typed Vow shape factory. At runtime returns the fixed `VowShape` (the
+ * payload pattern is ignored — Vows are opaque at runtime). At the type
+ * level, the returned value is a {@link CastedPattern} of `Vow<T>`, so
+ * guards like
+ *
+ *     query: M.call(...).returns(Vow$(M.arrayOf(M.record())))
+ *
+ * infer the method's return type as `Vow<{ ... }[]>` instead of the
+ * bare `CopyTagged<'Vow', Passable>`. Pass the desired resolved-value
+ * type as an explicit type parameter, e.g.
+ * `Vow$<JsonSafe<ResponseQuery>[]>(M.arrayOf(M.record()))`.
+ */
+export const Vow$ =
+  /** @type {<T = any>(_resolvedShape: Pattern) => CastedPattern<Vow<T>>} */ (
+    _resolvedShape => VowShape
+  );
+harden(Vow$);
 
 /**
  * @param {unknown} specimen

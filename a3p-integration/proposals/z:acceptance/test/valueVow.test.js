@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-env node */
 import test from 'ava';
 import { inspect } from 'node:util';
 

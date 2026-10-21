@@ -1,12 +1,13 @@
-// @jessie-check
-
-import { Fail } from '@endo/errors';
 import { initEmpty, makeExo } from '@agoric/store';
 import { prepareExoClass } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
 
 import { HandleI } from './typeGuards.js';
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Handle, Instance} from '@agoric/zoe';
+ */
 
 /**
  * @template {string} H

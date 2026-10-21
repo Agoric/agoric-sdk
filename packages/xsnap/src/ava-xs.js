@@ -1,14 +1,21 @@
 #!/usr/bin/env node
 import '@endo/init';
-import process from 'process';
-import { spawn } from 'child_process';
-import { type as osType } from 'os';
-import { promises as fsp } from 'fs';
-import path from 'path';
-import glob from 'glob';
+import process from 'node:process';
+import { spawn } from 'node:child_process';
+import { type as osType } from 'node:os';
+import { promises as fsp } from 'node:fs';
+import path from 'node:path';
 import bundleSource from '@endo/bundle-source';
 
 import { main, makeBundleResolve } from './avaXS.js';
+
+// Sorted to match glob@7's default `alphasort` ordering (localeCompare in the
+// 'en' locale), which node:fs glob does not guarantee.
+/** @type {(pattern: string) => Promise<string[]>} */
+const glob = pattern =>
+  Array.fromAsync(fsp.glob(pattern)).then(matches =>
+    matches.sort((a, b) => a.localeCompare(b, 'en')),
+  );
 
 Promise.resolve()
   .then(_ =>

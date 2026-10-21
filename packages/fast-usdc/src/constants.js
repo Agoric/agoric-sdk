@@ -1,7 +1,7 @@
 /**
  * Status values for FastUSDC. Includes states for advancing and settling.
  *
- * @enum {(typeof TxStatus)[keyof typeof TxStatus]}
+ * @typedef {(typeof TxStatus)[keyof typeof TxStatus]} TxStatus
  */
 export const TxStatus = /** @type {const} */ ({
   /** tx was observed but not advanced */
@@ -35,7 +35,7 @@ export const TerminalTxStatus = {
 /**
  * Status values for the StatusManager while an advance is being processed.
  *
- * @enum {(typeof PendingTxStatus)[keyof typeof PendingTxStatus]}
+ * @typedef {(typeof PendingTxStatus)[keyof typeof PendingTxStatus]} PendingTxStatus
  */
 export const PendingTxStatus = /** @type {const} */ ({
   /** IBC transfer is initiated */

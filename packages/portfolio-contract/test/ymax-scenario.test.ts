@@ -5,25 +5,24 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { PublishedTx, TxStatus } from '@agoric/portfolio-api';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
+import { inspect } from 'node:util';
+import { makePromiseKit } from '@endo/promise-kit';
 import type { OfferArgsFor, ProposalType } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,
   importCSV,
   withBrand,
 } from '../tools/rebalance-grok.ts';
-import { setupTrader, simulateUpcallFromAxelar } from './contract-setup.ts';
+import { setupTrader } from './contract-setup.ts';
 import {
-  evmNamingDistinction,
-  localAccount0,
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
+  portfolio0lcaOrch,
 } from './mocks.ts';
-import { settleTransaction, getResolverMakers } from './resolver-helpers.ts';
-
-// Use an EVM chain whose axelar ID differs from its chain name
-const { sourceChain } = evmNamingDistinction;
+import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 
 const { values } = Object;
 
@@ -31,9 +30,9 @@ const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
     const { trader1, common, started, zoe } = await setupTrader(t);
     const scenarios = await scenariosP;
-    const scenario = scenarios[description];
-    if (!scenario) return t.fail(`Scenario "${description}" not found`);
-    t.log('start', description);
+    const rawScenario = scenarios[description];
+    if (!rawScenario) return t.fail(`Scenario "${description}" not found`);
+    t.log('start', description, inspect(rawScenario, { depth: 5 }));
 
     const { ibcBridge } = common.mocks;
     for (const money of [
@@ -47,52 +46,79 @@ const rebalanceScenarioMacro = test.macro({
       }
     }
 
+    const { storage } = common.bootstrap;
+
     const { usdc } = common.brands;
-    const sceneB = withBrand(scenario, usdc.brand);
-    const sceneBP = scenario.previous
+    const scenario = withBrand(rawScenario, usdc.brand);
+    const previous = scenario.previous
       ? withBrand(scenarios[scenario.previous], usdc.brand)
       : undefined;
+
+    const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+
+    const { storageUpdates, cancelStorageUpdates } = storage;
+
+    const settleUntil = async (
+      done: Promise<unknown>,
+      status: Exclude<TxStatus, 'pending'> = 'success',
+    ) => {
+      void done.then(() => cancelStorageUpdates());
+      for await (const message of storageUpdates) {
+        if (!message) continue;
+        const { method, args } = message;
+        if (method !== 'append') continue;
+        const [[key, _val]] = args;
+        if (!key.includes('.pendingTxs.')) continue;
+        const info = storage.getDeserialized(key).at(-1) as PublishedTx;
+        if (info.status !== 'pending') continue;
+        const txId = key.split('.').at(-1) as `tx${number}`;
+        const ix = Number(txId.replace(/^tx/, ''));
+        await settleTransaction(zoe, resolverMakers, ix, status);
+      }
+    };
+    const scenarioDonePK = makePromiseKit();
+    void settleUntil(scenarioDonePK.promise);
 
     if (description.includes('Recover')) {
       // simulate arrival of funds in the LCA via IBC from Noble
       const funds = await common.utils.pourPayment(usdc.units(500));
       const { bankManager } = common.bootstrap;
-      const bank = E(bankManager).getBankForAddress(localAccount0);
+      const bank = E(bankManager).getBankForAddress(portfolio0lcaOrch);
       const purse = E(bank).getPurse(usdc.brand);
       await E(purse).deposit(funds);
     }
 
-    const upcallDone = new Set();
-    let index = 0;
-
-    const ackSteps = async (offerArgs: OfferArgsFor['openPortfolio']) => {
+    const ackSteps = async (
+      offerArgs: OfferArgsFor['openPortfolio'],
+      opening = false,
+    ) => {
       const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
+
+      const nobleInvolved = moves.some(
+        move => move.src === '@noble' || move.dest === '@noble',
+      );
+      // Noble forwarding account (NFA) is now provisioned only by a flow that
+      // actually uses Noble.
+      if (opening || nobleInvolved) {
+        await transmitVTransferEvent('acknowledgementPacket', -1);
+      }
+
+      const evmInvolved = moves.some(
+        move => move.src === '@Arbitrum' || move.dest === '@Arbitrum',
+      );
+      // Settle make account only if we know an EVM account is going to be made
+      if (evmInvolved) {
+        await transmitVTransferEvent('acknowledgementPacket', -2); // NFA
+      }
+      await eventLoopIteration();
+
       for (const move of moves) {
         await eventLoopIteration();
-        if (move.dest === '@Arbitrum') {
-          if (!upcallDone.has(move.dest)) {
-            upcallDone.add(move.dest);
-            await simulateUpcallFromAxelar(
-              common.mocks.transferBridge,
-              sourceChain,
-            );
-          }
-          // Also confirm CCTP transaction for flows to Arbitrum
-          const resolverMakers = await getResolverMakers(
-            zoe,
-            started.creatorFacet,
-          );
-          await settleTransaction(zoe, resolverMakers, index, 'success');
-          index += 1;
-        }
         if (move.src === '@Arbitrum') {
-          const resolverMakers = await getResolverMakers(
-            zoe,
-            started.creatorFacet,
-          );
-          await settleTransaction(zoe, resolverMakers, index, 'success');
-          index += 1;
+          if (move.dest === '@agoric') {
+            await transmitVTransferEvent('acknowledgementPacket', -1);
+          }
         }
         try {
           await transmitVTransferEvent('acknowledgementPacket', -1);
@@ -107,26 +133,26 @@ const rebalanceScenarioMacro = test.macro({
       offerArgs: OfferArgsFor['openPortfolio'] = {},
     ) => {
       const doneP = trader1.openPortfolio(t, give, offerArgs);
-      await ackSteps(offerArgs);
+      await ackSteps(offerArgs, true);
       const { result, payouts } = await doneP;
       return { result, payouts };
     };
 
-    const openOnly = Object.keys(sceneB.before).length === 0;
-    openOnly || sceneBP || Fail`no previous scenario for ${description}`;
+    const openOnly = Object.keys(scenario.before).length === 0;
+    openOnly || previous || Fail`no previous scenario for ${description}`;
     const openResult = await (openOnly
-      ? openPortfolioAndAck(sceneB.proposal.give, sceneB.offerArgs)
-      : openPortfolioAndAck(sceneBP!.proposal.give, sceneBP!.offerArgs));
+      ? openPortfolioAndAck(scenario.proposal.give, scenario.offerArgs)
+      : openPortfolioAndAck(previous!.proposal.give, previous!.offerArgs));
 
-    const { result, payouts } = await (async () => {
+    const { payouts } = await (async () => {
       if (openOnly) return openResult;
 
       const rebalanceP = trader1.rebalance(
         t,
-        sceneB.proposal,
-        sceneB.offerArgs,
+        scenario.proposal,
+        scenario.offerArgs,
       );
-      await ackSteps(sceneB.offerArgs);
+      await ackSteps(scenario.offerArgs);
       const result = await rebalanceP;
       return result;
     })();
@@ -142,12 +168,13 @@ const rebalanceScenarioMacro = test.macro({
 
     const txfrs = await trader1.netTransfersByPosition();
     t.log('net transfers by position', txfrs);
-    t.deepEqual(txfrs, sceneB.after, 'net transfers should match After row');
+    t.deepEqual(txfrs, scenario.after, 'net transfers should match After row');
 
     t.log('payouts', payouts);
     const { Access: _, ...skipAssets } = payouts;
-    t.deepEqual(skipAssets, sceneB.payouts, 'payouts');
+    t.deepEqual(skipAssets, scenario.payouts, 'payouts');
 
+    scenarioDonePK.resolve(undefined);
     // XXX: inspect bridge for netTransfersByPosition chains?
   },
   title(providedTitle = '', description: string) {

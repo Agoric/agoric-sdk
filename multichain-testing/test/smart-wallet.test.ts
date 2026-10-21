@@ -33,11 +33,8 @@ test('provision smart wallet', async t => {
   const { balances } = await agQueryClient.queryBalances(wallets.user1);
   t.deepEqual(
     balances,
-    [
-      { denom: 'ubld', amount: String(90_000_000n) },
-      { denom: 'uist', amount: String(250_000n) },
-    ],
-    'faucet request minus 10 BLD, plus 0.25 IST provisioning credit',
+    [{ denom: 'ubld', amount: String(90_250_000n) }],
+    'faucet request minus 10 BLD, plus 0.25 BLD provisioning credit',
   );
   t.log({ [wallets.user1]: balances });
 });

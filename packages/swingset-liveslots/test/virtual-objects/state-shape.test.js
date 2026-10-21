@@ -1,4 +1,6 @@
 // @ts-nocheck
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { Fail } from '@endo/errors';
@@ -11,7 +13,10 @@ import { makeStartVat, makeMessage } from '../util.js';
 import { makeMockGC } from '../mock-gc.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
-/** @import {VatOneResolution} from '../../src/types.js'; */
+/**
+ * @import {VatOneResolution} from '../../src/types.js';
+ * @import {Pattern} from '@endo/patterns';
+ */
 /** @import {VatData} from '../../src/vatDataTypes.js'; */
 
 let lastPnum = 100;
@@ -63,7 +68,7 @@ const holderMethods = {
  * @template {VatData.defineKind | VatData.defineDurableKind} D
  * @param {D} defineKind
  * @param {Parameters<D>[0]} kindIdentifier
- * @param {import('@endo/patterns').Pattern} stateShape
+ * @param {Pattern} stateShape
  */
 const defineHolder = (defineKind, kindIdentifier, stateShape) =>
   defineKind(kindIdentifier, initHolder, holderMethods, { stateShape });

@@ -1,7 +1,6 @@
-/* eslint-env node */
-import path from 'path';
-import chalk from 'chalk';
-import { execFileSync } from 'child_process';
+import path from 'node:path';
+import { styleText } from 'node:util';
+import { execFileSync } from 'node:child_process';
 import { makePspawn } from './helpers.js';
 import DEFAULT_SDK_PACKAGE_NAMES from './sdk-package-names.js';
 import { listWorkspaces } from './lib/packageManager.js';
@@ -13,7 +12,7 @@ const REQUIRED_AGORIC_START_PACKAGES = [
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-export default async function installMain(progname, rawArgs, powers, opts) {
+export default async function installMain(_progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
   const log = anylogger('agoric:install');
 
@@ -27,7 +26,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     process.env.CXXFLAGS = '-std=c++14';
   }
 
-  const pspawn = makePspawn({ log, spawn, chalk });
+  const pspawn = makePspawn({ log, spawn });
 
   const rimraf = file => pspawn('rm', ['-rf', file]);
 
@@ -241,7 +240,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
 
     const removeNodeModulesSymlinks = async subdir => {
       const nm = `${subdir}/node_modules`;
-      log(chalk.bold.green(`removing ${nm} link`));
+      log(styleText(['bold', 'green'], `removing ${nm} link`));
       await fs.unlink(nm).catch(_ => {});
 
       // Remove all the package links.
@@ -268,7 +267,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   await yarnInstallEachWorktree('updates');
 
   if (sdkWorktree || !opts.sdk) {
-    log.info(chalk.bold.green('Done installing without SDK links'));
+    log.info(styleText(['bold', 'green'], 'Done installing without SDK links'));
     return 0;
   }
 
@@ -314,6 +313,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     }
   }
 
-  log.info(chalk.bold.green('Done installing with SDK links'));
+  log.info(styleText(['bold', 'green'], 'Done installing with SDK links'));
   return 0;
 }

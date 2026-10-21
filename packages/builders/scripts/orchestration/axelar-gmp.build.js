@@ -12,6 +12,8 @@ import { getChainConfig } from './get-chain-config.js';
 
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {ParseArgsConfig} from 'node:util';
  */
 
 /** @type {CoreEvalBuilder} */
@@ -32,11 +34,11 @@ export const defaultProposalBuilder = async (
     ],
   });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
 
-  /** @type {import('node:util').ParseArgsConfig['options']} */
+  /** @type {ParseArgsConfig['options']} */
   const options = {
     net: {
       type: 'string',

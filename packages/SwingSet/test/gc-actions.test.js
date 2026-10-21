@@ -2,6 +2,10 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import { processGCActionSet } from '../src/kernel/gc-actions.js';
 
+/**
+ * @import {KernelKeeper} from '../src/kernel/state/kernelKeeper.js';
+ */
+
 test('gc actions', t => {
   let rc = {};
   let actions = [];
@@ -27,7 +31,7 @@ test('gc actions', t => {
     },
     getObjectRefCount(kref) {
       const [reachable, recognizable] = rc[kref];
-      return { reachable, recognizable };
+      return { exists: true, reachable, recognizable };
     },
     // @ts-expect-error mock
     emitCrankHashes() {},

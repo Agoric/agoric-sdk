@@ -5,6 +5,10 @@ import { Far } from '@endo/far';
 import { parse } from '@agoric/network';
 
 /**
+ * @import {Denom, DenomTransformer} from './types.js';
+ */
+
+/**
  * Return a source-prefixed version of the denomination, as specified in
  * ICS20-1.
  *

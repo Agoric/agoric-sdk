@@ -194,7 +194,9 @@ export const prepareWatch = (
   const watch = (specimenP, watcher, ...watcherArgs) => {
     /** @typedef {Exclude<TResult1, void> | Exclude<TResult2, void>} Voidless */
     /** @typedef {Voidless extends never ? TResult1 : Voidless} Narrowest */
-    /** @type {VowKit<Narrowest>} */
+    // Unwrap any nested VowLikes in Narrowest so the returned Vow's
+    // payload is the final fulfilled value, never another Vow.
+    /** @type {VowKit<import('./types.js').Fulfilled<Narrowest>>} */
     const { resolver, vow } = makeVowKit();
 
     // Create a promise watcher to track vows, retrying upon rejection as

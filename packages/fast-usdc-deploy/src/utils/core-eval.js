@@ -6,16 +6,19 @@ import { makeMarshal } from '@endo/marshal';
 const trace = makeTracer('FUCoreEval');
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {Brand, DepositFacet} from '@agoric/ertp';
  * @import {FastUSDCKit} from '../start-fast-usdc.core.js'
  * @import {FeedPolicy} from '@agoric/fast-usdc/src/types.js'
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 export const FEED_POLICY = 'feedPolicy';
 export const marshalData = makeMarshal(_val => Fail`data only`);
 
 /**
- * @param {ERef<StorageNode>} node
+ * @param {Remote<StorageNode>} node
  * @param {FeedPolicy} policy
  */
 export const publishFeedPolicy = async (node, policy) => {

@@ -5,6 +5,14 @@ name: Protobuf
 # - check protobuf definitions are up-to-date
 on:
   pull_request:
+    types:
+      # These are the default pull request types...
+      - opened
+      - reopened
+      - synchronize
+      # ... and these respond to label changes.
+      - labeled
+      - unlabeled
   merge_group:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,14 +24,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
-          submodules: 'true'
-      - uses: technote-space/get-diff-action@v4
-        with:
-          PATTERNS: |
-            **/**.proto
-            **/buf*.yaml
+          # Make HEAD^1 (the merge base) available for diffing.
+          fetch-depth: 2
+      # On pull_request and merge_group events HEAD is a merge commit whose
+      # first parent is the target branch, so diffing against it yields the
+      # changes under test.
+      - name: detect changed protobuf files
+        run: |
+          echo "GIT_DIFF=$(git diff --name-only HEAD^1 HEAD -- '*.proto' 'buf*.yaml' '*/buf*.yaml' | tr '\n' ' ')" >> "$GITHUB_ENV"
       - name: lint
         run: make proto-lint
         working-directory: golang/cosmos
@@ -32,14 +42,16 @@ jobs:
   breakage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
-          submodules: 'true'
-      - uses: technote-space/get-diff-action@v4
-        with:
-          PATTERNS: |
-            **/**.proto
-            **/buf*.yaml
+          # Make HEAD^1 (the merge base) available for diffing.
+          fetch-depth: 2
+      # On pull_request and merge_group events HEAD is a merge commit whose
+      # first parent is the target branch, so diffing against it yields the
+      # changes under test.
+      - name: detect changed protobuf files
+        run: |
+          echo "GIT_DIFF=$(git diff --name-only HEAD^1 HEAD -- '*.proto' 'buf*.yaml' '*/buf*.yaml' | tr '\n' ' ')" >> "$GITHUB_ENV"
       - name: check-breakage
         if: env.GIT_DIFF
         run: |
@@ -69,12 +81,10 @@ jobs:
   up-to-date:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: '1.24'
       - name: check protobuf definitions are up-to-date
         run: |
           cd packages/cosmic-proto

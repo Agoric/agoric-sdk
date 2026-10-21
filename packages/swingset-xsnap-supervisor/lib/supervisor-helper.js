@@ -4,11 +4,15 @@ import {
 } from '@agoric/swingset-liveslots';
 
 /**
+ * @import {CapData} from '@endo/marshal';
+ */
+
+/**
  * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
  * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
  * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
  * @import {VatSyscallHandler} from '@agoric/swingset-liveslots'
- * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
+ * @typedef {CapData<string>} SwingSetCapData
  * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync
  * @typedef { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } VatDispatcher
  */

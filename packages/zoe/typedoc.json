@@ -6,7 +6,7 @@
         "src/contractFacet/internal-types.js",
         "src/contractFacet/types.js",
         "src/contractSupport/index.js",
-        "src/contractSupport/types-ambient.js",
+        "src/contractSupport/types.js",
         "src/types.js",
         "src/zoeService/utils.d.ts",
         "src/zoeService/zoe.js",

@@ -9,6 +9,7 @@ import { toExternalConfig } from './utils/config-marshal.js';
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {ReimbursementTerms} from './reimburse-manual-intervention.core.js'
+ * @import {Brand} from '@agoric/ertp';
  */
 
 const usage = 'Use: --destinationAddress <address> --principal <amount>';

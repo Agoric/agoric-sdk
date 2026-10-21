@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { assertAllDefined } from '@agoric/internal';
 import { makeSerializeToStorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { E, Far } from '@endo/far';
@@ -8,8 +6,10 @@ import { observeNotifier } from './asyncIterableAdaptor.js';
 /**
  * @import {ERef} from '@endo/far';
  * @import {BaseNotifier, Notifier} from './types.js';
- * @import {Marshaller, StoredFacet, StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
- * @import {PassableCap, RemotableObject} from '@endo/pass-style';
+ * @import {ERemote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
+ * @import {StoredFacet, StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {PassableCap} from '@endo/pass-style';
  */
 
 /**
@@ -28,8 +28,8 @@ import { observeNotifier } from './asyncIterableAdaptor.js';
  *
  * @template {PassableCap} T
  * @param {ERef<Notifier<T>>} notifier
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<EMarshaller>} marshaller
  * @returns {StoredNotifier<T>}
  */
 export const makeStoredNotifier = (notifier, storageNode, marshaller) => {

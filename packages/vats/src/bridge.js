@@ -3,6 +3,40 @@ import { M } from '@agoric/store';
 import { E } from '@endo/far';
 
 /**
+ * @import {BridgeId} from '@agoric/internal';
+ * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
+ * @import {BridgeManager} from './types.js';
+ * @import {Remote} from '@agoric/internal';
+ * @import {BridgeHandler} from './types.js';
+ * @import {ScopedBridgeManager} from './types.js';
+ * @import {Zone} from '@agoric/zone';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
+ * @import {DProxy} from '@agoric/swingset-vat';
+ * @import {BridgeDevice} from '@agoric/swingset-vat/src/devices/bridge/device-bridge.js';
+ * @import {CastedPattern} from '@endo/patterns';
+ */
+
+/**
+ * Cast of M.any() to carry BridgeMessage at the type level, so impls
+ * declaring their parameter as BridgeMessage satisfy the guard's
+ * contravariance check.  At runtime the guard still accepts any
+ * Passable; the narrowing is a static assertion that callers comply.
+ *
+ * @type {CastedPattern<BridgeMessage>}
+ */
+const BridgeMessageShape = M.any();
+
+// `BridgeManager`/`ScopedBridgeManager` typedefs in `./types.ts` declare
+// the bridge methods as returning `Promise<unknown>`, not `PromiseLike`.
+// `M.promise()` now infers as `PromiseLike<any>` (see the TFKindMap
+// comment in `@endo/patterns/src/type-from-pattern.ts`); pin it back to
+// `Promise<any>` here via a CastedPattern so the returned
+// `ScopedBridgeManager` satisfies the consumer-facing typedef.
+/** @type {CastedPattern<Promise<any>>} */
+const PromiseShape = M.promise();
+
+/**
  * Helper to type the registered scoped bridge correctly.
  *
  * FIXME: This is needed because `register` is not an async function, so
@@ -10,26 +44,24 @@ import { E } from '@endo/far';
  * loses the function's genericity. If `register` was async, we could use its
  * type directly, and it would remain generic.
  *
- * @template {import('@agoric/internal').BridgeId} BridgeId
- * @param {ERef<import('./types.js').BridgeManager>} bridgeManager
- * @param {BridgeId} bridgeIdValue
- * @param {import('@agoric/internal').Remote<
- *   import('./types.js').BridgeHandler
- * >} [handler]
- * @returns {Promise<import('./types.js').ScopedBridgeManager<BridgeId>>}
+ * @template {BridgeId} B
+ * @param {ERef<BridgeManager>} bridgeManager
+ * @param {B} bridgeIdValue
+ * @param {Remote<BridgeHandler>} [handler]
+ * @returns {Promise<ScopedBridgeManager<B>>}
  */
 export const makeScopedBridge = (bridgeManager, bridgeIdValue, handler) =>
-  /** @type {Promise<import('./types.js').ScopedBridgeManager<BridgeId>>} */ (
+  /** @type {Promise<ScopedBridgeManager<B>>} */ (
     E(bridgeManager).register(bridgeIdValue, handler)
   );
 
 export const BridgeHandlerI = M.interface('BridgeHandler', {
-  fromBridge: M.call(M.any()).returns(M.promise()),
+  fromBridge: M.call(BridgeMessageShape).returns(PromiseShape),
 });
 
 export const BridgeScopedManagerI = M.interface('ScopedBridgeManager', {
-  fromBridge: M.call(M.any()).returns(M.promise()),
-  toBridge: M.call(M.any()).returns(M.promise()),
+  fromBridge: M.call(M.any()).returns(PromiseShape),
+  toBridge: M.call(M.any()).returns(PromiseShape),
   initHandler: M.call(M.remotable('BridgeHandler')).returns(),
   setHandler: M.call(M.remotable('BridgeHandler')).returns(),
 });
@@ -46,11 +78,11 @@ const BridgeManagerIKit = harden({
     inbound: M.call(M.string(), M.any()).returns(),
   }),
   privateOutbounder: M.interface('PrivateBridgeOutbounder', {
-    outbound: M.call(M.string(), M.any()).returns(M.promise()),
+    outbound: M.call(M.string(), M.any()).returns(PromiseShape),
   }),
 });
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 const prepareScopedManager = zone => {
   const makeScopedManager = zone.exoClass(
     'BridgeScopedManager',
@@ -60,7 +92,7 @@ const prepareScopedManager = zone => {
      * @param {{
      *   outbound: (bridgeId: string, obj: unknown) => Promise<any>;
      * }} toBridge
-     * @param {import('./types.js').BridgeHandler} [inboundHandler]
+     * @param {BridgeHandler} [inboundHandler]
      */
     (bridgeId, toBridge, inboundHandler) => ({
       bridgeId,
@@ -84,12 +116,14 @@ const prepareScopedManager = zone => {
       // the holder can always attenuate the object.
       // We implement separate init and set methods to require the holder to be
       // explicit about intent.
+      /** @param {BridgeHandler} newHandler */
       initHandler(newHandler) {
         newHandler || Fail`Must provide a handler for ${this.state.bridgeId}`;
         !this.state.inboundHandler ||
           Fail`Bridge handler already initialized for ${this.state.bridgeId}`;
         this.state.inboundHandler = newHandler;
       },
+      /** @param {BridgeHandler} newHandler */
       setHandler(newHandler) {
         newHandler || Fail`Must provide a handler for ${this.state.bridgeId}`;
         this.state.inboundHandler ||
@@ -102,7 +136,7 @@ const prepareScopedManager = zone => {
 };
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {DProxy} D The device sender
  */
 export const prepareBridgeManager = (zone, D) => {
@@ -114,7 +148,7 @@ export const prepareBridgeManager = (zone, D) => {
    *
    * @param {BridgeDevice} bridgeDevice The bridge to manage
    * @returns {{
-   *   manager: import('./types.js').BridgeManager;
+   *   manager: BridgeManager;
    *   privateInbounder: { inbound(srcID: string, obj: unknown): void };
    *   privateOutbounder: {
    *     outbound(dstID: string, obj: unknown): Promise<any>;
@@ -137,6 +171,10 @@ export const prepareBridgeManager = (zone, D) => {
     }),
     {
       manager: {
+        /**
+         * @param {string} bridgeId
+         * @param {BridgeHandler} [handler]
+         */
         register(bridgeId, handler) {
           !this.state.scopedManagers.has(bridgeId) ||
             Fail`Scoped bridge manager already registered for ${bridgeId}`;
@@ -191,7 +229,7 @@ export const prepareBridgeManager = (zone, D) => {
    * Obtain the single manager associated with a bridge device.
    *
    * @param {BridgeDevice} bridgeDevice
-   * @returns {import('./types.js').BridgeManager}
+   * @returns {BridgeManager}
    */
   const provideManagerForBridge = bridgeDevice => {
     let kit;

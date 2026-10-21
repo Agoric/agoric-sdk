@@ -2,6 +2,11 @@
 import { E } from '@endo/far';
 
 /**
+ * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {VatSourceRef} from '../core/types.ts';
+ */
+
+/**
  * @param {BootstrapPowers} powers
  * @param {object} options
  * @param {{ zcfRef: VatSourceRef }} options.options
@@ -11,7 +16,9 @@ export const upgradeZcfOnly = async ({ consume: { vatStore } }, options) => {
 
   const { root: zoeRoot } = await E(vatStore).get('zoe');
 
-  const zoeConfigFacet = await E(zoeRoot).getZoeConfigFacet();
+  const zoeConfigFacet = await E(
+    /** @type {any} */ (zoeRoot),
+  ).getZoeConfigFacet();
   await E(zoeConfigFacet).updateZcfBundleId(zcfRef.bundleID);
   console.log(`ZCF BUNDLE ID: `, zcfRef.bundleID);
 };

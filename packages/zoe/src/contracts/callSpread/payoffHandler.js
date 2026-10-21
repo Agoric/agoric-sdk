@@ -1,14 +1,22 @@
-/// <reference path="./types-ambient.js" />
+/// <reference path="./types.js" />
 
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
+import { E } from '@endo/eventual-send';
 import {
-  getAmountOut,
-  ceilMultiplyBy,
   atomicTransfer,
+  ceilMultiplyBy,
+  getAmountOut,
 } from '../../contractSupport/index.js';
-import { Position } from './position.js';
 import { calculateShares } from './calculateShares.js';
+import { Position } from './position.js';
+
+/**
+ * @import {ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {PositionKind} from './types.js';
+ * @import {PayoffHandler} from './types.js';
+ * @import {MakeOptionInvitation} from './types.js';
+ * @import {PromiseRecord} from '@endo/promise-kit';
+ */
 
 /**
  * makePayoffHandler returns an object with methods that are useful for

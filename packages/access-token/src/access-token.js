@@ -1,7 +1,7 @@
-import fs from 'fs';
-import crypto from 'crypto';
-import os from 'os';
-import path from 'path';
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import os from 'node:os';
+import path from 'node:path';
 
 import { openJSONStore } from './json-store.js';
 

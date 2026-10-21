@@ -1,6 +1,3 @@
-// @jessie-check
-/// <reference types="@agoric/internal/exported" />
-
 export {
   makePublishKit,
   prepareDurablePublishKit,

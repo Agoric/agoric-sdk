@@ -1,7 +1,8 @@
 import { denomHash } from '@agoric/orchestration/src/utils/denomHash.js';
 
 /**
- * @import {IBCChannelID, NameAdmin} from '@agoric/vats';
+ * @import {IBCChannelID} from '@agoric/network/ibc';
+ * @import {NameAdmin} from '@agoric/vats';
  * @import {ChainInfo, Denom} from '@agoric/orchestration';
  * @import {CosmosChainInfo} from '@agoric/orchestration';
  * @import {DenomDetail} from '@agoric/orchestration';
@@ -111,7 +112,7 @@ export const makeAssetInfo = (
       if (holdingChain === chain) continue;
       if (chainInfo[holdingChain].namespace !== 'cosmos') continue;
       if (!chainInfo[chain]?.connections?.[chainInfo[holdingChain].chainId]) {
-        console.debug(
+        console.error(
           'Cannot register',
           denom,
           'on',

@@ -1,4 +1,3 @@
-/* eslint-env node */
 /**
  * @file The goal of this file is to implement a set of tests to make sure PSM works properly
  *

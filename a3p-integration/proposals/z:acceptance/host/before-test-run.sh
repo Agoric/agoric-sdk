@@ -1,9 +1,5 @@
 #! /bin/bash
-# We cannot fail the script on error (using set -e or set -o errexit)
-# as the exit code has to be written to the message file and the tests
-# will get stuck if the exit code (wether failure or success) is never
-# written to the message file
-set -o nounset -o xtrace
+set -e -o nounset -o xtrace
 
 AG_CHAIN_COSMOS_HOME="$HOME/.agoric"
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
@@ -11,6 +7,7 @@ FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
 LOGS_FILE="/tmp/before-test-run-hook-logs"
 SDK_REPOSITORY_NAME="agoric-sdk"
 TIMESTAMP="$(date '+%s')"
+LOADGEN_PATH=${LOADGEN_PATH:-}
 
 COMMON_PARENT="${DIRECTORY_PATH%/"$SDK_REPOSITORY_NAME"*}"
 NETWORK_CONFIG="/tmp/network-config-$TIMESTAMP"
@@ -24,6 +21,10 @@ main() {
 }
 
 start_follower() {
+  trap 'echo -n "exit code $?" > "$MESSAGE_FILE_PATH"' EXIT
+  # Make the runner's exit status (not the output filter's) propagate through
+  # the pipe below, so a runner that exits non-zero is still reported as such.
+  set -o pipefail
   AG_CHAIN_COSMOS_HOME="$AG_CHAIN_COSMOS_HOME" \
     SDK_SRC="$COMMON_PARENT/$SDK_REPOSITORY_NAME" \
     "$LOADGEN_PATH/runner/bin/loadgen-runner" \
@@ -35,9 +36,28 @@ start_follower() {
     --profile "testnet" \
     --stages "3" \
     --testnet-origin "file://$NETWORK_CONFIG" \
-    --use-state-sync
+    --use-state-sync \
+    2>&1 | fail_fast_on_consensus_failure
+  exit
+}
 
-  echo -n "exit code $?" > "$MESSAGE_FILE_PATH"
+# A fatal SwingSet init / consensus failure stops the follower's consensus
+# reactor but leaves its cometbft process running (still doing peer exchange),
+# so the runner never exits and the EXIT trap above never fires. Without this,
+# the runner never writes a "ready" (or "exit code") message and the acceptance
+# test hangs until the CI job is force-cancelled. Watch the follower's output
+# and, on a consensus failure, write a non-"ready" message so
+# wait-for-follower.mjs unblocks and the test fails immediately.
+fail_fast_on_consensus_failure() {
+  local line
+  while IFS= read -r line; do
+    printf '%s\n' "$line"
+    case $line in
+    *'CONSENSUS FAILURE'*)
+      echo -n "exit code 1" > "$MESSAGE_FILE_PATH"
+      ;;
+    esac
+  done
 }
 
 wait_for_network_config() {
@@ -52,13 +72,13 @@ wait_for_rpc() {
   local rpc_address
   local status_code
 
-  rpc_address="$(jq --raw-output '.rpcAddrs[0]' < "$NETWORK_CONFIG/network-config")"
+  rpc_address=${PUBLISHED_RPC_ENDPOINT:-$(jq --raw-output '.rpcAddrs[0]' < "$NETWORK_CONFIG/network-config")}
 
   echo "Waiting for rpc '$rpc_address' to respond"
 
   while true; do
-    curl "$rpc_address" --max-time "5" --silent > /dev/null 2>&1
-    status_code="$?"
+    status_code=0
+    curl "$rpc_address" --max-time "5" --silent > /dev/null 2>&1 || status_code=$?
 
     echo "rpc '$rpc_address' responded with '$status_code'"
 

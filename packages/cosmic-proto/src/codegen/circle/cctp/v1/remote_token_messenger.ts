@@ -7,6 +7,9 @@ import { type JsonSafe } from '../../../json-safe.js';
 /**
  * @param domain_id
  * @param address
+ * @name RemoteTokenMessenger
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.RemoteTokenMessenger
  */
 export interface RemoteTokenMessenger {
   domainId: number;
@@ -19,6 +22,9 @@ export interface RemoteTokenMessengerProtoMsg {
 /**
  * @param domain_id
  * @param address
+ * @name RemoteTokenMessengerSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.RemoteTokenMessenger
  */
 export interface RemoteTokenMessengerSDKType {
   domain_id: number;
@@ -30,8 +36,31 @@ function createBaseRemoteTokenMessenger(): RemoteTokenMessenger {
     address: new Uint8Array(),
   };
 }
+/**
+ * @param domain_id
+ * @param address
+ * @name RemoteTokenMessenger
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.RemoteTokenMessenger
+ */
 export const RemoteTokenMessenger = {
   typeUrl: '/circle.cctp.v1.RemoteTokenMessenger' as const,
+  is(o: any): o is RemoteTokenMessenger {
+    return (
+      o &&
+      (o.$typeUrl === RemoteTokenMessenger.typeUrl ||
+        (typeof o.domainId === 'number' &&
+          (o.address instanceof Uint8Array || typeof o.address === 'string')))
+    );
+  },
+  isSDK(o: any): o is RemoteTokenMessengerSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RemoteTokenMessenger.typeUrl ||
+        (typeof o.domain_id === 'number' &&
+          (o.address instanceof Uint8Array || typeof o.address === 'string')))
+    );
+  },
   encode(
     message: RemoteTokenMessenger,
     writer: BinaryWriter = BinaryWriter.create(),

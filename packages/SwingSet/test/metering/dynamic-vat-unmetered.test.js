@@ -4,6 +4,10 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import { kunser } from '@agoric/kmarshal';
 import { buildVatController } from '../../src/index.js';
 
+/**
+ * @import {SwingSetConfig} from '../../src/types-external.js';
+ */
+
 // Dynamic vats are created without metering by default
 
 test('unmetered dynamic vat', async t => {

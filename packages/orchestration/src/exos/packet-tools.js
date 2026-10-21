@@ -1,9 +1,11 @@
+// @ts-check
 import { makeMarshal, decodeToJustin } from '@endo/marshal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M, matches } from '@endo/patterns';
 import { E } from '@endo/far';
 import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
+import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 
 const trace = makeTracer('PacketTools');
 
@@ -18,10 +20,14 @@ const just = obj => {
 
 /**
  * @import {Pattern} from '@endo/patterns';
- * @import {EVow, Remote, Vow, VowResolver, VowTools} from '@agoric/vow';
+ * @import {ERef, EVow, Remote, Vow, VowKit, VowResolver, VowTools} from '@agoric/vow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {ProgressTracker} from '../types.js';
  * @import {IBCEvent, VTransferIBCEvent} from '@agoric/vats';
  * @import {TargetApp, TargetRegistration} from '@agoric/vats/src/bridge-target.js';
+ * @import {IBCMsgTransferOptions} from '../cosmos-api.js';
+ * @import {SliceDescriptor} from '../utils/orchestrationAccount.js';
+ * @import {Zone} from '@agoric/base-zone';
  */
 
 /**
@@ -35,21 +41,40 @@ const just = obj => {
  * @property {(
  *   match: Vow<IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>>,
  *   opts: PacketOptions,
- * ) => Vow<{ eventPattern: Pattern; resultV: Vow<any> }>} sendPacket
+ * ) => Vow<{
+ *   eventPattern: Pattern;
+ *   resultV: Vow<any>;
+ * }>} sendPacket
  */
 
 /**
  * @typedef {object} PacketOptions
  * @property {string} [opName]
  * @property {PacketTimeout} [timeout]
+ * @property {ProgressTracker} [progressTracker]
+ * @property {SliceDescriptor} [trafficSlice]
  */
 
 /**
  * @typedef {Pick<
- *   import('../cosmos-api').IBCMsgTransferOptions,
+ *   IBCMsgTransferOptions,
  *   'timeoutHeight' | 'timeoutTimestamp'
  * >} PacketTimeout
  */
+
+/**
+ * Watcher facets of the exoClassKit that have been removed from service, but
+ * need to leave behind a dummy facet to allow older contracts that use
+ * orchestration to be upgraded.
+ *
+ * Add new watchers here as they are removed from service. Maybe someday
+ * contract upgrade will allow us to prune this list.
+ */
+const TOMBSTONED_WATCHERS = /** @type {const} */ (
+  [
+    // 'packetWasSentWithMetaWatcher', // deprecated but not yet tombstoned
+  ]
+);
 
 const { Vow$ } = NetworkShape; // TODO #9611
 
@@ -59,15 +84,32 @@ const sink = () => {};
 harden(sink);
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} vowTools
  */
 export const preparePacketTools = (zone, vowTools) => {
   const { allVows, makeVowKit, watch, when } = vowTools;
+  const vowExo = makeVowExoHelpers(vowTools);
 
   const makePacketToolsKit = zone.exoClassKit(
     'PacketToolsKit',
     {
+      /** @deprecated replaced by packetWasSentWatcher */
+      packetWasSentWithMetaWatcher: M.interface(
+        'packetWasSentWithMetaWatcher',
+        {
+          onFulfilled: M.call(
+            {
+              eventPattern: M.pattern(),
+              resultV: Vow$(M.any()),
+              meta: M.record(),
+            },
+            M.record(),
+          ).returns(Vow$({ result: M.any(), meta: M.record() })),
+        },
+      ),
+      /** Facets above this line are deprecated. */
+      ...vowExo.makeTombstonedWatcherShapes(TOMBSTONED_WATCHERS),
       public: M.interface('PacketTools', {
         sendThenWaitForAck: M.call(EVow$(M.remotable('PacketSender')))
           .optional(M.any())
@@ -77,6 +119,7 @@ export const preparePacketTools = (zone, vowTools) => {
           EVow$(M.any()),
         ),
       }),
+      pickDataWatcher: vowExo.watcherShapes.pickDataWatcher,
       tap: M.interface('tap', {
         // eslint-disable-next-line no-restricted-syntax
         receiveUpcall: M.callWhen(M.any()).returns(M.any()),
@@ -113,6 +156,7 @@ export const preparePacketTools = (zone, vowTools) => {
         ).returns(M.any()),
       }),
       utils: M.interface('utils', {
+        pickVowProp: vowExo.helperShapes.pickVowProp,
         subscribeToTransfers: M.call().returns(M.promise()),
         unsubscribeFromTransfers: M.call().returns(M.undefined()),
         incrPendingPatterns: M.call().returns(Vow$(M.undefined())),
@@ -140,6 +184,34 @@ export const preparePacketTools = (zone, vowTools) => {
       };
     },
     {
+      /**
+       * @deprecated replaced by packetWasSentWatcher
+       */
+      packetWasSentWithMetaWatcher: {
+        /**
+         * @param {{
+         *   eventPattern: Pattern;
+         *   resultV: Vow<unknown>;
+         *   meta: Record<string, any>;
+         * }} param0
+         * @param {{
+         *   opts: PacketOptions;
+         *   patternResolver: VowKit<Pattern>['resolver'];
+         * }} ctx
+         */
+        onFulfilled({ eventPattern, resultV, meta }, ctx) {
+          const result = this.facets.packetWasSentWatcher.onFulfilled(
+            {
+              eventPattern,
+              resultV,
+            },
+            ctx,
+          );
+          return harden({ result, meta });
+        },
+      },
+      /** Facets above this line are deprecated. */
+      ...vowExo.makeTombstonedWatchers(TOMBSTONED_WATCHERS),
       public: {
         /**
          * @param {ERef<TargetApp>} monitor
@@ -165,10 +237,10 @@ export const preparePacketTools = (zone, vowTools) => {
         /**
          * @param {Remote<PacketSender>} packetSender
          * @param {PacketOptions} [opts]
-         * @returns {Vow<any>}
+         * @returns {Vow<string>}
          */
         sendThenWaitForAck(packetSender, opts = {}) {
-          /** @type {import('@agoric/vow').VowKit<Pattern>} */
+          /** @type {VowKit<Pattern>} */
           const pattern = makeVowKit();
 
           // Establish the packet matcher immediately, but don't fulfill
@@ -182,7 +254,7 @@ export const preparePacketTools = (zone, vowTools) => {
             { opts },
           );
 
-          // When the packet is sent, resolve the resultV for the reply.
+          // When the packet is sent, resolve the result for the reply.
           const resultV = watch(matchV, this.facets.packetWasSentWatcher, {
             opts,
             patternResolver: pattern.resolver,
@@ -194,6 +266,7 @@ export const preparePacketTools = (zone, vowTools) => {
           });
         },
       },
+      pickDataWatcher: vowExo.watchers.pickDataWatcher,
       monitorRegistration: {
         /** @type {TargetRegistration['updateTargetApp']} */
         // eslint-disable-next-line no-restricted-syntax
@@ -259,6 +332,16 @@ export const preparePacketTools = (zone, vowTools) => {
         },
       },
       packetWasSentWatcher: {
+        /**
+         * @param {{
+         *   eventPattern: Pattern;
+         *   resultV: Vow<unknown>;
+         * }} param0
+         * @param {{
+         *   opts: PacketOptions;
+         *   patternResolver: VowKit<Pattern>['resolver'];
+         * }} ctx
+         */
         onFulfilled({ eventPattern, resultV }, ctx) {
           const { patternResolver } = ctx;
           patternResolver.resolve(eventPattern);
@@ -305,7 +388,7 @@ export const preparePacketTools = (zone, vowTools) => {
 
           // Try matching the first in queue.
           const i = upcallQueue.findIndex(obj => matches(obj, pattern));
-          if (i === -1) {
+          if (i < 0) {
             trace('No match yet. Save the pattern for later.');
             resolverToPattern.init(resolver, pattern);
             return;
@@ -325,8 +408,8 @@ export const preparePacketTools = (zone, vowTools) => {
           resolver.reject(reason);
         },
       },
-
       utils: {
+        pickVowProp: vowExo.helper.pickVowProp,
         incrPendingPatterns() {
           const { pending, reg, upcallQueue } = this.state;
           this.state.pending += 1;

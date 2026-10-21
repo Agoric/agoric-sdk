@@ -9,6 +9,13 @@ import { FAUCET_ADDRESS, makeFakeBankBridge } from './fake-bridge.js';
 /**
  * @import {Amount, Brand, Issuer, IssuerKit, Payment} from '@agoric/ertp';
  * @import {SubscriptionRecord} from '@agoric/notifier';
+ * @import {VirtualPurse} from '../src/virtual-purse.js';
+ * @import {AssetDescriptor} from '../src/vat-bank.js';
+ * @import {AssetIssuerKit} from '../src/vat-bank.js';
+ * @import {Bank} from '../src/vat-bank.js';
+ * @import {Balances} from './fake-bridge.js';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -19,10 +26,7 @@ export const makeFakeBankKit = issuerKits => {
   /** @type {MapStore<Brand, Issuer>} */
   const issuers = makeScalarMapStore();
   /**
-   * @type {MapStore<
-   *   Brand,
-   *   ERef<import('../src/virtual-purse.js').VirtualPurse>
-   * >}
+   * @type {MapStore<Brand, ERef<VirtualPurse>>}
    */
   const purses = makeScalarMapStore();
 
@@ -34,9 +38,7 @@ export const makeFakeBankKit = issuerKits => {
   }
 
   /**
-   * @type {SubscriptionRecord<
-   *   import('../src/vat-bank.js').AssetDescriptor
-   * >}
+   * @type {SubscriptionRecord<AssetDescriptor>}
    */
   const { subscription, publication } = makeSubscriptionKit();
 
@@ -44,7 +46,7 @@ export const makeFakeBankKit = issuerKits => {
    * @param {string} denom lower-level denomination string
    * @param {string} issuerName
    * @param {string} proposedName
-   * @param {import('../src/vat-bank.js').AssetIssuerKit} kit ERTP issuer kit
+   * @param {AssetIssuerKit} kit ERTP issuer kit
    */
   const addAsset = (denom, issuerName, proposedName, kit) => {
     issuers.init(kit.brand, kit.issuer);
@@ -57,7 +59,7 @@ export const makeFakeBankKit = issuerKits => {
     });
   };
 
-  /** @type {import('../src/vat-bank.js').Bank} */
+  /** @type {Bank} */
   const bank = Far('mock bank', {
     /** @param {Brand} brand */
     getPurse: async brand => purses.get(brand),
@@ -69,7 +71,7 @@ export const makeFakeBankKit = issuerKits => {
 
 /**
  * @param {object} [opts]
- * @param {import('./fake-bridge.js').Balances} [opts.balances] initial balances
+ * @param {Balances} [opts.balances] initial balances
  * @param {(obj) => unknown} [opts.onToBridge] handler for toBridge messages
  */
 export const makeFakeBankManagerKit = async opts => {

@@ -1,0 +1,41 @@
+stateDiagram-v2
+[*] --> initiated
+state initiated
+note right of initiated
+  noble_ica.transfer(agoric_lca_address, denomAmount) called via ICS-27
+end note
+initiated --> ica_tx_pending: ICA host tx submitted on Noble
+initiated --> failed: ICA execution failed
+state ica_tx_pending
+note right of ica_tx_pending
+  Waiting for Noble to execute the ICA transfer message
+end note
+ica_tx_pending --> packet_in_flight: Noble executed MsgTransfer, packet in flight to Agoric
+ica_tx_pending --> failed: ICA execution returned error
+state packet_in_flight
+note right of packet_in_flight
+  IBC packet sent from Noble, waiting for relayer to deliver to Agoric
+end note
+packet_in_flight --> ack_pending: Relayer delivered packet to Agoric chain
+packet_in_flight --> timed_out: Packet not delivered within timeout period
+state ack_pending
+note right of ack_pending
+  Packet received on Agoric, waiting for acknowledgement
+end note
+ack_pending --> completed: Transfer acknowledged successfully
+ack_pending --> failed: Agoric returned error acknowledgement
+state completed
+note right of completed
+  IBC transfer complete, funds on Agoric LCA
+end note
+completed --> [*]
+state timed_out
+note right of timed_out
+  IBC packet timed out, funds refunded on Noble
+end note
+timed_out --> [*]
+state failed
+note right of failed
+  IBC transfer failed
+end note
+failed --> [*]

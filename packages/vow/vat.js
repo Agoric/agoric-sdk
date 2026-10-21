@@ -14,7 +14,12 @@ import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { prepareBasicVowTools } from './src/tools.js';
 import makeE from './src/E.js';
 
-/** @type {import('./src/types.js').IsRetryableReason} */
+/**
+ * @import {IsRetryableReason} from './src/types.js';
+ * @import {E} from '@endo/far';
+ */
+
+/** @type {IsRetryableReason} */
 const isRetryableReason = (reason, priorRetryValue) => {
   if (
     isUpgradeDisconnection(reason) &&
@@ -63,7 +68,7 @@ export const heapVowTools = prepareSwingsetVowTools(makeHeapZone());
  *
  * This produces long-lived ephemeral promises that encapsulate the shortening
  * behaviour, and so provides no way for `watch` to durably shorten. Use the
- * standard `import('@endo/far').E` if you need to `watch` its resulting
+ * standard `E` if you need to `watch` its resulting
  * promises.
  */
 export const heapVowE = makeE(globalThis.HandledPromise, {

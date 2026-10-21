@@ -18,6 +18,40 @@ await fs.writeFile('bootstrap.xss', worker.makeSnapshotStream());
 await worker.close();
 ```
 
+## Using CI-built binaries from `xsnap-worker-binaries`
+
+Before npm platform packages are wired, CI can consume binaries from GitHub
+releases in `Agoric/xsnap-worker-binaries`.
+
+From `packages/xsnap/`:
+
+```bash
+./scripts/use-github-release-binary.sh 0.0.0-dev /tmp/xsnap-release-assets
+source /tmp/xsnap-release-assets/xsnap-binary.env
+```
+
+This sets:
+
+- `XSNAP_WORKER` for release mode
+- `XSNAP_WORKER_DEBUG` for debug mode
+
+The script verifies SHA256 digests against the release manifest before writing
+the env file.
+
+## Package install behavior
+
+`@agoric/xsnap` postinstall now installs prebuilt binaries from GitHub releases
+instead of compiling native sources locally.
+
+Optional environment overrides:
+
+- `XSNAP_BINARY_REPO` (default: `Agoric/xsnap-worker-binaries`)
+- `XSNAP_BINARY_BASE_URL` (advanced override)
+- `XSNAP_BINARY_VERSION` (default: package `build.env`, then package version)
+- `XSNAP_BINARY_MANIFEST_SHA256` (default: package `build.env` manifest hash;
+  required trust anchor when overriding `XSNAP_BINARY_VERSION`)
+- `XSNAP_CACHE_DIR` (advanced override for cached downloads)
+
 Some time later, possibly on a different computer…
 
 ```js

@@ -1,0 +1,15 @@
+{
+  "bootstrap": "bootstrap",
+  "loopboxSenders": ["user", "bot"],
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "bootstrap.js"
+    },
+    "bot": {
+      "sourceSpec": "vat-bot.js"
+    },
+    "user": {
+      "sourceSpec": "vat-user.js"
+    }
+  }
+}

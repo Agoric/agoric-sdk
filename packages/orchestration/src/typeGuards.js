@@ -4,13 +4,19 @@ import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
 /**
- * @import {TypedPattern} from '@agoric/internal';
- * @import {CosmosAssetInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions, AccountIdArg, BaseChainInfo, ChainInfo,Caip10Record} from './types.js';
+ * @import {CastedPattern} from '@endo/patterns';
+ * @import {CosmosAssetInfo, CosmosChainInfo, DenomAmount,
+ *   DenomInfo, AmountArg, CosmosValidatorAddress, CosmosActionOptions,
+ *   OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions,
+ *   AccountIdArg, BaseChainInfo, ChainInfo, Caip10Record,
+ *   LegacyExecuteEncodedTxOptions, CosmosQuerierOptions,
+ *   PacketOptions, OrchestrationOptions} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
  * @import {DenomDetail} from './exos/chain-hub.js';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**
@@ -28,7 +34,7 @@ export const OutboundConnectionHandlerI = M.interface(
   },
 );
 
-// XXX @type {TypedPattern<CosmosChainAddress>} but that's causing error:
+// XXX @type {CastedPattern<CosmosChainAddress>} but that's causing error:
 // Declaration emit for this file requires using private name 'validatedType' from module '"/opt/agoric/agoric-sdk/packages/internal/src/types"'. An explicit type annotation may unblock declaration emit.
 export const CosmosChainAddressShape = {
   chainId: M.string(),
@@ -38,7 +44,7 @@ export const CosmosChainAddressShape = {
 };
 harden(CosmosChainAddressShape);
 
-/** @type {TypedPattern<Caip10Record>} */
+/** @type {CastedPattern<Caip10Record>} */
 export const Caip10RecordShape = {
   namespace: M.string(),
   reference: M.string(),
@@ -52,11 +58,11 @@ export const ChainAddressShape = CosmosChainAddressShape;
 /**
  * NB: For the AccountId case does not fully verify it is CAIP-10 (only string)
  *
- * @type {TypedPattern<AccountIdArg>}
+ * @type {CastedPattern<AccountIdArg>}
  */
 export const AccountIdArgShape = M.or(M.string(), CosmosChainAddressShape);
 
-/** @type {TypedPattern<Proto3Msg>} */
+/** @type {CastedPattern<Proto3Msg>} */
 export const Proto3Shape = { typeUrl: M.string(), value: M.string() };
 harden(Proto3Shape);
 
@@ -89,7 +95,7 @@ export const IBCConnectionInfoShape = M.splitRecord({
   transferChannel: IBCChannelInfoShape,
 });
 
-/** @type {TypedPattern<CosmosAssetInfo>} */
+/** @type {CastedPattern<CosmosAssetInfo>} */
 export const CosmosAssetInfoShape = M.splitRecord({
   base: M.string(),
   name: M.string(),
@@ -109,14 +115,14 @@ const ChainInfoOptionalShape = {
   cctpDestinationDomain: M.number(),
 };
 
-/** @type {TypedPattern<BaseChainInfo>} */
+/** @type {CastedPattern<BaseChainInfo>} */
 export const BaseChainInfoShape = M.splitRecord(
   ChainInfoRequiredShape,
   ChainInfoOptionalShape,
 );
 harden(BaseChainInfoShape);
 
-/** @type {TypedPattern<CosmosChainInfo>} */
+/** @type {CastedPattern<CosmosChainInfo>} */
 export const CosmosChainInfoShape = M.splitRecord(
   {
     chainId: M.string(),
@@ -134,13 +140,13 @@ export const CosmosChainInfoShape = M.splitRecord(
 );
 harden(CosmosChainInfoShape);
 
-/** @type {TypedPattern<ChainInfo>} */
+/** @type {CastedPattern<ChainInfo>} */
 export const ChainInfoShape = M.or(CosmosChainInfoShape, BaseChainInfoShape);
 harden(ChainInfoShape);
 
 export const DenomShape = M.string();
 
-/** @type {TypedPattern<Coin>} */
+/** @type {CastedPattern<Coin>} */
 export const CoinShape = {
   /** json-safe stringified bigint */
   amount: M.string(),
@@ -148,7 +154,7 @@ export const CoinShape = {
 };
 harden(CoinShape);
 
-/** @type {TypedPattern<DenomInfo<any, any>>} */
+/** @type {CastedPattern<DenomInfo<any, any>>} */
 export const DenomInfoShape = {
   chain: M.remotable('Chain'),
   base: M.remotable('Chain'),
@@ -157,29 +163,29 @@ export const DenomInfoShape = {
 };
 harden(DenomInfoShape);
 
-/** @type {TypedPattern<DenomDetail>} */
+/** @type {CastedPattern<DenomDetail>} */
 export const DenomDetailShape = M.splitRecord(
   { chainName: M.string(), baseName: M.string(), baseDenom: M.string() },
   { brand: BrandShape },
 );
 harden(DenomDetailShape);
 
-/** @type {TypedPattern<DenomAmount>} */
+/** @type {CastedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.nat() };
 harden(DenomAmountShape);
 
-/** @type {TypedPattern<Amount<'nat'>>} */
+/** @type {CastedPattern<Amount<'nat'>>} */
 export const AnyNatAmountShape = {
   brand: M.remotable('Brand'),
   value: M.nat(),
 };
 harden(AnyNatAmountShape);
 
-/** @type {TypedPattern<AmountArg>} */
+/** @type {CastedPattern<AmountArg>} */
 export const AmountArgShape = M.or(AnyNatAmountShape, DenomAmountShape);
 
 /**
- * @type {TypedPattern<{
+ * @type {CastedPattern<{
  *   validator: CosmosValidatorAddress;
  *   amount: AmountArg;
  * }>}
@@ -198,13 +204,32 @@ export const ICQMsgShape = M.splitRecord(
   { height: M.string(), prove: M.boolean() },
 );
 
-/** @type {TypedPattern<TypedJson>} */
+/** @type {CastedPattern<TypedJson>} */
 export const TypedJsonShape = M.splitRecord({ '@type': M.string() });
+
+/** @type {CastedPattern<OrchestrationOptions>} */
+export const OrchestrationOptionsShape = M.splitRecord(
+  {},
+  {
+    progressTracker: M.remotable('ProgressTracker'),
+  },
+);
+
+/** @type {CastedPattern<PacketOptions>} */
+export const PacketOptionsShape = M.and(
+  OrchestrationOptionsShape,
+  M.splitRecord(
+    {},
+    {
+      sendOpts: SendOptionsShape,
+    },
+  ),
+);
 
 /** @see {Chain} */
 export const chainFacadeMethods = {
   getChainInfo: M.call().returns(VowShape),
-  makeAccount: M.call().returns(VowShape),
+  makeAccount: M.call().optional(OrchestrationOptionsShape).returns(VowShape),
 };
 harden(chainFacadeMethods);
 
@@ -221,18 +246,60 @@ harden(TimestampProtoShape);
 /**
  * see {@link TxBody} for more details
  *
- * @internal
+ * @type {CastedPattern<NonNullable<CosmosActionOptions['txOpts']>>}
  */
-export const ExecuteICATxOptsShape = M.splitRecord(
+export const CosmosTxOptionsShape = M.splitRecord(
   {},
   {
     memo: M.string(),
     timeoutHeight: M.bigint(),
     extensionOptions: M.arrayOf(M.any()),
     nonCriticalExtensionOptions: M.arrayOf(M.any()),
-    sendOpts: SendOptionsShape,
   },
 );
+
+/** @type {CastedPattern<CosmosActionOptions>} */
+export const CosmosActionOptionsShape = M.and(
+  PacketOptionsShape,
+  M.splitRecord(
+    {},
+    {
+      txOpts: CosmosTxOptionsShape,
+    },
+  ),
+);
+
+/** @type {CastedPattern<LegacyExecuteEncodedTxOptions>} */
+export const LegacyExecuteEncodedTxOptionsShape = M.and(
+  CosmosActionOptionsShape,
+  // XXX this tolerates top-level txOpts for backward compatibility
+  CosmosTxOptionsShape,
+);
+
+/** @type {CastedPattern<NonNullable<CosmosQuerierOptions['queryOpts']>>} */
+export const RequestQueryOptionsShape = M.splitRecord(
+  {},
+  {
+    height: M.bigint(),
+    prove: M.boolean(),
+  },
+);
+
+/** @type {CastedPattern<CosmosQuerierOptions>} */
+export const CosmosQuerierOptionsShape = M.and(
+  PacketOptionsShape,
+  M.splitRecord(
+    {},
+    {
+      queryOpts: RequestQueryOptionsShape,
+    },
+  ),
+);
+
+/**
+ * @deprecated use {@link LegacyExecuteEncodedTxOptionsShape} instead
+ */
+export const ExecuteICATxOptsShape = LegacyExecuteEncodedTxOptionsShape;
 
 /**
  * Ensures at least one {@link AmountKeywordRecord} entry is present and only
@@ -243,13 +310,13 @@ export const AnyNatAmountsRecord = M.and(
   M.not({}),
 );
 
-/** @type {TypedPattern<OrchestrationPowers>} */
+/** @type {CastedPattern<OrchestrationPowers>} */
 export const OrchestrationPowersShape = {
-  agoricNames: M.remotable(),
-  localchain: M.remotable(),
-  orchestrationService: M.remotable(),
-  storageNode: M.remotable(),
-  timerService: M.remotable(),
+  agoricNames: M.remotable('AgoricNames'),
+  localchain: M.remotable('Localchain'),
+  orchestrationService: M.remotable('OrchestrationService'),
+  storageNode: M.remotable('StorageNode'),
+  timerService: M.remotable('TimerService'),
 };
 harden(OrchestrationPowersShape);
 
@@ -262,7 +329,7 @@ const ForwardArgsShape = {
 };
 harden(ForwardArgsShape);
 
-/** @type {TypedPattern<ForwardInfo>} */
+/** @type {CastedPattern<ForwardInfo>} */
 export const ForwardInfoShape = {
   forward: M.splitRecord(ForwardArgsShape, {
     /**
@@ -279,7 +346,7 @@ harden(ForwardInfoShape);
 /**
  * Caller configurable values of {@link ForwardInfo}
  *
- * @type {TypedPattern<IBCMsgTransferOptions['forwardOpts']>}
+ * @type {CastedPattern<NonNullable<IBCMsgTransferOptions['forwardOpts']>>}
  */
 export const ForwardOptsShape = M.splitRecord(
   {},
@@ -292,19 +359,80 @@ export const ForwardOptsShape = M.splitRecord(
 );
 
 /**
- * @type {TypedPattern<IBCMsgTransferOptions>}
+ * @type {CastedPattern<IBCMsgTransferOptions>}
  * @internal
  */
-export const IBCTransferOptionsShape = M.splitRecord(
+export const IBCTransferOptionsShape = M.and(
+  M.splitRecord(
+    {},
+    {
+      timeoutTimestamp: M.bigint(),
+      timeoutHeight: {
+        revisionHeight: M.bigint(),
+        revisionNumber: M.bigint(),
+      },
+      timeoutRelativeSeconds: M.bigint(),
+      memo: M.string(),
+      forwardOpts: ForwardOptsShape,
+    },
+  ),
+  CosmosActionOptionsShape,
+);
+
+/**
+ * An entry of an EIP-712 struct type definition: a field name and its type.
+ * Nothing else is allowed, notably not the repo-local `optional` marker, which
+ * belongs in schema definitions only, never in typed data.
+ */
+export const EIP712TypeEntryShape = { name: M.string(), type: M.string() };
+harden(EIP712TypeEntryShape);
+
+/**
+ * EIP-712 struct type definitions, keyed by type name. The `EIP712Domain` type
+ * is not required; a consumer that requires it can combine this with e.g.
+ * `M.splitRecord({ EIP712Domain: M.any() }, {}, M.any())` using `M.and`.
+ */
+export const EIP712TypesShape = M.recordOf(
+  M.string(),
+  M.arrayOf(EIP712TypeEntryShape),
+);
+harden(EIP712TypesShape);
+
+/**
+ * An EIP-712 domain, with only standard fields, all optional. An integer
+ * `chainId` may be in any form accepted for EIP-712 integers.
+ */
+export const EIP712DomainShape = M.splitRecord(
   {},
   {
-    timeoutTimestamp: M.bigint(),
-    timeoutHeight: {
-      revisionHeight: M.bigint(),
-      revisionNumber: M.bigint(),
-    },
-    timeoutRelativeSeconds: M.bigint(),
-    memo: M.string(),
-    forwardOpts: ForwardOptsShape,
+    name: M.string(),
+    version: M.string(),
+    chainId: M.or(M.string(), M.number(), M.bigint()),
+    verifyingContract: M.string(),
+    salt: M.string(),
   },
+  {},
 );
+harden(EIP712DomainShape);
+
+/**
+ * The fields of signed EIP-712 typed data, e.g. as relayed on behalf of its
+ * signer. Only the structure is described: the values themselves (whose
+ * types depend on the typed data's `types`, and can't be described by a
+ * recursive pattern), identifiers, and the signature need to be validated
+ * separately, e.g. by `normalizeAndValidateEIP712Data`.
+ *
+ * The signature may be in any passable form accepted by viem (see
+ * `WithSignature`): hex encoded, or structured (`{ r, s, v }` or
+ * `{ r, s, yParity }`).
+ *
+ * As a record of shapes, it can also be extended with other fields.
+ */
+export const SignedEIP712DataShape = {
+  domain: EIP712DomainShape,
+  types: EIP712TypesShape,
+  primaryType: M.string(),
+  message: M.recordOf(M.string(), M.any()),
+  signature: M.or(M.string(), M.record()),
+};
+harden(SignedEIP712DataShape);

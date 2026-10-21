@@ -13,7 +13,7 @@ const parserOpts = {
   assets: { type: 'string' },
 };
 
-/** @satisfies {CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (_, options) => {
   return harden({
     sourceSpec:

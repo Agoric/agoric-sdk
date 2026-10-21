@@ -1,91 +1,162 @@
 /**
+ * @file Host-side portfolio facets and durable state.
+ *
  * NOTE: This is host side code; can't use await.
  */
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
-import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import {
+  makeTracer,
+  mustMatch,
+  type ERemote,
+  type TypedPattern,
+} from '@agoric/internal';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import { stripPrefix } from '@agoric/internal/src/ses-utils.js';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import {
   type AccountId,
+  type Bech32Address,
+  type Caip10Record,
   type CaipChainId,
-  type ChainHub,
 } from '@agoric/orchestration';
-import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import {
+  coerceAccountId,
+  parseAccountId,
+  parseAccountIdArg,
+  sameEvmAddress,
+} from '@agoric/orchestration/src/utils/address.js';
+import {
+  PortfolioAutoFeaturesShape,
+  PortfolioPermissionsShape,
+  type FlowConfig,
+  type FlowKey,
+  type FlowStatus,
+  type FundsFlowPlan,
+  type FundsFlow,
+  type PlanObservations,
+  type PortfolioAgentGrantee,
+  type PortfolioAgentStatus,
+  type PortfolioContinuingInvitationMaker,
+  type PortfolioPermissions,
+  type PortfolioPermissionsExt,
+  type PortfolioAutoFeatures,
+  type PortfolioRemoteAccountState,
+  type PortfolioAutoFeaturesExt,
+  type PortfolioDelegatedClaimRewardsParams,
+  type PortfolioDelegatedRebalanceParams,
+  type PortfolioDelegatedSetTargetAllocationParams,
+  type PortfolioGrantResult,
+  type PortfolioDelegationLifecycleResult,
+  type PortfolioSetAutoFeaturesResult,
+  type SetTargetAllocationInitiatingOperation,
+  PortfolioAutoFeaturesExtShape,
+} from '@agoric/portfolio-api';
+import {
+  AxelarChain,
+  PortfolioPlannerAgent,
+  SupportedChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
+import type {
+  TargetAllocation as EIP712Allocation,
+  YmaxFullDomain,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { MapStore } from '@agoric/store';
-import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { decodeBase64 } from '@endo/base64';
-import { X } from '@endo/errors';
-import type { ERef } from '@endo/far';
+import { bare, Fail, q, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { hexToBytes } from '@noble/hashes/utils';
+import type { Address as EvmAddress } from 'abitype';
 import {
-  AxelarChain,
-  SupportedChain,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
-import type { AxelarId } from './portfolio.contract.js';
-import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
+  preparePortfolioDelegationKit,
+  type PortfolioDelegationClient,
+} from './delegation.exo.ts';
+import { vetFlowPlanPlaces } from './flow-plan-places.ts';
+import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
+import {
+  assertMandateForAllocation,
+  assertMandateForPlanObservations,
+  needsObservations,
+  vetAllocationPlan,
+  vetObservationPlaces,
+} from './delegation-limits.ts';
+import type { EVMContractAddresses } from './portfolio.contract.ts';
+import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
-import type { makeOfferArgsShapes } from './type-guards-steps.js';
+import type {
+  PortfolioObservationsVerifier,
+  VerifiedPortfolioObservations,
+} from './observation-verifier.ts';
+import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
   makeFlowPath,
+  makeFlowStepsPath,
+  makePortfolioAgentsPath,
   makePortfolioPath,
   PoolKeyShapeExt,
+  PortfolioAgentStatusShape,
+  type EVMContractAddressesMap,
+  type FlowDetail,
   type makeProposalShapes,
-  type OfferArgsFor,
   type PoolKey,
+  type ProposalType,
   type StatusFor,
   type TargetAllocation,
 } from './type-guards.js';
+import { predictWalletAddress } from './utils/evm-orch-factory.js';
+import { predictRemoteAccountAddress } from './utils/evm-orch-router.ts';
 
 const trace = makeTracer('PortExo');
-const { values } = Object;
 
-export const DECODE_CONTRACT_CALL_RESULT_ABI = [
-  {
-    type: 'tuple',
-    components: [
-      { name: 'isContractCallResult', type: 'bool' },
-      {
-        name: 'data',
-        type: 'tuple[]',
-        components: [
-          { name: 'success', type: 'bool' },
-          { name: 'result', type: 'bytes' },
-        ],
-      },
-    ],
-  },
-] as const;
-harden(DECODE_CONTRACT_CALL_RESULT_ABI);
+const DEFAULT_TO_ROUTER = false;
+
+const useRouter = (addresses: EVMContractAddresses) => {
+  if (
+    !addresses.remoteAccountRouter ||
+    !(addresses.remoteAccountRouter.length > 2)
+  ) {
+    return false;
+  }
+  if (!addresses.depositFactory || !(addresses.depositFactory.length > 2)) {
+    return true;
+  }
+
+  return DEFAULT_TO_ROUTER;
+};
 
 export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
 export type GMPAccountInfo = {
   namespace: 'eip155';
   chainName: AxelarChain;
+  err?: string;
   chainId: CaipChainId;
-  remoteAddress: `0x${string}`;
+  remoteAddress: EvmAddress;
+  // unsupported. routerAddress only present on beta router-based accounts
+  routerAddress?: undefined;
+  /** the address of the factory that deployed the router-based remote account */
+  routerFactory?: EvmAddress;
 };
 type AgoricAccountInfo = {
   namespace: 'cosmos';
   chainName: 'agoric';
+  err?: string;
+  /** aka `@agoric` */
   lca: LocalAccount;
+  /** aka `+agoric` */
   lcaIn: LocalAccount;
   reg: TargetRegistration;
 };
 type NobleAccountInfo = {
   namespace: 'cosmos';
   chainName: 'noble';
+  err?: string;
   ica: NobleAccount;
 };
 
@@ -94,22 +165,100 @@ export type AccountInfoFor = Record<AxelarChain, GMPAccountInfo> & {
   noble: NobleAccountInfo;
 };
 
+type PortfolioAgentInfo = PortfolioAgentStatus & {
+  activeClient?: PortfolioDelegationClient;
+};
+
+const PortfolioAgentInfoShape: TypedPattern<PortfolioAgentInfo> = M.and(
+  PortfolioAgentStatusShape,
+  M.splitRecord(
+    {},
+    {
+      activeClient: M.remotable('PortfolioDelegationClient'),
+    },
+    M.record(), // extensible
+  ),
+);
+
+type MaybeResolvedVowKit<T> =
+  | VowKit<T>
+  | (Omit<VowKit<T>, 'resolver'> & { resolver?: undefined });
+
+type RunningFlowDetail = {
+  sync: MaybeResolvedVowKit<FundsFlow>;
+} & FlowDetail;
+
 type PortfolioKitState = {
   portfolioId: number;
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
+  flowsRunning: MapStore<number, RunningFlowDetail>;
+  delegations?: MapStore<number, PortfolioAgentInfo>;
+  plannerAgentId?: number;
+  enabledAutoFeatures?: PortfolioAutoFeatures;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
+  policyVersion: number;
+  rebalanceCount: number;
+  /** CAIP-10 account ID of the authenticated EVM account that opened this portfolio */
+  sourceAccountId?: AccountId;
+  /** Noble ICA retained while its forwarding-account registration is retried. */
+  nobleAccountUnderProvision?: NobleAccountInfo;
+  /** reserved for future use */
+  etc: unknown;
 };
+
+// a bit more lax than the type to facilitate evolution; hence not a TypedPattern
+export const PortfolioStateShape = {
+  portfolioId: M.number(),
+  accountsPending: M.remotable('accountsPending'),
+  accounts: M.remotable('accounts'),
+  positions: M.remotable('positions'),
+  flowsRunning: M.remotable('flowsRunning'),
+  delegations: M.opt(M.remotable('delegations')),
+  plannerAgentId: M.opt(M.number()),
+  enabledAutoFeatures: M.opt(PortfolioAutoFeaturesExtShape),
+  nextFlowId: M.number(),
+  targetAllocation: M.opt(M.record()),
+  policyVersion: M.number(),
+  rebalanceCount: M.number(),
+  sourceAccountId: M.opt(M.string()),
+  nobleAccountUnderProvision: M.opt(M.any()),
+  etc: M.any(),
+};
+harden(PortfolioStateShape);
+
+export const makeValidateOpenMessageRepresentativeInfo =
+  (
+    eip155ChainIdToAxelarChain: {
+      [chainId in `${number | bigint}`]?: AxelarChain;
+    },
+    contracts: EVMContractAddressesMap,
+  ) =>
+  (chainId: number | bigint, representativeContract: EvmAddress) => {
+    const fromChain = eip155ChainIdToAxelarChain[`${chainId}`];
+    if (!fromChain) {
+      throw Fail`no Axelar chain for EIP-155 chainId ${chainId}`;
+    }
+    const addresses = contracts[fromChain];
+
+    (addresses.remoteAccountRouter &&
+      addresses.remoteAccountRouter.length > 2 &&
+      sameEvmAddress(representativeContract, addresses.remoteAccountRouter)) ||
+      (addresses.depositFactory &&
+        addresses.depositFactory.length > 2 &&
+        sameEvmAddress(representativeContract, addresses.depositFactory)) ||
+      Fail`${representativeContract} does not match any supported representative address ${[addresses.remoteAccountRouter, addresses.depositFactory].filter(address => address && address.length > 2)} for chain ${fromChain}`;
+  };
 
 /**
  * For publishing, represent accounts collection using accountId values
  */
 const accountIdByChain = (
   accounts: PortfolioKitState['accounts'],
-): Partial<Record<SupportedChain, AccountId>> => {
-  const byChain = {};
+): StatusFor['portfolio']['accountIdByChain'] => {
+  const byChain: Partial<Record<SupportedChain, AccountId>> = {};
   for (const [n, info] of accounts.entries()) {
     switch (info.namespace) {
       case 'cosmos':
@@ -120,6 +269,8 @@ const accountIdByChain = (
           case 'noble':
             byChain[n] = coerceAccountId(info.ica.getAddress());
             break;
+          default:
+            trace('skipping: unexpected chainName', info);
         }
         break;
       case 'eip155':
@@ -132,52 +283,213 @@ const accountIdByChain = (
   return harden(byChain);
 };
 
+/**
+ * For publishing, represent accounts collection using accountId values
+ */
+const accountStateByChain = (
+  accounts: PortfolioKitState['accounts'],
+  pending: PortfolioKitState['accountsPending'],
+) => {
+  const byChain: Partial<Record<SupportedChain, PortfolioRemoteAccountState>> =
+    {};
+  for (const [n, info] of accounts.entries()) {
+    let accountDetails:
+      | { chainId: CaipChainId; address: string; routerFactory?: EvmAddress }
+      | undefined;
+
+    switch (info.namespace) {
+      case 'cosmos': {
+        let cosmosAccountDetails: Caip10Record | undefined;
+        switch (info.chainName) {
+          case 'agoric':
+            cosmosAccountDetails = parseAccountIdArg(info.lca.getAddress());
+            break;
+          case 'noble':
+            cosmosAccountDetails = parseAccountIdArg(info.ica.getAddress());
+            break;
+          default:
+            trace('skipping: unexpected chainName', info);
+        }
+        if (cosmosAccountDetails) {
+          accountDetails = {
+            chainId: `${cosmosAccountDetails.namespace}:${cosmosAccountDetails.reference}`,
+            address: cosmosAccountDetails.accountAddress,
+          };
+        }
+        break;
+      }
+      case 'eip155': {
+        const { chainId, remoteAddress, routerFactory } = info;
+        accountDetails = {
+          chainId,
+          address: remoteAddress,
+          ...(routerFactory ? { routerFactory } : {}),
+        };
+        break;
+      }
+      default:
+        assert.fail(X`no such type: ${info}`);
+    }
+
+    const isPending = pending.has(n);
+    const hasError = !!info.err;
+
+    if (accountDetails) {
+      byChain[n] = {
+        state: hasError ? 'failed' : isPending ? 'provisioning' : 'active',
+        ...(accountDetails || {}),
+      };
+    } else {
+      byChain[n] = { state: 'unknown' };
+    }
+  }
+  for (const chain of pending.keys()) {
+    if (accounts.has(chain)) continue;
+    byChain[chain] = { state: 'provisioning' };
+  }
+  return harden(byChain) as StatusFor['portfolio']['accountStateByChain'];
+};
+
+const { fromEntries } = Object;
+
+const makePortfolioAgentsRecord = (
+  delegations?: PortfolioKitState['delegations'],
+): StatusFor['portfolioAgents'] =>
+  harden(
+    delegations
+      ? fromEntries(
+          [...delegations.entries()].map(
+            ([agentId, { activeClient: _, ...status }]) => [
+              `agent${agentId}`,
+              status,
+            ],
+          ),
+        )
+      : {},
+  );
+
+/** publish everyting about flowsRunning but the sync VowKit */
+const makeFlowsRunningRecord = (
+  flowsRunning: PortfolioKitState['flowsRunning'],
+): StatusFor['portfolio']['flowsRunning'] => {
+  const storedEntries = [...flowsRunning.entries()];
+  const statusEntries = storedEntries.map(([num, stored]) => {
+    const {
+      sync: { resolver },
+      ...data
+    } = stored;
+    return [`flow${num}`, { ...data, awaitingSteps: !!resolver }];
+  });
+  return harden(fromEntries(statusEntries));
+};
+
+const assertExternalDelegationTarget = (
+  state: PortfolioKitState,
+  agentId: number,
+) => {
+  const { delegations, plannerAgentId } = state;
+  delegations?.has(agentId) || Fail`no delegation found for agent ${agentId}`;
+  const delegation = delegations!.get(agentId);
+  agentId !== plannerAgentId ||
+    Fail`planner delegation cannot be changed or revoked externally`;
+  delegation.grantee !== PortfolioPlannerAgent ||
+    delegation.state === 'revoked' ||
+    Fail`active planner delegation agent${agentId} is not current`;
+  delegation.state === 'active' ||
+    Fail`delegation agent${agentId} cannot be changed or revoked while ${delegation.state}`;
+};
+
 export type PublishStatusFn = <K extends keyof StatusFor>(
   path: string[],
   status: StatusFor[K],
 ) => void;
 
+/** avoid circular reference */
+type PortfolioKitCycleBreaker = unknown;
+
 export const preparePortfolioKit = (
   zone: Zone,
   {
-    axelarIds,
     rebalance,
-    parseInboundTransfer,
-    timer,
-    chainHubTools,
+    executePlan,
+    onAgoricTransfer,
+    transferChannels,
+    walletBytecode,
     proposalShapes,
     offerArgsShapes,
     vowTools,
     zcf,
+    inertSeat,
     portfoliosNode,
     marshaller,
     usdcBrand,
+    eip155ChainIdToAxelarChain,
+    contracts,
+    deliverDelegation,
+    verifyPortfolioObservations,
   }: {
-    axelarIds: AxelarId;
     rebalance: (
       seat: ZCFSeat,
-      offerArgs: OfferArgsFor['rebalance'],
-      kit: unknown, // XXX avoid circular reference
-    ) => Vow<any>; // XXX HostForGuest???
-    parseInboundTransfer: (
-      packet: VTransferIBCEvent['packet'],
-      kit: unknown, // XXX avoid circular reference to this.facets
-    ) => Vow<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>>;
-    timer: Remote<TimerService>;
-    chainHubTools: Pick<ChainHub, 'getChainInfo'>;
+      offerArgs: unknown,
+      kit: PortfolioKitCycleBreaker,
+      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+    ) => Vow<unknown>;
+    executePlan: (
+      seat: ZCFSeat,
+      offerArgs: unknown,
+      kit: PortfolioKitCycleBreaker,
+      flowDetail?: FlowDetail,
+      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+      config?: FlowConfig,
+      options?: unknown,
+    ) => Vow<unknown>;
+    onAgoricTransfer: (
+      event: VTransferIBCEvent,
+      kit: PortfolioKitCycleBreaker,
+    ) => Vow<boolean>;
+    transferChannels: {
+      noble: IBCConnectionInfo['transferChannel'];
+      axelar?: IBCConnectionInfo['transferChannel'];
+    };
+    walletBytecode: `0x${string}`;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
     zcf: ZCF;
-    portfoliosNode: ERef<StorageNode>;
-    marshaller: Marshaller;
+    /**
+     * An already-exited seat for flows that have no user seat to pay out to
+     * (EVM-originated and delegated flows). Steps that move funds to or from a
+     * seat fail on it before touching any account, rather than stranding a
+     * payout in a seat whose `userSeat` nobody holds.
+     */
+    inertSeat: ZCFSeat;
+    portfoliosNode: ERemote<StorageNode>;
+    marshaller: ERemote<EMarshaller>;
     usdcBrand: Brand<'nat'>;
+    eip155ChainIdToAxelarChain: {
+      [chainId in `${number | bigint}`]?: AxelarChain;
+    };
+    contracts: EVMContractAddressesMap;
+    /**
+     * Deliver a previously created delegation client invitation to `grantee`.
+     * The closure encapsulates the delivery dependencies.
+     *
+     * Must be prompt.
+     */
+    deliverDelegation: (
+      client: PortfolioDelegationClient,
+      portfolioId: number,
+      agentId: number,
+      grantee: PortfolioAgentGrantee,
+      permissions: PortfolioPermissionsExt,
+    ) => Promise<void>;
+    verifyPortfolioObservations: PortfolioObservationsVerifier;
   },
 ) => {
   // Ephemeral node cache
   // XXX collecting flow nodes is TBD
-  const nodes = new Map<string, ERef<StorageNode>>();
-  const providePathNode = (segments: string[]): ERef<StorageNode> => {
+  const nodes = new Map<string, ERemote<StorageNode>>();
+  const providePathNode = (segments: string[]): ERemote<StorageNode> => {
     if (segments.length === 0) return portfoliosNode;
     const path = segments.join('.');
     if (nodes.has(path)) return nodes.get(path)!;
@@ -204,6 +516,17 @@ export const preparePortfolioKit = (
   });
 
   const makePosition = preparePosition(zone, emptyTransferState, publishStatus);
+  const makeDelegationKit = preparePortfolioDelegationKit(
+    zone.subZone('delegation'),
+    { zcf, verifyPortfolioObservations, shapes: offerArgsShapes },
+  );
+  const makeDelegationsStore = (
+    portfolioId: number,
+  ): PortfolioKitState['delegations'] =>
+    zone.detached().mapStore(`portfolio${portfolioId}:delegations`, {
+      keyShape: M.number(),
+      valueShape: PortfolioAgentInfoShape,
+    }) as PortfolioKitState['delegations'];
 
   return zone.exoClassKit(
     'Portfolio',
@@ -217,10 +540,21 @@ export const preparePortfolioKit = (
       invitationMakers: M.interface('invitationMakers', {
         Rebalance: M.callWhen().returns(InvitationShape),
       })}*/,
-    ({ portfolioId }: { portfolioId: number }): PortfolioKitState => {
+    ({
+      portfolioId,
+      sourceAccountId,
+    }: {
+      portfolioId: number;
+      sourceAccountId?: AccountId;
+    }): PortfolioKitState => {
       return {
         portfolioId,
         nextFlowId: 1,
+        flowsRunning: zone.detached().mapStore('flowsRunning', {
+          keyShape: M.number(),
+          valueShape: M.record(),
+        }),
+        delegations: undefined,
         accounts: zone.detached().mapStore('accounts', {
           keyShape: M.string(),
           valueShape: M.or(
@@ -235,97 +569,39 @@ export const preparePortfolioKit = (
           keyShape: PoolKeyShapeExt,
           valueShape: M.remotable('Position'),
         }),
+        plannerAgentId: undefined,
+        enabledAutoFeatures: undefined,
         targetAllocation: undefined,
+        policyVersion: 0,
+        rebalanceCount: 0,
+        sourceAccountId,
+        nobleAccountUnderProvision: undefined,
+        etc: undefined,
       };
     },
     {
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
-          trace('receiveUpcall', event);
-          return vowTools.watch(
-            parseInboundTransfer(event.packet, this.facets),
-            this.facets.parseInboundTransferWatcher,
-          );
+          // onAgoricTransfer is prompt
+          return vowTools.when(onAgoricTransfer(event, this.facets));
         },
       },
       parseInboundTransferWatcher: {
-        onRejected(reason) {
-          console.warn('⚠️ parseInboundTransfer failure', reason);
-          throw reason;
+        onRejected(_reason) {
+          Fail`vestigial`;
         },
-        async onFulfilled(parsed) {
-          if (!parsed) {
-            trace('GMP processing skipped; no parsed inbound transfer');
-            return;
-          }
-
-          const { extra } = parsed;
-          if (!extra.memo) return;
-          const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
-
-          const result = (
-            Object.entries(axelarIds) as [AxelarChain, string][]
-          ).find(([_, chainId]) => chainId === memo.source_chain);
-
-          // XXX we must have more than just a (forgeable) memo check here to
-          // determine if the source of this packet is the Axelar chain!
-          if (!result) {
-            console.warn('unknown source_chain', memo);
-            return;
-          }
-
-          const [chainName, _] = result;
-
-          const payloadBytes = decodeBase64(memo.payload);
-          const [{ isContractCallResult, data }] = decodeAbiParameters(
-            DECODE_CONTRACT_CALL_RESULT_ABI,
-            payloadBytes,
-          ) as [AgoricResponse];
-
-          trace(
-            'receiveUpcall Decoded:',
-            JSON.stringify({ isContractCallResult, data }),
-          );
-
-          if (isContractCallResult) {
-            console.warn('TODO: Handle the result of the contract call', data);
-          } else {
-            const [message] = data;
-            const { success, result } = message;
-            if (!success) return;
-
-            const [address] = decodeAbiParameters(
-              [{ type: 'address' }],
-              result,
-            );
-
-            // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
-            // so vowTools.when won't cause async delays or cross-vat calls.
-            const chainInfo = await vowTools.when(
-              chainHubTools.getChainInfo(chainName),
-            );
-            const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
-
-            this.facets.manager.resolveAccount({
-              namespace: 'eip155',
-              chainName: chainName,
-              chainId: caipId,
-              remoteAddress: address,
-            });
-            trace(`remoteAddress ${address}`);
-          }
-
-          trace('receiveUpcall completed');
+        async onFulfilled(_parsed) {
+          Fail`vestigial`;
         },
       },
+      // XXX reader does not provide access for everything published by reporter
+      // known architectural gap pending demand
       reader: {
         /**
          * Get the LocalAccount for the current chain.
          *
          * We rely on the portfolio creator internally adding the Agoric
          * account before making the PortfolioKit available to any clients.
-         *
-         * @returns the LocalAccount for the current chain.
          */
         getLocalAccount(): LocalAccount {
           const { accounts } = this.state;
@@ -341,90 +617,709 @@ export const preparePortfolioKit = (
         getPortfolioId() {
           return this.state.portfolioId;
         },
-        getGMPInfo(chainName: AxelarChain): Vow<GMPAccountInfo> {
-          const { accounts, accountsPending } = this.state;
+        getGMPInfo(chainName: AxelarChain) {
+          const { accounts } = this.state;
+          return accounts.get(chainName) as GMPAccountInfo;
+        },
+        useRouterForChain(chainName: AxelarChain) {
+          const { accounts } = this.state;
           if (accounts.has(chainName)) {
-            return vowTools.asVow(
-              () => accounts.get(chainName) as GMPAccountInfo,
-            );
+            // There is already a remote account, must keep the same interaction kind
+            const info = accounts.get(chainName) as GMPAccountInfo;
+            return !!info.routerFactory;
           }
-          const { vow } = accountsPending.get(chainName);
-          return vow as Vow<GMPAccountInfo>;
+
+          const addresses = contracts[chainName];
+
+          // Consider the presence of a router based remote account as opt-in
+          // if the chain supports router based accounts.
+          const chainSupportsRouter =
+            addresses.remoteAccountRouter &&
+            addresses.remoteAccountRouter.length > 2;
+          const hasRoutedAccount = [...accounts.entries()].some(
+            ([chain, info]) =>
+              chain in AxelarChain && (info as GMPAccountInfo).routerFactory,
+          );
+          if (chainSupportsRouter && hasRoutedAccount) {
+            return true;
+          }
+
+          return useRouter(addresses);
         },
         getTargetAllocation() {
           return this.state.targetAllocation;
         },
+        accountIdByChain() {
+          const { accounts } = this.state;
+          return accountIdByChain(accounts);
+        },
+        accountStateByChain() {
+          const { accounts, accountsPending } = this.state;
+          return accountStateByChain(accounts, accountsPending);
+        },
+        /**
+         * Returns the CAIP-10 account ID of the authenticated EVM account
+         * that opened this portfolio, or undefined if not set.
+         */
+        getSourceAccountId(): AccountId | undefined {
+          return this.state.sourceAccountId;
+        },
+        checkVersion(versionPre: number, countPre: number) {
+          const { policyVersion, rebalanceCount } = this.state;
+          policyVersion === versionPre ||
+            Fail`expected policyVersion ${policyVersion}; got ${versionPre}`;
+          rebalanceCount === countPre ||
+            Fail`expected rebalanceCount ${rebalanceCount}; got ${countPre}`;
+        },
+      },
+      delegationHelper: {
+        getAuthorizedDelegation(
+          client: PortfolioDelegationClient,
+          agentId: number,
+          required: Partial<PortfolioPermissions> = {},
+        ) {
+          const { delegations, portfolioId } = this.state;
+          if (!delegations) {
+            throw Fail`delegation client is not active for portfolio ${portfolioId}`;
+          }
+          const status = delegations.get(agentId);
+          status.activeClient === client ||
+            Fail`delegation client is not active for agent${agentId}`;
+          status.state === 'active' ||
+            Fail`delegation agent${agentId} is not active; current state is ${status.state}`;
+
+          for (const permission of Object.keys(
+            required,
+          ) as (keyof PortfolioPermissions)[]) {
+            status.permissions[permission] ||
+              Fail`delegation agent${agentId} does not have required permission ${permission}`;
+          }
+          return status;
+        },
+        getPortfolioId(client: PortfolioDelegationClient, agentId: number) {
+          this.facets.delegationHelper.getAuthorizedDelegation(client, agentId);
+          const { reader } = this.facets;
+          return reader.getPortfolioId();
+        },
+        getAutoFeatures(client: PortfolioDelegationClient, agentId: number) {
+          this.facets.delegationHelper.getAuthorizedDelegation(client, agentId);
+          const { enabledAutoFeatures } = this.state;
+          return enabledAutoFeatures;
+        },
+        getTargetAllocation(
+          client: PortfolioDelegationClient,
+          agentId: number,
+        ) {
+          this.facets.delegationHelper.getAuthorizedDelegation(client, agentId);
+          const { reader } = this.facets;
+          return reader.getTargetAllocation();
+        },
+        submitTargetAllocation(
+          client: PortfolioDelegationClient,
+          agentId: number,
+          delegatedSetTargetAllocationParams: Omit<
+            PortfolioDelegatedSetTargetAllocationParams,
+            'signedObservations'
+          >,
+          verifiedObservations?: VerifiedPortfolioObservations,
+        ): FlowKey {
+          const { reader, manager, delegationHelper } = this.facets;
+          const delegation = delegationHelper.getAuthorizedDelegation(
+            client,
+            agentId,
+            { allocation: true },
+          );
+          const { syncState, targetAllocation, agentMemo, plan } =
+            delegatedSetTargetAllocationParams;
+
+          const { policyVersion, rebalanceCount } = syncState;
+          reader.checkVersion(policyVersion, rebalanceCount);
+          if (plan !== undefined || verifiedObservations !== undefined) {
+            // The delegation client verified the signed observations.
+            if (!verifiedObservations) {
+              throw Fail`a plan requires verified observations`;
+            }
+            const { portfolioId, syncState: observedSyncState } =
+              verifiedObservations;
+            portfolioId === this.state.portfolioId ||
+              Fail`observations are for portfolio ${q(portfolioId)}`;
+            (observedSyncState.policyVersion === policyVersion &&
+              observedSyncState.rebalanceCount === rebalanceCount) ||
+              Fail`observations sync state ${q(observedSyncState)} does not match ${q(syncState)}`;
+          }
+          const observations = verifiedObservations?.observations;
+          const { permissions } = delegation;
+          // Pre-signed plans can be checked completely before assigning a flow.
+          // Requests for a planner-supplied plan retain the existing lifecycle.
+          let vettedCommit: boolean | undefined;
+          if (plan && observations) {
+            const currentBalancePlaces = harden([
+              ...[...this.state.accounts.keys()].map(
+                chain => `@${chain}` as const,
+              ),
+              ...this.state.positions.keys(),
+            ]);
+            vetObservationPlaces(currentBalancePlaces, plan, observations);
+            vettedCommit = vetAllocationPlan(
+              permissions,
+              targetAllocation,
+              plan,
+              observations,
+            );
+          }
+          const flowDetail: FlowDetail = {
+            type: 'rebalance',
+            agent: `agent${agentId}`,
+            createdAtPolicyVersion: policyVersion,
+            ...(agentMemo != null && { agentMemo }),
+            initiatingOperation: {
+              type: 'setTargetAllocation',
+              targetAllocation,
+              status: 'pending',
+            },
+          };
+          const startedFlow = manager.startFlow(flowDetail);
+          // Rely on platform-level unhandled Vow reporting rather than ad-hoc
+          // contract logging. See https://github.com/Agoric/agoric-sdk/issues/10576
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
+
+          const { flowId } = startedFlow;
+          try {
+            const commitNow =
+              vettedCommit ??
+              vetAllocationPlan(
+                permissions,
+                targetAllocation,
+                plan,
+                observations,
+              );
+            if (commitNow) {
+              const resultingPolicyVersion =
+                manager.updateTargetAllocation(targetAllocation);
+              this.facets.planner.resolvePendingPolicy(
+                flowId,
+                resultingPolicyVersion,
+              );
+            }
+            if (plan) {
+              this.facets.planner.resolveFlowPlan(flowId, plan);
+            }
+          } catch (reason) {
+            const message =
+              reason instanceof Error ? reason.message : String(reason);
+            this.facets.planner.rejectFlowPlan(flowId, message);
+          }
+          return `flow${flowId}`;
+        },
+        submitRebalance(
+          client: PortfolioDelegationClient,
+          agentId: number,
+          delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
+        ): FlowKey {
+          const { reader, manager, delegationHelper } = this.facets;
+          const delegation = delegationHelper.getAuthorizedDelegation(
+            client,
+            agentId,
+            { rebalance: true },
+          );
+          const { syncState, agentMemo } = delegatedRebalanceParams;
+
+          const { policyVersion, rebalanceCount } = syncState;
+          reader.checkVersion(policyVersion, rebalanceCount);
+          const { permissions } = delegation;
+          const targetAllocation =
+            typeof permissions.allocation === 'object'
+              ? (reader.getTargetAllocation() ??
+                Fail`delegated rebalance requires target allocation`)
+              : undefined;
+
+          const flowDetail: FlowDetail = {
+            type: 'rebalance',
+            agent: `agent${agentId}`,
+            createdAtPolicyVersion: policyVersion,
+            ...(agentMemo != null && { agentMemo }),
+          };
+          const startedFlow = manager.startFlow(flowDetail);
+          // Rely on platform-level unhandled Vow reporting rather than ad-hoc
+          // contract logging. See https://github.com/Agoric/agoric-sdk/issues/10576
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
+
+          const { flowId } = startedFlow;
+          if (targetAllocation) {
+            try {
+              assertMandateForAllocation(permissions, targetAllocation);
+            } catch (reason) {
+              const message =
+                reason instanceof Error ? reason.message : String(reason);
+              this.facets.planner.rejectFlowPlan(flowId, message);
+            }
+          }
+          return `flow${flowId}`;
+        },
+        submitClaimRewards(
+          client: PortfolioDelegationClient,
+          agentId: number,
+          delegatedClaimRewardsParams: PortfolioDelegatedClaimRewardsParams,
+        ): FlowKey {
+          const { reader, manager, delegationHelper } = this.facets;
+          delegationHelper.getAuthorizedDelegation(client, agentId, {
+            claimRewards: true,
+          });
+          const { syncState, agentMemo } = delegatedClaimRewardsParams;
+
+          const { policyVersion, rebalanceCount } = syncState;
+          reader.checkVersion(policyVersion, rebalanceCount);
+
+          const flowDetail: FlowDetail = {
+            type: 'claimRewards',
+            agent: `agent${agentId}`,
+            ...(agentMemo != null && { agentMemo }),
+          };
+          const startedFlow = manager.startFlow(flowDetail);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
+
+          const { flowId } = startedFlow;
+          return `flow${flowId}`;
+        },
       },
       reporter: {
+        /**
+         * Publishing is assumed to succeed; there is no cost-effective retry or
+         * compensation path for vstorage writes in this contract.
+         */
         publishStatus() {
           const {
             portfolioId,
             positions,
             accounts,
             nextFlowId,
+            flowsRunning,
             targetAllocation,
+            accountsPending,
+            policyVersion,
+            rebalanceCount,
+            sourceAccountId,
+            enabledAutoFeatures,
           } = this.state;
 
-          const deposit = () => {
-            const { lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
-            return { depositAddress: lcaIn.getAddress().value };
+          const agoricAux = (): Pick<
+            StatusFor['portfolio'],
+            'depositAddress' | 'nobleForwardingAddress'
+          > => {
+            const { lca, lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
+            const { value: recipient } = lca.getAddress();
+            const { value: depositAddress } = lcaIn.getAddress();
+            const nobleForwardingAddress = accounts.has('noble')
+              ? generateNobleForwardingAddress(
+                  transferChannels.noble.counterPartyChannelId,
+                  recipient,
+                )
+              : undefined;
+            return {
+              depositAddress,
+              ...(nobleForwardingAddress && { nobleForwardingAddress }),
+            };
           };
 
           publishStatus(makePortfolioPath(portfolioId), {
             positionKeys: [...positions.keys()],
             flowCount: nextFlowId - 1,
+            flowsRunning: makeFlowsRunningRecord(flowsRunning),
             accountIdByChain: accountIdByChain(accounts),
-            ...(accounts.has('agoric') ? deposit() : {}),
+            accountStateByChain: accountStateByChain(accounts, accountsPending),
+            ...(accounts.has('agoric') ? agoricAux() : {}),
             ...(targetAllocation && { targetAllocation }),
-          });
+            ...(sourceAccountId && { sourceAccountId }),
+            accountsPending: [...accountsPending.keys()],
+            policyVersion,
+            rebalanceCount,
+            ...(enabledAutoFeatures && { enabledAutoFeatures }),
+          } satisfies StatusFor['portfolio']);
         },
-        allocateFlowId() {
-          const { nextFlowId } = this.state;
-          this.state.nextFlowId = nextFlowId + 1;
+        publishAgents() {
+          const { portfolioId, delegations } = this.state;
+          if (!delegations) {
+            return;
+          }
+          publishStatus(
+            makePortfolioAgentsPath(portfolioId),
+            makePortfolioAgentsRecord(delegations),
+          );
+        },
+        finishFlow(flowId) {
+          const { flowsRunning } = this.state;
+          flowsRunning.delete(flowId);
           this.facets.reporter.publishStatus();
-          return nextFlowId;
         },
         // XXX collecting flow nodes is TBD
-        publishFlowStatus(id: number, status: StatusFor['flow']) {
+        publishFlowSteps(
+          id: number,
+          steps: StatusFor['flowSteps'],
+          order?: FundsFlowPlan['order'],
+        ) {
           const { portfolioId } = this.state;
-          publishStatus(makeFlowPath(portfolioId, id), status);
+          publishStatus(makeFlowStepsPath(portfolioId, id, 'steps'), steps);
+          if (order) {
+            publishStatus(makeFlowStepsPath(portfolioId, id, 'order'), order);
+          }
+        },
+        /**
+         * Merge the given status with the flow's detail and publish to vstorage.
+         *
+         * Will throw if the flow is not running
+         */
+        publishFlowStatus(id: number, status: FlowStatus) {
+          const { portfolioId, flowsRunning } = this.state;
+          const { sync: _s, ...detail } = flowsRunning.get(id);
+          publishStatus(makeFlowPath(portfolioId, id), {
+            ...status,
+            ...detail,
+          });
         },
       },
+      planner: {
+        validateAndCommitPlanPolicy(
+          flowId: number,
+          observations: PlanObservations | undefined,
+          versionPre: number,
+          countPre: number,
+        ) {
+          this.facets.reader.checkVersion(versionPre, countPre);
+          const { delegations, flowsRunning } = this.state;
+          const detail = flowsRunning.get(flowId);
+          const { agent } = detail;
+          if (!agent) {
+            const { policyVersion, rebalanceCount } = this.state;
+            return harden({ policyVersion, rebalanceCount });
+          }
+          if (detail.type === 'rebalance') {
+            const { createdAtPolicyVersion, initiatingOperation } = detail;
+            const targetAllocationAlreadyCommitted =
+              initiatingOperation?.type === 'setTargetAllocation' &&
+              initiatingOperation.status === 'ok';
+            if (!targetAllocationAlreadyCommitted) {
+              createdAtPolicyVersion === this.state.policyVersion ||
+                Fail`mandate.policyVersion.changed`;
+            }
+          }
+          const agentId = Number(stripPrefix('agent', agent));
+          Number.isSafeInteger(agentId) ||
+            Fail`invalid flow agent reference ${agent}`;
+          const permissions =
+            delegations?.get(agentId).permissions ??
+            Fail`missing mandate for ${agent}`;
+          const pendingTargetAllocation =
+            detail.type === 'rebalance' &&
+            detail.initiatingOperation?.type === 'setTargetAllocation' &&
+            detail.initiatingOperation.status === 'pending'
+              ? detail.initiatingOperation.targetAllocation
+              : undefined;
+          const targetAllocation =
+            pendingTargetAllocation ??
+            this.state.targetAllocation ??
+            Fail`mandate.targetAllocation.missing`;
+          assertMandateForAllocation(permissions, targetAllocation);
+          if (needsObservations(permissions)) {
+            const planObservations =
+              observations ?? Fail`mandate.observations.missing`;
+            assertMandateForPlanObservations(
+              permissions,
+              targetAllocation,
+              planObservations,
+            );
+          }
+          if (pendingTargetAllocation !== undefined) {
+            const resultingPolicyVersion =
+              this.facets.manager.updateTargetAllocation(
+                pendingTargetAllocation,
+              );
+            this.facets.planner.resolvePendingPolicy(
+              flowId,
+              resultingPolicyVersion,
+            );
+          }
+          const { policyVersion, rebalanceCount } = this.state;
+          return harden({ policyVersion, rebalanceCount });
+        },
+        submitVersion(versionPre: number, countPre: number) {
+          this.facets.reader.checkVersion(versionPre, countPre);
+          this.state.rebalanceCount += 1;
+          this.facets.reporter.publishStatus();
+        },
+        resolvePendingPolicy(flowId: number, policyVersion: number) {
+          const { flowsRunning } = this.state;
+          const detail = flowsRunning.get(flowId);
+          const { initiatingOperation } = detail;
+          if (
+            detail.type !== 'rebalance' ||
+            initiatingOperation?.type !== 'setTargetAllocation'
+          ) {
+            throw Fail`flow${flowId} has no pending setTargetAllocation operation`;
+          }
+          if (initiatingOperation.status !== 'pending') {
+            throw Fail`flow${flowId} setTargetAllocation operation is not pending`;
+          }
+          flowsRunning.set(
+            flowId,
+            harden({
+              ...detail,
+              initiatingOperation: {
+                type: 'setTargetAllocation',
+                targetAllocation: initiatingOperation.targetAllocation,
+                status: 'ok',
+                result: { policyVersion },
+              },
+            }),
+          );
+          this.facets.reporter.publishStatus();
+        },
+        resolveFlowPlan(flowId: number, steps: MovementDesc[] | FundsFlowPlan) {
+          const { flowsRunning } = this.state;
+          const detail = flowsRunning.get(flowId);
+          const { resolver, ...sync } = detail.sync;
+          if (!resolver) {
+            throw Fail`flow${flowId} has already been resolved`;
+          }
+          try {
+            vetFlowPlanPlaces(
+              {
+                flowType: detail.type,
+                isEvmPortfolio: !!this.state.sourceAccountId,
+                ...(detail.type === 'deposit' && {
+                  fromChain: detail.fromChain,
+                }),
+                ...(detail.type === 'withdraw' && { toChain: detail.toChain }),
+              },
+              steps,
+            );
+          } catch (reason) {
+            // Fail the flow rather than leave it waiting for another plan.
+            const message =
+              reason instanceof Error ? reason.message : String(reason);
+            this.facets.planner.rejectFlowPlan(flowId, message);
+            throw reason;
+          }
+          resolver.resolve(steps);
+          flowsRunning.set(flowId, { ...detail, sync });
+          this.facets.reporter.publishStatus();
+        },
+        rejectFlowPlan(flowId: number, reason: string) {
+          const { flowsRunning } = this.state;
+          const traceFlow = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub(`flow${flowId}`);
+          if (!flowsRunning.has(flowId)) {
+            traceFlow('flowsRunning has nothing to reject');
+            return;
+          }
+          const detail = flowsRunning.get(flowId);
+          const { resolver, ...sync } = detail.sync;
+          if (!resolver) {
+            traceFlow('flow has already been resolved');
+            return;
+          }
+          resolver.reject(new Error(reason));
+          const { initiatingOperation } = detail;
+          let updatedDetail: RunningFlowDetail = harden({ ...detail, sync });
+          if (
+            detail.type === 'rebalance' &&
+            initiatingOperation?.type === 'setTargetAllocation' &&
+            initiatingOperation.status === 'pending'
+          ) {
+            updatedDetail = harden({
+              ...detail,
+              sync,
+              initiatingOperation: {
+                type: 'setTargetAllocation',
+                targetAllocation: initiatingOperation.targetAllocation,
+                status: 'error',
+                error: reason,
+              },
+            });
+          }
+          flowsRunning.set(flowId, updatedDetail);
+          this.facets.reporter.publishStatus();
+        },
+        getTargetAllocation() {
+          const { reader } = this.facets;
+          return reader.getTargetAllocation();
+        },
+      },
+      /**
+       * Manages a cooperative reservation protocol for per-chain accounts.
+       *
+       * For each chain, callers coordinate through four states:
+       *   'new' | 'failed' — caller holds the reservation
+       *   'pending'        — another caller is initializing
+       *   'ok'             — initialization finished
+       *
+       * When holding the reservation ('new' or 'failed'), the caller must run a
+       * try/catch critical section and finish with exactly one of:
+       *   resolveAccount(info)  // success
+       *   releaseAccount(chain, reason)  // failure
+       *
+       * initAccountInfo(info) is optional before the terminal call.
+       */
       manager: {
+        getNobleAccountUnderProvision(): NobleAccountInfo | undefined {
+          return this.state.nobleAccountUnderProvision;
+        },
+        initNobleAccountUnderProvision(info: NobleAccountInfo) {
+          this.state.nobleAccountUnderProvision === undefined ||
+            Fail`Noble account provisioning already initialized`;
+          this.state.nobleAccountUnderProvision = info;
+        },
+        /**
+         * Legacy wrapper for {@link reserveAccountState}.
+         * @see reserveAccountState
+         */
         reserveAccount<C extends SupportedChain>(
           chainName: C,
         ): undefined | Vow<AccountInfoFor[C]> {
-          trace('reserveAccount', chainName);
+          const { ready, state } =
+            this.facets.manager.reserveAccountState(chainName);
+          return state === 'new' ? undefined : ready;
+        },
+        /**
+         * Returns the current reservation state for the given chain,
+         * along with a vow that resolves when initialization completes.
+         *
+         * @see manager — for the full reservation protocol and caller obligations.
+         */
+        reserveAccountState<C extends SupportedChain>(
+          chainName: C,
+        ): {
+          state: 'new' | 'pending' | 'ok' | 'failed';
+          ready: Vow<AccountInfoFor[C]>;
+        } {
+          const traceChain = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub(chainName);
+          traceChain('reserveAccount');
           const { accounts, accountsPending } = this.state;
-          if (accounts.has(chainName)) {
-            trace('accounts.has', chainName);
-            return vowTools.asVow(async () => {
-              const infoAny = accounts.get(chainName);
-              assert.equal(infoAny.chainName, chainName);
-              const info = infoAny as AccountInfoFor[C];
-              return info;
-            });
-          }
           if (accountsPending.has(chainName)) {
-            trace('accountsPending.has', chainName);
-            return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
+            const state = 'pending';
+            traceChain('state', state);
+            const val = accountsPending.get(chainName);
+            return { ready: val.vow as Vow<AccountInfoFor[C]>, state };
           }
+          let state: 'new' | 'failed' | 'ok';
+          if (accounts.has(chainName)) {
+            const infoAny = accounts.get(chainName);
+            assert.equal(infoAny.chainName, chainName);
+            const info = infoAny as AccountInfoFor[C];
+            if (!info.err) {
+              state = 'ok';
+              traceChain('state', state);
+              const ready = vowTools.asVow(async () => info);
+              return { ready, state };
+            }
+            state = 'failed';
+          } else {
+            state = 'new';
+          }
+          traceChain('state', state);
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
-          trace('accountsPending.init', chainName);
+          vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);
           accountsPending.init(chainName, pending);
           this.facets.reporter.publishStatus();
-          return undefined;
+          return { ready: pending.vow as Vow<AccountInfoFor[C]>, state };
         },
-        resolveAccount(info: AccountInfo) {
-          const { accounts, accountsPending } = this.state;
-          if (accountsPending.has(info.chainName)) {
-            const vow = accountsPending.get(info.chainName);
-            // NEEDSTEST - why did all tests pass without .resolve()?
-            vow.resolver.resolve(info);
-            accountsPending.delete(info.chainName);
-          }
+        /**
+         * Optionally record preliminary account info (e.g., predicted addresses).
+         * Valid only when the caller holds the reservation (`'new'` or `'failed'`).
+         */
+        initAccountInfo(info: AccountInfo) {
+          const { accounts, portfolioId } = this.state;
+          const traceChain = trace
+            .sub(`portfolio${portfolioId}`)
+            .sub(info.chainName);
+          traceChain('accounts.init', info);
           accounts.init(info.chainName, info);
           this.facets.reporter.publishStatus();
+        },
+        /**
+         * Terminal success action for the reservation protocol.
+         * Resolves any pending vow and commits stable account info.
+         * Valid only when the caller holds the reservation.
+         */
+        resolveAccount(info: AccountInfo) {
+          const { accounts, accountsPending, portfolioId } = this.state;
+          const traceChain = trace
+            .sub(`portfolio${portfolioId}`)
+            .sub(info.chainName);
+
+          if (accountsPending.has(info.chainName)) {
+            const pending = accountsPending.get(info.chainName);
+            traceChain('accountsPending.resolve');
+            pending.resolver.resolve(info);
+          }
+          if (accounts.has(info.chainName)) {
+            const { err: _, ...noErr } = accounts.get(info.chainName);
+            traceChain('accounts.set');
+            accounts.set(info.chainName, noErr);
+          } else {
+            traceChain('accounts.init');
+            accounts.init(info.chainName, info);
+          }
+          if (info.chainName === 'noble') {
+            this.state.nobleAccountUnderProvision = undefined;
+          }
+          this.facets.reporter.publishStatus();
+        },
+        /**
+         * Terminal failure action for the reservation protocol.
+         * Rejects any pending vow and marks the account as failed.
+         * Valid only when the caller holds the reservation.
+         */
+        releaseAccount(chainName: SupportedChain, reason: unknown) {
+          trace('releaseAccount', chainName, reason);
+          const { accounts, accountsPending } = this.state;
+          if (accounts.has(chainName)) {
+            const info = accounts.get(chainName);
+            accounts.set(chainName, { ...info, err: `${reason}` });
+          }
+          if (accountsPending.has(chainName)) {
+            const vow = accountsPending.get(chainName);
+            vow.resolver.reject(reason);
+            accountsPending.delete(chainName);
+            this.facets.reporter.publishStatus();
+          }
+        },
+        /**
+         * Start a flow of asset movements. Reserves a flowId and records updates vstorage.
+         *
+         * NB: `flowId` is a counter, not the key in vstorage.
+         */
+        startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
+          const {
+            nextFlowId: flowId,
+            flowsRunning,
+            accountsPending,
+          } = this.state;
+          this.state.nextFlowId = flowId + 1;
+          let sync: MaybeResolvedVowKit<MovementDesc[]> = vowTools.makeVowKit();
+          if (steps) {
+            sync.resolver.resolve(steps);
+            sync = { ...sync, resolver: undefined };
+          }
+          flowsRunning.init(flowId, harden({ sync, ...detail }));
+          this.facets.reporter.publishStatus();
+          if (accountsPending.getSize() > 0) {
+            const traceFlow = trace
+              .sub(`portfolio${this.state.portfolioId}`)
+              .sub(`flow${flowId}`);
+            const evmPendingAccounts = [...accountsPending.keys()].filter(
+              chain => chain in AxelarChain,
+            );
+            traceFlow(`releasing pending evm accounts`, evmPendingAccounts);
+            const reason = Error('starting new flow');
+            for (const chainName of evmPendingAccounts) {
+              this.facets.manager.releaseAccount(chainName, reason);
+            }
+          }
+          return { stepsP: sync.vow, flowId };
         },
         providePosition(
           poolKey: PoolKey,
@@ -447,21 +1342,777 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
           return position;
         },
-        /** KLUDGE around lack of synchronization signals for now. TODO: rethink design. */
-        waitKLUDGE(val: bigint) {
-          return vowTools.watch(E(timer).delay(val));
-        },
         setTargetAllocation(allocation: TargetAllocation) {
-          this.state.targetAllocation = allocation;
+          const newPolicyVersion =
+            this.facets.manager.updateTargetAllocation(allocation);
           this.facets.reporter.publishStatus();
+          return newPolicyVersion;
+        },
+        /** state-only target update; callers are responsible for publishing */
+        updateTargetAllocation(allocation: TargetAllocation) {
+          this.state.targetAllocation = allocation;
+          return this.facets.manager.bumpPolicyVersion();
+        },
+        /** state-only version bump; callers are responsible for publishing */
+        bumpPolicyVersion() {
+          const newPolicyVersion = this.state.policyVersion + 1;
+          this.state.policyVersion = newPolicyVersion;
+          this.state.rebalanceCount = 0;
+          return newPolicyVersion;
+        },
+        incrPolicyVersion() {
+          const newPolicyVersion = this.facets.manager.bumpPolicyVersion();
+          this.facets.reporter.publishStatus();
+          return newPolicyVersion;
+        },
+        /**
+         * Creates and delivers a new delegation client with the specified
+         * permissions for the specified grantee.
+         *
+         * Does not check if the grantee already has an active delegation, or if
+         * the permissions are valid.
+         *
+         * Returns promptly the `agentId` of the new delegation and the
+         * `policyVersion` it was granted at.
+         */
+        async grantDelegation(
+          grantee: PortfolioAgentGrantee,
+          permissions: PortfolioPermissionsExt,
+        ) {
+          const { portfolioId } = this.state;
+          if (!this.state.delegations) {
+            this.state.delegations = makeDelegationsStore(portfolioId);
+          }
+          const delegations = this.state.delegations!;
+          // This assumes we never delete from the delegations store. If we ever
+          // do, we'll need to introduce a dedicated counter.
+          const nextAgentId = delegations.getSize() + 1;
+          const delegationKit = makeDelegationKit({
+            agentId: nextAgentId,
+            portfolioAccess: this.facets.delegationHelper,
+          });
+          // A grant is always a policy change. Bump before initializing the
+          // record so it can be stamped with the resulting version. Only the
+          // agent-level publish happens here (below); the portfolio-level
+          // publish is left to the caller, which may have other portfolio
+          // fields (e.g. enabledAutoFeatures) to finalize first.
+          const updatedAtPolicyVersion =
+            this.facets.manager.bumpPolicyVersion();
+          // Initialize the delegation record first to avoid any race claiming
+          // the same agent ID or delivery failures resulting in a gap in the
+          // delegation records, either of which could result in a
+          // miscalculation of the next agent ID.
+          // If a delivery fails, we mark the delegation as revoked,
+          // making it unusable.
+          delegations.init(
+            nextAgentId,
+            harden({
+              grantee,
+              permissions,
+              state: 'active',
+              activeClient: delegationKit.client,
+              updatedAtPolicyVersion,
+            }),
+          );
+          await null;
+          try {
+            // `deliverDelegation` is guaranteed to promptly resolve.
+            // If we ever change that guarantee, this function will need to
+            // become an async-flow or use a vow watcher.
+            await deliverDelegation(
+              delegationKit.client,
+              portfolioId,
+              nextAgentId,
+              grantee,
+              permissions,
+            );
+          } catch (error) {
+            delegations.set(
+              nextAgentId,
+              harden({
+                grantee,
+                permissions,
+                state: 'revoked',
+                updatedAtPolicyVersion,
+              }),
+            );
+            throw error;
+          } finally {
+            this.facets.reporter.publishAgents();
+          }
+
+          return {
+            agentId: nextAgentId,
+            policyVersion: updatedAtPolicyVersion,
+          };
+        },
+        changePermissions(
+          agentId: number,
+          permissions: PortfolioPermissions,
+        ): PortfolioDelegationLifecycleResult {
+          const { delegations, portfolioId } = this.state;
+          delegations?.has(agentId) ||
+            Fail`no delegation found for agent ${agentId}`;
+          const delegation = delegations!.get(agentId);
+          delegation.state === 'active' ||
+            Fail`delegation agent${agentId} is ${delegation.state}`;
+
+          const updatedAtPolicyVersion =
+            this.facets.manager.bumpPolicyVersion();
+          delegations!.set(
+            agentId,
+            harden({
+              ...delegation,
+              permissions,
+              updatedAtPolicyVersion,
+            }),
+          );
+          this.facets.reporter.publishAgents();
+          return harden({
+            portfolioId,
+            policyVersion: updatedAtPolicyVersion,
+            agentId,
+          });
+        },
+        revokeDelegation(agentId: number): PortfolioDelegationLifecycleResult {
+          const { delegations, portfolioId } = this.state;
+          if (!delegations) {
+            throw Fail`no delegations available`;
+          }
+          const delegation = delegations.get(agentId);
+          if (!delegation) {
+            throw Fail`no delegation found for agent ${agentId}`;
+          }
+          // A revoke is always a policy change.
+          const updatedAtPolicyVersion =
+            this.facets.manager.bumpPolicyVersion();
+          // XXX: consider interacting with client to have it drop our helper facet
+          delegations.set(
+            agentId,
+            harden({
+              ...delegation,
+              state: 'revoked',
+              activeClient: undefined,
+              updatedAtPolicyVersion,
+            }),
+          );
+          if (this.state.plannerAgentId === agentId) {
+            this.state.plannerAgentId = undefined;
+            this.state.enabledAutoFeatures = undefined;
+          }
+          this.facets.reporter.publishAgents();
+          return harden({
+            portfolioId,
+            policyVersion: updatedAtPolicyVersion,
+            agentId,
+          });
+        },
+        /**
+         * Sets the pre-validated features settings on the portfolio and
+         * delivers the delegation to the planner as needed.
+         *
+         * A feature key absent from `features` leaves that feature's current
+         * setting unchanged (this is what lets an EIP-712 SetAutoFeatures
+         * message toggle just one feature); an explicit `true`/`false` always
+         * updates it.
+         *
+         * Promptly resolves with the new auto-features settings.
+         *
+         * @param features
+         */
+        async setAutoFeatures(features: PortfolioAutoFeatures) {
+          const mergedAutoFeatures: PortfolioAutoFeatures = harden({
+            ...this.state.enabledAutoFeatures,
+            ...features,
+          });
+          const permissions: PortfolioPermissions = harden({
+            allocation: false,
+            rebalance: !!mergedAutoFeatures.rebalance,
+            claimRewards: !!mergedAutoFeatures.claimRewards,
+          });
+
+          const hasAnyPermission =
+            permissions.allocation ||
+            permissions.rebalance ||
+            permissions.claimRewards;
+
+          let plannerAgentId = this.state.plannerAgentId;
+          let updateDelegation = false;
+
+          if (plannerAgentId !== undefined) {
+            // delegations must exist if there previously was a planner agent
+            const delegation = this.state.delegations!.get(plannerAgentId);
+
+            if (delegation.state !== 'active') {
+              trace(
+                `existing planner delegation ${plannerAgentId} is not active, granting a new one`,
+              );
+              plannerAgentId = undefined;
+              this.state.plannerAgentId = undefined;
+            } else {
+              updateDelegation = true;
+            }
+          }
+
+          await null;
+
+          // This call is always exactly one policy change, whether it grants
+          // a new planner delegation, updates an existing one, or only
+          // changes enabledAutoFeatures. Publishing must wait until every
+          // field touched by this operation (delegation record and/or
+          // enabledAutoFeatures) is in its final state, so a published
+          // snapshot never shows a bumped policyVersion next to stale data.
+          // `policyVersion` is captured directly from whichever bump this
+          // call caused, rather than re-read from state afterward, so an
+          // interleaved policy change can't be misattributed to this call.
+          let policyVersion: number;
+          if (hasAnyPermission && plannerAgentId === undefined) {
+            // grantDelegation is guaranteed to be prompt, safe to await here.
+            // it bumps policyVersion and publishes the agent
+            // record itself; only the portfolio-level publish is left to us.
+            try {
+              const granted = await this.facets.manager.grantDelegation(
+                PortfolioPlannerAgent,
+                permissions,
+              );
+              plannerAgentId = granted.agentId;
+              policyVersion = granted.policyVersion;
+              this.state.plannerAgentId = plannerAgentId;
+              this.state.enabledAutoFeatures = mergedAutoFeatures;
+            } finally {
+              this.facets.reporter.publishStatus();
+            }
+          } else {
+            if (updateDelegation) {
+              ({ policyVersion } = this.facets.manager.changePermissions(
+                plannerAgentId!,
+                permissions,
+              ));
+            } else {
+              policyVersion = this.facets.manager.bumpPolicyVersion();
+            }
+            this.state.enabledAutoFeatures = mergedAutoFeatures;
+            this.facets.reporter.publishStatus();
+          }
+
+          return { enabledAutoFeatures: mergedAutoFeatures, policyVersion };
+        },
+      },
+      accountWatcher: {
+        onFulfilled(info: AccountInfo, chainName: AxelarChain) {
+          const { accountsPending } = this.state;
+          if (accountsPending.has(chainName)) {
+            accountsPending.delete(chainName);
+          }
+          this.facets.reporter.publishStatus();
+          return info;
+        },
+        onRejected(reason, chainName) {
+          const { accountsPending, portfolioId } = this.state;
+          const traceChain = trace
+            .sub(`portfolio${portfolioId}`)
+            .sub(chainName);
+          traceChain('rejected', reason);
+          if (accountsPending.has(chainName)) {
+            accountsPending.delete(chainName);
+          }
+          this.facets.reporter.publishStatus();
+        },
+      },
+      // XXX: for compat with devnet
+      allocation: {},
+      evmHandler: {
+        /**
+         * Note: evmHandler is only valid for portfolios opened from EVM.
+         * Callers must ensure `sourceAccountId` is set before using this facet.
+         */
+        getReaderFacet() {
+          return this.facets.reader;
+        },
+        /**
+         * Validate that the representative EVM contract information corresponds
+         * to this portfolio. For deposits, performs stricter checks to ensure
+         * the deposit's permit is redeemable.
+         *
+         * @param chainId the EVM chainId of the representative contract
+         * @param representativeContract the domain verifying contract or deposit permit spender address
+         * @param strictForDeposit validate that any existing remote account matches the factory-predicted address
+         */
+        validateRepresentativeInfo(
+          chainId: bigint | number,
+          representativeContract: EvmAddress,
+          strictForDeposit: boolean = false,
+        ) {
+          const { accounts } = this.state;
+
+          const fromChain = eip155ChainIdToAxelarChain[`${chainId}`];
+          if (!fromChain) {
+            throw Fail`no Axelar chain for EIP-155 chainId ${chainId}`;
+          }
+
+          const addresses = contracts[fromChain];
+
+          // The representative contract of the portfolio manager on the EVM
+          // chain should be the current remote account router or the deposit
+          // factory, if configured. It can also be the remote account itself.
+          // For deposits, the representative contract will also be the permit's
+          // redeemer. If a remote account already exists, its address must
+          // match the address that the representative's factory would create.
+          // That implies that if the representative is not the remote account,
+          // the deposit factory can only be a valid representative if the
+          // remote account is not router based, and vice-versa.
+          // While any enabled router could be used as representative, we
+          // currently require the current router to be used.
+          // Allowing the remote account itself as representative supports
+          // legacy remote accounts being used for deposits, and in the future
+          // lets us remove the deposit factory as a supported representative.
+          // We also support remote accounts as representative when the remote
+          // account does not yet exist and will be created, either by the
+          // remote account factory through the router, or by the legacy factory.
+          type RepresentativeConfig = {
+            name: string;
+            address: EvmAddress;
+            predictAddress: () => EvmAddress;
+          };
+
+          const hasRouterConfig =
+            !!addresses.remoteAccountRouter &&
+            addresses.remoteAccountRouter.length > 2 &&
+            !!addresses.remoteAccountFactory &&
+            addresses.remoteAccountFactory.length > 2 &&
+            !!addresses.remoteAccountImplementation &&
+            addresses.remoteAccountImplementation.length > 2;
+
+          const routerConfig: RepresentativeConfig | undefined = hasRouterConfig
+            ? {
+                name: 'router',
+                address: addresses.remoteAccountRouter!,
+                predictAddress: () =>
+                  predictRemoteAccountAddress({
+                    owner: this.facets.reader.getLocalAccount().getAddress()
+                      .value,
+                    factoryAddress: addresses.remoteAccountFactory!,
+                    implementationAddress:
+                      addresses.remoteAccountImplementation!,
+                  }),
+              }
+            : undefined;
+
+          const depositFactoryConfig: RepresentativeConfig | undefined =
+            addresses.depositFactory && addresses.depositFactory.length > 2
+              ? {
+                  name: 'deposit factory',
+                  address: addresses.depositFactory,
+                  predictAddress: () =>
+                    predictWalletAddress({
+                      owner: this.facets.reader.getLocalAccount().getAddress()
+                        .value,
+                      factoryAddress: addresses.factory,
+                      gasServiceAddress: addresses.gasService,
+                      gatewayAddress: addresses.gateway,
+                      walletBytecode: hexToBytes(
+                        walletBytecode.replace(/^0x/, ''),
+                      ),
+                    }),
+                }
+              : undefined;
+
+          let remoteAccountAddress: EvmAddress;
+          let representativeConfig: RepresentativeConfig | undefined;
+          if (accounts.has(fromChain)) {
+            const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
+            remoteAccountAddress = gmpInfo.remoteAddress;
+
+            // If the account exists, we must use its matching representative
+            representativeConfig = gmpInfo.routerFactory
+              ? routerConfig
+              : gmpInfo.routerAddress
+                ? undefined
+                : depositFactoryConfig;
+
+            // If the deposit into the existing remote account is through the representative,
+            // the remote account address must match what the representative's factory would create.
+            // If the remote account is legacy, its address won't match.
+            // If the remote account is router-based, the router is always involved and the address must match.
+            if (
+              strictForDeposit &&
+              representativeConfig &&
+              (representativeConfig === routerConfig ||
+                sameEvmAddress(
+                  representativeContract,
+                  representativeConfig.address,
+                ))
+            ) {
+              const expectedAddress = representativeConfig.predictAddress();
+              sameEvmAddress(gmpInfo.remoteAddress, expectedAddress) ||
+                Fail`account address ${gmpInfo.remoteAddress} does not match ${representativeConfig.name} generated address ${expectedAddress} for chain ${fromChain}`;
+            }
+          } else {
+            // This is only used to provide a diagnostic for the expected remote account address
+            // if the spender doesn't match either representative.
+            const defaultRepresentativeConfig =
+              this.facets.reader.useRouterForChain(fromChain)
+                ? routerConfig
+                : depositFactoryConfig;
+
+            representativeConfig =
+              [routerConfig, depositFactoryConfig].find(
+                c => c && sameEvmAddress(representativeContract, c.address),
+              ) ?? defaultRepresentativeConfig;
+
+            if (!representativeConfig) {
+              throw Fail`no representative available for chain ${fromChain}`;
+            }
+
+            remoteAccountAddress = representativeConfig.predictAddress();
+          }
+
+          sameEvmAddress(
+            representativeContract,
+            representativeConfig?.address,
+          ) ||
+            sameEvmAddress(representativeContract, remoteAccountAddress) ||
+            Fail`${bare(strictForDeposit ? 'permit spender' : 'verifying contract')} ${representativeContract} does not match remote account ${remoteAccountAddress} or ${bare(representativeConfig?.name ?? 'missing representative')} ${representativeConfig?.address ?? '0x'} for chain ${fromChain}`;
+        },
+        /**
+         * Initiate a deposit from an EVM account using Permit2.
+         *
+         * The permit's owner must match the address portion of `sourceAccountId`,
+         * though the chain can be different (enabling deposits from multiple chains).
+         *
+         * @param depositDetails - The permit2 deposit details including chainId, token, amount, spender, and permit2Payload
+         */
+        deposit(depositDetails: PermitDetails) {
+          const { sourceAccountId } = this.state;
+          if (!sourceAccountId) {
+            throw Fail`deposit requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+          }
+          const { accountAddress } = parseAccountId(sourceAccountId);
+
+          const owner = depositDetails.permit2Payload.owner;
+          sameEvmAddress(owner, accountAddress as EvmAddress) ||
+            Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
+
+          this.facets.evmHandler.validateRepresentativeInfo(
+            depositDetails.chainId,
+            depositDetails.spender,
+            true,
+          );
+
+          const fromChain =
+            eip155ChainIdToAxelarChain[`${depositDetails.chainId}`];
+          if (!fromChain) {
+            throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
+          }
+
+          sameEvmAddress(depositDetails.token, contracts[fromChain].usdc) ||
+            Fail`permit token address ${depositDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
+
+          const amount = AmountMath.make(usdcBrand, depositDetails.amount);
+          const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          void executePlan(
+            inertSeat,
+            {},
+            this.facets,
+            undefined,
+            startedFlow,
+            undefined,
+            { evmDepositDetail: { ...depositDetails, fromChain } },
+          );
+          return `flow${startedFlow.flowId}`;
+        },
+        /**
+         * Initiate a rebalance with an optional target allocation.
+         * If a new allocation is not provided, uses the previously set target allocation.
+         */
+        rebalance(
+          allocations?: readonly EIP712Allocation[] | undefined,
+          depositDetails?: PermitDetails,
+        ) {
+          const { sourceAccountId } = this.state;
+          if (!sourceAccountId) {
+            throw Fail`rebalance requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+          }
+
+          !depositDetails || Fail`rebalance does not yet support deposit`;
+
+          let initiatingOperation:
+            | SetTargetAllocationInitiatingOperation
+            | undefined;
+          if (allocations) {
+            allocations.length > 0 ||
+              Fail`rebalance with allocations requires non-empty allocations`;
+
+            // XXX: validate instruments
+            const targetAllocation: TargetAllocation = Object.fromEntries(
+              allocations.map(({ instrument, portion }) => [
+                instrument,
+                portion,
+              ]),
+            );
+
+            const policyVersion =
+              this.facets.manager.setTargetAllocation(targetAllocation);
+            initiatingOperation = {
+              type: 'setTargetAllocation',
+              targetAllocation,
+              status: 'ok',
+              result: { policyVersion },
+            };
+          } else {
+            const { targetAllocation } = this.state;
+            (targetAllocation && Object.keys(targetAllocation).length > 0) ||
+              Fail`rebalance requires targetAllocation to be set`;
+          }
+          const flowDetail: FlowDetail = {
+            type: 'rebalance',
+            ...(initiatingOperation && { initiatingOperation }),
+          };
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
+          return `flow${startedFlow.flowId}`;
+        },
+        /**
+         * Initiate a withdrawal to the source EVM account.
+         *
+         * Requires that `sourceAccountId` was set when the portfolio was opened
+         * (i.e., the portfolio was opened from EVM via `openPortfolioFromEVM`).
+         */
+        withdraw({
+          withdrawDetails,
+          domain,
+          address,
+        }: {
+          withdrawDetails: { amount: bigint; token: EvmAddress };
+          domain?: Partial<YmaxFullDomain>;
+          address?: EvmAddress;
+        }) {
+          const { sourceAccountId } = this.state;
+          if (!sourceAccountId) {
+            throw Fail`withdraw requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+          }
+
+          const { namespace, reference, accountAddress } =
+            parseAccountId(sourceAccountId);
+
+          namespace === 'eip155' ||
+            Fail`withdraw sourceAccountId must be in eip155 namespace: ${sourceAccountId}`;
+          const evmAddress = accountAddress as EvmAddress;
+
+          const chainIdStr = String(
+            domain?.chainId ?? reference,
+          ) as `${number | bigint}`;
+
+          const toChain = eip155ChainIdToAxelarChain[chainIdStr];
+
+          if (!toChain) {
+            throw Fail`destination chainId ${chainIdStr} is not supported for withdraw`;
+          }
+
+          !address ||
+            sameEvmAddress(evmAddress, address) ||
+            Fail`withdraw address ${address} does not match source account address ${evmAddress}`;
+
+          sameEvmAddress(withdrawDetails.token, contracts[toChain].usdc) ||
+            Fail`withdraw token address ${withdrawDetails.token} does not match usdc contract address ${contracts[toChain].usdc} for chain ${toChain}`;
+          const amount = AmountMath.make(usdcBrand, withdrawDetails.amount);
+
+          const flowDetail = {
+            type: 'withdraw',
+            amount,
+            toChain,
+          } satisfies FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
+          return `flow${startedFlow.flowId}`;
+        },
+        /**
+         * Mint a delegation invitation for this portfolio and deliver it to
+         * `grantee`. Only reachable by holders of this portfolio's
+         * evmHandler facet — in practice the EVM wallet handler, which
+         * resolves the signer's per-wallet portfolio reference. That
+         * resolution is the authorization check; this method then enforces
+         * its own input validation.
+         *
+         * Returns promptly the resulting `portfolioId`, `policyVersion`, and
+         * `agentId` of the new delegation.
+         */
+        grant(grantee: Bech32Address, permissions: PortfolioPermissionsExt) {
+          return vowTools.asVow(async () => {
+            const { portfolioId, sourceAccountId } = this.state;
+            sourceAccountId || Fail`grant requires an EVM portfolio`;
+            mustMatch(permissions, PortfolioPermissionsShape);
+            permissions.allocation ||
+              Fail`grant requires allocation permission`;
+            await null;
+            // grantDelegation bumps policyVersion and publishes the agent
+            // record itself; publish the portfolio-level status once it
+            // settles either way, since nothing else about the portfolio
+            // changes from a plain grant.
+            let agentId: number;
+            let policyVersion: number;
+            try {
+              // Returns promise promptly resolved
+              ({ agentId, policyVersion } =
+                await this.facets.manager.grantDelegation(
+                  grantee,
+                  permissions,
+                ));
+            } finally {
+              this.facets.reporter.publishStatus();
+            }
+            return harden({
+              portfolioId,
+              policyVersion,
+              agentId,
+            }) satisfies PortfolioGrantResult;
+          });
+        },
+        changePermissions(
+          agentId: number,
+          permissions: PortfolioPermissionsExt,
+        ) {
+          return vowTools.asVow(() => {
+            const { sourceAccountId } = this.state;
+            sourceAccountId ||
+              Fail`changePermissions requires an EVM portfolio`;
+            mustMatch(permissions, PortfolioPermissionsShape);
+            assertExternalDelegationTarget(this.state, agentId);
+            const result = this.facets.manager.changePermissions(
+              agentId,
+              permissions,
+            );
+            this.facets.reporter.publishStatus();
+            return result;
+          });
+        },
+        revoke(agentId: number) {
+          return vowTools.asVow(() => {
+            const { sourceAccountId } = this.state;
+            sourceAccountId || Fail`revoke requires an EVM portfolio`;
+            assertExternalDelegationTarget(this.state, agentId);
+            const result = this.facets.manager.revokeDelegation(agentId);
+            this.facets.reporter.publishStatus();
+            return result;
+          });
+        },
+        /**
+         * Set the auto-features for this portfolio.
+         *
+         * Returns promptly the resulting `portfolioId`, `policyVersion`, and
+         * the new validated `enabledAutoFeatures` settings.
+         */
+        setAutoFeatures(features: PortfolioAutoFeaturesExt) {
+          return vowTools.asVow(async () => {
+            const { sourceAccountId } = this.state;
+            sourceAccountId || Fail`setAutoFeatures requires an EVM portfolio`;
+            mustMatch(features, PortfolioAutoFeaturesShape);
+            const { enabledAutoFeatures, policyVersion } =
+              await this.facets.manager.setAutoFeatures(features);
+            const { portfolioId } = this.state;
+            return harden({
+              portfolioId,
+              policyVersion,
+              enabledAutoFeatures,
+            }) satisfies PortfolioSetAutoFeaturesResult;
+          });
         },
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
           mustMatch(offerArgs, offerArgsShapes.rebalance);
-          return rebalance(seat, offerArgs, this.facets);
+          // XXX not wired to record `initiatingOperation` (AGO-1125) like the
+          // other setTargetAllocation call sites: this legacy path has no
+          // real callers (superseded by SimpleRebalance) and switching it to
+          // executePlan surfaced a separate, pre-existing bug where
+          // executePlan republishes a duplicate, badly-formatted fail entry
+          // on any step failure (unlike this `rebalance` flow's quieter
+          // handling). Revisit once that's fixed.
+          const startedFlow = this.facets.manager.startFlow(
+            { type: 'rebalance' },
+            offerArgs.flow,
+          );
+
+          // This flow does its own error handling and always exits the seat
+          // XXX: rewrite to use executePlan instead of rebalance, which is legacy and broken
+          void rebalance(seat, offerArgs, this.facets, startedFlow);
+          return `flow${startedFlow.flowId}`;
         },
       },
+      depositHandler: {
+        handle(seat: ZCFSeat, offerArgs: unknown) {
+          mustMatch(offerArgs, offerArgsShapes.deposit);
+          const proposal =
+            seat.getProposal() as unknown as ProposalType['deposit'];
+          const flowDetail = {
+            type: 'deposit',
+            amount: proposal.give.Deposit,
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(
+            flowDetail,
+            offerArgs.flow,
+          );
+          // This flow does its own error handling and always exits the seat
+          void executePlan(
+            seat,
+            offerArgs,
+            this.facets,
+            undefined,
+            startedFlow,
+          );
+          return `flow${startedFlow.flowId}`;
+        },
+      },
+      simpleRebalanceHandler: {
+        handle(seat: ZCFSeat, offerArgs: unknown): FlowKey {
+          // XXX offerArgs.flow shouldn't be allowed
+          mustMatch(offerArgs, offerArgsShapes.rebalance);
+          const { manager } = this.facets;
+          let initiatingOperation:
+            | SetTargetAllocationInitiatingOperation
+            | undefined;
+          const { targetAllocation } = offerArgs;
+          if (targetAllocation) {
+            const policyVersion = manager.setTargetAllocation(targetAllocation);
+            initiatingOperation = {
+              type: 'setTargetAllocation',
+              targetAllocation,
+              status: 'ok',
+              result: { policyVersion },
+            };
+          }
+          const flowDetail = {
+            type: 'rebalance',
+            ...(initiatingOperation && { initiatingOperation }),
+          } as FlowDetail;
+          const startedFlow = manager.startFlow(flowDetail, offerArgs.flow);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(
+            seat,
+            offerArgs,
+            this.facets,
+            undefined,
+            startedFlow,
+          );
+          return `flow${startedFlow.flowId}`;
+        },
+      },
+      withdrawHandler: {
+        handle(seat: ZCFSeat) {
+          const proposal =
+            seat.getProposal() as unknown as ProposalType['withdraw'];
+          const flowDetail = {
+            type: 'withdraw',
+            amount: proposal.want.Cash,
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(seat, {}, this.facets, undefined, startedFlow);
+          return `flow${startedFlow.flowId}`;
+        },
+      },
+
       invitationMakers: {
         Rebalance() {
           const { rebalanceHandler } = this.facets;
@@ -472,9 +2123,38 @@ export const preparePortfolioKit = (
             proposalShapes.rebalance,
           );
         },
-      },
+        Withdraw() {
+          const { withdrawHandler } = this.facets;
+          return zcf.makeInvitation(
+            withdrawHandler,
+            'withdraw',
+            undefined,
+            proposalShapes.withdraw,
+          );
+        },
+        Deposit() {
+          const { depositHandler } = this.facets;
+          return zcf.makeInvitation(
+            depositHandler,
+            'deposit',
+            undefined,
+            proposalShapes.deposit,
+          );
+        },
+        SimpleRebalance() {
+          const { simpleRebalanceHandler } = this.facets;
+          return zcf.makeInvitation(
+            simpleRebalanceHandler,
+            'simpleRebalance',
+            undefined,
+            proposalShapes.rebalance,
+          );
+        },
+      } satisfies Record<PortfolioContinuingInvitationMaker, any> &
+        ThisType<any>,
     },
     {
+      stateShape: PortfolioStateShape,
       finish({ facets, state }) {
         facets.reporter.publishStatus();
         const { portfolioId } = state;

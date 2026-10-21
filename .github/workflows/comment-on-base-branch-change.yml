@@ -11,7 +11,7 @@ jobs:
     if: ${{ github.event.changes.base && github.event.pull_request.base.ref == 'master' }}
     steps:
       - name: Post a comment on the PR
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             github.rest.issues.createComment({

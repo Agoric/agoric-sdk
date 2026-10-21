@@ -1,4 +1,4 @@
-import type { IBCConnectionID } from '@agoric/vats';
+import type { IBCConnectionID } from '@agoric/network/ibc';
 import type { Vow } from '@agoric/vow';
 import type { IcaAccount } from '../cosmos-api.js';
 import type { ICAChannelAddressOpts } from '../utils/address.js';

@@ -20,6 +20,7 @@ const checkPodsReadiness = async (): Promise<boolean> => {
 };
 
 const main = async () => {
+  await null;
   console.log('Starting pod readiness check...');
   for (;;) {
     const allReady = await checkPodsReadiness();

@@ -1,25 +1,212 @@
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { EvmContext } from '../src/pending-tx-manager';
-import type { AccountId } from '@agoric/orchestration';
-import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
-import type {
-  TxStatus,
-  TxType,
-} from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import { ethers, type JsonRpcProvider } from 'ethers';
+/* eslint-disable no-plusplus */
+import { EventEmitter } from 'node:events';
+import { ethers } from 'ethers';
+import type { WebSocketProvider } from 'ethers';
+
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
+import { boardSlottingMarshaller } from '@agoric/client-utils';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import {
+  CaipChainIds,
+  type AxelarChain,
+} from '@agoric/portfolio-api/src/constants.js';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
+import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
+import type { Log } from 'ethers/providers';
+import {
+  decodeFunctionData,
+  encodeAbiParameters,
+  toFunctionSelector,
+} from 'viem';
+import type { CaipChainId } from '@agoric/orchestration';
+import type { EvmAddress } from '@agoric/fast-usdc/src/types.ts';
+import type { Powers as EnginePowers } from '../src/engine.ts';
+import { makeGasEstimator } from '../src/gas-estimation.ts';
+import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
+import { GAS_UNITS_PER_CLAIM, GAS_UNITS_PER_SWAP } from '../src/rewards.ts';
+import {
+  prepareAbortController,
+  type ReconnectingEvmProvider,
+} from '../src/support.ts';
+import type { YdsNotifier } from '../src/yds-notifier.ts';
+import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import { ERC20_BALANCE_ABI } from '../src/evm-utils.ts';
+import type { makeEvmRpc, EvmRpc } from '../src/evm-scanner.ts';
+import { makeNowISO } from '../src/utils.ts';
 
-export const createMockProvider = () => {
-  const eventListeners = new Map<string, Function[]>();
+const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
+// see: https://github.com/axelarnetwork/axelarjs/blob/3897c548f2e82df7fce98b352bded73329183c96/packages/api/src/gmp/types.ts#L7
+type GMPTxStatus =
+  | 'called'
+  | 'confirming'
+  | 'confirmable'
+  | 'express_executed'
+  | 'confirmed'
+  | 'approving'
+  | 'approvable'
+  | 'approved'
+  | 'executing'
+  | 'executed'
+  | 'error'
+  | 'express_executable'
+  | 'express_executable_without_gas_paid'
+  | 'executable'
+  | 'executable_without_gas_paid'
+  | 'insufficient_fee';
+
+const makeNonce = makeNowISO(Date.now);
+
+const makeAbortController = prepareAbortController({
+  setTimeout,
+  AbortController,
+  AbortSignal,
+});
+
+export const makeNotImplemented = (
+  key: string | symbol,
+  { async }: { async?: boolean } = {},
+) => {
+  const rejector: any = () => {
+    const err = Error(`Not implemented: ${String(key)}`);
+    if (async) return Promise.reject(err);
+    throw err;
+  };
+  return rejector;
+};
+
+export const makeNotImplementedAsync = (key: string | symbol) =>
+  makeNotImplemented(key, { async: true });
+
+export const createMockSpectrumBlockchain = (amounts: {
+  [key: string]: number;
+}) =>
+  ({
+    async getBalances({
+      accounts,
+    }: {
+      accounts: {
+        chain: string;
+        address: string;
+        token: string;
+      }[];
+    }) {
+      return {
+        balances: accounts.map(query => {
+          return { balance: String(amounts[query.token] || 0), error: null };
+        }),
+      };
+    },
+  }) as SpectrumBlockchainSdk;
+
+/** Return a correctly-typed record lacking significant functionality. */
+export const createMockEnginePowers = (): EnginePowers => ({
+  evmCtx: mockEvmCtx,
+  rpc: {} as any,
+  spectrumBlockchain: createMockSpectrumBlockchain({}),
+  spectrumChainIds: {},
+  evmTokenAddresses: {},
+  network: TEST_NETWORK,
+  signingSmartWalletKit: {} as any,
+  makeNonce: () => 'mock-nonce',
+  walletStore: {} as any,
+  getWalletInvocationUpdate: async () => undefined,
+  now: () => NaN,
+  nowISO: () => '1970-01-01T00:00:00.000Z',
+  setTimeout: globalThis.setTimeout,
+  gasEstimator: {} as any,
+  usdcTokensByChain: {},
+  chainNameToChainIdMap: CaipChainIds.testnet,
+  autoClaimConfig: {
+    maxGasCostSpike: [[1.5, 'P30D', 'p50']],
+    maxSlippageBps: 200,
+    minRewardPerGas: 2,
+  },
+  autoRebalance: {
+    driftBps: 100n,
+    driftMinMoveUusdc: 25_000_000n,
+    cashMinMoveUusdc: 25_000_000n,
+  },
+  GAS_UNITS_PER_CLAIM,
+  GAS_UNITS_PER_SWAP,
+});
+
+const mockFetchForGasEstimate = async (_, options?: any) => {
   return {
+    ok: true,
+    json: async () => String(BigInt(JSON.parse(options.body).gasLimit) * 10n),
+    text: async () => String(BigInt(JSON.parse(options.body).gasLimit) * 10n),
+  } as Response;
+};
+
+const mockAxelarApiAddress = 'https://api.axelar.example/';
+
+const mockAxelarChainIdMap: Record<AxelarChain, string> = {
+  Avalanche: 'Avalanche',
+  Ethereum: 'Ethereum',
+  Optimism: 'Optimism',
+  Base: 'Base',
+  Arbitrum: 'Arbitrum',
+};
+
+export const mockGasEstimator = makeGasEstimator({
+  axelarApiAddress: mockAxelarApiAddress,
+  axelarChainIdMap: mockAxelarChainIdMap,
+  fetch: mockFetchForGasEstimate,
+});
+
+export const createMockProvider = (
+  latestBlock = 1000,
+  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
+  // Each test can specify custom balances for relevant pools and addresses.
+  balances: Record<EvmAddress, bigint> = {},
+): WebSocketProvider => {
+  const eventListeners = new Map<string, Function[]>();
+  let currentBlock = latestBlock;
+  const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const avgBlockTimeMs = 300;
+
+  const emitter = new EventEmitter();
+  // Mock websocket for gmp-watcher - delegate to EventEmitter
+  const mockWebSocket: Pick<
+    EventEmitter,
+    | 'on'
+    | 'once'
+    | 'off'
+    | 'removeListener'
+    | 'removeAllListeners'
+    | 'emit'
+    | 'listeners'
+  > & { readyState: number } = {
+    readyState: 1, // OPEN
+    on: (...args) => emitter.on(...args),
+    once: (...args) => emitter.once(...args),
+    off: (...args) => emitter.off(...args),
+    removeListener: (...args) => emitter.removeListener(...args),
+    removeAllListeners: (...args) => emitter.removeAllListeners(...args),
+    emit: (...args) => emitter.emit(...args),
+    listeners: (...args) => emitter.listeners(...args),
+  };
+  const mockReceipts = new Map<string, any>();
+
+  const mockProvider = {
+    websocket: mockWebSocket,
     on: (eventOrFilter: any, listener: Function) => {
       const key = JSON.stringify(eventOrFilter);
       if (!eventListeners.has(key)) {
         eventListeners.set(key, []);
       }
       eventListeners.get(key)!.push(listener);
+
+      // If subscribing to 'block' events, immediately emit next block
+      if (eventOrFilter === 'block') {
+        // Simulate next block in the next tick
+        setTimeout(() => {
+          currentBlock += 1;
+          listener(currentBlock);
+        }, 0);
+      }
     },
     off: (eventOrFilter: any, listener: Function) => {
       const key = JSON.stringify(eventOrFilter);
@@ -37,9 +224,233 @@ export const createMockProvider = () => {
       if (listeners) {
         listeners.forEach(listener => listener(log));
       }
+
+      // For websocket-based watchers, also trigger websocket message handlers
+      // by simulating an Alchemy subscription message
+      const messageHandlers = mockWebSocket.listeners('message');
+      if (
+        messageHandlers.length > 0 &&
+        log.transactionHash &&
+        eventOrFilter.topics
+      ) {
+        // Tests can include txId or expectedWalletAddress in the log object for websocket simulation
+        const txId = (log as any).txId;
+        const expectedWalletAddress = (log as any).expectedWalletAddress;
+        const sourceAddress = 'agoric1test';
+
+        if (txId || expectedWalletAddress) {
+          const axelarExecuteIface = new ethers.Interface([
+            'function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external',
+          ]);
+          const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+
+          let payload: string;
+          if (txId) {
+            // GMP watcher: Encode CallMessage payload with txId
+            payload = abiCoder.encode(
+              ['tuple(string id, tuple(address target, bytes data)[] calls)'],
+              [[txId, []]], // CallMessage with txId and empty calls array
+            );
+          } else {
+            // Wallet watcher: Encode address payload
+            payload = abiCoder.encode(['address'], [expectedWalletAddress]);
+          }
+
+          const mockCalldata = axelarExecuteIface.encodeFunctionData(
+            'execute',
+            [
+              ethers.hexlify(ethers.randomBytes(32)), // commandId
+              'agoric', // sourceChain
+              sourceAddress,
+              payload,
+            ],
+          );
+
+          // Store the receipt so getTransactionReceipt can return it
+          mockReceipts.set(log.transactionHash, {
+            status: 1,
+            blockNumber: log.blockNumber,
+            logs: [log],
+            transactionHash: log.transactionHash,
+          });
+
+          // Simulate websocket message with transaction data
+          const wsMessage = {
+            method: 'eth_subscription',
+            params: {
+              result: {
+                removed: false,
+                transaction: {
+                  hash: log.transactionHash,
+                  input: mockCalldata,
+                  to: log.address,
+                  from: '0x0000000000000000000000000000000000000000',
+                  value: '0x0',
+                  gasLimit: '0x186a0',
+                },
+              },
+            },
+          };
+
+          messageHandlers.forEach(handler => {
+            handler(JSON.stringify(wsMessage));
+          });
+        }
+      }
     },
-  } as JsonRpcProvider;
+    waitForBlock: _blockTag => {},
+    getBlockNumber: async () => {
+      return currentBlock;
+    },
+    getBlock: async (blockNumber: number) => {
+      const blocksAgo = latestBlock - blockNumber;
+      const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+      return { number: blockNumber, timestamp: Math.floor(ts / 1000) };
+    },
+    getLogs: async (args: { fromBlock: number; toBlock: number }) => {
+      if (events === undefined) throw Error('No event data provided in mock');
+      return events.filter(
+        event =>
+          event.blockNumber >= args.fromBlock &&
+          event.blockNumber <= args.toBlock,
+      );
+    },
+    getNetwork: async () => ({ chainId: 1n, name: 'ethereum' }),
+    send: async () => 'mock-subscription-id',
+    getTransactionReceipt: async (txHash: string) => {
+      return mockReceipts.get(txHash) || null;
+    },
+    call: async (transaction: any) => {
+      // Mock implementation for contract calls like balanceOf and convertToAssets
+      // For testing purposes, we return mock data
+      const { to, data } = transaction;
+
+      const encodeAmount = (amount: bigint) =>
+        encodeAbiParameters([{ type: 'uint256' }], [amount]);
+
+      if (!data || data === '0x') {
+        throw Error(`No data provided in mock call`);
+      }
+
+      // Parse function selector (first 4 bytes of data)
+      const selector = data.slice(0, 10);
+
+      if (selector === toFunctionSelector('balanceOf(address)')) {
+        const { args } = decodeFunctionData({
+          abi: ERC20_BALANCE_ABI,
+          data,
+        });
+        const [account] = args;
+
+        // account-level balance mocking takes precedence over pool-level
+        // mocking. In the absence of either, we default to 0.
+        const accountBalance = balances[account];
+        const poolBalance = balances[to];
+        const balance = accountBalance ?? poolBalance ?? 0n;
+
+        return encodeAmount(balance);
+      }
+
+      if (selector === toFunctionSelector('convertToAssets(uint256)')) {
+        return encodeAmount(3000n);
+      }
+
+      throw Error(`Unrecognized function selector in mock call: ${selector}`);
+    },
+  };
+
+  return mockProvider as unknown as WebSocketProvider;
 };
+
+/**
+ * Create mock EVM providers and matching retry providers that share the same
+ * underlying instances (so websocket events emitted on evmProviders are
+ * visible to retryProviders).
+ */
+export const createMockProviderSets = ({
+  latestBlock = 1000,
+  events,
+  balances = {},
+}: {
+  latestBlock?: number;
+  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[];
+  balances?: Record<EvmAddress, bigint>;
+}) => {
+  const chainIds: CaipChainId[] = [
+    'eip155:1',
+    'eip155:42161',
+    'eip155:421614',
+    'eip155:8453',
+    'eip155:11155111',
+    'eip155:43113',
+  ];
+  const evmProviders = {} as Record<CaipChainId, ReconnectingEvmProvider>;
+  const retryProviders = {} as Record<CaipChainId, EvmRpc>;
+  for (const chainId of chainIds) {
+    const provider = createMockProvider(latestBlock, events, balances);
+    // Augment the mock provider in place with a no-op reconnecting surface
+    // (the mock socket never dies in tests), so it satisfies both
+    // ReconnectingEvmProvider and the raw-provider shape some tests poke at.
+    const reconnecting = Object.assign(provider, {
+      getProvider: () => provider,
+      reportUnhealthy: () => {},
+      close: () => {},
+    });
+    evmProviders[chainId] = reconnecting as unknown as ReconnectingEvmProvider;
+    // Mock providers already satisfy the EvmRpc shape.
+    retryProviders[chainId] = provider as unknown as ReturnType<
+      typeof makeEvmRpc
+    >;
+  }
+  return { evmProviders, retryProviders };
+};
+
+const defaultMockProviders = createMockProviderSets({});
+
+export const mockEvmCtx = {
+  usdcAddresses: {},
+  evmProviders: defaultMockProviders.evmProviders,
+  retryProviders: defaultMockProviders.retryProviders,
+  kvStore: makeKVStoreFromMap(new Map()),
+  setTimeout: globalThis.setTimeout,
+  now: () => NaN,
+  makeAbortController,
+  axelarApiUrl: mockAxelarApiAddress,
+  ydsNotifier: {
+    notifySettlement: async () => true,
+  } as unknown as YdsNotifier,
+};
+
+const mockWalletRecord = {
+  offerToUsedInvitation: [
+    [
+      'resolver-offer-1',
+      {
+        value: [
+          {
+            description: 'resolver',
+            instance: 'mock-instance',
+            installation: 'mock-installation',
+          },
+        ],
+      },
+    ],
+  ],
+  liveOffers: [],
+  purses: [],
+};
+
+/** CapData encoding of the mock wallet record (no slots needed). */
+const mockWalletCapData = JSON.stringify({
+  body: JSON.stringify(mockWalletRecord),
+  slots: [],
+});
+
+/** StreamCell wrapping the CapData-encoded wallet record. */
+const mockStreamCell = JSON.stringify({
+  blockHeight: '100',
+  values: [mockWalletCapData],
+});
 
 export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
   const executedOffers: OfferSpec[] = [];
@@ -47,25 +458,19 @@ export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
   return {
     address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
 
+    marshaller: {
+      fromCapData: (capData: { body: string; slots: string[] }) =>
+        JSON.parse(capData.body),
+    },
+
     query: {
-      getCurrentWalletRecord: async () => ({
-        offerToUsedInvitation: [
-          [
-            'resolver-offer-1',
-            {
-              value: [
-                {
-                  description: 'resolver',
-                  instance: 'mock-instance',
-                  installation: 'mock-installation',
-                },
-              ],
-            },
-          ],
-        ],
-        liveOffers: [],
-        purses: [],
-      }),
+      getCurrentWalletRecord: async () => mockWalletRecord,
+      vstorage: {
+        readStorageMeta: async () => ({
+          result: { value: mockStreamCell },
+          blockHeight: 100n,
+        }),
+      },
     },
 
     executeOffer: async (offerSpec: OfferSpec) => {
@@ -81,36 +486,42 @@ export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
   } as any;
 };
 
-export const createMockEvmContext = (): EvmContext => ({
-  usdcAddresses: {
-    'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
-    'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
-  },
-  evmProviders: {
-    'eip155:42161': createMockProvider(),
-    'eip155:1': createMockProvider(),
-  },
-  signingSmartWalletKit: createMockSigningSmartWalletKit(),
-  fetch: global.fetch,
-});
-
-export const createMockPendingTxData = ({
-  type = 'CCTP',
-  status = 'pending',
-  amount = 100_000n,
-  destinationAddress = 'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-}: {
-  type?: TxType;
-  status?: TxStatus;
-  amount?: bigint;
-  destinationAddress?: AccountId;
-} = {}) =>
-  harden({
-    type,
-    status,
-    amount,
-    destinationAddress,
+export const createMockPendingTxOpts = (
+  latestBlock = 1000,
+  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
+): HandlePendingTxOpts => {
+  const { evmProviders, retryProviders } = createMockProviderSets({
+    latestBlock,
+    events,
   });
+  return {
+    evmProviders,
+    retryProviders,
+    fetch: async () => ({ ok: true, json: async () => ({}) }) as Response,
+    setTimeout: globalThis.setTimeout,
+    now: () => NaN,
+    marshaller: boardSlottingMarshaller(),
+    signingSmartWalletKit: createMockSigningSmartWalletKit(),
+    makeNonce,
+    ydsNotifier: {
+      notifySettlement: async () => true,
+    } as unknown as YdsNotifier,
+    usdcAddresses: {
+      'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
+      'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
+    },
+    vstoragePathPrefixes: {
+      portfoliosPathPrefix: 'IGNORED',
+      pendingTxPathPrefix: PENDING_TX_PATH_PREFIX,
+    },
+    kvStore: makeKVStoreFromMap(new Map()),
+    makeAbortController,
+    axelarApiUrl: mockAxelarApiAddress,
+    pendingTxAbortControllers: new Map(),
+    pendingTxSettlementPromises: new Map(),
+    runLookbackScan: (_endpoint, task) => task(),
+  };
+};
 
 export const createMockPendingTxEvent = (
   txId: string,
@@ -125,7 +536,35 @@ export const createMockStreamCell = (values: unknown[]) => ({
   blockHeight: '1000',
 });
 
-const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
+/**
+ * ABI naming convention:
+ * - *_ABI_JSON: JSON ABI representation (objects with type, name, components)
+ * - *_ABI_TEXT: Human-readable string format (Ethers fragment strings)
+ *
+ * @see https://github.com/agoric-labs/agoric-to-axelar-local/blob/b884729ab2d24decabcc4a682f4157f9cf78a08b/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol#L26-L29
+ */
+const GMP_INPUTS_ABI_JSON = [
+  {
+    type: 'tuple',
+    name: 'callMessage',
+    components: [
+      { name: 'id', type: 'string' },
+      {
+        name: 'calls',
+        type: 'tuple[]',
+        components: [
+          { name: 'target', type: 'address' },
+          { name: 'data', type: 'bytes' },
+        ],
+      },
+    ],
+  },
+];
+
+const createMockAxelarScanResponse = (
+  txId: string,
+  status: GMPTxStatus = 'executed',
+) => {
   const baseEvent = {
     call: {
       chain: 'agoric',
@@ -137,7 +576,9 @@ const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
           '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
         destinationChain: 'ethereum',
         messageId: 'msg_12345',
-        payload: '0x',
+        payload: encodeAbiParameters(GMP_INPUTS_ABI_JSON, [
+          { id: txId, calls: [] },
+        ]),
         sender: 'agoric1sender123',
         sourceChain: 'agoric',
       },
@@ -162,7 +603,7 @@ const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
       },
     },
     message_id: 'msg_12345',
-    status: status === 'executed' ? 'executed' : 'confirming',
+    status,
     simplified_status: status,
     is_invalid_call: false,
     is_not_enough_gas: false,
@@ -250,6 +691,23 @@ const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
     };
   }
 
+  if (status === 'error') {
+    return {
+      data: [
+        {
+          ...baseEvent,
+          error: {
+            error: {
+              message: 'Transaction execution failed',
+            },
+          },
+        },
+      ],
+      total: 1,
+      time_spent: 100,
+    };
+  }
+
   return {
     data: [baseEvent],
     total: 1,
@@ -257,12 +715,68 @@ const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
   };
 };
 
-export const mockFetch = ({ txId }: { txId: TxId }) => {
+export const mockFetch = ({
+  txId,
+  status = 'executed',
+}: {
+  txId: TxId;
+  status?: GMPTxStatus;
+}) => {
   return async () => {
-    const response = createMockAxelarScanResponse(txId);
+    const response = createMockAxelarScanResponse(txId, status);
     return {
       ok: true,
       json: async () => response,
     } as Response;
   };
 };
+
+const erc20Interface = new ethers.Interface([
+  'event Transfer(address indexed from, address indexed to, uint256 value)',
+]);
+export const createMockTransferEvent = (
+  address: `0x${string}`,
+  amount: bigint,
+  to: string,
+) => {
+  const transferEvent = erc20Interface.encodeEventLog('Transfer', [
+    ethers.ZeroAddress, // from (zero address for minting)
+    to,
+    amount,
+  ]);
+
+  return {
+    address,
+    topics: transferEvent.topics,
+    data: transferEvent.data,
+    blockNumber: 1000,
+    transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
+  };
+};
+
+export const createMockGmpStatusEvent = (
+  txId: string,
+  blockNumber: number,
+): Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'> => {
+  const MULTICALL_STATUS_SIGNATURE = ethers.id(
+    'MulticallStatus(string,bool,uint256)',
+  );
+  const txIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+
+  return {
+    blockNumber,
+    topics: [MULTICALL_STATUS_SIGNATURE, txIdTopic],
+    data: '0x',
+    transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
+  };
+};
+
+export const makeStreamCellFromText = (
+  blockHeight: bigint,
+  values: string[],
+) => ({ blockHeight: `${blockHeight}`, values });
+
+export const makeStreamCellJsonFromText = (
+  blockHeight: bigint,
+  values: string[],
+) => JSON.stringify(makeStreamCellFromText(blockHeight, values));

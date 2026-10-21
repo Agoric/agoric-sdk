@@ -9,6 +9,7 @@ import { Far, E } from '@endo/far';
  * @import {ERef} from '@endo/far';
  * @import {MapStore} from '@agoric/store';
  * @import {Device, DProxy} from '@agoric/swingset-vat/src/types-external.js';
+ * @import {buildRootDeviceNode} from '@agoric/swingset-vat/src/devices/plugin/device-plugin.js';
  */
 
 /** @type {{ onReset: (firstTime: Promise<boolean>) => void}} */
@@ -43,7 +44,7 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
 
 /**
  * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').buildRootDeviceNode>> } PluginDevice
+ *   buildRootDeviceNode>> } PluginDevice
  */
 
 /**

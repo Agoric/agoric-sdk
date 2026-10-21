@@ -9,6 +9,11 @@ import {
 } from '../../../src/contractSupport/index.js';
 
 /**
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {Amount} from '@agoric/ertp';
+ */
+
+/**
  * Give a use object when a payment is escrowed
  *
  * @param {ZCF} zcf

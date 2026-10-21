@@ -3,13 +3,18 @@ import './externalTypes.js';
 
 import { E } from '@endo/far';
 
-/** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
+/**
+ * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js'
+ * @import {Installation, ZoeService} from '@agoric/zoe';
+ * @import {InstallationManager} from './startInstance.js';
+ * @import {ERef} from '@agoric/vow';
+ */
 
 // XXX board is Board but specifying that leads to type errors with imports which aren't worth fixing right now
 /**
  * @param {typeof import('@endo/bundle-source')['default']} bundleSource
  * @param {ERef<ZoeService>} zoe
- * @param {ERef<import('./startInstance.js').InstallationManager>} installationManager
+ * @param {ERef<InstallationManager>} installationManager
  * @param {ERef<any>} board
  * @param {(bundle: any) => any} [publishBundle]
  * @param {(path: string) => string} [pathResolve]

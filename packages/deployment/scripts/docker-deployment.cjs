@@ -1,5 +1,4 @@
 #! /usr/bin/env node
-/* eslint-env node */
 // Get a deployment.json for a 2-node docker setup.
 
 const DEFAULT_NUM_VALIDATORS = 2;

@@ -41,6 +41,36 @@ including [unit
 testing](https://github.com/Agoric/agoric-sdk/wiki/agoric-sdk-unit-testing)
 etc.
 
+## `tools` contract
+
+Repository scope boundaries:
+
+- `scripts/`: executable entrypoints only
+- `src/`: production/runtime library code and production-safe helpers that are part of the package library surface
+- `tools/`: supported cross-package support utilities (test harnesses, mocks, fixtures, typed helper interfaces)
+- `test/`: local tests only; not imported by other packages
+
+Choosing between `src/` and `tools/`:
+
+- Put code in `src/` when it is production-safe and should be treated as part of the package runtime/library API, even if tests also use it.
+- Put code in `tools/` when its main purpose is to help another package test, integrate with, or simulate this package, even if it is intentionally shared and supported.
+- Short rule: if consumers import it to exercise or simulate package behavior, prefer `tools/`; if consumers import it as part of real runtime behavior, prefer `src/`.
+- If another package imports it, it must not live in `test/`.
+- Example: `setupOrchestrationTest` belongs in `tools/` because it is a reusable integration harness.
+- Example: `makeTestAddress` belongs in `tools/` if it is only deterministic fake-address generation for tests; if it becomes a general runtime-safe address utility, move it to `src/`.
+
+Direction rules:
+
+- `src/**` must not import `**/tools/**` (except temporary allowlisted legacy imports during migration)
+- `tools/**` may import `src/**`, but not vice versa
+- Non-test files must not import `**/test/**` from local or other packages
+
+Publishing rules:
+
+- `tools/` may be published or deep-imported as needed within the monorepo.
+- CI does not enforce `tools/` manifest or export policy.
+- `tools/` is not part of the semver contract of the package.
+
 ## Landing pull requests
 
 The agreement so far is for every change to have a [conventional commit

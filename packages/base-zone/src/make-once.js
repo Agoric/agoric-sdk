@@ -1,14 +1,19 @@
 // @ts-check
 import { Fail } from '@endo/errors';
 
+/**
+ * @import {Stores} from './types.js';
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ */
+
 /** @param {string} label */
 const defaultLabelToKeys = label => harden([label]);
 harden(defaultLabelToKeys);
 
 /**
  * @param {string} debugName Only used internally for diagnostics, not available to user code
- * @param {import('./types.js').Stores} stores
- * @param {import('@agoric/swingset-liveslots').MapStore<string, any>} [backingStore]
+ * @param {Stores} stores
+ * @param {MapStore<string, any>} [backingStore]
  */
 export const makeOnceKit = (debugName, stores, backingStore = undefined) => {
   // We need a detached setStore so that it isn't persisted as part of the zone.

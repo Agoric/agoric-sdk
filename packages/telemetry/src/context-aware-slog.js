@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 /**
  * @typedef {Partial<{
  *    'block.height': Slog['blockHeight'];
@@ -49,7 +47,7 @@
  * }} Slog
  */
 
-const SLOG_TYPES = {
+export const SLOG_TYPES = {
   CLIST: 'clist',
   CONSOLE: 'console',
   COSMIC_SWINGSET: {
@@ -60,17 +58,21 @@ const SLOG_TYPES = {
       START: 'cosmic-swingset-bootstrap-block-start',
     },
     COMMIT: {
-      FINISH: 'cosmic-swingset-commit-finish',
-      START: 'cosmic-swingset-commit-start',
+      FINISH: 'cosmic-swingset-commit-block-finish',
+      START: 'cosmic-swingset-commit-block-start',
     },
     END_BLOCK: {
       FINISH: 'cosmic-swingset-end-block-finish',
       START: 'cosmic-swingset-end-block-start',
     },
-    // eslint-disable-next-line no-restricted-syntax
+
     RUN: {
       FINISH: 'cosmic-swingset-run-finish',
       START: 'cosmic-swingset-run-start',
+    },
+    UPGRADE: {
+      FINISH: 'cosmic-swingset-upgrade-finish',
+      START: 'cosmic-swingset-upgrade-start',
     },
   },
   COSMIC_SWINGSET_TRIGGERS: {
@@ -227,7 +229,7 @@ export const makeContextualSlogProcessor = (
 
         break;
       }
-      // eslint-disable-next-line no-restricted-syntax
+
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.START: {
         if (!finalBody.runNum) {
           assert(!triggerContext);
@@ -353,7 +355,7 @@ export const makeContextualSlogProcessor = (
         blockContext = null;
         break;
       }
-      // eslint-disable-next-line no-restricted-syntax
+
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.FINISH: {
         assert(!!triggerContext);
         persistContext(

@@ -7,6 +7,7 @@ import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
 /** @import {Callable} from '@agoric/internal'; */
 /** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
 /** @import {SlogProps, SlogDurationProps, SwingsetController} from '../controller/controller.js'; */
+/** @import {KernelSlog} from '../types-external.js'; */
 
 const IDLE = 'idle';
 const STARTUP = 'startup';
@@ -35,40 +36,44 @@ const noopFinisher = harden(() => {});
 function addSlogCallbacks(slogCallbacks, unusedMsgPrefix, methods) {
   const unused = new Set(Object.keys(slogCallbacks));
   const wrappedMethods = /** @type {Methods} */ (
-    objectMap(methods, (impl, methodKey) => {
-      const methodName = /** @type {keyof typeof slogCallbacks} */ (methodKey);
-      unused.delete(methodName);
-      const wrapper = slogCallbacks[methodName];
+    /** @type {unknown} */ (
+      objectMap(methods, (impl, methodKey) => {
+        const methodName = /** @type {keyof typeof slogCallbacks} */ (
+          methodKey
+        );
+        unused.delete(methodName);
+        const wrapper = slogCallbacks[methodName];
 
-      // If there is no registered wrapper, return the implementation directly.
-      if (!wrapper) return impl;
+        // If there is no registered wrapper, return the implementation directly.
+        if (!wrapper) return impl;
 
-      const wrapped = (...args) => {
-        const maybeFinisher = /** @type {AnyFinisher} */ (impl(...args));
-        try {
-          // Allow the callback to observe the call synchronously, and replace
-          // the implementation's finisher function, but not to throw an exception.
-          const wrapperFinisher = wrapper(methodName, args, maybeFinisher);
-          if (typeof maybeFinisher !== 'function') return wrapperFinisher;
+        const wrapped = (...args) => {
+          const maybeFinisher = /** @type {AnyFinisher} */ (impl(...args));
+          try {
+            // Allow the callback to observe the call synchronously, and replace
+            // the implementation's finisher function, but not to throw an exception.
+            const wrapperFinisher = wrapper(methodName, args, maybeFinisher);
+            if (typeof maybeFinisher !== 'function') return wrapperFinisher;
 
-          // We wrap the finisher in the callback's return value.
-          return (...finishArgs) => {
-            try {
-              return /** @type {AnyFinisher} */ (wrapperFinisher)(
-                ...finishArgs,
-              );
-            } catch (e) {
-              console.error(`${methodName} wrapper finisher failed:`, e);
-              return maybeFinisher(...finishArgs);
-            }
-          };
-        } catch (e) {
-          console.error(`${methodName} wrapper failed:`, e);
-          return maybeFinisher;
-        }
-      };
-      return /** @type {typeof impl} */ (/** @type {unknown} */ (wrapped));
-    })
+            // We wrap the finisher in the callback's return value.
+            return (...finishArgs) => {
+              try {
+                return /** @type {AnyFinisher} */ (wrapperFinisher)(
+                  ...finishArgs,
+                );
+              } catch (e) {
+                console.error(`${methodName} wrapper finisher failed:`, e);
+                return maybeFinisher(...finishArgs);
+              }
+            };
+          } catch (e) {
+            console.error(`${methodName} wrapper failed:`, e);
+            return maybeFinisher;
+          }
+        };
+        return /** @type {typeof impl} */ (/** @type {unknown} */ (wrapped));
+      })
+    )
   );
   if (unused.size) {
     console.warn(unusedMsgPrefix, ...[...unused.keys()].sort().map(q));
@@ -107,14 +112,19 @@ export function makeDummySlogger(slogCallbacks, dummyConsole = badConsole) {
 }
 
 /**
+ * @typedef {(extraProps?: SlogDurationProps) => void} FinishSlogDuration
+ */
+
+/**
  * @callback StartDuration
- * Capture an extended process, writing an entry with `type` $startLabel and
- * then later (when the returned finish function is called) another entry with
- * `type` $endLabel and `seconds` reporting the intervening duration.
+ * Capture an extended process, writing an entry with `type` $startLabel if
+ * provided and then later (when the returned finish function is called) another
+ * entry with `type` $endLabel and `seconds` reporting the intervening duration
+ * (@see {SwingsetController['slogDuration']}).
  *
- * @param {readonly [startLabel: string, endLabel: string]} labels
+ * @param {readonly [startLabel: string | undefined, endLabel: string]} labels
  * @param {SlogDurationProps} startProps
- * @returns {import('../types-external').FinishSlogDuration}
+ * @returns {FinishSlogDuration}
  */
 
 /**
@@ -149,8 +159,9 @@ export function makeSlogger(slogCallbacks, writeSlogObject, slogDuration) {
       try {
         /** @type {(extraProps?: SlogDurationProps) => void} */
         let closeSpan;
-        // @ts-expect-error TS2722 slogDuration is not undefined here
-        void slogDuration(labels, startProps, async finish => {
+        const slogDurationFn =
+          /** @type {SwingsetController['slogDuration']} */ (slogDuration);
+        void slogDurationFn(labels, startProps, async finish => {
           const doneKit = makePromiseKit();
           closeSpan = props => {
             try {

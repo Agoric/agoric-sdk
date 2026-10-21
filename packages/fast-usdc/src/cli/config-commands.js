@@ -6,7 +6,7 @@
 /**
  *
  * @param {Command} program
- * @param {ConfigHelpers} configHelpers
+ * @param {typeof ConfigHelpers} configHelpers
  * @param {() => File} makeConfigFile
  */
 export const addConfigCommands = (program, configHelpers, makeConfigFile) => {

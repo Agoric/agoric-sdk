@@ -9,6 +9,10 @@ import {
   assertPayoutAmount,
 } from '../../zoeTestHelpers.js';
 
+/**
+ * @import {ZoeIssuerRecord} from '../../../src/types-index.js';
+ */
+
 test('provideEscrowStorage', async t => {
   const { createPurse, provideLocalPurse, withdrawPayments, depositPayments } =
     provideEscrowStorage(

@@ -1,8 +1,12 @@
 // @ts-check
-import { createHash } from 'crypto';
-import { finished as finishedCallback, PassThrough, Readable } from 'stream';
-import { promisify } from 'util';
-import { createGzip, createGunzip } from 'zlib';
+import { createHash } from 'node:crypto';
+import {
+  finished as finishedCallback,
+  PassThrough,
+  Readable,
+} from 'node:stream';
+import { promisify } from 'node:util';
+import { createGzip, createGunzip } from 'node:zlib';
 import { Fail, q } from '@endo/errors';
 import { withDeferredCleanup } from '@agoric/internal';
 import { buffer } from './util.js';
@@ -10,6 +14,7 @@ import { buffer } from './util.js';
 /**
  * @import { AnyIterable, SwingStoreExporter } from './exporter.js';
  * @import { ArtifactMode } from './internal.js';
+ * @import {makeMeasureSeconds} from '@agoric/internal';
  */
 
 /**
@@ -68,7 +73,7 @@ import { buffer } from './util.js';
  * @callback SnapshotCallback
  * Called with the gzipped contents of a new heap snapshot.
  * @param {string} name  an export key, e.g. `snapshot.${vatID}.${deliveryCount}`
- * @param {Parameters<import('stream').Readable.from>[0]} compressedData
+ * @param {Parameters<typeof Readable.from>[0]} compressedData
  * @returns {Promise<void>}
  */
 
@@ -78,7 +83,7 @@ const finished = promisify(finishedCallback);
  * @param {*} db
  * @param {() => void} ensureTxn
  * @param {{
- *   measureSeconds: ReturnType<typeof import('@agoric/internal').makeMeasureSeconds>,
+ *   measureSeconds: ReturnType<typeof makeMeasureSeconds>,
  * }} io
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
@@ -227,7 +232,7 @@ export function makeSnapStore(
         await measureSeconds(async () => {
           const snapReader = Readable.from(snapshotStream);
           const destroyReader = promisify(snapReader.destroy.bind(snapReader));
-          addCleanup(() => destroyReader(null));
+          addCleanup(() => destroyReader(undefined));
           snapReader.on('data', chunk => {
             uncompressedSize += chunk.length;
           });

@@ -8,7 +8,7 @@ import {
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import {
   MsgSend as MsgSendType,
-  MsgSendResponse,
+  MsgSendResponse as MsgSendResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import { type Coin as CoinType } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import {
@@ -36,13 +36,13 @@ import {
 import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
   MsgTransfer as MsgTransferType,
-  MsgTransferResponse,
+  MsgTransferResponse as MsgTransferResponseType,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
-import { heapVowE as E } from '@agoric/vow/vat.js';
+import { heapVowE as E, heapVowTools } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { decodeBase64 } from '@endo/base64';
 import type { EReturn } from '@endo/far';
@@ -50,7 +50,10 @@ import type { TestFn } from 'ava';
 import { MsgDepositForBurn as MsgDepositForBurnType } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { Height as HeightType } from '@agoric/cosmic-proto/ibc/core/client/v1/client.js';
-import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
+import type {
+  CosmosValidatorAddress,
+  TrafficEntry,
+} from '../../src/cosmos-api.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
   AmountArg,
@@ -65,13 +68,16 @@ import {
   buildTxPacketString,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
-import { protoMsgMocks } from '../ibc-mocks.js';
+import { protoMsgMocks } from '../../tools/ibc-mock-fixtures.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 import { leftPadEthAddressTo32Bytes } from '../../src/utils/address.js';
+import { makeTxPacket } from '../../src/utils/packet.js';
 
 const MsgSend = CodecHelper(MsgSendType);
+const MsgSendResponse = CodecHelper(MsgSendResponseType);
 const MsgTransfer = CodecHelper(MsgTransferType);
+const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
 const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
 const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
 const QueryDelegationRequest = CodecHelper(QueryDelegationRequestType);
@@ -130,12 +136,12 @@ test('send (to addr on same chain)', async t => {
   };
 
   // single send
-  t.is(
+  t.deepEqual(
     await E(account).send(toAddress, {
       value: 10n,
       denom: 'uatom',
     }),
-    undefined,
+    {},
   );
 
   // register handler for ist bank send
@@ -156,21 +162,21 @@ test('send (to addr on same chain)', async t => {
     buildMsgResponseString(MsgSendResponse, {}),
   );
 
-  t.is(
+  t.deepEqual(
     await E(account).send(toAddress, {
       denom: uistOnCosmos,
       value: 10n,
     } as AmountArg),
-    undefined,
+    {},
     'send accepts Amount',
   );
 
-  t.is(
+  t.deepEqual(
     await E(account).send(`cosmos:${toAddress.chainId}:${toAddress.value}`, {
       denom: uistOnCosmos,
       value: 10n,
     } as AmountArg),
-    undefined,
+    {},
     'send accepts AccountId',
   );
 
@@ -203,12 +209,12 @@ test('send (to addr on same chain)', async t => {
   );
 
   // multi-send (sendAll)
-  t.is(
+  t.deepEqual(
     await E(account).sendAll(toAddress, [
       { value: 10n, denom: 'uatom' } as AmountArg,
       { value: 10n, denom: 'ibc/1234' } as AmountArg,
     ]),
-    undefined,
+    {},
   );
 
   const { bridgeDowncalls } = await inspectDibcBridge();
@@ -252,9 +258,12 @@ test('transfer', async t => {
     ...defaultIbcTransfer,
     timeoutTimestamp: 300000000000n,
   };
+
   const buildMocks = () => {
-    const toTransferTxPacket = (msg: Partial<MsgTransferType>) =>
-      buildTxPacketString([MsgTransfer.toProtoMsg(msg)]);
+    const toTransferTxPacket = (
+      msg: Partial<MsgTransferType>,
+      codec = MsgTransfer,
+    ) => buildTxPacketString([codec.toProtoMsg(msg)]);
 
     const basicTransfer = toTransferTxPacket(basicIbcTransfer);
     const customTimeoutHeight = toTransferTxPacket({
@@ -344,7 +353,79 @@ test('transfer', async t => {
     basicIbcTransfer,
     'outgoing transfer msg matches expected default mock',
   );
-  t.is(await res, undefined, 'transfer returns undefined');
+  const transferResult = await res;
+  t.deepEqual(
+    transferResult,
+    'FOLLOW_TRAFFIC',
+    `distant transfer returns 'FOLLOW_TRAFFIC' (for now)`,
+  );
+  t.snapshot(transferResult, 'transfer full result');
+
+  const progressTracker = await E(account).makeProgressTracker();
+  const resultP = E(account).transfer(mockDestination, mockAmountArg, {
+    progressTracker,
+  });
+  await eventLoopIteration();
+  progressTracker.finish();
+
+  const pktWithMeta = await getAndDecodeLatestPacket();
+  t.deepEqual(
+    pktWithMeta,
+    basicIbcTransfer,
+    'outgoing transfer msg matches expected default mock',
+  );
+
+  const result = await heapVowTools.when(resultP);
+  const resultMeta = {
+    result,
+    meta: progressTracker.getCurrentProgressReport(),
+  };
+  t.deepEqual(
+    resultMeta.meta,
+    {
+      traffic: [
+        {
+          op: 'ICA',
+          seq: { status: 'unknown' },
+          src: [
+            'ibc',
+            ['chain', 'cosmos:agoric-3'],
+            ['port', 'icacontroller-1'],
+            ['channel', 'channel-0'],
+          ],
+          dst: [
+            'ibc',
+            ['chain', 'cosmos:cosmoshub-4'],
+            ['port', 'icahost'],
+            ['channel', 'channel-0'],
+          ],
+        },
+        {
+          op: 'transfer',
+          seq: 0n,
+          src: [
+            'ibc',
+            ['chain', 'cosmos:cosmoshub-4'],
+            ['port', 'transfer'],
+            ['channel', 'channel-536'],
+          ],
+          dst: [
+            'ibc',
+            ['chain', 'cosmos:noble-1'],
+            ['port', 'transfer'],
+            ['channel', 'channel-4'],
+          ],
+        },
+      ] as TrafficEntry[],
+    },
+    'transfer returns proper meta',
+  );
+  t.deepEqual(
+    result,
+    'FOLLOW_TRAFFIC',
+    `distant transfer returns result of 'FOLLOW_TRAFFIC' (for now)`,
+  );
+  t.snapshot(resultMeta, 'transfer result with metadata');
 
   t.log('transfer accepts custom memo');
   await E(account).transfer(mockDestination, mockAmountArg, {
@@ -999,9 +1080,12 @@ test('executeEncodedTx', async t => {
   const decodedRes = MsgDelegateResponse.decode(decodeBase64(res));
   t.deepEqual(decodedRes, {}, 'MsgDelegate returns MsgDelegateResponse');
 
+  // Delegate 100 ubld from cosmos1test to cosmosvaloper1test observed in console, timeoutHeight: 6n
+  const delegateMsgPacket = btoa(
+    makeTxPacket([delegateMsgSuccess], { timeoutHeight: 6n }),
+  );
   t.context.mocks.ibcBridge.addMockAck(
-    // Delegate 100 ubld from cosmos1test to cosmosvaloper1test observed in console, timeoutHeight: 6n
-    'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xVS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpNEtDMk52YzIxdmN6RjBaWE4wRWhKamIzTnRiM04yWVd4dmNHVnlNWFJsYzNRYUN3b0ZkV0YwYjIwU0FqRXdHQVk9IiwibWVtbyI6IiJ9',
+    delegateMsgPacket,
     protoMsgMocks.delegate.ack,
   );
   t.is(
@@ -1063,7 +1147,7 @@ test(`depositForBurn via Noble to Base`, async t => {
   );
 
   t.log('check the bridge');
-  t.deepEqual(actual, undefined);
+  t.deepEqual(actual, { nonce: 0n });
 
   const getAndDecodeLatestPacket = async () => {
     await eventLoopIteration();

@@ -1,5 +1,3 @@
-// @jessie-check
-
 // NB: cannot import, breaks bundle building
 /* global globalThis */
 

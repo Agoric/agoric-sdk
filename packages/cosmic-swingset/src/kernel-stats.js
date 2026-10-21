@@ -35,7 +35,7 @@ const inboundQueueMeta = harden(
   makeQueueMetricsMeta('cosmic_swingset_inbound_queue', 'inbound queue'),
 );
 
-const maxAgeCache = (fn, maxAge, clock = Date.now) => {
+const maxAgeCache = (fn, maxAge, clock = () => performance.now()) => {
   // An initial invocation verifies that the function doesn't [always] throw.
   let cached = fn();
   let lastTime = -Infinity;
@@ -51,12 +51,12 @@ const maxAgeCache = (fn, maxAge, clock = Date.now) => {
 };
 
 const wrapDeltaMS = (finisher, useDeltaMS) => {
-  const startMS = Date.now();
+  const startMS = performance.now();
   return (...finishArgs) => {
     try {
       return finisher(...finishArgs);
     } finally {
-      const deltaMS = Date.now() - startMS;
+      const deltaMS = performance.now() - startMS;
       useDeltaMS(deltaMS, finishArgs);
     }
   };

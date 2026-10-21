@@ -1,16 +1,15 @@
-/* Visit Visit https://www.typescriptlang.org/tsconfig to read more about this file */
+// Top-level build tsconfig for validation. Build output not used.
+// Packages are published independently and have their own builds.
 {
     "extends": [
         "./tsconfig.json",
         "./tsconfig-build-options.json"
     ],
     "compilerOptions": {
-        "allowSyntheticDefaultImports": true,
         "outDir": "./build"
     },
     "exclude": [
         "packages/agoric-cli",
-        "packages/benchmark",
         "packages/cosmic-swingset",
         "packages/deployment",
         "packages/import-manager",

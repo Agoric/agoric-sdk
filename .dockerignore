@@ -13,9 +13,14 @@ packages/stat-logger
 **/deployment.json
 **/vars.tf
 **/*.log
+
+# Ignore build artifacts
 **/dist
 **/build
 **/bundles
+# copying these without the dist dir misinforms the `tsc` builder
+**/*.tsbuildinfo
+
 **/__pycache__
 **/*.egg-info
 **/swingset-kernel-state

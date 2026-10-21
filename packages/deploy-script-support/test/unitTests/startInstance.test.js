@@ -9,7 +9,11 @@ import { E } from '@endo/far';
 
 import { makeStartInstance } from '../../src/startInstance.js';
 
-/** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
+/**
+ * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js'
+ * @import {IssuerManager} from '../../src/startInstance.js';
+ * @import {InstanceManager} from '../../src/startInstance.js';
+ */
 
 test('startInstance', async t => {
   const MOOLA_BRAND_PETNAME = 'moola';
@@ -34,7 +38,7 @@ test('startInstance', async t => {
   const zoeInvitationIssuer = E(zoe).getInvitationIssuer();
   const zoeInvitationPurse = E(zoeInvitationIssuer).makeEmptyPurse();
 
-  /** @type {import('../../src/startInstance.js').IssuerManager} */
+  /** @type {IssuerManager} */
   // @ts-expect-error cast mock
   const issuerManager = {
     get: petname => {
@@ -51,7 +55,7 @@ test('startInstance', async t => {
   /** @type {Petname | undefined} */
   let addedPetname;
 
-  /** @type {import('../../src/startInstance.js').InstanceManager} */
+  /** @type {InstanceManager} */
   // @ts-expect-error cast mock
   const instanceManager = {
     add: async (petname, _instance) => {

@@ -7,21 +7,30 @@ import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from './callback.js';
 
 /**
+ * @import {RemotableBrand} from '@endo/eventual-send';
  * @import {ERef} from '@endo/far';
- * @import {PassableCap} from '@endo/marshal';
- * @import {TypedPattern} from './types.js';
+ * @import {Marshal, Passable} from '@endo/marshal';
+ * @import {Remote, ERemote} from './types.js';
+ * @import {EMarshaller} from './marshal/wrap-marshaller.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Callback} from './types.js';
+ * @import {CastedPattern} from '@endo/patterns';
+ * @import {MatcherOf} from '@endo/patterns';
  */
 
-/** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
+/** @typedef {Marshal<unknown>} Marshaller */
 /** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
 
 /**
  * Defined by vstorageStoreKey in vstorage.go
  *
+ * The backend provides all properties but for mock data flexibility we allow
+ * some to be optional in the JS typedef.
+ *
  * @typedef VStorageKey
  * @property {string} storeName
  * @property {string} storeSubkey
- * @property {string} dataPrefixBytes
+ * @property {string} [dataPrefixBytes]
  * @property {string} [noDataValue]
  */
 
@@ -33,12 +42,13 @@ import * as cb from './callback.js';
  * @property {T[]} values
  */
 
-/** @type {TypedPattern<StreamCell>} */
+/** @type {CastedPattern<StreamCell>} */
 export const StreamCellShape = harden({
   blockHeight: M.string(),
   values: M.array(),
 });
 
+// eslint-disable-next-line @agoric/group-jsdoc-imports, @agoric/no-typedef-import -- top level import would conflict
 /**
  * This represents a node in an IAVL tree.
  *
@@ -49,24 +59,35 @@ export const StreamCellShape = harden({
  * identifies children by restricted ASCII name and is associated with arbitrary
  * string-valued data for each node, defaulting to the empty string.
  *
- * @typedef {object} StorageNode
- * @property {(data: string) => Promise<void>} setValue publishes some data
- * @property {() => string} getPath the chain storage path at which the node was
- *   constructed
- * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
- * @property {(
- *   subPath: string,
- *   options?: { sequence?: boolean },
- * ) => StorageNode} makeChildNode
+ * Defined as an interface in ./types.ts so its per-property documentation
+ * survives declaration emit. Re-exported here as an alias so existing
+ * `from '@agoric/internal/src/lib-chainStorage.js'` importers keep working.
+ *
+ * @typedef {import('./types.js').StorageNode} StorageNode
  */
 
 const ChainStorageNodeI = M.interface('StorageNode', {
   setValue: M.callWhen(M.string()).returns(),
   getPath: M.call().returns(M.string()),
-  getStoreKey: M.callWhen().returns(M.record()),
+  getStoreKey: M.callWhen().returns(
+    M.splitRecord(
+      {
+        storeName: M.string(),
+        storeSubkey: M.string(),
+      },
+      {
+        dataPrefixBytes: M.string(),
+        noDataValue: M.string(),
+      },
+    ),
+  ),
   makeChildNode: M.call(M.string())
     .optional(M.splitRecord({}, { sequence: M.boolean() }, {}))
-    .returns(M.remotable('StorageNode')),
+    .returns(
+      /** @type {MatcherOf<'remotable', StorageNode>} */ (
+        M.remotable('StorageNode')
+      ),
+    ),
 });
 
 /**
@@ -144,17 +165,20 @@ harden(assertPathSegment);
  */
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
+ * @returns {(
+ *   messenger: Callback<(message: StorageMessage) => any>,
+ *   path: string,
+ *   options?: { sequence?: boolean },
+ * ) => StorageNode}
  */
 export const prepareChainStorageNode = zone => {
   /**
    * Create a storage node for a given backing storage interface and path.
    *
-   * @param {import('./types.js').Callback<
-   *   (message: StorageMessage) => any
-   * >} messenger
-   *   a callback for sending a storageMessage object to the storage
-   *   implementation (cf. golang/cosmos/x/vstorage/vstorage.go)
+   * @param {Callback<(message: StorageMessage) => any>} messenger a callback
+   *   for sending a storageMessage object to the storage implementation (cf.
+   *   golang/cosmos/x/vstorage/vstorage.go)
    * @param {string} path
    * @param {object} [options]
    * @param {boolean} [options.sequence] set values with `append` messages
@@ -167,9 +191,7 @@ export const prepareChainStorageNode = zone => {
     'ChainStorageNode',
     ChainStorageNodeI,
     /**
-     * @param {import('./types.js').Callback<
-     *   (message: StorageMessage) => any
-     * >} messenger
+     * @param {Callback<(message: StorageMessage) => any>} messenger
      * @param {string} path
      * @param {object} [options]
      * @param {boolean} [options.sequence]
@@ -252,6 +274,7 @@ const makeHeapChainStorageNode = prepareChainStorageNode(makeHeapZone());
  * @param {boolean} [rootOptions.sequence] employ a wrapping structure that
  *   preserves each value set within a single block, and default child nodes to
  *   do the same
+ * @returns {StorageNode}
  */
 export function makeChainStorageRoot(
   handleStorageMessage,
@@ -282,9 +305,9 @@ const makeNullStorageNode = () => {
  * falling back to an inert object with the correct interface (but incomplete
  * behavior) when that is unavailable.
  *
- * @param {ERef<StorageNode?>} storageNodeRef
+ * @param {ERef<Remote<StorageNode> | null>} storageNodeRef
  * @param {string} childName
- * @returns {Promise<StorageNode>}
+ * @returns {Promise<Remote<StorageNode>>}
  */
 export async function makeStorageNodeChild(storageNodeRef, childName) {
   const existingStorageNode = await storageNodeRef;
@@ -295,9 +318,9 @@ harden(makeStorageNodeChild);
 
 // TODO find a better module for this
 /**
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @returns {(value: PassableCap) => Promise<void>}
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<EMarshaller>} marshaller
+ * @returns {(value: Passable) => Promise<void>}
  */
 export const makeSerializeToStorage = (storageNode, marshaller) => {
   return async value => {

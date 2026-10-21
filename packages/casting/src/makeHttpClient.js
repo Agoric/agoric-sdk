@@ -1,5 +1,10 @@
 // @ts-check
 
+/**
+ * @import {RpcClient} from '@cosmjs/tendermint-rpc';
+ * @import {JsonRpcRequest} from '@cosmjs/json-rpc';
+ */
+
 const { freeze } = Object;
 
 const filterBadStatus = res => {
@@ -23,7 +28,7 @@ const filterBadStatus = res => {
  *
  * @param {string} url
  * @param {typeof window.fetch} fetch
- * @returns {import('@cosmjs/tendermint-rpc').RpcClient}
+ * @returns {RpcClient}
  */
 export const makeTendermintRpcClient = (url, fetch) => {
   const headers = {}; // XXX needed?
@@ -37,7 +42,7 @@ export const makeTendermintRpcClient = (url, fetch) => {
     },
 
     /**
-     * @param {import('@cosmjs/json-rpc').JsonRpcRequest} request
+     * @param {JsonRpcRequest} request
      */
     execute: async request => {
       const settings = {

@@ -1,6 +1,6 @@
 {
   "entryPoints": [
-    "packages/*"
+    "packages/!(swingset-runner)"
   ],
   "exclude": [
   ],

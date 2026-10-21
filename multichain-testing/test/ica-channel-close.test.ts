@@ -121,7 +121,7 @@ const intentionalCloseAccountScenario = test.macro({
     const { channel } = await retryUntilCondition(
       () => remoteQueryClient.queryChannel(rPortID, rChannelID),
       // @ts-expect-error ChannelSDKType.state is a string not a number
-      ({ channel }) => channel?.state === 'STATE_OPEN',
+      result => result.channel?.state === 'STATE_OPEN',
       `ICA channel is open on Host - ${chainName}`,
     );
     t.log('Channel State Before', channel);
@@ -142,7 +142,7 @@ const intentionalCloseAccountScenario = test.macro({
     const { channel: rChannelAfterClose } = await retryUntilCondition(
       () => remoteQueryClient.queryChannel(rPortID, rChannelID),
       // @ts-expect-error ChannelSDKType.state is a string not a number
-      ({ channel }) => channel?.state === 'STATE_CLOSED',
+      result => result.channel?.state === 'STATE_CLOSED',
       `ICA channel is closed on Host - ${chainName}`,
     );
     t.log('Remote Channel State After', rChannelAfterClose);
@@ -157,7 +157,7 @@ const intentionalCloseAccountScenario = test.macro({
     const { channel: lChannelAfterClose } = await retryUntilCondition(
       () => localQueryClient.queryChannel(lPortID, lChannelID),
       // @ts-expect-error ChannelSDKType.state is a string not a number
-      ({ channel }) => channel?.state === 'STATE_CLOSED',
+      result => result.channel?.state === 'STATE_CLOSED',
       `ICA channel is closed on Controller - ${chainName}`,
     );
     t.log('Local Channel State After', lChannelAfterClose);
@@ -182,7 +182,7 @@ const intentionalCloseAccountScenario = test.macro({
 
     const { channels } = await retryUntilCondition(
       () => remoteQueryClient.queryChannels(),
-      ({ channels }) => !!findNewChannel(channels, { rPortID, lPortID }),
+      result => !!findNewChannel(result.channels, { rPortID, lPortID }),
       `ICA channel is reopened on ${chainName} Host`,
       ICA_CHANNEL_CLOSE_TIMEOUT,
     );
@@ -269,7 +269,7 @@ const channelCloseInitScenario = test.macro({
       parseLocalAddress(localAddress);
 
     const dst = {
-      chainId: chainInfo['agoric'].chainId,
+      chainId: chainInfo.agoric.chainId,
       channelID: lChannelID,
       portID: lPortID,
       connectionID: lConnectionID,
@@ -304,7 +304,7 @@ const channelCloseInitScenario = test.macro({
     const { channel } = await retryUntilCondition(
       () => remoteQueryClient.queryChannel(rPortID, rChannelID),
       // @ts-expect-error ChannelSDKType.state is a string not a number
-      ({ channel }) => channel?.state === 'STATE_OPEN',
+      result => result.channel?.state === 'STATE_OPEN',
       'relayer closeChannelInit failed so ICA channel is still open',
     );
     t.log(channel);
@@ -324,7 +324,7 @@ const channelCloseInitScenario = test.macro({
       if (!transferChannel) throw Error('Transfer channel not found.');
 
       const dstTransferChannel = {
-        chainId: chainInfo['agoric'].chainId,
+        chainId: chainInfo.agoric.chainId,
         channelID: transferChannel.counterparty.channel_id as IBCChannelID,
         portID: 'transfer',
         connectionID: lConnectionID,
@@ -361,19 +361,16 @@ const channelCloseInitScenario = test.macro({
       // approx 3-4 blocks time to propagate
       await sleep(10 * 1_000);
 
-      const { channel } = await retryUntilCondition(
-        () =>
-          remoteQueryClient.queryChannel(
-            'transfer',
-            transferChannel.channel_id,
-          ),
+      const { channel_id: transferChannelId } = transferChannel;
+      const { channel: transferChannelRefresh } = await retryUntilCondition(
+        () => remoteQueryClient.queryChannel('transfer', transferChannelId),
         // @ts-expect-error ChannelSDKType.state is a string not a number
-        ({ channel }) => channel?.state === 'STATE_OPEN',
+        result => result.channel?.state === 'STATE_OPEN',
         'relayer closeChannelInit failed so transfer channel is still open',
       );
-      t.log(channel);
+      t.log(transferChannelRefresh);
       t.is(
-        channel?.state,
+        transferChannelRefresh?.state,
         // @ts-expect-error ChannelSDKType.state is a string not a number
         'STATE_OPEN',
         'Transfer channel is still open',

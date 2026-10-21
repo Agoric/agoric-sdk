@@ -173,6 +173,10 @@ test('through issuing chain', async t => {
     // callers of `.makeTransferRoute` will provide these fields themselves:
     sender: 'agoric123',
   });
+  t.not(
+    'encoding' in transferMsg,
+    'encoding should not be present on MsgTransfer',
+  );
   t.like(transferMsg, {
     memo: '{"forward":{"receiver":"osmo1234","port":"transfer","channel":"channel-1","retries":3,"timeout":"10m"}}',
     receiver: 'pfm',

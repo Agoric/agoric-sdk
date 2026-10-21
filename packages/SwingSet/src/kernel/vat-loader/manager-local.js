@@ -36,7 +36,7 @@ export function makeLocalVatManagerFactory({
     return { syscall, finish };
   }
 
-  function createFromSetup(vatID, managerOptions) {
+  function createFromSetup(_vatID, managerOptions) {
     const { setup } = managerOptions;
     assert.typeof(setup, 'function', 'setup is not an in-realm function');
 

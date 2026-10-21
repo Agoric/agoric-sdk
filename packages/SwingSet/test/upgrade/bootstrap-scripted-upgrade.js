@@ -29,7 +29,7 @@ export const buildRootObject = () => {
   // for debugging, this array starts with a dummy element so
   // the vref of each contained object in an importing vat
   // (o-NN where NN starts at 1) is aligned with its index
-  /** @type {[string, ...object]} */
+  /** @type {[string, ...any[]]} */
   const importSensors = ['skip0'];
   for (let i = 1; i <= NUM_SENSORS; i += 1) {
     importSensors.push(Far(`import-${i}`, {}));

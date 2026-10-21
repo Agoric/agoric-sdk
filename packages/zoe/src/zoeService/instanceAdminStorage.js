@@ -1,14 +1,14 @@
 import {
   canBeDurable,
-  makeScalarBigSetStore,
-  provideDurableWeakMapStore,
-  prepareKindMulti,
-  prepareExoClassKit,
   M,
+  makeScalarBigSetStore,
+  prepareExoClassKit,
+  prepareKindMulti,
   provide,
+  provideDurableWeakMapStore,
 } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { q, Fail } from '@endo/errors';
 import { defineDurableHandle } from '../makeHandle.js';
 import {
   BrandKeywordRecordShape,
@@ -20,6 +20,10 @@ import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {HandleOfferResult} from '../internal-types.js';
+ * @import {SeatHandle} from '../internal-types.js';
+ * @import {ZoeSeatAdmin} from '../internal-types.js';
  */
 
 /**
@@ -51,7 +55,7 @@ const InstanceAdminStorageIKit = harden({
   }),
 });
 
-/** @param {import('@agoric/vat-data').Baggage} baggage */
+/** @param {Baggage} baggage */
 export const makeInstanceAdminStorage = baggage => {
   const makeIAS = prepareExoClassKit(
     baggage,
@@ -114,8 +118,8 @@ export const makeInstanceAdminStorage = baggage => {
 harden(makeInstanceAdminStorage);
 
 /**
- * @param {import('@agoric/vat-data').Baggage} zoeBaggage
- * @param {ReturnType<makeZoeSeatAdminFactory>} makeZoeSeatAdminKit
+ * @param {Baggage} zoeBaggage
+ * @param {ReturnType<typeof makeZoeSeatAdminFactory>} makeZoeSeatAdminKit
  */
 const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
   const makeSeatHandle = defineDurableHandle(zoeBaggage, 'Seat');
@@ -261,7 +265,7 @@ const helperBehavior = {
  */
 
 /**
- * @param {import('@agoric/vat-data').Baggage} zoeBaggage
+ * @param {Baggage} zoeBaggage
  * @param {WeakMapStore<SeatHandle, ZoeSeatAdmin>} seatHandleToZoeSeatAdmin
  */
 export const makeInstanceAdminMaker = (

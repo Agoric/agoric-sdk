@@ -1,20 +1,15 @@
 package keeper
 
 import (
-	"fmt"
-
-	corestore "cosmossdk.io/core/store"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	sdkioerrors "cosmossdk.io/errors"
-	capability "github.com/cosmos/ibc-go/modules/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 
+	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 )
@@ -30,43 +25,36 @@ type Keeper struct {
 	cdc codec.Codec
 
 	channelKeeper types.ChannelKeeper
-	portKeeper    types.PortKeeper
 	clientKeeper  types.ClientKeeper
 
 	// Filled out by `WithScope`
-	scopedKeeper types.ScopedKeeper
-	storeService corestore.KVStoreService
-	pushAction   vm.ActionPusher
+	scope *DynamicPortScope
 }
 
 // NewKeeper creates a new vibc Keeper instance
 func NewKeeper(
 	cdc codec.Codec,
 	channelKeeper types.ChannelKeeper,
-	portKeeper types.PortKeeper,
 	clientKeeper types.ClientKeeper,
 ) Keeper {
 
 	return Keeper{
 		cdc:           cdc,
 		channelKeeper: channelKeeper,
-		portKeeper:    portKeeper,
 		clientKeeper:  clientKeeper,
 	}
 }
 
 // WithScope returns a new Keeper copied from the receiver, but with the given
-// store key, scoped keeper, and push action.
-func (k Keeper) WithScope(storeService corestore.KVStoreService, scopedKeeper types.ScopedKeeper, pushAction vm.ActionPusher) Keeper {
-	k.storeService = storeService
-	k.scopedKeeper = scopedKeeper
-	k.pushAction = pushAction
+// dynamic port scope.
+func (k Keeper) WithScope(scope *DynamicPortScope) Keeper {
+	k.scope = scope
 	return k
 }
 
 // PushAction sends a vm.Action to the VM controller.
 func (k Keeper) PushAction(ctx sdk.Context, action vm.Action) error {
-	return k.pushAction(ctx, action)
+	return k.scope.PushAction(ctx, action)
 }
 
 // GetICS4Wrapper returns the ICS4Wrapper interface for the keeper.
@@ -90,20 +78,10 @@ func (k Keeper) GetChannel(ctx sdk.Context, portID, channelID string) (channelty
 func (k Keeper) ReceiveChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string,
 	portID, rPortID, version string,
 ) error {
-	capName := host.PortPath(portID)
-	portCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return sdkioerrors.Wrapf(porttypes.ErrInvalidPort, "could not retrieve port capability at: %s", capName)
-	}
 	counterparty := channeltypes.Counterparty{
 		PortId: rPortID,
 	}
-	channelID, chanCap, err := k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, portCap, counterparty, version)
-	if err != nil {
-		return err
-	}
-	chanCapName := host.ChannelCapabilityPath(portID, channelID)
-	err = k.ClaimCapability(ctx, chanCap, chanCapName)
+	channelID, err := k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, counterparty, version)
 	if err != nil {
 		return err
 	}
@@ -120,44 +98,32 @@ func (k Keeper) ReceiveSendPacket(ctx sdk.Context, packet ibcexported.PacketI) (
 	timeoutTimestamp := packet.GetTimeoutTimestamp()
 	data := packet.GetData()
 
-	capName := host.ChannelCapabilityPath(sourcePort, sourceChannel)
-	chanCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return 0, sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	return k.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
+	return k.SendPacket(ctx, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 // SendPacket defines a wrapper function for the channel Keeper's function
 // in order to expose it to the vibc IBC handler.
 func (k Keeper) SendPacket(
 	ctx sdk.Context,
-	chanCap *capability.Capability,
 	sourcePort string,
 	sourceChannel string,
 	timeoutHeight clienttypes.Height,
 	timeoutTimestamp uint64,
 	data []byte,
 ) (uint64, error) {
-	return k.channelKeeper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
+	return k.channelKeeper.SendPacket(ctx, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 // ReceiveWriteAcknowledgement wraps the keeper's WriteAcknowledgment function.
 func (k Keeper) ReceiveWriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error {
-	portID := packet.GetDestPort()
-	channelID := packet.GetDestChannel()
-	capName := host.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	return k.WriteAcknowledgement(ctx, chanCap, packet, ack)
+	return k.WriteAcknowledgement(ctx, packet, ack)
 }
 
 // WriteAcknowledgement defines a wrapper function for the channel Keeper's function
 // in order to expose it to the vibc IBC handler.
-func (k Keeper) WriteAcknowledgement(ctx sdk.Context, chanCap *capability.Capability, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error {
-	return k.channelKeeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
+func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error {
+	channelPacket := agtypes.CopyToChannelPacket(packet)
+	return k.channelKeeper.WriteAcknowledgement(ctx, channelPacket, ack)
 }
 
 // ReceiveWriteOpenTryChannel wraps the keeper's WriteOpenTryChannel function.
@@ -178,12 +144,7 @@ func (k Keeper) WriteOpenTryChannel(ctx sdk.Context, portID, channelID string, o
 // ReceiveChanCloseInit is a wrapper function for the channel Keeper's function
 // in order to expose it to the vibc IBC handler.
 func (k Keeper) ReceiveChanCloseInit(ctx sdk.Context, portID, channelID string) error {
-	capName := host.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	err := k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
+	err := k.channelKeeper.ChanCloseInit(ctx, portID, channelID)
 	if err != nil {
 		return err
 	}
@@ -193,35 +154,33 @@ func (k Keeper) ReceiveChanCloseInit(ctx sdk.Context, portID, channelID string) 
 // ReceiveBindPort is a wrapper function for the port Keeper's function in order
 // to expose it to the vibc IBC handler.
 func (k Keeper) ReceiveBindPort(ctx sdk.Context, portID string) error {
-	portPath := host.PortPath(portID)
-	_, ok := k.GetCapability(ctx, portPath)
-	if ok {
-		return fmt.Errorf("port %s is already bound", portID)
-	}
-	cap := k.portKeeper.BindPort(ctx, portID)
-	return k.ClaimCapability(ctx, cap, portPath)
+	return k.BindPort(ctx, portID)
+}
+
+// BindPort dynamically binds an exact port ID to the vibc IBC module.
+func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
+	return k.scope.BindPort(ctx, portID)
+}
+
+// RevokePort removes a previously dynamic exact port binding.
+func (k Keeper) RevokePort(ctx sdk.Context, portID string) error {
+	return k.scope.RevokePort(ctx, portID)
+}
+
+// LoadDynamicPortBindings rehydrates persisted dynamic bindings into the live router.
+func (k Keeper) LoadDynamicPortBindings(ctx sdk.Context) error {
+	return k.scope.LoadBindings(ctx)
 }
 
 // ReceiveTimeoutExecuted is a wrapper function for the channel Keeper's
 // function in order to expose it to the vibc IBC handler.
 func (k Keeper) ReceiveTimeoutExecuted(ctx sdk.Context, packet ibcexported.PacketI) error {
-	portID := packet.GetSourcePort()
-	channelID := packet.GetSourceChannel()
-	capName := host.ChannelCapabilityPath(portID, channelID)
-	chanCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
-	return k.channelKeeper.TimeoutExecuted(ctx, chanCap, packet)
+	return k.TimeoutExecuted(ctx, packet)
 }
 
-// ClaimCapability allows the vibc module to claim a capability that IBC module
-// passes to it.
-func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capability.Capability, name string) error {
-	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
-}
-
-// GetCapability allows the vibc module to retrieve a capability.
-func (k Keeper) GetCapability(ctx sdk.Context, name string) (*capability.Capability, bool) {
-	return k.scopedKeeper.GetCapability(ctx, name)
+// TimeoutExecuted defines a wrapper function for the channel Keeper's function
+// in order to expose it to the vibc IBC handler.
+func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet ibcexported.PacketI) error {
+	channelPacket := agtypes.CopyToChannelPacket(packet)
+	return k.channelKeeper.TimeoutExecuted(ctx, channelPacket)
 }

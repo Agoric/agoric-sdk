@@ -11,9 +11,11 @@ import {
 import { Shape as NetworkShape } from '@agoric/network';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 
 const MsgSend = CodecHelper(MsgSendType);
+const MsgTransfer = CodecHelper(MsgTransferType);
 
 const { Vow$ } = NetworkShape;
 
@@ -29,6 +31,16 @@ const { Vow$ } = NetworkShape;
  * @import {TargetApp, TargetRegistration} from './bridge-target.js';
  * @import {BankManager, Bank} from './vat-bank.js';
  * @import {IBCEvent, IBCPacket, ScopedBridgeManager} from './types.js';
+ * @import {TransferMiddleware} from './transfer.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {WeakMapStore} from '@agoric/store';
+ */
+
+/**
+ * Duplicated from @agoric/orchestration to avoid pulling that package's
+ * source files into vats's type-check graph (vats does not depend on it).
+ *
+ * @typedef {`${string}1${string}`} Bech32Address
  */
 
 /**
@@ -45,27 +57,13 @@ const { Vow$ } = NetworkShape;
  */
 
 /**
- * @template {unknown[]} T
- * @typedef {Promise<T>} PromiseVowOfTupleMappedToGenerics Temporary hack
- *
- *   UNTIL(microsoft/TypeScript#57122): This type should be replaced with just
- *   PromiseVow<T>, but TypeScript doesn't understand that the result of a
- *   mapping a tuple type using generics is iterable:
- *
- *   'JsonSafe<MsgTransferResponse & { '@type':
- *   "/ibc.applications.transfer.v1.MsgTransferResponse"; }>[] |
- *   Vow<JsonSafe<MsgTransferResponse & { ...; }>[]>' must have a
- *   '[Symbol.iterator]()' method that returns an iterator.
- */
-
-/**
  * Send a batch of query requests to the local chain. Unless there is a system
  * error, will return all results to indicate their success or failure.
  *
  * @template {TypedJson[]} [RT=TypedJson[]]
  * @callback QueryManyFn
  * @param {RT} requests
- * @returns {PromiseVowOfTupleMappedToGenerics<{
+ * @returns {PromiseVow<{
  *   [K in keyof RT]: JsonSafe<{
  *     error?: string;
  *     reply: ResponseTo<RT[K]>;
@@ -91,7 +89,7 @@ const { Vow$ } = NetworkShape;
  * @typedef {{
  *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bankManager: BankManager;
- *   transfer: import('./transfer.js').TransferMiddleware;
+ *   transfer: TransferMiddleware;
  * }} LocalChainPowers
  */
 
@@ -123,7 +121,7 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
 });
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools & {
  *   powersForTransfer: AdditionalTransferPowers;
  * }} powers
@@ -152,7 +150,7 @@ export const prepareLocalChainAccountKit = (
       }),
     },
     /**
-     * @param {import('@agoric/orchestration').Bech32Address} address
+     * @param {Bech32Address} address
      * @param {AccountPowers} accountPowers
      */
     (address, { bank, system, transfer }) => ({
@@ -352,7 +350,7 @@ export const prepareLocalChainAccountKit = (
          * @template {TypedJson[]} MT messages tuple (use const with multiple
          *   elements or it will be a mixed array)
          * @param {MT} messages
-         * @returns {PromiseVowOfTupleMappedToGenerics<ResponseToMany<MT>>}
+         * @returns {PromiseVow<ResponseToMany<MT>>}
          * @see {typedJson} which can be used on arguments to get typed return
          * values.
          */
@@ -366,9 +364,12 @@ export const prepareLocalChainAccountKit = (
           const rewrittenMsgs = messages.map((msg, i) => {
             const { '@type': typeUrl, ...value } = msg;
             if (typeUrl !== MsgSend.typeUrl) {
-              console.info(
-                `Skipping message ${i} of type ${typeUrl} as it is not a MsgSend`,
-              );
+              // Make this message quieter.
+              if (typeUrl === MsgTransfer.typeUrl) {
+                console.info(
+                  `Skipping message ${i} of type ${typeUrl} as it is not a MsgSend`,
+                );
+              }
               return msg;
             }
 
@@ -421,9 +422,7 @@ export const prepareLocalChainAccountKit = (
 
           const notifiedV =
             /**
-             * @type {PromiseVowOfTupleMappedToGenerics<
-             *   ResponseToMany<MT>
-             * >}
+             * @type {PromiseVow<ResponseToMany<MT>>}
              */
             (
               /** @type {unknown} */ (
@@ -467,7 +466,7 @@ export const LocalChainI = M.interface('LocalChain', {
 });
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {ReturnType<typeof prepareLocalChainAccountKit>} makeAccountKit
  * @param {VowTools} vowTools
  */
@@ -517,7 +516,7 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
         async query(request) {
           const requests = harden([request]);
           return watch(
-            E(this.facets.public).queryMany(requests),
+            E(this.facets.public).queryMany(/** @type {any} */ (requests)),
             this.facets.extractFirstQueryResultWatcher,
           );
         },
@@ -561,7 +560,7 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
 };
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools & { powersForTransfer: AdditionalTransferPowers }} powers
  */
 export const prepareLocalChainTools = (zone, powers) => {

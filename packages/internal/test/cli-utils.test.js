@@ -1,4 +1,5 @@
-/* eslint-env node */
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { toCLIOptions } from '../src/cli-utils.js';

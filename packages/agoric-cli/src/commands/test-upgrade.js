@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-env node */
 import { fetchEnvNetworkConfig, makeWalletUtils } from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
 import { CommanderError } from 'commander';
@@ -8,17 +7,22 @@ import { bigintReplacer } from '../lib/format.js';
 import { sendAction } from '../lib/wallet.js';
 
 /**
+ * @import {Writable} from 'stream';
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ */
+
+/**
  * Make commands for testing.
  *
  * @param {{
  *   env: Partial<Record<string, string>>,
- *   stdout: Pick<import('stream').Writable,'write'>,
- *   stderr: Pick<import('stream').Writable,'write'>,
+ *   stdout: Pick<Writable,'write'>,
+ *   stderr: Pick<Writable,'write'>,
  *   now: () => number,
  *   createCommand: // Note: includes access to process.stdout, .stderr, .exit
  *     typeof import('commander').createCommand,
  *   execFileSync: typeof import('child_process').execFileSync,
- *   setTimeout: typeof setTimeout,
+ *   setTimeout: typeof globalThis.setTimeout,
  * }} process
  * @param {{ fetch: typeof window.fetch }} net
  */
@@ -75,7 +79,7 @@ export const makeTestCommand = (
       const { home, keyringBackend: backend } = testCmd.opts();
 
       const io = { ...networkConfig, execFileSync, delay, stdout };
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      /** @type {OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {

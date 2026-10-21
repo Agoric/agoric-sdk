@@ -10,7 +10,7 @@ export function buildRootObject(vatPowers, vatParameters) {
   });
 
   return Far('root', {
-    async bootstrap(vats, devices) {
+    async bootstrap(_vats, devices) {
       const { argv } = vatParameters;
       harden(argv);
       D(devices.bridge).registerInboundHandler(handler);

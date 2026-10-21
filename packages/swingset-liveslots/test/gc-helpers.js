@@ -21,7 +21,7 @@ export function buildRootObject(vatPowers) {
   } = VatData;
 
   let nextStoreNumber = 5;
-  let heldStore = null;
+  let heldStore = /** @type {any} */ (null);
 
   const holders = [];
 

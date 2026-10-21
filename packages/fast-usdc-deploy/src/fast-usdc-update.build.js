@@ -23,12 +23,12 @@ const feedPolicyUsage = 'use --feedPolicy <policy> ...';
  */
 
 /**
- * @param {Parameters<CoreEvalBuilder>[0]} powers
+ * @param {Parameters<CoreEvalBuilder>[0]} _powers
  * @param {FastUSDCConfig} config
  * @satisfies {CoreEvalBuilder}
  */
 export const updateProposalBuilder = async (
-  powers,
+  _powers,
   /** @type {Pick<FastUSDCConfig, 'feedPolicy'>} */ config,
 ) => {
   return harden({

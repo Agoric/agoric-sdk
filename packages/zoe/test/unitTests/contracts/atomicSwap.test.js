@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -28,8 +28,11 @@ test('zoe - atomicSwap', async t => {
         // pack the contract
         const bundle = await bundleSource(atomicSwapRoot);
         // install the contract
-        vatAdminState.installBundle('b1-atomicswap', bundle);
-        const installationP = E(zoe).installBundleID('b1-atomicswap');
+        const b1atomicswap = vatAdminState.registerBundle(
+          'b1-atomicswap',
+          bundle,
+        );
+        const installationP = E(zoe).installBundleID(b1atomicswap);
         return installationP;
       },
       startInstance: async installation => {
@@ -195,8 +198,11 @@ test('zoe - non-fungible atomicSwap', async t => {
         // pack the contract
         const bundle = await bundleSource(atomicSwapRoot);
         // install the contract
-        vatAdminState.installBundle('b1-atomicswap', bundle);
-        const installationP = E(zoe).installBundleID('b1-atomicswap');
+        const b1atomicswap = vatAdminState.registerBundle(
+          'b1-atomicswap',
+          bundle,
+        );
+        const installationP = E(zoe).installBundleID(b1atomicswap);
         return installationP;
       },
       startInstance: async installation => {
@@ -353,8 +359,8 @@ test('zoe - atomicSwap like-for-like', async t => {
   // pack the contract
   const bundle = await bundleSource(atomicSwapRoot);
   // install the contract
-  vatAdminState.installBundle('b1-atomicswap', bundle);
-  const installation = await E(zoe).installBundleID('b1-atomicswap');
+  const b1atomicswap = vatAdminState.registerBundle('b1-atomicswap', bundle);
+  const installation = await E(zoe).installBundleID(b1atomicswap);
 
   // Setup Alice
   const aliceMoolaPayment = moolaMint.mintPayment(moola(3n));

@@ -16,14 +16,21 @@ import {
   mockSwingsetVats,
 } from '../tools/boot-test-utils.js';
 
+/**
+ * @import {ExecutionContext} from 'ava';
+ * @import {Bundle} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {BridgeHandler} from '../src/types.js';
+ */
+
 //#region ambient authority limited to test set-up
-/** @typedef {import('ava').ExecutionContext<ReturnType<makeTestContext>>} ECtx */
+/** @typedef {ExecutionContext<ReturnType<typeof makeTestContext>>} ECtx */
 
 const makeTestContext = () => {
   const bundleSource = bundleSourceAmbient;
   const loadBundle = async specifier => {
     const modulePath = new URL(specifier, import.meta.url).pathname;
-    /** @type {import('@agoric/swingset-vat').Bundle} */
+    /** @type {Bundle} */
     const bundle = await bundleSource(modulePath);
     return bundle;
   };
@@ -39,7 +46,7 @@ test.before(t => {
  * @callback BuildRootObject
  * @param {{}} vatPowers
  * @param {{}} vatParameters
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 
 /**
@@ -56,7 +63,7 @@ const testBootstrap = (label, entryPoint, doCoreProposals) => {
   };
 
   test(`test manifest permits: ${label} gov: ${doCoreProposals}`, async t => {
-    const mock = makeMock(t.log);
+    const mock = await makeMock(t.log);
     const vatPowers = {
       D: mockDProxy,
       logger: t.log,
@@ -67,7 +74,7 @@ const testBootstrap = (label, entryPoint, doCoreProposals) => {
     };
     const baggage = makeScalarBigMapStore('test-baggage', { durable: true });
     const root = entryPoint(vatPowers, vatParameters, baggage);
-    const vats = mockSwingsetVats(mock);
+    const vats = await mockSwingsetVats(mock);
     await t.notThrowsAsync(E(root).bootstrap(vats, mock.devices));
   });
 };
@@ -80,7 +87,7 @@ testBootstrap('sim', buildSimRootObject, true);
 
 test('evaluateBundleCap is available to core eval', async (/** @type {ECtx} */ t) => {
   const { loadBundle } = t.context;
-  /** @type {undefined | import('../src/types.js').BridgeHandler} */
+  /** @type {undefined | BridgeHandler} */
   let handler;
   const { produce, consume } = makePromiseSpace(t.log);
   const { admin, vatAdminState } = makeFakeVatAdmin();
@@ -92,7 +99,7 @@ test('evaluateBundleCap is available to core eval', async (/** @type {ECtx} */ t
     const bundleID = bundle.endoZipBase64Sha512;
     vatAdminState.installBundle(bundleID, bundle);
     const bridgeManager = {
-      register: (name, fn) => {
+      register: (_name, fn) => {
         handler = fn;
       },
     };

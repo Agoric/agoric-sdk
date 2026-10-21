@@ -2,6 +2,11 @@
 import { assert } from '@endo/errors';
 import { Far } from '@endo/far';
 
+/**
+ * @import {RpcClient} from '@cosmjs/tendermint-rpc';
+ * @import {JsonRpcRequest} from '@cosmjs/json-rpc';
+ */
+
 const { freeze } = Object;
 
 const jsonType = { 'Content-Type': 'application/json' };
@@ -27,7 +32,7 @@ const filterBadStatus = res => {
  *
  * @param {string} url
  * @param {typeof globalThis.fetch} fetch
- * @returns {import('@cosmjs/tendermint-rpc').RpcClient}
+ * @returns {RpcClient}
  */
 export const makeHttpClient = (url, fetch) => {
   const headers = {}; // XXX needed?
@@ -41,7 +46,7 @@ export const makeHttpClient = (url, fetch) => {
     },
 
     /**
-     * @param {import('@cosmjs/json-rpc').JsonRpcRequest} request
+     * @param {JsonRpcRequest} request
      */
     execute: async request => {
       const settings = {

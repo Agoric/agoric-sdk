@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import * as transferLib from '../../src/cli/transfer.js';
@@ -109,6 +111,7 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
         return {};
       }
     }
+    throw Error(`unexpected query: ${query}`);
   });
   const nobleSignerAddress = 'noble09876';
   const signerMock = makeMockSigner();
@@ -190,6 +193,7 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
         return {};
       }
     }
+    throw Error(`unexpected query: ${query}`);
   });
   const nobleSignerAddress = 'noble09876';
   const signerMock = makeMockSigner();

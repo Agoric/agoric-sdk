@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from '@endo/ses-ava/prepare-endo.js';
 import { makeTracer } from '../src/debug.js';
 
@@ -20,6 +22,10 @@ test('repro #11845 makeTracer isolation breach', t => {
       const bobTracer = makeTracer('bob');
       let secretCount = 666;
       const allegedT = harden({
+        /**
+         * @param {string} key
+         * @param {...unknown} _
+         */
         log(key, ..._) {
           const matches = keyRegexp.exec(key);
           if (matches) {

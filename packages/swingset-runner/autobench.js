@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'child_process';
-import { existsSync, unlinkSync } from 'fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, unlinkSync } from 'node:fs';
 
 const spawnNodeSync = args => spawnSync('node', args, { stdio: 'inherit' });
 const SUITES = ['exchangeBenchmark', 'pingPongBenchmark', 'swapBenchmark'];

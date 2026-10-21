@@ -9,6 +9,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+import type { Installation } from '@agoric/zoe';
 import type {
   CosmosChainInfo,
   IBCConnectionInfo,

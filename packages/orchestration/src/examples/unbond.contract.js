@@ -10,6 +10,9 @@ import * as flows from './unbond.flows.js';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**
@@ -21,15 +24,15 @@ import * as flows from './unbond.flows.js';
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  *   timerService: Remote<TimerService>;
- * }} privateArgs
+ * }} _privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
 const contract = async (
   zcf,
-  privateArgs,
+  _privateArgs,
   zone,
   { orchestrateAll, zcfTools },
 ) => {

@@ -1,10 +1,9 @@
 #!/usr/bin/env node
-// @jessie-check
 
 // NOTE: Runs outside SES
 
-import process from 'process';
-import fs from 'fs';
+import process from 'node:process';
+import fs from 'node:fs';
 import toml from '@iarna/toml';
 
 // point this at ~/.ag-cosmos-chain/config/config.toml

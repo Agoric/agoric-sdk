@@ -2,20 +2,19 @@
 
 /* global WeakRef FinalizationRegistry */
 
-import fs from 'fs';
+import fs from 'node:fs';
 import '@agoric/internal/src/install-ses-debug.js';
 
-import zlib from 'zlib';
-import readline from 'readline';
-import process from 'process';
-import { spawn } from 'child_process';
-import { promisify } from 'util';
-import { createHash } from 'crypto';
-import { Readable, finished as finishedCallback } from 'stream';
-import { performance } from 'perf_hooks';
+import zlib from 'node:zlib';
+import readline from 'node:readline';
+import process from 'node:process';
+import { spawn } from 'node:child_process';
+import { parseArgs, promisify } from 'node:util';
+import { createHash } from 'node:crypto';
+import { Readable, finished as finishedCallback } from 'node:stream';
+import { performance } from 'node:perf_hooks';
 import { tmpName, dirSync as tmpDirSync } from 'tmp';
 import sqlite3 from 'better-sqlite3';
-import yargsParser from 'yargs-parser';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeSnapStore } from '@agoric/swing-store';
@@ -32,116 +31,183 @@ import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 
 /**
  * @import {SnapStore} from '@agoric/swing-store';
+ * @import {ManagerType} from '../src/types-external.js';
+ * @import {VatManagerFactory} from '../src/types-internal.js';
+ * @import {KernelKeeper} from '../src/types-external.js';
+ * @import {VatKeeper} from '../src/types-external.js';
+ * @import {BundleHandler} from '../src/controller/bundle-handler.js';
+ * @import {KernelSlog} from '../src/types-external.js';
+ * @import {VatPowers} from '../src/types-external.js';
+ * @import {VatManager} from '../src/types-internal.js';
+ * @import {Bundle} from '../src/types-external.js';
+ * @import {ManagerOptions} from '../src/types-internal.js';
  */
 
 const finished = promisify(finishedCallback);
 
+/**
+ * @typedef {{
+ *   useSdkBundles: boolean;
+ *   ignoreSnapshotHashDifference: boolean;
+ *   ignoreConcurrentWorkerDivergences: boolean;
+ *   forcedReloadFromSnapshot: boolean;
+ *   keepWorkerExplicitLoad: boolean;
+ *   keepWorkerHashDifference: boolean;
+ *   skipExtraVcSyscalls: boolean;
+ *   simulateVcSyscalls: boolean;
+ *   useCustomSnapStore: boolean;
+ *   recordXsnapTrace: boolean;
+ *   useXsnapDebug: boolean;
+ *   forcedSnapshotInitial: number;
+ *   forcedSnapshotInterval: number;
+ *   keepWorkerInitial: number;
+ *   keepWorkerRecent: number;
+ *   keepWorkerInterval: number;
+ *   keepWorkerTransactionNums: number[];
+ *   loadSnapshots?: Record<number, string[]>;
+ *   _: string[];
+ * }} ReplayArgs
+ */
+
+/**
+ * @param {string | boolean | (string | boolean)[] | undefined} value
+ * @param {boolean} defaultValue
+ */
+const booleanOption = (value, defaultValue) =>
+  typeof value === 'boolean' ? value : defaultValue;
+
+/**
+ * @param {string | boolean | (string | boolean)[] | undefined} value
+ * @param {string} defaultValue
+ */
+const stringOption = (value, defaultValue) =>
+  typeof value === 'string' ? value : defaultValue;
+
+/** @param {string | boolean | (string | boolean)[] | undefined} value */
+const stringArrayOption = value =>
+  typeof value === 'string'
+    ? [value]
+    : Array.isArray(value)
+      ? value.filter(v => typeof v === 'string')
+      : [];
+
 // TODO: switch to full yargs for documenting output
-const argv = yargsParser(process.argv.slice(2), {
-  boolean: [
+const { values: rawArgv, positionals } = parseArgs({
+  args: process.argv.slice(2),
+  options: {
     // Use built bundles from the current SDK
     // Disable if bundles were previously extracted form a Kernel DB.
-    'useSdkBundles',
+    useSdkBundles: { type: 'boolean', default: false },
 
     // Enable to continue if snapshot hash doesn't match hash in transcript's
     // 'save', or when the hash of the concurrent workers snapshots don't all
     // match each other.
-    'ignoreSnapshotHashDifference',
+    ignoreSnapshotHashDifference: { type: 'boolean', default: true },
 
     // Enable to continue if concurrent workers do not produce the exact same
     // set of syscalls for a delivery. With special virtual collection syscall
     // handling (see below), all workers would normally have to diverge from
     // the transcript in the same way for the delivery to be considered valid.
-    'ignoreConcurrentWorkerDivergences',
+    ignoreConcurrentWorkerDivergences: { type: 'boolean', default: true },
 
     // If a snapshot of a worker is taken, create a new worker from that
     // snapshot, even if no explicit snapshot load instruction is found in the
     // input transcript.
-    'forcedReloadFromSnapshot',
+    forcedReloadFromSnapshot: { type: 'boolean', default: true },
 
     // Mark workers loaded from an explicit transcript load instruction as
     // being ineligible from being reaped.
-    'keepWorkerExplicitLoad',
+    keepWorkerExplicitLoad: { type: 'boolean', default: true },
 
     // When `forcedReloadFromSnapshot` is enabled, if the hash of the/ snapshot
     // had differences (see `ignoreSnapshotHashDifference`), mark the worker(s)
     // created for this/these snapshot(s) as being ineligible from being reaped.
-    'keepWorkerHashDifference',
+    keepWorkerHashDifference: { type: 'boolean', default: true },
 
     // Ignore Virtual Collection metadata syscalls that were recorded in the
     // transcript but which are not performed by the worker.
-    'skipExtraVcSyscalls',
+    skipExtraVcSyscalls: { type: 'boolean', default: true },
 
     // Simulate Virtual Collection metadata syscalls which were not recorded in
     // the transcript but which are performed by the worker. This only works if
     // previous syscalls for the same metadata were recorded.
-    'simulateVcSyscalls',
+    simulateVcSyscalls: { type: 'boolean', default: true },
 
     // Use a simplified snapstore which derives the snapshot filename from the
     // transcript and doesn't compress the snapshot
-    'useCustomSnapStore',
+    useCustomSnapStore: { type: 'boolean', default: false },
 
     // Enable to output xsnap debug traces corresponding to the transcript replay
-    'recordXsnapTrace',
+    recordXsnapTrace: { type: 'boolean', default: false },
 
     // Use the debug version of the xsnap worker
-    'useXsnapDebug',
-  ],
-  number: [
+    useXsnapDebug: { type: 'boolean', default: false },
+
     // Force making a snapshot after the "initial" deliveryNum, and every
     // "interval" delivery after. The default Swingset config is after delivery
     // 2 and every 1000 deliveries after (1002, 2002, etc.)
-    'forcedSnapshotInitial',
-    'forcedSnapshotInterval',
+    forcedSnapshotInitial: { type: 'string', default: '2' },
+    forcedSnapshotInterval: { type: 'string', default: '1000' },
 
     // Do not reap the first n "initial" and m "recent" workers.
     // This may keep less workers than the first n or m * forcedSnapshotInterval
     // if there are snapshots with different hashes taken for the same delivery
-    'keepWorkerInitial',
-    'keepWorkerRecent',
+    keepWorkerInitial: { type: 'string', default: '0' },
+    keepWorkerRecent: { type: 'string', default: '10' },
 
     // Keep all workers which are made at deliveryNum which are a multiple of
     // n * forcedSnapshotInterval from the first transcript delivery replayed.
     // For example if the value of this option is 10, the snapshot interval is
     // the default of 1000, and the first transcript loaded is 52002, then all
     // workers loaded from delivery 62002, 72002, etc. won't be reaped.
-    'keepWorkerInterval',
-  ],
-  array: [
-    {
-      // Keep all workers which are made at the explicitly provided deliveryNum
-      key: 'keepWorkerTransactionNums',
-      number: true,
-    },
-  ],
-  default: {
-    useSdkBundles: false,
-    ignoreSnapshotHashDifference: true,
-    ignoreConcurrentWorkerDivergences: true,
-    forcedSnapshotInitial: 2,
-    forcedSnapshotInterval: 1000,
-    forcedReloadFromSnapshot: true,
-    keepWorkerInitial: 0,
-    keepWorkerRecent: 10,
-    keepWorkerInterval: 10,
-    keepWorkerExplicitLoad: true,
-    keepWorkerHashDifference: true,
-    keepWorkerTransactionNums: [],
-    skipExtraVcSyscalls: true,
-    simulateVcSyscalls: true,
-    useCustomSnapStore: false,
-    recordXsnapTrace: false,
-    useXsnapDebug: false,
+    keepWorkerInterval: { type: 'string', default: '10' },
+
+    // Keep all workers which are made at the explicitly provided deliveryNum
+    keepWorkerTransactionNums: { type: 'string', multiple: true, default: [] },
   },
-  config: {
-    config: true,
-  },
-  configuration: {
-    'duplicate-arguments-array': false,
-    'flatten-duplicate-arrays': false,
-    'greedy-arrays': true,
-  },
+  allowPositionals: true,
+  strict: false,
 });
+
+/** @type {ReplayArgs} */
+const argv = {
+  useSdkBundles: booleanOption(rawArgv.useSdkBundles, false),
+  ignoreSnapshotHashDifference: booleanOption(
+    rawArgv.ignoreSnapshotHashDifference,
+    true,
+  ),
+  ignoreConcurrentWorkerDivergences: booleanOption(
+    rawArgv.ignoreConcurrentWorkerDivergences,
+    true,
+  ),
+  forcedReloadFromSnapshot: booleanOption(
+    rawArgv.forcedReloadFromSnapshot,
+    true,
+  ),
+  keepWorkerExplicitLoad: booleanOption(rawArgv.keepWorkerExplicitLoad, true),
+  keepWorkerHashDifference: booleanOption(
+    rawArgv.keepWorkerHashDifference,
+    true,
+  ),
+  skipExtraVcSyscalls: booleanOption(rawArgv.skipExtraVcSyscalls, true),
+  simulateVcSyscalls: booleanOption(rawArgv.simulateVcSyscalls, true),
+  useCustomSnapStore: booleanOption(rawArgv.useCustomSnapStore, false),
+  recordXsnapTrace: booleanOption(rawArgv.recordXsnapTrace, false),
+  useXsnapDebug: booleanOption(rawArgv.useXsnapDebug, false),
+  forcedSnapshotInitial: Number(
+    stringOption(rawArgv.forcedSnapshotInitial, '2'),
+  ),
+  forcedSnapshotInterval: Number(
+    stringOption(rawArgv.forcedSnapshotInterval, '1000'),
+  ),
+  keepWorkerInitial: Number(stringOption(rawArgv.keepWorkerInitial, '0')),
+  keepWorkerRecent: Number(stringOption(rawArgv.keepWorkerRecent, '10')),
+  keepWorkerInterval: Number(stringOption(rawArgv.keepWorkerInterval, '10')),
+  keepWorkerTransactionNums: stringArrayOption(
+    rawArgv.keepWorkerTransactionNums,
+  ).map(Number),
+  _: positionals,
+};
 
 const measureSeconds = makeMeasureSeconds(performance.now.bind(performance));
 
@@ -154,12 +220,12 @@ function makeSnapStoreIO() {
 // relative timings:
 // 3.8s v8-false, 27.5s v8-gc
 // 10.8s xs-no-gc, 15s xs-gc
-/** @type {import('../src/types-external.js').ManagerType} */
+/** @type {ManagerType} */
 const worker = 'xs-worker';
 
 async function replay(transcriptFile) {
   let vatID; // we learn this from the first line of the transcript
-  /** @type {import('../src/types-internal.js').VatManagerFactory} */
+  /** @type {VatManagerFactory} */
   let factory;
 
   let loadSnapshotID = null;
@@ -170,20 +236,19 @@ async function replay(transcriptFile) {
 
   const snapshotActivityFd = fs.openSync('snapshot-activity.jsonl', 'a');
 
-  const fakeKernelKeeper =
-    /** @type {import('../src/types-external.js').KernelKeeper} */ ({
-      provideVatKeeper: _vatID =>
-        /** @type {import('../src/types-external.js').VatKeeper} */ (
-          /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
-            addToTranscript: () => {},
-            getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
-          })
-        ),
-      getRelaxDurabilityRules: () => false,
-    });
+  const fakeKernelKeeper = /** @type {KernelKeeper} */ ({
+    provideVatKeeper: _vatID =>
+      /** @type {Partial<VatKeeper>} */ (
+        /** @type {unknown} */ ({
+          addToTranscript: () => {},
+          getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
+        })
+      ),
+    getRelaxDurabilityRules: () => false,
+  });
 
   let bundleIDs;
-  /** @type {import('../src/controller/bundle-handler.js').BundleHandler} */
+  /** @type {BundleHandler} */
   const bundleHandler = harden({
     getCurrentBundleIDs: async () => {
       return bundleIDs || ['lockdown-bundle', 'supervisor-bundle'];
@@ -195,14 +260,13 @@ async function replay(transcriptFile) {
     },
   });
 
-  const kernelSlog =
-    /** @type {import('../src/types-external.js').KernelSlog} */ (
-      /** @type {Partial<import('../src/types-external.js').KernelSlog>} */ ({
-        write() {},
-        delivery: () => () => undefined,
-        syscall: () => () => undefined,
-      })
-    );
+  const kernelSlog = /** @type {KernelSlog} */ (
+    /** @type {Partial<KernelSlog>} */ ({
+      write() {},
+      delivery: () => () => undefined,
+      syscall: () => () => undefined,
+    })
+  );
 
   if (argv.ignoreSnapshotHashDifference && !argv.useCustomSnapStore) {
     console.warn(
@@ -269,19 +333,18 @@ async function replay(transcriptFile) {
     gcAndFinalize: makeGcAndFinalize(engineGC),
     meterControl,
   });
-  const allVatPowers =
-    /** @type {import('../src/types-external.js').VatPowers} */ (
-      /** @type {Partial<import('../src/types-external.js').VatPowers>} */ ({
-        testLog,
-      })
-    );
+  const allVatPowers = /** @type {VatPowers} */ (
+    /** @type {Partial<VatPowers>} */ ({
+      testLog,
+    })
+  );
   /**
    * @typedef {{
-   *  manager: import('../src/types-internal.js').VatManager;
+   *  manager: VatManager;
    *  xsnapPID: number | undefined;
    *  deliveryTimeTotal: number;
    *  deliveryTimeSinceLastSnapshot: number;
-   *  loadSnapshotID: string | undefined;
+   *  loadSnapshotID: string | null | undefined;
    *  timeOfLastCommand: number;
    *  keep: boolean;
    *  firstTranscriptNum: number | null;
@@ -294,7 +357,7 @@ async function replay(transcriptFile) {
 
   await null;
   if (worker === 'xs-worker') {
-    /** @type {import('../src/types-external.js').Bundle[] | undefined} */
+    /** @type {Bundle[] | undefined} */
     let overrideBundles;
     if (argv.useSdkBundles) {
       overrideBundles = await Promise.all([
@@ -428,18 +491,17 @@ async function replay(transcriptFile) {
     workers.push(workerData);
     updateWorkersSynced();
     const currentBundleIDs = await bundleHandler.getCurrentBundleIDs();
-    const managerOptions =
-      /** @type {import('../src/types-internal.js').ManagerOptions} */ (
-        /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
-          sourcedConsole: console,
-          vatParameters,
-          useTranscript: true,
-          workerOptions: {
-            type: worker === 'xs-worker' ? 'xsnap' : worker,
-            bundleIDs: currentBundleIDs,
-          },
-        })
-      );
+    const managerOptions = /** @type {ManagerOptions} */ (
+      /** @type {Partial<ManagerOptions>} */ ({
+        sourcedConsole: console,
+        vatParameters,
+        useTranscript: true,
+        workerOptions: {
+          type: worker === 'xs-worker' ? 'xsnap' : worker,
+          bundleIDs: currentBundleIDs,
+        },
+      })
+    );
     if (!vatSourceBundle && !loadSnapshotID) {
       vatSourceBundle = await bundleHandler.getBundle(vatSourceBundleID);
     }
@@ -585,7 +647,7 @@ async function replay(transcriptFile) {
     },
   );
 
-  /** @type {import('stream').Readable} */
+  /** @type {Readable} */
   let transcriptF = fs.createReadStream(transcriptFile);
   if (transcriptFile.endsWith('.gz')) {
     transcriptF = transcriptF.pipe(zlib.createGunzip());
@@ -736,8 +798,8 @@ async function replay(transcriptFile) {
           }
         }
 
-        const loadSnapshots = [].concat(
-          argv.loadSnapshots?.[transcriptNum] || [],
+        const loadSnapshots = stringArrayOption(
+          argv.loadSnapshots?.[transcriptNum],
         );
         for (const snapshotID of loadSnapshots) {
           await loadSnapshot(

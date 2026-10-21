@@ -7,11 +7,8 @@ import { parse } from '@endo/marshal';
 import { kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 
-import {
-  initializeSwingset,
-  makeSwingsetController,
-  buildKernelBundles,
-} from '../../src/index.js';
+import { makeSwingsetController, buildKernelBundles } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import buildCommand from '../../src/devices/command/command.js';
 import { bundleOpts, vstr } from '../util.js';
 

@@ -3,7 +3,7 @@ import type {
   CctpTxEvidence,
   FeeConfig,
   TransactionRecord,
-} from '@agoric/fast-usdc/src/types.ts';
+} from '@agoric/fast-usdc/src/types.js';
 import {
   makeFeeTools,
   type RepayAmountKWR,
@@ -15,7 +15,7 @@ import {
 } from '@agoric/orchestration';
 import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
+import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';

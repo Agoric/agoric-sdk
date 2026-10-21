@@ -216,19 +216,25 @@ const logAmt = amt => [
     .replace(/ brand]$/, ''),
 ];
 
+// fast-check v4's `fc.record` returns null-prototype objects, which Endo
+// pass-style refuses to classify as CopyRecords. Restore `Object.prototype`
+// so `harden` yields a valid CopyRecord.
+const asCopyRecord = <T extends object>(x: T) =>
+  harden(Object.setPrototypeOf(x, Object.prototype));
+
 const arbAmountOf = brand =>
   fc
     .record({
       brand: fc.constant(brand),
       value: fc.bigInt({ min: 1n, max: 1_000n * 1_000_000n }),
     })
-    .map(x => harden(x));
+    .map(asCopyRecord);
 const arbUSDC = arbAmountOf(brands.USDC);
 const arbShares = arbAmountOf(brands.PoolShares);
 
 const arbShareWorth = fc
   .record({ numerator: arbUSDC, denominator: arbShares })
-  .map(x => harden(x));
+  .map(asCopyRecord);
 
 testProp(
   'deposit properties',

@@ -5,6 +5,14 @@ import { makeMarshal, mapIterable } from '@endo/marshal';
 import { makeLegacyMap, makeScalarMapStore } from '@agoric/store';
 
 /**
+ * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {Mapping} from './internal-types.js';
+ * @import {Key} from '@endo/patterns';
+ * @import {MapStore} from '@agoric/store';
+ * @import {LegacyMap} from '@agoric/store';
+ */
+
+/**
  * @typedef {string[]} Path
  * @typedef {{} & 'Strongname'} Strongname
  * @param {any} x
@@ -342,7 +350,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     dehydrate,
     edgeMapping,
     /**
-     * @template T
+     * @template {Key} T
      * @param {string} kind
      * @param {{ useLegacyMap?: boolean }} [legacyOptions]
      * @returns {Mapping<T>}

@@ -8,6 +8,8 @@ import { TimeMath } from '@agoric/time';
  * @import {TimerServiceCommon} from '@agoric/time';
  * @import {RemotableObject} from '@endo/pass-style';
  * @import {RemotableBrand} from '@endo/eventual-send';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {Timestamp} from '@agoric/time';
  */
 
 // we wrap SwingSet's buildManualTimer to accomodate the needs of
@@ -15,7 +17,7 @@ import { TimeMath } from '@agoric/time';
 
 /**
  * @typedef {{
- *  timeStep?: import('@agoric/time').RelativeTime | bigint,
+ *  timeStep?: RelativeTime | bigint,
  *  eventLoopIteration?: () => Promise<void>,
  * }} ZoeManualTimerOptions
  */
@@ -66,7 +68,7 @@ const nolog = (..._args) => {};
  * boundaries
  *
  * @param {(...args: any[]) => void} [log]
- * @param {import('@agoric/time').Timestamp | bigint} [startValue=0n]
+ * @param {Timestamp | bigint} [startValue=0n]
  * @param {ZoeManualTimerOptions} [options]
  * @returns {ZoeManualTimer}
  */

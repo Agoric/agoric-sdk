@@ -1,6 +1,11 @@
 import { makeHelpers, parseScriptArgs } from '@agoric/deploy-script-support';
 import { getManifestForUpgradingMintHolder } from '@agoric/vats/src/proposals/upgrade-mintHolder-proposal.js';
 
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
 const configurations = {
   A3P_INTEGRATION: {
     labelList: [
@@ -72,7 +77,7 @@ const configurations = {
 const { keys } = Object;
 const knownVariants = keys(configurations);
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   const config = opts.config || configurations[opts.variant];
   if (!config) {
@@ -94,7 +99,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const opts = parseScriptArgs(endowments, 'upgrade-mintHolder', knownVariants);
 

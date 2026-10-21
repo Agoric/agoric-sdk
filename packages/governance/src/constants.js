@@ -4,7 +4,7 @@
  * UNKNOWN is an escape hatch for types we haven't added yet. If you are
  * developing a new contract and use UNKNOWN, please also file an issue to ask
  * us to support the new type.
- * @enum {typeof ParamType[keyof typeof ParamType]}
+ * @typedef {typeof ParamType[keyof typeof ParamType]} ParamType
  */
 export const ParamType = /** @type {const} */ ({
   AMOUNT: 'amount',

@@ -1,5 +1,9 @@
 // @ts-check
 
+/**
+ * @import {KeyMakers} from './types.js';
+ */
+
 /** @param {string} label */
 const kind = label => `${label}_kindHandle`;
 
@@ -9,7 +13,7 @@ const singleton = label => `${label}_singleton`;
 /**
  * KeyMakers compatible with `@agoric/vat-data`.
  *
- * @type {import('./types.js').KeyMakers}
+ * @type {KeyMakers}
  */
 export const agoricVatDataKeys = {
   exoClass: label => harden([kind(label)]),

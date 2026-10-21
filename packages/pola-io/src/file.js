@@ -71,7 +71,6 @@ export const makeFileRd = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
       /** @param {string} [suffix] */
       basename: suffix => pathio.basename(there, suffix),
       existsSync: () => fsio.existsSync(there),
-      /** @returns {Promise<FileRd[]>} */
       readdir: () =>
         fspio
           .readdir(there)

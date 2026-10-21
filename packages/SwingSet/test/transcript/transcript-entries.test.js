@@ -1,9 +1,13 @@
 // @ts-nocheck
+import '@agoric/internal/src/ava-force-exit.mjs';
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { makeSwingsetController } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;

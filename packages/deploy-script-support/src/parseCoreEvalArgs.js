@@ -1,8 +1,12 @@
 /**
+ * @import {DeployScriptEndownments} from './externalTypes.js';
+ */
+
+/**
  * To customize proposals for multiple environments, we pass the "variant"
  * identifier in scriptArgs. The variant must match a knownVariant.
  *
- * @param {import('./externalTypes.js').DeployScriptEndownments} endowments
+ * @param {DeployScriptEndownments} endowments
  * @param {string} name a name to use in error messages or Usage suggestions.
  * @param {string[]} knownVariants
  */

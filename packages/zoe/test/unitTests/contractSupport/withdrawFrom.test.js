@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
@@ -14,6 +14,10 @@ import {
 } from '../../../src/contractSupport/index.js';
 import { assertPayoutAmount } from '../../zoeTestHelpers.js';
 import { makeOffer } from '../makeOffer.js';
+
+/**
+ * @import {ZCF} from '@agoric/zoe';
+ */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -30,9 +34,12 @@ async function setupContract(moolaIssuer, bucksIssuer) {
 
   // pack the contract
   const bundle = await bundleSource(contractRoot);
-  fakeVatAdmin.vatAdminState.installBundle('b1-contract', bundle);
+  const b1contract = fakeVatAdmin.vatAdminState.registerBundle(
+    'b1-contract',
+    bundle,
+  );
   // install the contract
-  const installation = await E(zoe).installBundleID('b1-contract');
+  const installation = await E(zoe).installBundleID(b1contract);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({

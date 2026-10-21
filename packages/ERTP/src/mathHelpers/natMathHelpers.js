@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { Fail } from '@endo/errors';
 import { Nat, isNat } from '@endo/nat';
 

@@ -13,6 +13,8 @@ import {
 /**
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation, FilterGovernor, GovernedCreatorFacet, OfferFilterIssue, VoteOnOfferFilter} from '../types.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -31,7 +33,7 @@ const makeOfferFilterPositions = strings => {
 /**
  * Setup to allow governance to block some invitations.
  *
- * @param {ERef<import('@agoric/time').TimerService>} timer
+ * @param {ERef<TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @param {GovernedCreatorFacet<{}>} governedCF
  * @returns {FilterGovernor}

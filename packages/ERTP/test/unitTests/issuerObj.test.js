@@ -294,7 +294,7 @@ test('issuer.splitMany bad amount', async t => {
   const payment = mint.mintPayment(AmountMath.make(brand, 1000n));
   const badAmounts = harden(Array(2).fill(AmountMath.make(brand, 10n)));
   await t.throwsAsync(
-    _ => splitMany(E(issuer).makeEmptyPurse(), payment, badAmounts),
+    () => splitMany(E(issuer).makeEmptyPurse(), payment, badAmounts),
     { message: /rights were not conserved/ },
     'successfully throw if rights are not conserved in proposed new payments',
   );
@@ -336,7 +336,7 @@ test('issuer.split bad amount', async t => {
   const { brand: otherBrand } = makeIssuerKit('other fungible');
   const payment = mint.mintPayment(AmountMath.make(brand, 1000n));
   await t.throwsAsync(
-    _ =>
+    () =>
       split(
         E(issuer).makeEmptyPurse(),
         payment,

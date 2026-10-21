@@ -14,8 +14,33 @@ import { ICS20TransferProtocol } from './ics20.js';
 import { makeCourierMaker, getCourierPK } from './courier.js';
 
 /**
- * @import {CloseReason, Connection} from '@agoric/network';
+ * @import {CloseReason, Connection, ConnectionHandler} from '@agoric/network';
  * @import {Remote} from '@agoric/vow';
+ * @import {prepareVowTools} from '@agoric/vow';
+ * @import {BoardDepositFacet} from './types.js';
+ * @import {Denom} from './types.js';
+ * @import {Courier} from './types.js';
+ * @import {Peg} from './types.js';
+ * @import {TransferProtocol} from './types.js';
+ * @import {DenomTransformer} from './types.js';
+ * @import {PegasusConnectionActions} from './types.js';
+ * @import {PegasusConnectionKit} from './types.js';
+ * @import {PegasusConnection} from './types.js';
+ * @import {DepositAddress} from './types.js';
+ * @import {SenderOptions} from './types.js';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {LegacyMap} from '@agoric/store';
+ * @import {IterationObserver} from '@agoric/notifier';
+ * @import {Subscription} from '@agoric/notifier';
+ * @import {LegacyWeakMap} from '@agoric/store';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Keyword} from '@agoric/zoe';
+ * @import {ZCFSeat} from '@agoric/zoe';
+ * @import {SubscriptionRecord} from '@agoric/notifier';
+ * @import {PromiseRecord} from '@endo/promise-kit';
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {OfferHandler} from '@agoric/zoe';
  */
 
 const DEFAULT_DENOM_TRANSFORMER = IBCSourceTraceDenomTransformer;
@@ -34,7 +59,7 @@ const TRANSFER_PROPOSAL_SHAPE = {
  * @param {ZCF} powers.zcf the Zoe Contract Facet
  * @param {Remote<BoardDepositFacet>} powers.board where to find depositFacets by boardID
  * @param {Remote<NameHub>} powers.namesByAddress where to find depositFacets by bech32
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>['when']} powers.when
+ * @param {ReturnType<typeof prepareVowTools>['when']} powers.when
  *
  * @import {NameHub} from '@agoric/vats'
  */

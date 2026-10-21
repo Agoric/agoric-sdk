@@ -1,9 +1,17 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { fc, testProp } from '@fast-check/ava';
+import { assert, X, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
-import { deepMapObject, makeMeasureSeconds } from '../src/js-utils.js';
+import {
+  deepMapObject,
+  groupDecimalDigits,
+  makeMeasureSeconds,
+  partialMap,
+} from '../src/js-utils.js';
 import {
   assertAllDefined,
   attenuate,
@@ -12,12 +20,26 @@ import {
   forever,
   deeplyFulfilledObject,
   synchronizedTee,
+  stripPrefix,
+  throwErrorCode,
+  tryJsonParse,
+  tryNow,
 } from '../src/ses-utils.js';
+import { arrayIsLike } from '../tools/ava-assertions.js';
 
-/** @import {Permit, Attenuated} from '../src/types.js'; */
+/**
+ * @import {Permit, Attenuated} from '../src/types.js';
+ * @import {Macro} from 'ava';
+ * @import {ThrowsExpectation} from 'ava';
+ */
 /** @import {Arbitrary} from 'fast-check'; */
 
 const { ownKeys } = Reflect;
+/**
+ * @param {object} obj
+ * @param {string | symbol} key
+ * @param {unknown} value
+ */
 const defineDataProperty = (obj, key, value) =>
   Object.defineProperty(obj, key, {
     value,
@@ -26,12 +48,18 @@ const defineDataProperty = (obj, key, value) =>
     writable: true,
   });
 
+/** @type {(messageOrErr: string | Error) => () => never} */
+const thrower = messageOrErr => () => {
+  if (typeof messageOrErr === 'string') throw Error(messageOrErr);
+  throw messageOrErr;
+};
+
 /**
  * A predicate for matching non-null non-function objects. Note that this
  * category includes arrays and other built-in exotic objects.
  *
  * @param {unknown} x
- * @returns {x is (Array | Record<PropertyKey, unknown>)}
+ * @returns {x is (Array<unknown> | Record<PropertyKey, unknown>)}
  */
 const hasObjectType = x => x !== null && typeof x === 'object';
 
@@ -63,19 +91,21 @@ const arbFunction = fc
     /** @type {any} */ ({ unit: arbLowerLetter, minLength: 1, maxLength: 20 }),
   )
   .map(name => ({ [name]: () => {} })[name]);
-const { value: arbShallow } = fc.letrec(tie => ({
-  value: fc.oneof(
-    { ...fastShrink, maxDepth: 2 },
-    arbPrimitive,
-    arbFunction,
-    fc.array(tie('value')),
-    fc
-      .uniqueArray(fc.tuple(arbKey, tie('value')), {
-        selector: entry => entry[0],
-      })
-      .map(entries => Object.fromEntries(entries)),
-  ),
-}));
+const { value: arbShallow } = fc.letrec(
+  /** @param {import('fast-check').LetrecLooselyTypedTie} tie */ tie => ({
+    value: fc.oneof(
+      { ...fastShrink, maxDepth: 2 },
+      arbPrimitive,
+      arbFunction,
+      fc.array(tie('value')),
+      fc
+        .uniqueArray(fc.tuple(arbKey, tie('value')), {
+          selector: entry => entry[0],
+        })
+        .map(entries => Object.fromEntries(entries)),
+    ),
+  }),
+);
 
 // #region attenuate
 {
@@ -125,7 +155,9 @@ const { value: arbShallow } = fc.letrec(tie => ({
     arbBad = /** @type {Arbitrary<B>} */ (arbBad);
     const badBase =
       makeBad &&
-      fc.tuple(base, arbBad).map((testCase, bad) => makeBad(testCase, bad));
+      fc
+        .tuple(base, arbBad)
+        .map(([testCase, bad]) => makeBad(/** @type {T} */ (testCase), bad));
 
     const recurse = /** @type {Arbitrary<T>} */ (
       fc
@@ -177,61 +209,66 @@ const { value: arbShallow } = fc.letrec(tie => ({
     badPermit: arbBadPermit,
     badSpecimen: arbBadSpecimen,
     specimenMissingKey: arbSpecimenMissingKey,
-  } = fc.letrec(tie => ({
-    // Happy-path test cases.
-    goodCase: makeArbTestCase(tie('goodCase')),
-
-    // Test cases in which the permit is invalid.
-    badPermit: makeArbTestCase(
-      tie('badPermit'),
-      arbShallow.filter(
-        x => x !== true && typeof x !== 'string' && !hasObjectType(x),
+  } = fc.letrec(
+    /** @param {import('fast-check').LetrecLooselyTypedTie} tie */ tie => ({
+      // Happy-path test cases. `tie` is loosely typed (`Arbitrary<unknown>`),
+      // so narrow each self-reference to the recursive test-case type.
+      goodCase: makeArbTestCase(
+        /** @type {Arbitrary<AttenuateTestCase>} */ (tie('goodCase')),
       ),
-      (testCase, badPermit) => {
-        testCase.permit = badPermit;
-        testCase.problem = 'bad permit';
-        return testCase;
-      },
-    ).filter(
-      testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
-    ),
 
-    // Test cases in which the permit is an object but the specimen is not.
-    badSpecimen: makeArbTestCase(
-      tie('badSpecimen'),
-      fc.oneof(arbPrimitive, arbFunction),
-      (testCase, badSpecimen) => {
-        if (!hasObjectType(testCase.permit)) testCase.permit = {};
-        testCase.specimen = badSpecimen;
-        testCase.problem = 'bad specimen';
-        return testCase;
-      },
-    ).filter(
-      testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
-    ),
+      // Test cases in which the permit is invalid.
+      badPermit: makeArbTestCase(
+        /** @type {Arbitrary<AttenuateTestCase>} */ (tie('badPermit')),
+        arbShallow.filter(
+          x => x !== true && typeof x !== 'string' && !hasObjectType(x),
+        ),
+        (testCase, badPermit) => {
+          testCase.permit = badPermit;
+          testCase.problem = 'bad permit';
+          return testCase;
+        },
+      ).filter(
+        testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
+      ),
 
-    // Test cases in which the specimen is missing a permit property.
-    specimenMissingKey: makeArbTestCase(
-      tie('specimenMissingKey'),
-      arbString,
-      (testCase, prop) => {
-        if (!hasObjectType(testCase.specimen)) testCase.specimen = {};
-        if (!hasObjectType(testCase.permit)) {
-          testCase.permit = { [prop]: true };
-        }
-        // Some properties are not configurable (e.g., an array's `length`), so
-        // accept failure as an option.
-        try {
-          delete (/** @type {any} */ (testCase.specimen)[prop]);
-          testCase.problem = 'specimen missing key';
-          // eslint-disable-next-line no-empty
-        } catch (err) {}
-        return testCase;
-      },
-    ).filter(
-      testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
-    ),
-  }));
+      // Test cases in which the permit is an object but the specimen is not.
+      badSpecimen: makeArbTestCase(
+        /** @type {Arbitrary<AttenuateTestCase>} */ (tie('badSpecimen')),
+        fc.oneof(arbPrimitive, arbFunction),
+        (testCase, badSpecimen) => {
+          if (!hasObjectType(testCase.permit)) testCase.permit = {};
+          testCase.specimen = badSpecimen;
+          testCase.problem = 'bad specimen';
+          return testCase;
+        },
+      ).filter(
+        testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
+      ),
+
+      // Test cases in which the specimen is missing a permit property.
+      specimenMissingKey: makeArbTestCase(
+        /** @type {Arbitrary<AttenuateTestCase>} */ (tie('specimenMissingKey')),
+        arbString,
+        (testCase, prop) => {
+          if (!hasObjectType(testCase.specimen)) testCase.specimen = {};
+          if (!hasObjectType(testCase.permit)) {
+            testCase.permit = { [prop]: true };
+          }
+          // Some properties are not configurable (e.g., an array's `length`), so
+          // accept failure as an option.
+          try {
+            delete (/** @type {any} */ (testCase.specimen)[prop]);
+            testCase.problem = 'specimen missing key';
+            // eslint-disable-next-line no-empty
+          } catch (err) {}
+          return testCase;
+        },
+      ).filter(
+        testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
+      ),
+    }),
+  );
 
   test('attenuate static cases', t => {
     const specimen = {
@@ -311,7 +348,12 @@ const { value: arbShallow } = fc.letrec(tie => ({
     const attenuation = attenuate(
       specimen,
       { foo: true, arr: true, empty: {}, deep: true },
-      /** @type {any} */ (obj => Object.assign(obj, { marked })),
+      // `transform` must return the same type it receives, so mutate `obj`
+      // in place and return it (rather than the wider `Object.assign` result).
+      obj => {
+        Object.assign(/** @type {object} */ (obj), { marked });
+        return obj;
+      },
     );
     const expected = { marked, foo, arr, empty: { marked }, deep: deepClone };
     t.deepEqual(attenuation, expected);
@@ -337,7 +379,9 @@ const { value: arbShallow } = fc.letrec(tie => ({
       let mutationCallCount = 0;
       const mutatedAttenuation = attenuate(specimen, permit, obj => {
         mutationCallCount += 1;
-        obj[tag] = true;
+        // `obj` is the generic attenuation value; narrow for the symbol-keyed
+        // write, then return the original so the transform's `U => U` holds.
+        /** @type {Record<symbol, unknown>} */ (obj)[tag] = true;
         return obj;
       });
       let mutationOk = true;
@@ -430,7 +474,7 @@ test('deeplyFulfilledObject', async t => {
  * @property {any} [expectedOutput]
  */
 
-/** @type {import('ava').Macro<[DeepMapObjectTestParams]>} */
+/** @type {Macro<[DeepMapObjectTestParams]>} */
 const deepMapObjectTest = test.macro({
   title(providedTitle, { input }) {
     return `deepMapObject - ${providedTitle || JSON.stringify(input)}`;
@@ -515,6 +559,49 @@ test('deep mapping', deepMapObjectTest, {
 });
 // #endregion
 
+test('groupDecimalDigits', t => {
+  t.is(groupDecimalDigits('1'), '1');
+  t.is(groupDecimalDigits('12'), '12');
+  t.is(groupDecimalDigits('123'), '123');
+  t.is(groupDecimalDigits('1234'), '1_234');
+  t.is(groupDecimalDigits('12345'), '12_345');
+  t.is(groupDecimalDigits('123456'), '123_456');
+  t.is(groupDecimalDigits('1234567'), '1_234_567');
+  t.is(groupDecimalDigits('12345678'), '12_345_678');
+  t.is(groupDecimalDigits('123456789'), '123_456_789');
+
+  t.is(groupDecimalDigits('1.1'), '1.100');
+  t.is(groupDecimalDigits('12.12'), '12.120');
+  t.is(groupDecimalDigits('123.123'), '123.123');
+  t.is(groupDecimalDigits('1234.1234'), '1_234.123_400');
+  t.is(groupDecimalDigits('12345.12345'), '12_345.123_450');
+  t.is(groupDecimalDigits('123456.123456'), '123_456.123_456');
+  t.is(groupDecimalDigits('1234567.1234567'), '1_234_567.123_456_700');
+  t.is(groupDecimalDigits('12345678.12345678'), '12_345_678.123_456_780');
+  t.is(groupDecimalDigits('123456789.123456789'), '123_456_789.123_456_789');
+
+  t.is(groupDecimalDigits('1.1', 4), '1.1000');
+  t.is(groupDecimalDigits('12.12', 4), '12.1200');
+  t.is(groupDecimalDigits('123.123', 4), '123.1230');
+  t.is(groupDecimalDigits('1234.1234', 4), '1234.1234');
+  t.is(groupDecimalDigits('12345.12345', 4), '1_2345.1234_5000');
+  t.is(groupDecimalDigits('123456.123456', 4), '12_3456.1234_5600');
+  t.is(groupDecimalDigits('1234567.1234567', 4), '123_4567.1234_5670');
+  t.is(groupDecimalDigits('12345678.12345678', 4), '1234_5678.1234_5678');
+  t.is(
+    groupDecimalDigits('123456789.123456789', 4),
+    '1_2345_6789.1234_5678_9000',
+  );
+
+  t.is(groupDecimalDigits(1234n), '1_234');
+  t.is(groupDecimalDigits(-1234n), '-1_234');
+
+  // @ts-expect-error intentionally incorrect input
+  t.throws(() => groupDecimalDigits('1e100'), {
+    message: 'input must be a decimal string',
+  });
+});
+
 test('makeMeasureSeconds', async t => {
   const times = [1000.25, 2000.75, NaN];
   /** @type {() => number} */
@@ -526,6 +613,17 @@ test('makeMeasureSeconds', async t => {
   const output = await measureSeconds(async () => unique);
   t.deepEqual(output, { result: unique, duration: 1.0005 });
   t.deepEqual(times, [NaN]);
+});
+
+test('partialMap', t => {
+  // Manually map input to its reverse, expecting absence of false/undefined.
+  const input = [true, false, undefined, null, 0, 0n, '', [], {}, Symbol('')];
+  const expect = [true, ...input.slice(3)].reverse();
+  const output = partialMap(input, (_value, idx, arr) => {
+    t.is(arr, input);
+    return arr.at(-(idx + 1));
+  });
+  arrayIsLike(t, output, expect);
 });
 
 test('assertAllDefined', t => {
@@ -552,6 +650,155 @@ test('assertAllDefined', t => {
       // @ts-expect-error key presence not checked
       foo.prop.toFixed,
   );
+});
+
+test('stripPrefix', t => {
+  t.is(stripPrefix('prefix', 'prefixed'), 'ed');
+  t.is(stripPrefix('', 'prefixed'), 'prefixed');
+  t.is(stripPrefix(':', '::foo'), ':foo');
+  t.is(stripPrefix('foo.bar.baz', 'foo.bar.baz'), '');
+  t.throws(() => stripPrefix('::', ':foo'));
+});
+
+test('throwErrorCode', t => {
+  t.throws(() => throwErrorCode('foo', 'bar'), { message: 'foo', code: 'bar' });
+
+  class MyError extends Error {}
+  const details = X`bar ${'baz'}`;
+  const code = 'qux';
+  // `makeError` uses a simple call rather than `new`.
+  const constructor = /** @type {ErrorConstructor} */ (
+    function makeMyError(message, opts) {
+      return new MyError(message, opts);
+    }
+  );
+  const cause = /** @type {Error} */ (t.throws(() => assert.fail(details)));
+  const errors = [cause, cause];
+  const err = /** @type {Error} */ (
+    t.throws(
+      () => throwErrorCode(details, code, { constructor, cause, errors }),
+      { code },
+    )
+  );
+  const expect = {
+    message: cause.message,
+    code,
+    constructor: MyError,
+    cause,
+    errors,
+  };
+  const errRecord = /** @type {Record<string, unknown>} */ (
+    /** @type {unknown} */ (err)
+  );
+  const actual = Object.fromEntries(
+    Object.keys(expect).map(k => [k, errRecord[k]]),
+  );
+  t.deepEqual(actual, expect);
+  t.true(err instanceof MyError);
+});
+
+test('tryJsonParse with valid JSON', t => {
+  const obj = { foo: 'bar', baz: ['qux', 'quux'] };
+  t.deepEqual(tryJsonParse(JSON.stringify(obj), 'unexpected'), obj);
+});
+test('tryJsonParse with non-string', t => {
+  t.throws(
+    () => tryJsonParse(/** @type {any} */ ({ toString: () => '{}' }), 'LABEL'),
+    {
+      message: /^LABEL: Input must be a string, not object\b/,
+    },
+  );
+});
+test('tryJsonParse with invalid JSON', t => {
+  t.throws(() => tryJsonParse('Infinity', _err => Fail`invalid`), {
+    message: 'invalid',
+  });
+});
+test('tryJsonParse(invalidJson, replacer)', t => {
+  t.is(
+    tryJsonParse(/** @type {any} */ (null), _err => undefined),
+    undefined,
+  );
+});
+
+/**
+ * @typedef {(...args: unknown[]) => any} TryNowFn
+ */
+/**
+ * @type {Macro<
+ *   [
+ *     TryNowFn | ((...args: Parameters<TryNowFn>) => never),
+ *     ((err: Error) => any) | undefined,
+ *     {
+ *       args?: Parameters<TryNowFn>;
+ *       catches?: ThrowsExpectation<Error>;
+ *       returns?: any;
+ *       throws?: ThrowsExpectation<Error> & {
+ *         withCause?: boolean;
+ *       };
+ *     },
+ *   ]
+ * >}
+ */
+const testTryNow = test.macro((t, fn, projectError, details) => {
+  const { args = [], catches, returns } = details;
+  const throws = details.throws && { ...details.throws };
+  if (throws) delete throws.withCause;
+
+  /** @type {Error[]} */
+  const caught = [];
+  /** @type {(err: Error) => ReturnType<TryNowFn>} */
+  const logAndProjectError = err => {
+    caught.push(err);
+    if (projectError) return projectError(err);
+    throw err;
+  };
+
+  const callTryNow = () =>
+    tryNow(
+      fn,
+      logAndProjectError,
+      .../** @type {Parameters<TryNowFn>} */ (args),
+    );
+  const result = throws ? t.throws(callTryNow, throws) : callTryNow();
+
+  if (catches || throws) {
+    t.is(caught.length, 1, 'fn must throw');
+    if (catches) t.throws(thrower(caught[0]), catches);
+  }
+
+  if (!throws) {
+    t.is(result, returns);
+  } else if (details.throws?.withCause) {
+    t.is(
+      /** @type {Error} */ (result).cause,
+      caught[0],
+      'cause must be attached',
+    );
+  }
+});
+
+test(
+  'tryNow(noError, rethrow)',
+  testTryNow,
+  /** @type {any} */ (() => 42),
+  thrower('unexpected'),
+  {
+    returns: 42,
+  },
+);
+test('tryNow(thrower, replace)', testTryNow, thrower('foo'), () => 42, {
+  catches: { message: 'foo' },
+  returns: 42,
+});
+test('tryNow(thrower, thrower)', testTryNow, thrower('foo'), thrower('bar'), {
+  catches: { message: 'foo' },
+  throws: { message: 'bar', withCause: true },
+});
+test('tryNow propagates args', t => {
+  const fn = (/** @type {unknown[]} */ ...args) =>
+    arrayIsLike(t, args, ['foo', 'bar']);
+  tryNow(fn, err => thrower(err)(), 'foo', 'bar');
 });
 
 test('whileTrue', async t => {

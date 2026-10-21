@@ -27,6 +27,12 @@ Our [unit testing conventions](https://github.com/Agoric/agoric-sdk/wiki/agoric-
 
 While [tooling to enforce consistent import ordering #7403](https://github.com/Agoric/agoric-sdk/issues/7403) is not yet in place, please use **Organize Imports** regularly.
 
+## Documentation Conventions
+
+- **File comments:** Use a 1–2 line `@file` summary. Include `@see` links only for major entry points, and keep those links intra-file (e.g., `{@link someExport}`), not external URLs.
+- **Entry-point JSDoc:** Put the meaningful docs on the exported symbols (what shows up in IDE call sites). External URLs belong here when they define the canonical ABI/spec.
+- **External design constraints:** If a module is constrained by external contracts, standards, or off-repo design docs, add a short JSDoc note with a `@see` link to the authoritative source at the relevant entry point(s).
+
 ## Commit Messages w.r.t. Last Release
 
 Note [use of Conventional Commits in agoric-sdk](https://github.com/Agoric/agoric-sdk/wiki/Conventional-Commits). In particular:
@@ -39,6 +45,10 @@ Adding a new function without wiring it all the way out to the contract interfac
 If something wonky was added to master _since the last release_, cleaning it up is perhaps a `chore` or `refactor`, but not a `fix`.
 
 Between `docs`, `test`, and `chore`, the distinction has less impact. Salt to taste.
+
+# API
+
+The portfolio product spans several packages and services. The public interfaces are documented in @agoric/portfolio-api. It also documents the states of the whole system in its `docs/ymax-machine.yaml`. When making state machine changes be sure to update that description too.
 
 ## Deployment is out of scope
 

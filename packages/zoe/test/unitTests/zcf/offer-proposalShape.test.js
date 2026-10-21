@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
@@ -12,7 +12,7 @@ import { setup } from '../setupBasicMints.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 /**
- * @import {ZoeService} from '@agoric/zoe';
+ * @import {ZCF, ZoeService} from '@agoric/zoe';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -32,8 +32,8 @@ test(`ProposalShapes mismatch`, async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  vatAdminState.installBundle('b1-zcftester', bundle);
-  const installation = await E(zoe).installBundleID('b1-zcftester');
+  const b1zcftester = vatAdminState.registerBundle('b1-zcftester', bundle);
+  const installation = await E(zoe).installBundleID(b1zcftester);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({
@@ -45,9 +45,10 @@ test(`ProposalShapes mismatch`, async t => {
 
   // The contract uses the testJig so the contractFacet
   // is available here for testing purposes
+  t.truthy(testJig);
   /** @type {ZCF} */
-  // @ts-expect-error cast
-  const zcf = testJig.zcf;
+  const zcf = /** @type {{ zcf: ZCF }} */ (/** @type {unknown} */ (testJig))
+    .zcf;
 
   const boring = () => {
     return 'ok';
@@ -101,8 +102,8 @@ test(`ProposalShapes matched`, async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  vatAdminState.installBundle('b1-zcftester', bundle);
-  const installation = await E(zoe).installBundleID('b1-zcftester');
+  const b1zcftester = vatAdminState.registerBundle('b1-zcftester', bundle);
+  const installation = await E(zoe).installBundleID(b1zcftester);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({
@@ -114,9 +115,10 @@ test(`ProposalShapes matched`, async t => {
 
   // The contract uses the testJig so the contractFacet
   // is available here for testing purposes
+  t.truthy(testJig);
   /** @type {ZCF} */
-  // @ts-expect-error cast
-  const zcf = testJig.zcf;
+  const zcf = /** @type {{ zcf: ZCF }} */ (/** @type {unknown} */ (testJig))
+    .zcf;
 
   const boring = () => {
     return 'ok';

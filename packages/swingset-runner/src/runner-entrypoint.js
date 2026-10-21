@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 
 // #!/usr/bin/env -S node --inspect-brk
 
@@ -9,6 +8,7 @@
  */
 
 import '@endo/init/pre-bundle-source.js';
+import './anylogger-legacy.js';
 
 // Now do lockdown.
 import '@endo/init';

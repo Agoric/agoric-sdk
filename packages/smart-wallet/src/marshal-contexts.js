@@ -11,6 +11,8 @@ import { DEFAULT_PREFIX } from '@agoric/vats/src/lib-board.js';
  * @import {Key} from '@endo/patterns';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {BoardId} from '@agoric/vats/src/lib-board.js';
+ * @import {Purse} from '@agoric/ertp';
+ * @import {Payment} from '@agoric/ertp';
  */
 
 /**
@@ -186,10 +188,10 @@ export const makeExportContext = () => {
 
   /**
    * @template {PassableCap} V
-   * @param {string & keyof typeof walletObjects} kind
+   * @param {string & keyof typeof walletObjects} _kind
    * @param {IdTable<number, V>} table
    */
-  const makeSaver = (kind, table) => {
+  const makeSaver = (_kind, table) => {
     let nonce = 0;
     /** @param {V} val */
     const saver = val => {
@@ -374,7 +376,7 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
 const makePresence = (iface, handler) => {
   let obj;
 
-  void new HandledPromise((resolve, reject, resolveWithPresence) => {
+  void new HandledPromise((_resolve, _reject, resolveWithPresence) => {
     obj = resolveWithPresence(handler);
   });
   assert(obj);

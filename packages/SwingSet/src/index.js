@@ -4,13 +4,20 @@ export {
 } from './controller/controller.js';
 export {
   swingsetIsInitialized,
+  buildSwingsetKernelConfig,
+  initializeSwingsetKernel,
   initializeSwingset,
   buildKernelBundles,
+} from './controller/initializeSwingset.js';
+export {
   loadBasedir,
   loadSwingsetConfigFile,
   normalizeConfig,
-} from './controller/initializeSwingset.js';
-export { upgradeSwingset } from './controller/upgradeSwingset.js';
+} from './controller/swingset-config-node.js';
+export {
+  upgradeSwingset,
+  applyVatOptionUpdates,
+} from './controller/upgradeSwingset.js';
 export {
   buildMailboxStateMap,
   buildMailbox,
@@ -23,6 +30,6 @@ export { default as buildCommand } from './devices/command/command.js';
 export { buildPlugin } from './devices/plugin/plugin.js';
 
 // eslint-disable-next-line import/export
-export * from './types-external.js';
+export * from './types-external-index.js';
 
 export * as shape from './typeGuards.js';

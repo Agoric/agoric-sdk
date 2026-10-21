@@ -1,5 +1,6 @@
 /**
  * @import {ChainHub, ChainInfo, Denom, DenomDetail} from '../types.js';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /**

@@ -1,0 +1,36 @@
+stateDiagram-v2
+[*] --> initiated
+state initiated
+note right of initiated
+  noble_ica.depositForBurn(destinationAddress, denomAmount) called
+end note
+initiated --> burn_pending: depositForBurn ICA tx submitted
+initiated --> failed: depositForBurn submission failed
+state burn_pending
+note right of burn_pending
+  Waiting for Noble to confirm burn transaction
+end note
+burn_pending --> attestation_pending: Burn tx confirmed on Noble, waiting for Circle attestation
+burn_pending --> failed: Burn tx failed on Noble
+state attestation_pending
+note right of attestation_pending
+  Burn confirmed, waiting for Circle attestation (no protocol timeout, poll until available)
+end note
+attestation_pending --> mint_pending: Circle attestation fetched and verified
+attestation_pending --> failed: Attestation fetch/validation failed
+state mint_pending
+note right of mint_pending
+  Attestation received, mint message ready on destination EVM chain
+end note
+mint_pending --> completed: USDC minted on EVM chain to destination address
+mint_pending --> failed: Mint transaction failed on EVM
+state completed
+note right of completed
+  CCTP transfer complete, USDC on EVM wallet
+end note
+completed --> [*]
+state failed
+note right of failed
+  CCTP transfer failed
+end note
+failed --> [*]

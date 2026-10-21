@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -39,13 +39,18 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // Pack the contract.
   const coveredCallBundle = await bundleSource(coveredCallRoot);
 
-  vatAdminState.installBundle('b1-coveredcall', coveredCallBundle);
-  const coveredCallInstallation =
-    await E(zoe).installBundleID('b1-coveredcall');
+  const b1coveredcall = vatAdminState.registerBundle(
+    'b1-coveredcall',
+    coveredCallBundle,
+  );
+  const coveredCallInstallation = await E(zoe).installBundleID(b1coveredcall);
   const atomicSwapBundle = await bundleSource(atomicSwapRoot);
 
-  vatAdminState.installBundle('b1-atomicswap', atomicSwapBundle);
-  const swapInstallationId = await E(zoe).installBundleID('b1-atomicswap');
+  const b1atomicswap = vatAdminState.registerBundle(
+    'b1-atomicswap',
+    atomicSwapBundle,
+  );
+  const swapInstallationId = await E(zoe).installBundleID(b1atomicswap);
 
   // Setup Alice
   // Alice starts with 3 moola

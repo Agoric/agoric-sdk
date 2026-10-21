@@ -10,6 +10,10 @@ import assert from 'node:assert';
 import process from 'node:process';
 import { networkConfig, agdWalletUtils } from './test-lib/index.js';
 
+/**
+ * @import {Brand} from '@agoric/ertp';
+ */
+
 const BLD_COIN_DENOM = 'ubld';
 const BLD_DELEGATION = 10n;
 // XXX not the same as VALIDATOR_ADDRESS, which is actually the delegator
@@ -32,7 +36,7 @@ test('basic', async t => {
 
   t.is((await currentDelegation()).length, 1, 'just the initial delegation');
 
-  /** @type {import('@agoric/ertp').Brand} */
+  /** @type {Brand} */
   // @ts-expect-error actually a BoardRemote
   const BLDBrand = brand.BLD;
 

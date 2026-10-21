@@ -54,9 +54,8 @@ const autoStakeItScenario = test.macro({
     if (!stakingDenom) throw Error(`staking denom found for ${chainName}`);
 
     // 3. Find a remoteChain validator to delegate to
-    const remoteQueryClient = makeQueryClient(
-      await useChain(chainName).getRestEndpoint(),
-    );
+    const restEndpoint = await useChain(chainName).getRestEndpoint();
+    const remoteQueryClient = makeQueryClient(restEndpoint);
     const { validators } = await remoteQueryClient.queryValidators();
     const validatorAddress = validators[0]?.operator_address;
     t.truthy(
@@ -130,22 +129,19 @@ const autoStakeItScenario = test.macro({
     await fundAndTransfer(chainName, lcaAddress, transferAmount);
 
     // 7. verify the COA has active delegations
-    const { delegation_responses } = await retryUntilCondition(
+    const { delegation_responses: delegations } = await retryUntilCondition(
       () => remoteQueryClient.queryDelegations(icaAddress),
-      ({ delegation_responses }) => !!delegation_responses.length,
+      result => !!result.delegation_responses.length,
       `auto-stake-it delegations visible on ${chainName}`,
       AUTO_STAKE_IT_DELEGATIONS_TIMEOUT,
     );
-    t.log('delegation balance', delegation_responses[0]?.balance);
+    t.log('delegation balance', delegations[0]?.balance);
     t.like(
-      delegation_responses[0].balance,
+      delegations[0].balance,
       { denom: stakingDenom, amount: String(transferAmount) },
       'delegations balance',
     );
-    t.log(
-      `Orchestration Account Delegations on ${chainName}`,
-      delegation_responses,
-    );
+    t.log(`Orchestration Account Delegations on ${chainName}`, delegations);
 
     // XXX consider using PortfolioHolder continuing inv to undelegate
 

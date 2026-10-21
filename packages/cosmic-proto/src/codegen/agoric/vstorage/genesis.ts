@@ -2,7 +2,12 @@
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
-/** The initial or exported state. */
+/**
+ * The initial or exported state.
+ * @name GenesisState
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.GenesisState
+ */
 export interface GenesisState {
   data: DataEntry[];
 }
@@ -10,13 +15,21 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/agoric.vstorage.GenesisState';
   value: Uint8Array;
 }
-/** The initial or exported state. */
+/**
+ * The initial or exported state.
+ * @name GenesisStateSDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.GenesisState
+ */
 export interface GenesisStateSDKType {
   data: DataEntrySDKType[];
 }
 /**
  * A vstorage entry.  The only necessary entries are those with data, as the
  * ancestor nodes are reconstructed on import.
+ * @name DataEntry
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.DataEntry
  */
 export interface DataEntry {
   /**
@@ -33,6 +46,9 @@ export interface DataEntryProtoMsg {
 /**
  * A vstorage entry.  The only necessary entries are those with data, as the
  * ancestor nodes are reconstructed on import.
+ * @name DataEntrySDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.DataEntry
  */
 export interface DataEntrySDKType {
   path: string;
@@ -43,8 +59,29 @@ function createBaseGenesisState(): GenesisState {
     data: [],
   };
 }
+/**
+ * The initial or exported state.
+ * @name GenesisState
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/agoric.vstorage.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.data) && (!o.data.length || DataEntry.is(o.data[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.data) &&
+          (!o.data.length || DataEntry.isSDK(o.data[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -112,8 +149,29 @@ function createBaseDataEntry(): DataEntry {
     value: '',
   };
 }
+/**
+ * A vstorage entry.  The only necessary entries are those with data, as the
+ * ancestor nodes are reconstructed on import.
+ * @name DataEntry
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.DataEntry
+ */
 export const DataEntry = {
   typeUrl: '/agoric.vstorage.DataEntry' as const,
+  is(o: any): o is DataEntry {
+    return (
+      o &&
+      (o.$typeUrl === DataEntry.typeUrl ||
+        (typeof o.path === 'string' && typeof o.value === 'string'))
+    );
+  },
+  isSDK(o: any): o is DataEntrySDKType {
+    return (
+      o &&
+      (o.$typeUrl === DataEntry.typeUrl ||
+        (typeof o.path === 'string' && typeof o.value === 'string'))
+    );
+  },
   encode(
     message: DataEntry,
     writer: BinaryWriter = BinaryWriter.create(),

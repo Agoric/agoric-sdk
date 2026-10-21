@@ -11,11 +11,8 @@ import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQui
 import { parseVatSlot } from '../src/lib/parseVatSlots.js';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
-import {
-  buildVatController,
-  initializeSwingset,
-  makeSwingsetController,
-} from '../src/index.js';
+import { buildVatController, makeSwingsetController } from '../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
 import {
   makeConsole,
   makeMessage,

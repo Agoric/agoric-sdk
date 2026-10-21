@@ -26,6 +26,10 @@ import { Nat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 
+/**
+ * @import {Device} from '../../types-external.js';
+ */
+
 // Since we use harden when saving the state, we need to copy the arrays so they
 // will continue to be mutable. each record inside handlers is immutable, so we
 // can share those, but everything higher has to be copied. We copy on every
@@ -329,7 +333,7 @@ export function buildRootDeviceNode(tools) {
     },
   });
 }
-/** @typedef {import('../../types-external.js').Device<ReturnType<typeof buildRootDeviceNode>>} TimerDevice */
+/** @typedef {Device<ReturnType<typeof buildRootDeviceNode>>} TimerDevice */
 
 // exported for testing. Only buildRootDeviceNode is intended for production
 // use.

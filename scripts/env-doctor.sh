@@ -69,7 +69,7 @@ run_diagnostic \
   "Check if Yarn version matches package.json" \
   "[ \"$(yarn --version)\" = \"$(node -p "require('./package.json').packageManager.split('@')[1]")\" ]" \
   "Install correct Yarn version" \
-  "corepack enable && yarn set version $(node -p "require('./package.json').packageManager.split('@')[1]")"
+  "./scripts/ensure-corepack-yarn.sh"
 
 run_diagnostic \
   "Check if Git is installed" \

@@ -1,8 +1,8 @@
 // @ts-nocheck
 
 import '@endo/init';
-import process from 'process';
-import fs from 'fs';
+import process from 'node:process';
+import fs from 'node:fs';
 import { isSwingStore, openSwingStore } from '@agoric/swing-store';
 
 const argv = process.argv.splice(2);

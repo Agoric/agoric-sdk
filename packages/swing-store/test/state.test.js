@@ -1,5 +1,7 @@
 // @ts-check
 
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import tmp from 'tmp';
 
@@ -151,7 +153,7 @@ const testTranscriptStore = test.macro({
     return `${prefix.replace(/.$/, '$& ')}${type} transcriptStore ${detail}`;
   },
   async exec(t, { ephemeral, keepTranscripts }) {
-    let dbDir = null;
+    let dbDir = /** @type {string | null} */ (null);
     if (!ephemeral) {
       const [tmpPath, cleanup] = tmpDir('testdb');
       t.teardown(cleanup);

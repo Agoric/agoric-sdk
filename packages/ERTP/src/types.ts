@@ -176,10 +176,10 @@ export type IssuerGetAmountOf<K extends AssetKind, M extends Key = Key> = (
  *   be interpreted as absence. If you want to express a `Pattern` that will
  *   match only `undefined`, use `M.undefined()` instead.
  */
-export type IssuerBurn = (
-  payment: ERef<Payment>,
+export type IssuerBurn<K extends AssetKind = AssetKind, M extends Key = Key> = (
+  payment: ERef<Payment<K, M>>,
   optAmountShape?: Pattern,
-) => Promise<Amount>;
+) => Promise<Amount<K, M>>;
 /**
  * Work around JSDoc union handling
  */
@@ -211,7 +211,7 @@ export type IssuerMethods<K extends AssetKind, M extends Key> = {
   makeEmptyPurse: () => Purse<K, M>;
   isLive: IssuerIsLive;
   getAmountOf: IssuerGetAmountOf<K, M>;
-  burn: IssuerBurn;
+  burn: IssuerBurn<K, M>;
 };
 /**
  * The issuer cannot
@@ -267,7 +267,10 @@ export type AdditionalDisplayInfo = {
  * Holding a Mint carries the right to issue new digital
  *   assets. These assets all have the same kind, which is called a Brand.
  */
-export type Mint<K extends AssetKind = AssetKind, M extends Key = Key> = {
+export type Mint<
+  K extends AssetKind = AssetKind,
+  M extends Key = Key,
+> = RemotableObject & {
   /**
    * Gets the Issuer for this mint.
    */
@@ -296,7 +299,7 @@ export type DepositFacetReceive = (
   payment: Payment,
   optAmountShape?: Pattern,
 ) => Amount;
-export type DepositFacet = {
+export type DepositFacet = RemotableObject & {
   /**
    * Deposit all the contents of payment
    * into the purse that made this facet, returning the amount. If the optional

@@ -1,1 +1,611 @@
-export type * from './constants.js';
+/* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
+import type { NatAmount } from '@agoric/ertp';
+import {
+  type AccountId,
+  type Bech32Address,
+  type CaipChainId,
+  type CosmosChainAddress,
+  type TrafficEntry,
+} from '@agoric/orchestration';
+import type {
+  ContinuingInvitationSpec,
+  ContractInvitationSpec,
+} from '@agoric/smart-wallet/src/invitations.js';
+import type { Address as EvmAddress } from 'abitype';
+import type {
+  AxelarChain,
+  SupportedChain,
+  YieldProtocol,
+  PortfolioPlannerAgent as PortfolioPlannerAgentValue,
+} from './constants.js';
+import type { InstrumentId } from './instruments.js';
+import type { PublishedTx } from './resolver.js';
+import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
+import type {
+  PortfolioAutoFeaturesExt,
+  PortfolioPermissionsExt,
+} from './portfolio-permissions.js';
+import type { SignedPortfolioObservations } from './observation-messages.ts';
+
+/**
+ * Feature flags to handle contract upgrade flow compatibility.
+ */
+export type FlowFeatures = {
+  /** Control `ProgressTracker` support. */
+  useProgressTracker?: boolean;
+  /** Enable experimental swap feature. */
+  experimentalSwap?: boolean;
+};
+
+/**
+ * Configuration options for flows.
+ */
+export type FlowConfig = {
+  features?: FlowFeatures;
+};
+export type SeatKeyword = 'Cash' | 'Deposit';
+
+/**
+ * Reference to a local chain accounts (LCA).
+ * '+agoric' is published as `depositAddress`
+ */
+export type LocalChainAccountRef = '+agoric';
+
+/**
+ * Identifies the blockchain hosting an address external to ymax from which
+ * funds for a deposit must be supplied.
+ */
+export type DepositFromChainRef = `+${AxelarChain}`;
+
+/**
+ * Identifies the blockchain hosting an address external to ymax to which
+ * withdrawn funds will be sent.
+ */
+export type WithdrawToChainRef = `-${AxelarChain}`;
+
+export type InterChainAccountRef = `@${SupportedChain}`;
+
+/**
+ * An AssetPlaceRef describes a place where funds can be, either an
+ * {@link InstrumentId} (starting with an ASCII letter), a {@link SeatKeyword}
+ * wrapped in `<...>` angle brackets, or a value consisting of a
+ * single-character punctuator followed by a SupportedChain (that character
+ * being `@` for {@link InterChainAccountRef}, `+` for
+ * {@link LocalChainAccountRef} and {@link DepositFromChainRef}, and `-` for
+ * {@link WithdrawToChainRef}).
+ */
+export type AssetPlaceRef =
+  | `<${SeatKeyword}>`
+  | LocalChainAccountRef
+  | DepositFromChainRef
+  | WithdrawToChainRef
+  | InterChainAccountRef
+  | InstrumentId;
+
+type Empty = Record<never, NatAmount>;
+
+/**
+ * Proposal shapes for portfolio operations.
+ *
+ * **openPortfolio**: Create portfolio with initial funding across protocols
+ * **rebalance**: Add funds (give) or withdraw funds (want) from protocols
+ */
+export type ProposalType = {
+  openPortfolio: {
+    give: {
+      /** required iff the contract was started with an Access issuer */
+      Access?: NatAmount;
+      Deposit?: NatAmount;
+    };
+    want?: Empty;
+  };
+  rebalance:
+    | { give: { Deposit?: NatAmount }; want: Empty }
+    | { want: { Cash: NatAmount }; give: Empty };
+  withdraw: { want: { Cash: NatAmount }; give: Empty };
+  deposit: { give: { Deposit: NatAmount }; want: Empty };
+};
+
+/**
+ * Target allocation mapping from InstrumentId or EVM-only InterChainAccountRef
+ * (the latter indicating undeployed USDC on a chain) to numerator (typically in
+ * basis points). Denominator is implicitly the sum of all numerators.
+ */
+export type TargetAllocation = Partial<
+  Record<InstrumentId | `@${AxelarChain}`, bigint>
+>;
+
+/**
+ * Outcome of an operation that may be resolved asynchronously (e.g. subject
+ * to delayed mandate validation) after it has already had some other,
+ * immediately-visible effect (such as starting a flow).
+ */
+export type OperationOutcome<Result, Error = string> =
+  | {
+      status: 'pending';
+      result?: never;
+      error?: never;
+    }
+  | {
+      status: 'ok';
+      result: Result;
+      error?: never;
+    }
+  | {
+      status: 'error';
+      result?: never;
+      error: Error;
+    };
+
+/**
+ * The delegated `SetTargetAllocation` operation that initiated a rebalance
+ * flow, carrying the proposed allocation and, independently of the flow's
+ * own execution outcome, the outcome of validating and committing that
+ * allocation as the new policy.
+ */
+export type SetTargetAllocationInitiatingOperation = {
+  type: 'setTargetAllocation';
+  targetAllocation: TargetAllocation;
+} & OperationOutcome<{ policyVersion: number }>;
+
+/**
+ * The `openPortfolio` operation that initiated a deposit flow, when it also
+ * set the portfolio's initial target allocation, carrying that proposed
+ * allocation and the outcome of committing it as the new policy.
+ */
+export type OpenPortfolioInitiatingOperation = {
+  type: 'openPortfolio';
+  targetAllocation: TargetAllocation;
+} & OperationOutcome<{ policyVersion: number }>;
+
+/** Planner-attested TVL for an instrument, in whole USD. */
+export type InstrumentTvlObservation = {
+  tvlUsd: bigint;
+};
+
+/**
+ * A location whose USDC contributes to the current portfolio value (i.e., an
+ * AssetPlaceRef that is not a seat or deposit/withdrawal location).
+ */
+export type PortfolioBalancePlaceRef = InstrumentId | InterChainAccountRef;
+
+/**
+ * Off-chain observations used to construct and vet a submitted plan.
+ * Balance values are micro-USDC.
+ */
+export type PlanObservations = {
+  balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
+  instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
+};
+
+export type FlowDetail =
+  | {
+      type: 'withdraw';
+      amount: NatAmount;
+      toChain?: SupportedChain;
+      agent?: undefined;
+      agentMemo?: undefined;
+      initiatingOperation?: undefined;
+    }
+  | {
+      type: 'deposit';
+      amount: NatAmount;
+      fromChain?: SupportedChain;
+      agent?: undefined;
+      agentMemo?: undefined;
+      /** The operation that initiated this flow, when known. */
+      initiatingOperation?: OpenPortfolioInitiatingOperation;
+    }
+  | {
+      type: 'rebalance'; // aka simpleRebalance
+      agent?: PortfolioAgentKey;
+      agentMemo?: string;
+      /** The operation that initiated this flow, when known. */
+      initiatingOperation?: SetTargetAllocationInitiatingOperation;
+      /** Policy version current when this flow was requested. */
+      createdAtPolicyVersion?: number;
+    }
+  | {
+      type: 'claimRewards';
+      agent?: PortfolioAgentKey;
+      agentMemo?: string;
+      initiatingOperation?: undefined;
+    };
+
+/** linked list of concurrent failures, including dependencies */
+export type FlowErrors = {
+  step: number;
+  how: string;
+  error: string;
+  next?: FlowErrors;
+};
+
+export type FlowStatus =
+  | {
+      state: 'run';
+      /** minimum currently running step */
+      step: number;
+      how: string;
+      /** currently running steps, when executing concurrently */
+      steps?: number[];
+    }
+  /** @deprecated - contract no longer does automatic recovery */
+  | { state: 'undo'; step: number; how: string }
+  | { state: 'done' }
+  | ({ state: 'fail' } & FlowErrors);
+
+/**
+ * Decomposed parameters for a same-chain, same-account reward-token -> stable-token
+ * swap (src === dest === `@{chain}`) routed through 1inch.
+ *
+ * Rather than forwarding an opaque calldata blob, the planner supplies the swap
+ * as named fields and the contract reconstructs the call itself, filling the
+ * fund-safety fields it controls (`dstToken` = configured stable token,
+ * `dstReceiver` = this portfolio's own account, `minReturnAmount` = the
+ * movement `amount`) and pinning the router/selector from `provider`.
+ * `executor`, `srcReceiver`, and `data` are provider route internals
+ */
+export type OneInchSwapDesc = {
+  provider: '1inch';
+  /**
+   * Reward token; becomes `desc.srcToken` and the approved spend token.
+   * The contract accepts only tokens listed in configured chain metadata with
+   * `swapFrom` usage.
+   */
+  tokenIn: `0x${string}`;
+  /**
+   * Optional stable token; becomes `desc.dstToken`. When omitted, the contract
+   * uses its configured stable token for the chain. The effective token must be
+   * listed in configured chain metadata with `swapTo` usage.
+   */
+  tokenOut?: `0x${string}`;
+  /** becomes `desc.amount` and the approved amount */
+  amountIn: bigint;
+  /** provider routing flags (e.g. 1inch `_PARTIAL_FILL`) */
+  flags: bigint;
+  /** provider route internal: the contract executing the swap */
+  executor: `0x${string}`;
+  /** provider route internal: where `tokenIn` is routed */
+  srcReceiver: `0x${string}`;
+  /** provider route internal: opaque executor calldata */
+  data: `0x${string}`;
+};
+
+/**
+ * A reward-token -> stable-token swap request. Currently only 1inch is supported;
+ * supporting another aggregator widens this to a union of per-provider descs.
+ */
+export type SwapDesc = OneInchSwapDesc;
+
+/**
+ * Swap aggregator whose API produced the swap `data`
+ */
+export type SwapProvider = SwapDesc['provider'];
+
+/**
+ * Parameters for claiming external rewards.
+ *
+ * `tokens` and `minAmounts` are common across protocols. Protocol-specific
+ * inputs are nested under a per-protocol key (e.g. `morpho`).
+ *
+ */
+export type ClaimRewardsParams = {
+  /** reward token addresses being claimed */
+  tokens: EvmAddress[];
+  /** minimum amount to claim constraint per corresponding entry in `tokens` */
+  minAmounts: bigint[];
+  /**
+   * Morpho-specific claim inputs (e.g. for the Merkle rewards distributor).
+   *
+   * Morpho rewards are distributed on-chain via a Merkle Distributor
+   * Contract. The `tokens`, `minAmounts`, and `proofs` below are
+   * obtained off-chain following Morpho's claim-rewards tutorial
+   * ({@link https://docs.morpho.org/developers/rewards/tutorials/claim-rewards/}),
+   * which queries the Merkl rewards API for the claimer's EVM address:
+   * `GET https://api.merkl.xyz/v4/users/{address}/rewards?chainId={chainId}`.
+   * Each entry of that response supplies the reward token address, the
+   * cumulative claimable amount, and the corresponding Merkle proof.
+   */
+  morpho?: {
+    /** Merkle proof per corresponding claim entry, from the Merkl rewards API */
+    proofs: `0x${string}`[][];
+  };
+};
+
+export type MovementDesc = {
+  amount: NatAmount;
+  src: AssetPlaceRef;
+  dest: AssetPlaceRef;
+  /** for example: GMP fee */
+  fee?: NatAmount;
+  /** for example: { usdnOut: 98n } */
+  detail?: Record<string, bigint>;
+  /** Present only for reward-token claims. */
+  claimRewards?: ClaimRewardsParams;
+  /** Present only for reward-token -> stable-token swaps. */
+  swap?: SwapDesc;
+};
+
+export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
+
+export type FlowStep = Pick<
+  MovementDesc,
+  'amount' | 'src' | 'dest' | 'claimRewards' | 'swap'
+> & {
+  /**
+   * Human-readable description of how the step accomplishes the transfer from
+   * `src` to `dest` (distinct from `Way.how` in the contract).
+   */
+  how: string;
+  /**
+   * A single FlowStep can have an arbitrary number of associated pendingTxs
+   * entries. They are tracked by grouping them into "phases", each phase
+   * containing a sequence of TxIds in order of execution and with no implied
+   * relative sequencing constraints across phases.
+   *
+   * It is valid for the phases record
+   * - to be omitted,
+   * - to have one property,
+   * - to have no properties,
+   * - to have more than one property.
+   * and for each property, to have an array of zero or more TxIds.
+   */
+  phases?: Partial<Record<TxPhase, TxId[]>>;
+  // XXX remaining plan parts (fee, detail, etc.) could be surfaced the same way
+};
+
+/**
+ * Each step in the `flow` of a FundsFlowPlan can depend upon any number of
+ * other steps, subject to the complete directed graph being acyclic.
+ * The dependencies are expressed using 0-based indices.
+ */
+type FlowStepDependency = [stepIndex: number, prerequisiteIndexes: number[]];
+
+export type FundsFlowPlan = {
+  flow: MovementDesc[];
+  /** When `order` is absent, default to fully sequential dependencies. */
+  order?: FlowStepDependency[];
+};
+
+export type FundsFlow = MovementDesc[] | FundsFlowPlan;
+
+// tx for transactions
+export type TxId = `tx${number}`;
+
+export type TrafficReport = {
+  traffic: TrafficEntry[];
+  appendedTxIds?: TxId[];
+};
+
+export type PortfolioKey = `portfolio${number}`;
+export type FlowKey = `flow${number}`;
+export type PortfolioAgentKey = `agent${number}`;
+
+export type PortfolioAgentState = 'active' | 'revoked' | 'expired';
+
+export type PortfolioPlannerAgentId = typeof PortfolioPlannerAgentValue;
+export type PortfolioAgentGrantee = Bech32Address | PortfolioPlannerAgentId;
+
+export type PortfolioAgentStatus = {
+  grantee: PortfolioAgentGrantee;
+  permissions: PortfolioPermissionsExt;
+  state: PortfolioAgentState;
+  /**
+   * the policyVersion at which this agent's record was last changed
+   * May be missing on some legacy agent records
+   */
+  updatedAtPolicyVersion?: number;
+};
+
+/** Result of a `Grant` operation, referencing the resulting policyVersion. */
+export type PortfolioGrantResult = {
+  portfolioId: number;
+  policyVersion: number;
+  agentId: number;
+};
+
+/** Result of an owner-signed external delegation lifecycle operation. */
+export type PortfolioDelegationLifecycleResult = PortfolioGrantResult;
+
+/** Result of a `SetAutoFeatures` operation, referencing the resulting policyVersion. */
+export type PortfolioSetAutoFeaturesResult = {
+  portfolioId: number;
+  policyVersion: number;
+  enabledAutoFeatures: PortfolioAutoFeaturesExt;
+};
+
+/**
+ * Result of an `OpenPortfolio` operation that also granted delegated
+ * control (`grantee`) and/or enabled auto-features (`features`),
+ * referencing the resulting policyVersion. A plain open (neither
+ * `grantee` nor `features`) keeps publishing the bare
+ * `portfolio${number}` result for backward compatibility.
+ */
+export type PortfolioOpenResult = {
+  portfolioId: number;
+  policyVersion: number;
+  agentId?: number;
+  enabledAutoFeatures?: PortfolioAutoFeaturesExt;
+};
+
+export type PortfolioRemoteAccountCommonStates =
+  | 'provisioning'
+  | 'active'
+  | 'failed';
+
+export type PortfolioGenericRemoteAccountState =
+  | {
+      chainId: CaipChainId;
+      address: string;
+      state: PortfolioRemoteAccountCommonStates;
+    }
+  | {
+      state: 'provisioning' | 'failed' | 'unknown';
+    };
+
+export type PortfolioEVMRemoteAccountState = {
+  chainId: `eip155:${number | bigint | string}`;
+  address: EvmAddress;
+} & {
+  state: PortfolioRemoteAccountCommonStates;
+  /**
+   * The factory that deployed the router-based remote account and maintains a map of authorized routers.
+   *
+   * Absent for legacy accounts.
+   */
+  routerFactory?: EvmAddress;
+};
+
+export type PortfolioCosmosRemoteAccountState = {
+  chainId: `cosmos:${string}`;
+  address: Bech32Address;
+  state: PortfolioRemoteAccountCommonStates;
+};
+
+export type PortfolioRemoteAccountState =
+  | PortfolioEVMRemoteAccountState
+  | PortfolioCosmosRemoteAccountState
+  | PortfolioGenericRemoteAccountState;
+
+export type StatusFor = {
+  contract: {
+    contractAccount: CosmosChainAddress['value'];
+    depositFactoryAddresses?: Partial<Record<AxelarChain, AccountId>>;
+    evmRemoteAccountConfig?: {
+      remoteAccountImplementationAddresses: Partial<
+        Record<AxelarChain, AccountId>
+      >;
+      factoryAddresses: Partial<Record<AxelarChain, AccountId>>;
+      currentRouterAddresses: Partial<Record<AxelarChain, AccountId>>;
+    };
+  };
+  features: {
+    agenticPlanning?: boolean;
+    experimentalSwap?: FlowFeatures['experimentalSwap'];
+  };
+  pendingTx: PublishedTx;
+  evmWallet: EVMWalletUpdate;
+  evmWalletPortfolios: PortfolioPath[];
+  portfolios: {
+    addPortfolio: PortfolioKey;
+  };
+  portfolio: {
+    positionKeys: InstrumentId[];
+    // accountIdByChain and accountsPending deprecated
+    // in favor of accountStateByChain
+    accountIdByChain: Partial<Record<SupportedChain, AccountId>>;
+    accountsPending?: SupportedChain[];
+    accountStateByChain?: {
+      [evmChain in AxelarChain]?: PortfolioEVMRemoteAccountState;
+    } & {
+      [cosmosChain in 'agoric' | 'noble']?: PortfolioCosmosRemoteAccountState;
+    } & {
+      [genericChain in Exclude<
+        SupportedChain,
+        AxelarChain | 'agoric' | 'noble'
+      >]?: PortfolioGenericRemoteAccountState;
+    };
+    depositAddress?: Bech32Address;
+    /** Noble Forwarding Address (NFA) registered by the contract for the `@agoric` address */
+    nobleForwardingAddress?: Bech32Address;
+    targetAllocation?: TargetAllocation;
+    /**
+     * CAIP-10 account ID of the authenticated EVM account that opened this portfolio.
+     * Derived from `permit2Payload.owner` in `openPortfolioFromEVM()`.
+     * The Permit2 signature is verified on-chain by the `depositFactory` contract
+     * when it receives the GMP call via `sendCreateAndDepositCall()`.
+     */
+    sourceAccountId?: AccountId;
+    /** incremented by the contract every time the user sends a transaction that the planner should respond to */
+    policyVersion: number;
+    /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
+    rebalanceCount: number;
+    /** The count of all flows associated with this portfolio */
+    flowCount: number;
+    flowsRunning?: Record<FlowKey, FlowDetail & { awaitingSteps?: boolean }>;
+    enabledAutoFeatures?: PortfolioAutoFeaturesExt;
+  };
+  portfolioAgents: Record<PortfolioAgentKey, PortfolioAgentStatus>;
+  position: {
+    protocol: YieldProtocol;
+    accountId: AccountId;
+    totalIn: NatAmount;
+    totalOut: NatAmount;
+  };
+  flow: FlowStatus & FlowDetail;
+  flowSteps: FlowStep[];
+  flowOrder: FundsFlowPlan['order'];
+};
+
+export type PortfolioSyncState = Pick<
+  StatusFor['portfolio'],
+  'policyVersion' | 'rebalanceCount'
+>;
+
+export type PortfolioDelegatedRebalanceParams = {
+  syncState: PortfolioSyncState;
+  agentMemo?: string;
+};
+
+export type PortfolioDelegatedClaimRewardsParams = {
+  syncState: PortfolioSyncState;
+  agentMemo?: string;
+};
+
+/**
+ * A delegated target-allocation request, optionally with the plan to execute
+ * it, which requires observations of the portfolio at `syncState`, signed by
+ * the observation service.
+ */
+export type PortfolioDelegatedSetTargetAllocationParams = {
+  syncState: PortfolioSyncState;
+  targetAllocation: TargetAllocation;
+  agentMemo?: string;
+  plan?: FundsFlowPlan;
+  signedObservations?: SignedPortfolioObservations;
+};
+
+/**
+ * Published vstorage values produced by the portfolio contract.
+ */
+export type PortfolioPublishedPathTypes = {
+  ymax0: StatusFor['contract'];
+  ymax1: StatusFor['contract'];
+  'ymax0.features': StatusFor['features'];
+  'ymax1.features': StatusFor['features'];
+  'ymax0.portfolios': StatusFor['portfolios'];
+  'ymax1.portfolios': StatusFor['portfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}`]: StatusFor['portfolio'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.positions.${string}`]: StatusFor['position'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.agents`]: StatusFor['portfolioAgents'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.pendingTx.tx${number}`]: StatusFor['pendingTx'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}`]: StatusFor['flow'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`]: StatusFor['flowSteps'];
+} & {
+  [K in `ymax${'0' | '1'}.evmWallets.0x${string}.portfolio`]: StatusFor['evmWalletPortfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.evmWallets.0x${string}`]: StatusFor['evmWallet'];
+};
+
+/**
+ * Names suitable for use as `publicInvitationMaker` in {@link ContractInvitationSpec}.
+ */
+export type PortfolioPublicInvitationMaker = 'makeOpenPortfolioInvitation';
+
+/**
+ * Names suitable for use as `invitationMakerName` in {@link ContinuingInvitationSpec}.
+ *
+ * These continuing invitation makers are returned from portfolio creation and enable
+ * ongoing operations like rebalancing between yield protocols.
+ */
+export type PortfolioContinuingInvitationMaker =
+  | 'Deposit'
+  | 'Withdraw'
+  | 'Rebalance'
+  | 'SimpleRebalance';

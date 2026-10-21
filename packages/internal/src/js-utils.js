@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 /**
  * @file Pure JavaScript utility functions that are compatible with but not
  *   dependent upon a hardened environment.
@@ -13,7 +12,10 @@ export const TRUE = /** @type {const} */ (true);
 /**
  * @typedef {<O extends Record<string, unknown>>(
  *   obj: O,
- * ) => { [K in keyof O]: K extends string ? [K, O[K]] : never }[keyof O][]} TypedEntries
+ * ) => Exclude<
+ *   { [K in keyof O]: K extends string ? [K, O[K]] : never }[keyof O],
+ *   undefined
+ * >[]} TypedEntries
  */
 export const typedEntries = /** @type {TypedEntries} */ (Object.entries);
 
@@ -47,9 +49,28 @@ export const logLevels = /** @type {const} */ ([
 ]);
 Object.freeze(logLevels);
 
-/** @typedef {(typeof logLevels)[keyof logLevels & number]} LogLevel */
+/** @typedef {(typeof logLevels)[keyof typeof logLevels & number]} LogLevel */
 
 /** @typedef {Pick<Console, LogLevel>} LimitedConsole */
+
+/**
+ * Compare two same-type values using built-in operators.
+ * All zeros are placed in an equivalence class that ignores their sign, all
+ * NaNs are placed in an equivalence class after all other numbers, and strings
+ * are compared lexicographically by UTF-16 code unit.
+ *
+ * @type {((a: bigint, b: bigint) => -1 | 0 | 1) &
+ *   ((a: number, b: number) => -1 | 0 | 1) &
+ *   ((a: string, b: string) => -1 | 0 | 1)
+ * }
+ */
+export const naiveCompare = (a, b) => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return /** @type {-1 | 0 | 1} */ (
+    (Number.isNaN(a) ? 1 : 0) - (Number.isNaN(b) ? 1 : 0)
+  );
+};
 
 /**
  * Deep-copy a value by round-tripping it through JSON (which drops
@@ -151,6 +172,34 @@ export const defineName = (name, fn) =>
   defineProperty(fn, 'name', { value: name });
 
 /**
+ * Add underscore separators to a decimal string.
+ *
+ * @param {bigint | `${bigint}` | `${bigint}.${bigint}`} decimal
+ * @param {number} [groupSize]
+ */
+export const groupDecimalDigits = (decimal, groupSize = 3) =>
+  `${decimal}`.replace(
+    /^([+-]?)([0-9]+)([.][0-9]+)?$|.*/,
+    (_x, s, w, f = '') => {
+      if (!w) throw Error('input must be a decimal string');
+      const wCount = w.length;
+      const wGroups =
+        w.slice(wCount % groupSize).match(RegExp(`[0-9]{${groupSize}}`, 'g')) ||
+        [];
+      if (wCount % groupSize) wGroups.unshift(w.slice(0, wCount % groupSize));
+
+      const fGroups = f.match(RegExp(`[0-9]{1,${groupSize}}`, 'g')) || [];
+      const lastFGroup = fGroups.pop();
+      if (lastFGroup) {
+        fGroups.push(lastFGroup.padEnd(groupSize, '0'));
+        fGroups[0] = `.${fGroups[0]}`;
+      }
+
+      return `${s}${wGroups.join('_')}${fGroups.join('_')}`;
+    },
+  );
+
+/**
  * By analogy with how `Array.prototype.map` will map the elements of an array
  * to transformed elements of an array of the same shape, `objectMapMutable`
  * will do likewise for the enumerable string-keyed properties of an object.
@@ -173,13 +222,32 @@ export const objectMapMutable = (obj, mapper) => {
 };
 
 /**
+ * Map the elements of an array to new values, skipping elements for which the
+ * mapping results in either `undefined` or `false`.
+ *
+ * @template T
+ * @template U
+ * @param {T[]} arr
+ * @param {(value: T, index: number, arr: T[]) => U | undefined | false} mapOrDrop
+ * @returns {U[]}
+ */
+export const partialMap = (arr, mapOrDrop) =>
+  arr.reduce((results, el, i, arrArg) => {
+    const result = mapOrDrop(el, i, arrArg);
+    if (result !== undefined && result !== false) {
+      results.push(result);
+    }
+    return results;
+  }, /** @type {U[]} */ ([]));
+
+/**
  * Return the value from `map` associated with `key`. If there is not yet such a
  * value, get one from `makeValue(key)` and update `map` before returning the
  * new value.
  *
  * @template K
  * @template V
- * @param {K extends WeakKey ? WeakMap<K, V> : Map<K, V>} map
+ * @param {[K] extends [WeakKey] ? WeakMap<K, V> : Map<K, V>} map
  * @param {K} key
  * @param {(key: K) => V} makeValue
  * @returns {V}

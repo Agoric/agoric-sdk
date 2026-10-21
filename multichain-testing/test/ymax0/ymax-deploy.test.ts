@@ -1,6 +1,7 @@
 /**
  * @file check whether things are already deployed
  */
+/* global globalThis */
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 
 import {
@@ -24,7 +25,7 @@ import {
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { mustMatch } from '@agoric/internal';
 
-const { fromEntries, keys, values } = Object;
+const { fromEntries } = Object;
 
 // cf. ymax-tool
 const trader1ag = 'agoric1yupasge4528pgkszg9v328x4faxtkldsnygwjl';
@@ -33,7 +34,10 @@ const agoricRest = 'http://localhost:1317';
 
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
-test.before(async t => (t.context = await makeTestContext(t)));
+test.before(async t => {
+  // eslint-disable-next-line no-use-before-define
+  t.context = await makeTestContext(t);
+});
 
 const makeTestContext = async _t => {
   const vstorageClient = makeVstorageKit({ fetch }, LOCAL_CONFIG);
@@ -72,6 +76,7 @@ test('chain-info', async t => {
     await Promise.all(
       chainNames.map(async n => [
         n,
+        // eslint-disable-next-line @jessie.js/safe-await-separator
         await vsc.readPublished(`agoricNames.chain.${n}`),
       ]),
     ),
@@ -97,7 +102,7 @@ test('chain-info', async t => {
   const asset = fromEntries(await vsc.readPublished('agoricNames.vbankAsset'));
   const { [denom]: USDC } = asset;
   t.is(USDC.issuerName, 'USDC');
-  t.log('E(bank).getId(vbank.${denom}.brand):', id(USDC.brand));
+  t.log(`E(bank).getId(vbank.${denom}.brand):`, id(USDC.brand));
 });
 
 test('beneficiary-wallet', async t => {
@@ -113,9 +118,9 @@ test('poc-asset', async t => {
 
   const id = it => it.getBoardId();
   const issuer = fromEntries(await vsc.readPublished('agoricNames.issuer'));
-  t.log('issuer names:', keys(issuer).join(','));
+  t.log('issuer names:', Object.keys(issuer).join(','));
   const brand = fromEntries(await vsc.readPublished('agoricNames.brand'));
-  t.log('brand names:', keys(brand).join(','));
+  t.log('brand names:', Object.keys(brand).join(','));
   const asset = fromEntries(await vsc.readPublished('agoricNames.vbankAsset'));
   const { upoc26 } = asset;
   t.truthy(asset.upoc26);
@@ -128,7 +133,8 @@ test('poc-asset', async t => {
 test('ymax-deployed', async t => {
   const { vstorageClient: vsc } = t.context;
 
-  const instance = fromEntries(await vsc.readPublished('agoricNames.instance'));
+  const instanceEntries = await vsc.readPublished('agoricNames.instance');
+  const instance = fromEntries(instanceEntries);
   t.true('ymax0' in instance);
   const id = it => it.getBoardId();
   t.log('ymax0 instance boardId:', id(instance.ymax0));
@@ -159,7 +165,7 @@ test('target-allocation-deployed', async t => {
   const cur = await wk.getCurrentWalletRecord(trader1ag);
   const { offerToPublicSubscriberPaths } = cur;
   const byOfferId = fromEntries(offerToPublicSubscriberPaths);
-  const portfolioKeys = values(byOfferId)
+  const portfolioKeys = Object.values(byOfferId)
     .filter(sub => 'portfolio' in sub)
     .map(sub => sub.portfolio);
 
@@ -254,7 +260,7 @@ test('portfolio-opened', async t => {
   const { offerToPublicSubscriberPaths } = cur;
   const byOfferId = fromEntries(offerToPublicSubscriberPaths);
   //   t.log(byOfferId);
-  const portfolioKeys = values(byOfferId)
+  const portfolioKeys = Object.values(byOfferId)
     .filter(sub => 'portfolio' in sub)
     .map(sub => sub.portfolio);
   t.log('portfolios', portfolioKeys);

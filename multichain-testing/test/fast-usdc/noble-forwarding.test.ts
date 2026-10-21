@@ -70,7 +70,7 @@ test('noble forwarding', async t => {
 
   const { balances } = await retryUntilCondition(
     () => queryClient.queryBalances(agoricAddr),
-    ({ balances }) => !!balances.length,
+    result => !!result.balances.length,
     `${agoricAddr} received forwarded funds from noble`,
   );
   t.is(BigInt(balances[0]?.amount), qty, 'got tokens');

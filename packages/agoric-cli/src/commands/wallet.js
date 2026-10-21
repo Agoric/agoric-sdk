@@ -1,6 +1,5 @@
 // @ts-check
 /* eslint-disable func-names */
-/* eslint-env node */
 import {
   iterateLatest,
   makeCastingSpec,
@@ -13,9 +12,9 @@ import {
   fetchEnvNetworkConfig,
   makeAgoricNames,
 } from '@agoric/client-utils';
-import { execFileSync } from 'child_process';
-import fs from 'fs';
-import util from 'util';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import util from 'node:util';
 
 import { makeLeaderOptions } from '../lib/casting.js';
 import {
@@ -30,17 +29,21 @@ import {
 } from '../lib/format.js';
 import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
 
+/**
+ * @import {Command} from 'commander';
+ */
+
 const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 const SLEEP_SECONDS = 3;
 
 /**
- * @param {import('commander').Command['command']} command
- * @returns {Promise<import('commander').Command>}
+ * @param {Command['command']} command
+ * @returns {Promise<Command>}
  */
 export const makeWalletCommand = async command => {
   /**
-   * @param {import('commander').Command} baseCmd
+   * @param {Command} baseCmd
    */
   const withSharedTxOptions = baseCmd =>
     baseCmd

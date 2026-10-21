@@ -3,7 +3,7 @@
 import { Fail } from '@endo/errors';
 
 /**
- * @import {KVStore} from '@agoric/swing-store';
+ * @import {KVStore} from '@agoric/internal/src/kv-store.js';
  */
 
 /**

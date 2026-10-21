@@ -2,15 +2,15 @@
  * @import {VTransferIBCEvent} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  * @import {AxelarGmpIncomingMemo, EvmTapState, ContractCall, SupportedEVMChains} from '../axelar-types.js';
  * @import {ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {AxelarGmpOutgoingMemo, GMPMessageType} from '../axelar-types.js'
+ * @import {CosmosChainAddress} from '@agoric/orchestration';
+ * @import {AmountArg} from '@agoric/orchestration';
  */
-
-/** @typedef {ContractCall} ContractCall */
 
 import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
@@ -43,7 +43,7 @@ const InvitationMakerI = M.interface('invitationMaker', {
 });
 harden(InvitationMakerI);
 
-/** @type {TypedPattern<EvmTapState>} */
+/** @type {CastedPattern<EvmTapState>} */
 const EvmKitStateShape = {
   localChainAddress: CosmosChainAddressShape,
   sourceChannel: M.string(),
@@ -195,8 +195,8 @@ export const prepareEvmAccountKit = (
          * Sends tokens from the local account to a specified Cosmos chain
          * address.
          *
-         * @param {import('@agoric/orchestration').CosmosChainAddress} toAccount
-         * @param {import('@agoric/orchestration').AmountArg} amount
+         * @param {CosmosChainAddress} toAccount
+         * @param {AmountArg} amount
          * @returns {Promise<string>} A success message upon completion.
          */
         async send(toAccount, amount) {

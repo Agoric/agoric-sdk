@@ -4,6 +4,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

@@ -8,8 +8,10 @@ import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.
 
 /**
  * @import {Passable, RemotableObject} from '@endo/pass-style';
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {ContractMeta, Installation, Instance, Invitation, IssuerKeywordRecord, ZCF} from '@agoric/zoe';
  * @import {GovernableStartFn, ParamChangesSpec} from '../src/types.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {InvitationParam} from '../src/contractGovernance/typedParamManager.js';
  */
 
 // @file a version of the contractGovernor.js contract simplified for testing.
@@ -20,11 +22,11 @@ import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.
 /**
  * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
- *   timer: import('@agoric/time').TimerService,
+ *   timer: TimerService,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord?: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('../src/contractGovernance/typedParamManager.js').InvitationParam }},
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: InvitationParam }},
  *   }
  * }>} zcf
  * @param {{
@@ -63,7 +65,7 @@ export const start = async (zcf, privateArgs) => {
   // In this fake, the ability to update params is not closely held.
   const limitedCreatorFacet = E(governedCF).getLimitedCreatorFacet();
 
-  /** @param {ParamChangesSpec<any>} paramSpec */
+  /** @param {ParamChangesSpec} paramSpec */
   const changeParams = paramSpec => {
     const paramMgr = E(paramMgrRetriever).get(paramSpec.paramPath);
     return E(paramMgr).updateParams(paramSpec.changes);

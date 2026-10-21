@@ -15,6 +15,7 @@ const { values } = Object;
  * @import {LocalOrchestrationAccountKit} from '../../src/exos/local-orchestration-account.js';
  * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationFlow, CosmosChainAddress} from '@agoric/orchestration';
  * @import {ZoeTools} from '../../src/utils/zoe-tools.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
  */
 
 /**
@@ -23,7 +24,7 @@ const { values } = Object;
  * facilitate failure path testing of ZoeTools.
  *
  * @satisfies {OrchestrationFlow}
- * @param {Orchestrator} orch
+ * @param {Orchestrator} _orch
  * @param {object} ctx
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
@@ -31,7 +32,7 @@ const { values } = Object;
  * @param {{ destAddr: CosmosChainAddress }} offerArgs
  */
 export const depositSend = async (
-  orch,
+  _orch,
   { sharedLocalAccountP, zoeTools: { localTransfer, withdrawToSeat } },
   seat,
   offerArgs,
@@ -66,14 +67,14 @@ harden(depositSend);
  * account.
  *
  * @satisfies {OrchestrationFlow}
- * @param {Orchestrator} orch
+ * @param {Orchestrator} _orch
  * @param {object} ctx
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {ZCFSeat} seat
  */
 export const deposit = async (
-  orch,
+  _orch,
   { sharedLocalAccountP, zoeTools: { localTransfer } },
   seat,
 ) => {
@@ -98,14 +99,14 @@ harden(deposit);
  * Withdraw funds from the contract's local account to the offer's seat.
  *
  * @satisfies {OrchestrationFlow}
- * @param {Orchestrator} orch
+ * @param {Orchestrator} _orch
  * @param {object} ctx
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {ZCFSeat} seat
  */
 export const withdraw = async (
-  orch,
+  _orch,
   { sharedLocalAccountP, zoeTools: { withdrawToSeat } },
   seat,
 ) => {

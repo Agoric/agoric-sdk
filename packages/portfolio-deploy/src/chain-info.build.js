@@ -2,7 +2,7 @@
  * @file build core-eval to populate agoricNames.chain etc.
  * optionally using IBC queries.
  *
- * @see {options} for CLI usage
+ * @see {parseBuilderArgs} for CLI usage
  * @see {sourceSpec} for core-eval details
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
@@ -16,35 +16,32 @@ const { keys } = Object;
 
 // TODO: factor out overlap with builders/scripts/orchestration/write-chain-info.js
 
-const sourceSpec = '@aglocal/portfolio-deploy/src/chain-info.core.js';
+const sourceSpec =
+  '@agoric/deploy-script-support/src/control/chain-info.core.js';
 
 /**
  * @import {ParseArgsConfig} from 'node:util';
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo} from '@agoric/orchestration';
- * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
+ * @import {CastedPattern} from '@endo/patterns';
+ * @import {IBCChannelID, IBCConnectionID, IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
+ * @import {ExecFileSyncOptionsWithStringEncoding} from 'node:child_process';
  */
 
-/** @type {ParseArgsConfig['options'] } */
-const options = {
-  baseName: { type: 'string', default: 'eval-chain-info' },
-  chainInfo: { type: 'string' },
-  net: { type: 'string' },
-  peer: { type: 'string', multiple: true },
-  podName: { type: 'string' },
-  container: { type: 'string' },
-};
-/**
- * @typedef {{
- *   baseName: string;
- *   chainInfo?: string;
- *   net?: string;
- *   peer?: string[];
- *   podName?: string;
- *   container?: string;
- * }} FlagValues
- */
+/** @param {string[]} args */
+const parseBuilderArgs = args =>
+  parseArgs({
+    args,
+    options: {
+      /** base name of output files */
+      baseName: { type: 'string', default: 'eval-chain-info' },
+      chainInfo: { type: 'string' },
+      net: { type: 'string' },
+      peer: { type: 'string', multiple: true },
+      podName: { type: 'string' },
+      container: { type: 'string' },
+    },
+  });
 
 /**
  * @param {unknown} _utils
@@ -57,7 +54,7 @@ export const defaultProposalBuilder = async (_utils, chainInfo) =>
     getManifestCall: ['getManifestForChainInfo', { options: { chainInfo } }],
   });
 
-/** @type {TypedPattern<Record<string, ChainInfo>>} */
+/** @type {CastedPattern<Record<string, ChainInfo>>} */
 const ChainInfosShape = M.recordOf(M.string(), ChainInfoShape);
 
 /**
@@ -66,7 +63,7 @@ const ChainInfosShape = M.recordOf(M.string(), ChainInfoShape);
 
 /**
  * @param {string} net
- * @param {typeof fetch} fetch
+ * @param {typeof globalThis.fetch} fetch
  * @returns {Promise<MinimalNetworkConfig>}
  */
 const getNetConfig = (net, fetch) =>
@@ -156,7 +153,7 @@ const makeAgd = (
   const exec = (
     /** @type {string[]} */
     args,
-    /** @type {import('node:child_process').ExecFileSyncOptionsWithStringEncoding} */
+    /** @type {ExecFileSyncOptionsWithStringEncoding} */
     opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
   ) => {
     if (binary === 'agd') {
@@ -201,7 +198,7 @@ const makeAgd = (
  *
  * @param {string} chainId of agoric chain
  * @param {string[]} peers bech32prefix:connection-12:channel-34:ustake
- * @param {{ agd: ReturnType<makeAgd> }} io
+ * @param {{ agd: ReturnType<typeof makeAgd> }} io
  * @returns {Promise<Record<string, CosmosChainInfo>>} where
  *   info.agoric.connections has a connection to each peeer
  */
@@ -286,21 +283,18 @@ const getMainnetChainInfo = (chains = ['agoric', 'noble', 'axelar']) => {
 
 /** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  const { scriptArgs } = endowments;
-  /** @type {FlagValues} */
-  // @ts-expect-error guaranteed by options config
-  const { values: flags } = parseArgs({ args: scriptArgs, options });
+  const { scriptArgs = [] } = endowments;
+  const { values: flags } = parseBuilderArgs(scriptArgs);
   const { baseName } = flags;
-  let chainInfo =
-    'chainInfo' in flags
-      ? harden(JSON.parse(flags.chainInfo))
-      : getMainnetChainInfo();
+  let chainInfo = flags.chainInfo
+    ? harden(JSON.parse(flags.chainInfo))
+    : getMainnetChainInfo();
 
   await null;
   if (flags.net) {
     if (!(flags.peer && flags.peer.length)) throw Error('--peer required');
     // only import/use net access if asked with --net
-    const { execFileSync } = await import('child_process');
+    const { execFileSync } = await import('node:child_process');
     const { chainName: chainId, rpcAddrs } = await getNetConfig(
       flags.net,
       fetch,

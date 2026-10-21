@@ -18,9 +18,9 @@ mkdir -p .vscode \
 
 cat > .vscode/settings.json.new << \EOF || die "Could not write settings.json"
 {
-  // Automatically format with Prettier on save
+  // Automatically format with dprint on save
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.defaultFormatter": "dprint.dprint",
 
   "typescript.preferences.importModuleSpecifierEnding": "js",
   "typescript.tsdk": "node_modules/typescript/lib",
@@ -30,7 +30,7 @@ cat > .vscode/settings.json.new << \EOF || die "Could not write settings.json"
     "source.fixAll.eslint": true
   },
   "eslint.rules.customizations": [
-    // Leave this to Prettier itself
+    // Leave this to repo formatter
     { "rule": "prettier/*", "severity": "off" },
     // Error in CI but a common state while coding in IDE
     { "rule": "no-unused-vars", "severity": "warn" },
@@ -83,7 +83,15 @@ cat > .vscode/launch.json.new << \EOF || die "Could not write launch.json"
 }
 EOF
 
-for file in .vscode/launch.json .vscode/settings.json; do
+cat > .vscode/extensions.json.new << \EOF || die "Could not write extensions.json"
+{
+    "recommendations": [
+        "dprint.dprint"
+    ]
+}
+EOF
+
+for file in .vscode/extensions.json .vscode/launch.json .vscode/settings.json; do
   printf "\nComparing %s\n" $file
   if test -f $file; then
     if git diff --no-index --quiet --exit-code $file $file.new; then

@@ -88,7 +88,7 @@ function sanitize(data) {
   }
   // Golang likes to have its bigints as strings.
   return JSON.parse(
-    JSON.stringify(data, (key, value) =>
+    JSON.stringify(data, (_key, value) =>
       typeof value === 'bigint' ? value.toString() : value,
     ),
   );

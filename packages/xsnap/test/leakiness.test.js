@@ -1,5 +1,7 @@
 /** global FinalizationRegistry */
 
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import process from 'node:process';
@@ -10,15 +12,19 @@ import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQui
 
 import { spawnRetentiveVatSequence } from './leakiness.mjs';
 
-/** @import {XSnapOptions} from '@agoric/xsnap/src/xsnap.js' */
+/**
+ * @import {XSnapOptions} from '@agoric/xsnap/src/xsnap.js'
+ * @import {ExecutionContext} from 'ava';
+ */
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {Partial<XSnapOptions>} xsnapOptions
  */
 const testRetention = async (t, xsnapOptions) => {
   let snapshotsCreated = 0;
   let snapshotsFreed = 0;
+  /** @type {null | Awaited<ReturnType<typeof import('../src/xsnap.js').xsnap>>} */
   let lastVat = null;
   /** @type {FinalizationRegistry<void>} */
   const fr = new FinalizationRegistry(() => {

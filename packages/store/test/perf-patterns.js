@@ -213,12 +213,12 @@ const repetitions = 200;
 const measure = async (title, specimen, yesPattern, factor = 1) => {
   const times = factor * repetitions;
   await gcAndFinalize();
-  const startAt = Date.now();
+  const startAt = performance.now();
   for (let j = 0; j < times; j += 1) {
     // mustMatch(specimen, yesPattern);
     assert(matches(specimen, yesPattern), title);
   }
-  const totalTime = Date.now() - startAt;
+  const totalTime = performance.now() - startAt;
   const perStep = totalTime / times;
   measurements.push([title, perStep, Math.round(1000 / perStep)]);
   console.log(

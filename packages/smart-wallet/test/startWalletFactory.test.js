@@ -1,17 +1,20 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
-import path from 'path';
+import { smartWalletSourceSpecRegistry } from '../source-spec-registry.js';
 import { makeMockTestSpace } from './supports.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {TestFn} from 'ava';
+ * @import {start as StartWalletFactory} from '../src/walletFactory.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 /**
- * @type {import('ava').TestFn<EReturn<typeof makeTestContext>>}
+ * @type {TestFn<EReturn<typeof makeTestContext>>}
  */
 const test = anyTest;
 
@@ -22,15 +25,11 @@ const makeTestContext = async () => {
   const { zoe } = consume;
 
   //#region Installs
-  const pathname = new URL(import.meta.url).pathname;
-  const dirname = path.dirname(pathname);
-
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
-  const bundle = await bundleCache.load(
-    `${dirname}/../src/walletFactory.js`,
-    'walletFactory',
+  const bundleCache = await unsafeSharedBundleCache;
+  const { walletFactoryBundle: bundle } = await bundleCache.loadRegistry(
+    smartWalletSourceSpecRegistry,
   );
-  /** @type {Promise<Installation<import('../src/walletFactory.js').start>>} */
+  /** @type {Promise<Installation<StartWalletFactory>>} */
   const installation = E(zoe).install(bundle);
   //#endregion
 

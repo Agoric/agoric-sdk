@@ -1,0 +1,463 @@
+/** @file tests for ResolverKit exo */
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { prepareVowTools } from '@agoric/vow/vat.js';
+import type { ZCF } from '@agoric/zoe';
+import { makeHeapZone } from '@agoric/zone';
+import type { TestFn } from 'ava';
+import { mustMatch } from '@endo/patterns';
+import { TxStatus, TxType } from '../src/resolver/constants.js';
+import { prepareResolverKit } from '../src/resolver/resolver.exo.ts';
+import { PublishedTxShape, type PublishedTx } from '../src/resolver/types.ts';
+
+const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+
+const RESOLVER_SUPPORTED_TRANSACTIONS: TxType[] = [
+  TxType.CCTP_TO_EVM,
+  TxType.GMP,
+  TxType.ROUTED_GMP,
+  TxType.MAKE_ACCOUNT,
+];
+
+const makeTestContext = async t => {
+  const nodeUpdates: Record<string, PublishedTx> = {};
+  const makeMockNode = (here: string) => {
+    return harden({
+      makeChildNode: (name: string) => makeMockNode(`${here}.${name}`),
+      setValue: (value: string) => {
+        const nodeValue = defaultMarshaller.fromCapData(JSON.parse(value));
+        nodeUpdates[here] = nodeValue;
+
+        if (
+          /pendingTxs\.tx\d+/.test(here) &&
+          RESOLVER_SUPPORTED_TRANSACTIONS.includes(nodeValue.type)
+        ) {
+          t.notThrows(
+            () => mustMatch(nodeValue, PublishedTxShape, here),
+            `node ${here} should match PublishedTx shape`,
+          );
+        }
+      },
+    }) as unknown as StorageNode;
+  };
+
+  const zone = makeHeapZone();
+  const board = makeFakeBoard();
+  const marshaller = board.getReadonlyMarshaller();
+  const vowTools = prepareVowTools(zone);
+
+  const zcf = {
+    makeEmptySeatKit: () => ({
+      zcfSeat: null as any,
+    }),
+  } as ZCF;
+
+  const makeResolverKit = prepareResolverKit(zone, zcf, {
+    vowTools,
+    pendingTxsNode: makeMockNode('pendingTxs'),
+    marshaller,
+  });
+
+  return {
+    nodeUpdates,
+    makeMockNode,
+    vowTools,
+    makeResolverKit,
+  };
+};
+
+test.beforeEach(async t => (t.context = await makeTestContext(t)));
+
+test('resolver creates nodes in chain storage on registerTransaction', async t => {
+  const { nodeUpdates, makeResolverKit } = t.context;
+
+  const { client } = makeResolverKit();
+
+  // Register first transaction
+  client.registerTransaction(
+    TxType.CCTP_TO_EVM,
+    'eip155:1:0x742d35Cc6631C0532925a3b8D7389D026f2077c3',
+    100n,
+  );
+  await eventLoopIteration();
+
+  t.deepEqual(
+    Object.keys(nodeUpdates),
+    ['pendingTxs.tx0'],
+    'creates nodes with correct names',
+  );
+
+  // Register second transaction
+  client.registerTransaction(
+    TxType.GMP,
+    'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+  );
+  await eventLoopIteration();
+
+  t.deepEqual(
+    Object.keys(nodeUpdates),
+    ['pendingTxs.tx0', 'pendingTxs.tx1'],
+    'creates additional nodes',
+  );
+});
+
+test('resolver updates nodes in chain storage on settleTransaction', async t => {
+  const { nodeUpdates, makeResolverKit } = t.context;
+
+  const { client, service } = makeResolverKit();
+
+  // Register transaction
+  const tx = client.registerTransaction(
+    TxType.CCTP_TO_AGORIC,
+    'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    250n,
+  );
+  await eventLoopIteration();
+
+  t.is(Object.keys(nodeUpdates).length, 1, 'updates node on registration');
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx0'],
+    {
+      type: TxType.CCTP_TO_AGORIC,
+      destinationAddress:
+        'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+      status: TxStatus.PENDING,
+      amount: 250n,
+    },
+    'sets correct pending status and data',
+  );
+
+  // Settle transaction successfully
+  service.settleTransaction({
+    status: TxStatus.SUCCESS,
+    txId: tx.txId,
+  });
+  await eventLoopIteration();
+
+  t.is(Object.keys(nodeUpdates).length, 1, 'updates same node on settlement');
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx0'],
+    {
+      destinationAddress:
+        'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+      type: TxType.CCTP_TO_AGORIC,
+      status: TxStatus.SUCCESS,
+      amount: 250n,
+    },
+    'updates to success status with correct data',
+  );
+});
+
+test('resolver creates ids in sequence on registerTransaction', async t => {
+  const { makeResolverKit } = t.context;
+
+  const { client } = makeResolverKit();
+
+  // Register multiple transactions
+  const tx1 = client.registerTransaction(
+    TxType.CCTP_TO_EVM,
+    'eip155:1:0x742d35Cc6631C0532925a3b8D7389D026f2077c3',
+    100n,
+  );
+
+  const tx2 = client.registerTransaction(
+    TxType.GMP,
+    'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+  );
+
+  const tx3 = client.registerTransaction(
+    TxType.CCTP_TO_AGORIC,
+    'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    500n,
+  );
+
+  t.is(tx1.txId, 'tx0', 'first transaction gets ID tx0');
+  t.is(tx2.txId, 'tx1', 'second transaction gets ID tx1');
+  t.is(tx3.txId, 'tx2', 'third transaction gets ID tx2');
+});
+
+test('resolver creates correct types for different TxTypes', async t => {
+  const { nodeUpdates, makeResolverKit } = t.context;
+
+  const { client } = makeResolverKit();
+
+  // Test CCTP transaction with amount
+  client.registerTransaction(
+    TxType.CCTP_TO_EVM,
+    'eip155:1:0x742d35Cc6631C0532925a3b8D7389D026f2077c3',
+    100n,
+  );
+
+  // Test GMP transaction without amount
+  client.registerTransaction(
+    TxType.GMP,
+    'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+  );
+
+  // Test CCTP_TO_AGORIC transaction with amount
+  client.registerTransaction(
+    TxType.CCTP_TO_AGORIC,
+    'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    500n,
+  );
+
+  // Test MAKE_ACCOUNT transaction without amount
+  client.registerTransaction(
+    TxType.MAKE_ACCOUNT,
+    'eip155:42161:0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+    undefined,
+    '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    'cosmos:agoric-3:agoric1mockaccountaddress',
+    '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+  );
+
+  // legacy GMP ignores expectedAddr and factoryAddr
+  client.registerTransaction(
+    TxType.GMP,
+    'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+    undefined,
+    '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    'cosmos:agoric-3:agoric1mockaccountaddress',
+    '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+  );
+
+  // ROUTED_GMP setup
+  const { txId: routedGmpTxId } = client.createPendingTx({
+    type: TxType.ROUTED_GMP,
+    destinationAddress: 'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+    sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+    incomplete: true,
+  });
+
+  await eventLoopIteration();
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx0'],
+    {
+      type: TxType.CCTP_TO_EVM,
+      destinationAddress: 'eip155:1:0x742d35Cc6631C0532925a3b8D7389D026f2077c3',
+      status: TxStatus.PENDING,
+      amount: 100n,
+    },
+    'CCTP transaction has correct type and includes amount',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx1'],
+    {
+      type: TxType.GMP,
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      status: TxStatus.PENDING,
+    },
+    'GMP transaction has correct type and excludes amount',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx2'],
+    {
+      type: TxType.CCTP_TO_AGORIC,
+      destinationAddress:
+        'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+      status: TxStatus.PENDING,
+      amount: 500n,
+    },
+    'CCTP_TO_AGORIC transaction has correct type and includes amount',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx3'],
+    {
+      type: TxType.MAKE_ACCOUNT,
+      destinationAddress:
+        'eip155:42161:0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+      status: TxStatus.PENDING,
+      expectedAddr: '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+      factoryAddr: '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+    },
+    'MAKE_ACCOUNT transaction has correct type and excludes amount',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx4'],
+    {
+      type: TxType.GMP,
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      status: TxStatus.PENDING,
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+    },
+    'GMP legacy does not include expectedAddr and factoryAddr',
+  );
+
+  t.deepEqual(
+    nodeUpdates[`pendingTxs.${routedGmpTxId}`],
+    {
+      type: TxType.ROUTED_GMP,
+      status: TxStatus.SETUP,
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+      incomplete: true,
+    },
+    'ROUTED_GMP setup',
+  );
+
+  // ROUTED_GMP update
+  client.updateTxMeta(routedGmpTxId, {
+    type: TxType.ROUTED_GMP,
+    destinationAddress: 'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+    sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+    payloadHash: '0xabcdef1234567890',
+    details: {
+      instructionSelector: '0x12345678',
+      instructionType: 'RemoteAccountExecute',
+      expectedRemoteTargetAddress: '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    },
+  });
+
+  await eventLoopIteration();
+
+  t.deepEqual(
+    nodeUpdates[`pendingTxs.${routedGmpTxId}`],
+    {
+      type: TxType.ROUTED_GMP,
+      status: TxStatus.PENDING,
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+      payloadHash: '0xabcdef1234567890',
+      details: {
+        instructionSelector: '0x12345678',
+        instructionType: 'RemoteAccountExecute',
+        expectedRemoteTargetAddress:
+          '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+      },
+    },
+    'ROUTED_GMP updated to pending',
+  );
+});
+
+test('resolver sets status to SUCCESS or FAILED on settlement', async t => {
+  const { nodeUpdates, makeResolverKit, vowTools } = t.context;
+
+  const { client, service } = makeResolverKit();
+
+  // Register transactions
+  const successTx = client.registerTransaction(
+    TxType.CCTP_TO_EVM,
+    'eip155:1:0x742d35Cc6631C0532925a3b8D7389D026f2077c3',
+    100n,
+  );
+  const whenSuccessTxResult = vowTools.when(successTx.result);
+
+  const failedTx = client.registerTransaction(
+    TxType.GMP,
+    'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+  );
+  const whenFailedTxResult = vowTools.when(failedTx.result);
+
+  await eventLoopIteration();
+
+  // Initial status should be PENDING
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx0'],
+    {
+      type: TxType.CCTP_TO_EVM,
+      destinationAddress: 'eip155:1:0x742d35Cc6631C0532925a3b8D7389D026f2077c3',
+      status: TxStatus.PENDING,
+      amount: 100n,
+    },
+    'first transaction starts as pending with correct data',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx1'],
+    {
+      type: TxType.GMP,
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      status: TxStatus.PENDING,
+    },
+    'second transaction starts as pending with correct data',
+  );
+
+  // Settle first transaction as SUCCESS
+  service.settleTransaction({
+    status: TxStatus.SUCCESS,
+    txId: successTx.txId,
+  });
+
+  // Settle second transaction as FAILED
+  service.settleTransaction({
+    status: TxStatus.FAILED,
+    txId: failedTx.txId,
+    rejectionReason: 'Network timeout',
+  });
+
+  await eventLoopIteration();
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx0'],
+    {
+      amount: 100n,
+      destinationAddress: 'eip155:1:0x742d35Cc6631C0532925a3b8D7389D026f2077c3',
+      type: TxType.CCTP_TO_EVM,
+      status: TxStatus.SUCCESS,
+    },
+    'first transaction settles as success with correct data',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx1'],
+    {
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      rejectionReason: 'Network timeout',
+      type: TxType.GMP,
+      status: TxStatus.FAILED,
+    },
+    'second transaction settles as failed with correct data',
+  );
+
+  await t.throwsAsync(
+    whenFailedTxResult,
+    { message: /Network timeout/ },
+    'failed tx promise rejects with reason',
+  );
+  await t.notThrowsAsync(whenSuccessTxResult, 'successful tx promise resolves');
+});
+
+test('resolver can find incoming CCTP txs by amount', async t => {
+  const { vowTools, nodeUpdates, makeResolverKit } = t.context;
+
+  const { client, service } = makeResolverKit();
+
+  const lca =
+    'cosmos:agoric-3:agoric1zlnuqyjceyuwhgy68d9lsqu208q68j2c9lhzdl2vq5y2ee57uwcs3ydtlr' as const;
+  const reg = await vowTools.when(
+    client.registerTransaction('CCTP_TO_AGORIC', lca, 12345n),
+  );
+  t.log(nodeUpdates);
+
+  const found = service.lookupTx({
+    type: 'CCTP_TO_AGORIC',
+    destination: lca,
+    amountValue: 12345n,
+  });
+
+  t.is(found, reg.txId);
+
+  const notFound = service.lookupTx({
+    type: 'CCTP_TO_AGORIC',
+    destination: lca,
+    amountValue: 123n,
+  });
+
+  t.is(notFound, undefined);
+});

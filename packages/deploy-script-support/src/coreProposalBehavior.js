@@ -3,17 +3,12 @@ const t = 'makeCoreProposalBehavior';
 
 /**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {E} from '@endo/far';
+ * @import {ManifestBundleRef} from './externalTypes.js';
+ * @import {BootstrapPowers, ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
  */
 
 /**
- * TODO import these from @agoric/vats when the types are better managed
- *
- * @typedef {*} ChainBootstrapSpace
- * @typedef {*} BootstrapPowers
- */
-
-/**
- * @import {ManifestBundleRef} from './externalTypes.js'
  * @typedef {[methodName: string, ...args: unknown[]]} FlatMethargs
  * @typedef {Record<string, Record<string, unknown>>} Manifest
  */
@@ -46,7 +41,7 @@ export const permits = {
  * @param {Manifest} [inputs.customManifest]
  * @param {typeof import('@endo/far').E} inputs.E
  * @param {(...args: unknown[]) => void} [inputs.log]
- * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [inputs.customRestoreRef]
+ * @param {(ref: ManifestBundleRef) => Promise<Installation<unknown>>} [inputs.customRestoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({
@@ -83,7 +78,7 @@ export const makeCoreProposalBehavior = ({
   };
 
   const makeRestoreRef = (vatAdminSvc, zoe) => {
-    /** @type {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<Installation<unknown>>} */
+    /** @type {(ref: ManifestBundleRef) => Promise<Installation<unknown>>} */
     const defaultRestoreRef = async bundleRef => {
       // extract-proposal.js creates these records, and bundleName is
       // the optional name under which the bundle was installed into

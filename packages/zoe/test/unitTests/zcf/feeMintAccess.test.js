@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
@@ -18,8 +18,8 @@ test(`feeMintAccess`, async t => {
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const { zoeService: zoe, feeMintAccess } = makeZoeKitForTest(fakeVatAdmin);
   const bundle = await bundleSource(contractRoot);
-  vatAdminState.installBundle('b1-registerfee', bundle);
-  const installation = await E(zoe).installBundleID('b1-registerfee');
+  const b1registerfee = vatAdminState.registerBundle('b1-registerfee', bundle);
+  const installation = await E(zoe).installBundleID(b1registerfee);
   const { creatorFacet } = await E(zoe).startInstance(
     installation,
     undefined,

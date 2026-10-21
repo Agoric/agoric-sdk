@@ -11,6 +11,9 @@ import { type JsonSafe } from '../../json-safe.js';
  *     }
  *
  * The JSON representation for `Empty` is empty JSON object `{}`.
+ * @name Empty
+ * @package google.protobuf
+ * @see proto type: google.protobuf.Empty
  */
 export interface Empty {}
 export interface EmptyProtoMsg {
@@ -27,13 +30,36 @@ export interface EmptyProtoMsg {
  *     }
  *
  * The JSON representation for `Empty` is empty JSON object `{}`.
+ * @name EmptySDKType
+ * @package google.protobuf
+ * @see proto type: google.protobuf.Empty
  */
 export interface EmptySDKType {}
 function createBaseEmpty(): Empty {
   return {};
 }
+/**
+ * A generic empty message that you can re-use to avoid defining duplicated
+ * empty messages in your APIs. A typical example is to use it as the request
+ * or the response type of an API method. For instance:
+ *
+ *     service Foo {
+ *       rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
+ *     }
+ *
+ * The JSON representation for `Empty` is empty JSON object `{}`.
+ * @name Empty
+ * @package google.protobuf
+ * @see proto type: google.protobuf.Empty
+ */
 export const Empty = {
   typeUrl: '/google.protobuf.Empty' as const,
+  is(o: any): o is Empty {
+    return o && o.$typeUrl === Empty.typeUrl;
+  },
+  isSDK(o: any): o is EmptySDKType {
+    return o && o.$typeUrl === Empty.typeUrl;
+  },
   encode(_: Empty, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },

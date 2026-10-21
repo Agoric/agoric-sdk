@@ -148,7 +148,7 @@ export const prepareRetryableTools = (outerZone, outerOptions) => {
       const retryableKit = internalMakeRetryableFlowKit(activationArgs);
       const { flow } = retryableKit;
 
-      const vow = flow.getOutcome();
+      const vow = /** @type {Vow} */ (flow.getOutcome());
       flowForOutcomeVowKey.init(toPassableCap(vow), flow);
       flow.restart();
       return retryableKit;
@@ -156,31 +156,33 @@ export const prepareRetryableTools = (outerZone, outerOptions) => {
     return harden(makeRetryableFlowKit);
   };
 
-  /**
-   * @type {VowTools['retryable']}
-   */
-  const retryable = (zone, tag, retryableFunc) => {
-    const makeRetryableKit = prepareRetryableFlowKit(zone, tag, retryableFunc);
-    const wrapperFuncName = `${tag}_retryable`;
+  const retryable = /** @type {VowTools['retryable']} */ (
+    (zone, tag, retryableFunc) => {
+      const makeRetryableKit = prepareRetryableFlowKit(
+        zone,
+        tag,
+        retryableFunc,
+      );
+      const wrapperFuncName = `${tag}_retryable`;
 
-    const wrapperFunc = {
-      /** @param {any[]} args */
-      [wrapperFuncName](...args) {
-        // Make sure any error results in a rejected vow
-        return asVow(() => {
-          zone.isStorable(harden(args)) ||
-            Fail`retryable arguments must be storable ${args}`;
-          const { flow } = makeRetryableKit(args);
-          return flow.getOutcome();
-        });
-      },
-    }[wrapperFuncName];
-    defineProperties(wrapperFunc, {
-      length: { value: retryableFunc.length },
-    });
-    // @ts-expect-error inferred generic func
-    return harden(wrapperFunc);
-  };
+      const wrapperFunc = {
+        /** @param {any[]} args */
+        [wrapperFuncName](...args) {
+          // Make sure any error results in a rejected vow
+          return asVow(() => {
+            zone.isStorable(harden(args)) ||
+              Fail`retryable arguments must be storable ${args}`;
+            const { flow } = makeRetryableKit(args);
+            return flow.getOutcome();
+          });
+        },
+      }[wrapperFuncName];
+      defineProperties(wrapperFunc, {
+        length: { value: retryableFunc.length },
+      });
+      return harden(wrapperFunc);
+    }
+  );
 
   const adminRetryableFlow = outerZone.exo(
     'AdminRetryableFlow',
@@ -204,7 +206,7 @@ export const prepareRetryableTools = (outerZone, outerOptions) => {
 harden(prepareRetryableTools);
 
 /**
- * @typedef {ReturnType<prepareRetryableTools>} RetryableTools
+ * @typedef {ReturnType<typeof prepareRetryableTools>} RetryableTools
  */
 
 /**

@@ -14,10 +14,12 @@ const noOutput = ['ignore', 'ignore', 'ignore'];
 // /* @type {StdioOptions} */
 // const noisyDebug = ['ignore', 'inherit', 'inherit'];
 
+export const DEFAULT_GENESIS_EXPORT_DIR = 't1/n0/genesis-export';
+
 /**
  *
  * @param {string} bin
- * @param {{ cwd: string, spawn: import('child_process')['spawn']}} param1
+ * @param {{ cwd: string, spawn: typeof import('child_process')['spawn']}} param1
  */
 export const pspawn = (bin, { spawn, cwd }) => {
   /**
@@ -48,9 +50,10 @@ export const pspawn = (bin, { spawn, cwd }) => {
         stderrP = text(child.stderr);
         child.stderr = null;
       }
-      child.addListener('exit', async code => {
+      child.addListener('exit', async (code, signal) => {
+        const exitReason = code === null ? signal : code;
         if (code !== 0) {
-          let msg = `exit ${code} from command: ${bin} ${args.join(' ')}`;
+          let msg = `exit ${exitReason} from command: ${bin} ${args.join(' ')}`;
           const errStr = await stderrP;
           if (errStr) {
             const errTail = errStr.split('\n').slice(-3);
@@ -83,11 +86,10 @@ export const pspawn = (bin, { spawn, cwd }) => {
  * @param {object} io
  * @param {ReturnType<typeof pspawn>} io.pspawnMake promise-style spawn of 'make' with cwd set
  * @param {ReturnType<typeof pspawn>} io.pspawnAgd promise-style spawn of 'agd' with cwd set
- * @param {import('node:fs/promises')['rm']} io.rm the file remover
- * @param {import('child_process').StdioOptions} [io.stdio]
+ * @param {StdioOptions} [io.stdio]
  * @param {typeof console.log} io.log
  */
-export const makeScenario2 = ({ pspawnMake, pspawnAgd, rm, log, stdio }) => {
+export const makeScenario2 = ({ pspawnMake, pspawnAgd, log, stdio }) => {
   const runMake = (args, opts = { stdio: stdio || onlyStderr }) => {
     // console.debug('make', ...args);
     log('make', ...args);
@@ -130,14 +132,11 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, rm, log, stdio }) => {
         stdio: stdio || onlyStderr,
       });
     },
-    export: async () => {
-      const exportDir = 't1/n0/genesis-export';
-      await rm(exportDir, { recursive: true, force: true });
-      return pspawnAgd(
-        ['export', '--home=t1/n0', `--export-dir=${exportDir}`],
-        { stdio: stdio || onlyStderr },
-      ).exit;
-    },
+    /** @param {string} [exportDir] */
+    export: (exportDir = DEFAULT_GENESIS_EXPORT_DIR) =>
+      pspawnAgd(['export', '--home=t1/n0', `--export-dir=${exportDir}`], {
+        stdio: stdio || onlyStderr,
+      }).exit,
   });
 };
 
@@ -153,9 +152,9 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, rm, log, stdio }) => {
 export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
   /**
    * @param {string[]} args
-   * @param {object} [opts]
+   * @param {{ stdio?: StdioOptions }} [opts]
    * @returns {Promise<any>} JSON.parse of stdout of `ag-chain-cosmos query <...args>`
-   * @throws if agd exits non-0 or gives empty output
+   * @throws {Error} if agd exits non-0 or gives empty output
    */
   const agd = async (args, opts = {}) => {
     const parts = [];

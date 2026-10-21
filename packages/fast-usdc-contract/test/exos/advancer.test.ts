@@ -10,7 +10,7 @@ import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type {
   CctpTxEvidence,
   EvidenceWithRisk,
-} from '@agoric/fast-usdc/src/types.ts';
+} from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
   MockCctpTxEvidences,
@@ -323,7 +323,7 @@ test('updates status to ADVANCE_SKIPPED on insufficient pool funds', async t => 
   } = t.context;
 
   const mockBorrowerFacet = Far('LiquidityPool Borrow Facet', {
-    borrow: (seat: ZCFSeat, amount: NatAmount) => {
+    borrow: (_seat: ZCFSeat, amount: NatAmount) => {
       throw new Error(
         `Cannot borrow. Requested ${q(amount)} must be less than pool balance ${q(usdc.make(1n))}.`,
       );
@@ -783,7 +783,7 @@ test('alerts if `returnToPool` fallback fails', async t => {
     borrow: () => {
       // note: will not be tracked by `inspectBorrowerFacetCalls`
     },
-    returnToPool: (seat: ZCFSeat, amount: NatAmount) => {
+    returnToPool: (_seat: ZCFSeat, amount: NatAmount) => {
       throw new Error(
         `⚠️ borrowSeatAllocation ${q({ USDC: usdc.make(0n) })} less than amountKWR ${q(amount)}`,
       );

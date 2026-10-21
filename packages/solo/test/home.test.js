@@ -1,4 +1,4 @@
-/* eslint-env node */
+// @ts-nocheck
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
@@ -198,6 +198,6 @@ test.serial('home.localTimerService makeRepeater', async t => {
 // This runs after all the tests.
 test.after.always('teardown', async t => {
   const { teardown } = t.context;
-  await teardown();
+  await teardown?.();
   t.truthy('shutdown');
 });

@@ -1,0 +1,761 @@
+import '@endo/init/debug.js';
+
+import test, { type ExecutionContext } from 'ava';
+import { hashTypedData } from '@agoric/orchestration/src/stubs/viem-typedData.ts';
+
+import {
+  getYmaxStandaloneOperationData,
+  getYmaxOperationTypes,
+  getYmaxWitness,
+  validateYmaxDomain,
+  validateYmaxOperationTypeName,
+  splitWitnessFieldType,
+  type OperationTypeNames,
+  type TargetAllocation,
+  type YmaxOperationType,
+} from '../src/evm-wallet/eip712-messages.ts';
+import { runWithoutLockdown } from './without-lockdown.ts';
+
+test('PortfolioPermissions EIP-712 fields are exact and ordered', t => {
+  t.deepEqual(getYmaxOperationTypes('Grant').PortfolioPermissions, [
+    { name: 'allocation', type: 'bool', optional: true },
+    { name: 'maxWeightBps', type: 'uint256', optional: true },
+    { name: 'minVaultTvlUsd', type: 'uint256', optional: true },
+    { name: 'maxVaultShareBps', type: 'uint256', optional: true },
+  ]);
+});
+
+test('ChangePermissions and Revoke use exact standalone fields', t => {
+  const changed = getYmaxStandaloneOperationData(
+    {
+      agentId: 2n,
+      permissions: {
+        allocation: true,
+        maxWeightBps: 1_500n,
+        minVaultTvlUsd: 10_000_000n,
+        maxVaultShareBps: 1_000n,
+      },
+      portfolio: 7n,
+      nonce: 3n,
+      deadline: 4n,
+    },
+    'ChangePermissions',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+  t.deepEqual(changed.types.ChangePermissions, [
+    { name: 'agentId', type: 'uint256' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+  const revoked = getYmaxStandaloneOperationData(
+    { agentId: 2n, portfolio: 7n, nonce: 3n, deadline: 4n },
+    'Revoke',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+  t.deepEqual(revoked.types.Revoke, [
+    { name: 'agentId', type: 'uint256' },
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+});
+
+test('signed permission hashes distinguish omission, zero, and changed limits', t => {
+  const makeGrant = (permissions: {
+    allocation?: boolean;
+    maxWeightBps?: bigint;
+  }) =>
+    getYmaxStandaloneOperationData(
+      {
+        accountHolder: 'agoric1agent',
+        permissions,
+        portfolio: 7n,
+        nonce: 3n,
+        deadline: 4n,
+      },
+      'Grant',
+      42161n,
+      MOCK_CONTRACT_ADDRESS,
+    );
+  const absent = makeGrant({ allocation: true });
+  const zero = makeGrant({
+    allocation: true,
+    maxWeightBps: 0n,
+  });
+  const changed = makeGrant({
+    allocation: true,
+    maxWeightBps: 1_500n,
+  });
+
+  // viem's hash type does not understand the repo-local `optional` marker;
+  // getYmaxStandaloneOperationData has already normalized it away at runtime.
+  t.not(hashTypedData(absent as any), hashTypedData(zero as any));
+  t.not(hashTypedData(zero as any), hashTypedData(changed as any));
+  t.false('maxWeightBps' in absent.message.permissions);
+  t.is(zero.message.permissions.maxWeightBps, 0n);
+});
+
+const MOCK_CONTRACT_ADDRESS =
+  '0x1234567890123456789012345678901234567890' as const;
+const MOCK_TOKEN_ADDRESS =
+  '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as const;
+
+type DomainThrowCase = {
+  title: string;
+  domain: Parameters<typeof validateYmaxDomain>[0];
+  message: RegExp;
+  validAddresses?: Record<string, `0x${string}`>;
+};
+
+const throwsYmaxDomainMacro = (
+  t: ExecutionContext,
+  { domain, message, validAddresses }: DomainThrowCase,
+) => {
+  t.throws(() => validateYmaxDomain(domain, validAddresses), {
+    message,
+  });
+};
+
+throwsYmaxDomainMacro.title = (_providedTitle, { title }: DomainThrowCase) =>
+  `validateYmaxDomain throws for ${title}`;
+
+test('getYmaxStandaloneOperationData for OpenPortfolio', t => {
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 6000n },
+    { instrument: 'Compound_Base', portion: 4000n },
+  ];
+  const data = {
+    allocations,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'OpenPortfolio',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'OpenPortfolio');
+  t.deepEqual(result.domain, {
+    name: 'Ymax',
+    version: '1',
+    chainId: 42161n,
+    verifyingContract: MOCK_CONTRACT_ADDRESS,
+  });
+  t.deepEqual(result.message, {
+    allocations,
+    nonce: 1n,
+    deadline: 1700000000n,
+  });
+  t.deepEqual(result.types.OpenPortfolio, [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+  t.deepEqual(result.types.Allocation, [
+    { name: 'instrument', type: 'string' },
+    { name: 'portion', type: 'uint256' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for Withdraw', t => {
+  const data = {
+    portfolio: 42n,
+    withdraw: {
+      amount: 1_000_000n, // 1 USDC (6 decimals)
+      token: MOCK_TOKEN_ADDRESS,
+    },
+    nonce: 5n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'Withdraw',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'Withdraw');
+  t.deepEqual(result.domain, {
+    name: 'Ymax',
+    version: '1',
+    chainId: 42161n,
+    verifyingContract: MOCK_CONTRACT_ADDRESS,
+  });
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.Withdraw, [
+    { name: 'withdraw', type: 'Asset' },
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+  t.deepEqual(result.types.Asset, [
+    { name: 'token', type: 'address' },
+    { name: 'amount', type: 'uint256' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for Deposit', t => {
+  const data = {
+    portfolio: 123n,
+    nonce: 10n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'Deposit',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'Deposit');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.Deposit, [
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for Rebalance', t => {
+  const data = {
+    portfolio: 0n,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'Rebalance',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'Rebalance');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.Rebalance, [
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for SetTargetAllocation', t => {
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 10000n },
+  ];
+  const data = {
+    allocations,
+    portfolio: 0n,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'SetTargetAllocation',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'SetTargetAllocation');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.SetTargetAllocation, [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+  t.deepEqual(result.types.Allocation, [
+    { name: 'instrument', type: 'string' },
+    { name: 'portion', type: 'uint256' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for SetAutoFeatures with only claimRewards set, drops unused optional rebalance', t => {
+  const data = {
+    features: { claimRewards: true },
+    portfolio: 0n,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'SetAutoFeatures',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'SetAutoFeatures');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.PortfolioAutoFeatures, [
+    { name: 'claimRewards', type: 'bool' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for SetAutoFeatures with only rebalance set, drops unused optional claimRewards', t => {
+  const data = {
+    features: { rebalance: false },
+    portfolio: 0n,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'SetAutoFeatures',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'SetAutoFeatures');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.PortfolioAutoFeatures, [
+    { name: 'rebalance', type: 'bool' },
+  ]);
+});
+
+test('getYmaxStandaloneOperationData for SetAutoFeatures with both features set', t => {
+  const data = {
+    features: { rebalance: true, claimRewards: false },
+    portfolio: 0n,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'SetAutoFeatures',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'SetAutoFeatures');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.PortfolioAutoFeatures, [
+    { name: 'rebalance', type: 'bool' },
+    { name: 'claimRewards', type: 'bool' },
+  ]);
+});
+
+test('getYmaxWitness for OpenPortfolio', t => {
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 10000n },
+  ];
+
+  const witness = getYmaxWitness('OpenPortfolio', { allocations });
+
+  t.truthy(witness.witnessTypes.YmaxV1OpenPortfolio);
+  t.truthy(witness.witnessTypes.Allocation);
+  t.deepEqual(witness.witnessField, {
+    name: 'ymaxOpenPortfolio',
+    type: 'YmaxV1OpenPortfolio',
+  });
+  t.deepEqual(witness.witness, { allocations });
+});
+
+test('getYmaxWitness for OpenPortfolio with constrained grantee permissions', t => {
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 10000n },
+  ];
+  const grantee = {
+    address: 'agoric1exampleagentaddress',
+    permissions: {
+      allocation: true,
+      maxWeightBps: 1_500n,
+      minVaultTvlUsd: 10_000_000n,
+      maxVaultShareBps: 1_000n,
+    },
+  };
+
+  const witness = getYmaxWitness('OpenPortfolio', { allocations, grantee });
+
+  // `features` is optional and unused here, so it's dropped from the type,
+  // and `PortfolioAutoFeatures` is no longer reachable/included either.
+  t.deepEqual(witness.witnessTypes.YmaxV1OpenPortfolio, [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'grantee', type: 'DelegationGrantee' },
+  ]);
+  t.deepEqual(witness.witnessTypes.DelegationGrantee, [
+    { name: 'address', type: 'string' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+  ]);
+  t.deepEqual(witness.witnessTypes.PortfolioPermissions, [
+    { name: 'allocation', type: 'bool' },
+    { name: 'maxWeightBps', type: 'uint256' },
+    { name: 'minVaultTvlUsd', type: 'uint256' },
+    { name: 'maxVaultShareBps', type: 'uint256' },
+  ]);
+  t.falsy(witness.witnessTypes.PortfolioAutoFeatures);
+  t.deepEqual(witness.witness, { allocations, grantee });
+});
+
+test('getYmaxWitness for OpenPortfolio with auto-features, drops unused optional grantee', t => {
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 10000n },
+  ];
+  const features = { rebalance: true };
+
+  const witness = getYmaxWitness('OpenPortfolio', { allocations, features });
+
+  t.deepEqual(witness.witnessTypes.YmaxV1OpenPortfolio, [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'features', type: 'PortfolioAutoFeatures' },
+  ]);
+  t.deepEqual(witness.witnessTypes.PortfolioAutoFeatures, [
+    { name: 'rebalance', type: 'bool' },
+  ]);
+  t.falsy(witness.witnessTypes.DelegationGrantee);
+  t.deepEqual(witness.witness, { allocations, features });
+});
+
+test('getYmaxWitness for OpenPortfolioWithGrant nests grantee fields', t => {
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 10000n },
+  ];
+  const grantee = {
+    address: 'agoric1exampleagentaddress',
+    permissions: { allocation: true },
+  };
+
+  const witness = getYmaxWitness('OpenPortfolioWithGrant', {
+    allocations,
+    grantee,
+  });
+
+  t.deepEqual(witness.witnessTypes.YmaxV1OpenPortfolioWithGrant, [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'grantee', type: 'DelegationGrantee' },
+  ]);
+  t.deepEqual(witness.witnessTypes.DelegationGrantee, [
+    { name: 'address', type: 'string' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+  ]);
+  t.deepEqual(witness.witness, { allocations, grantee });
+});
+
+test('getYmaxWitness for Deposit', t => {
+  const witness = getYmaxWitness('Deposit', { portfolio: 5n });
+
+  t.truthy(witness.witnessTypes.YmaxV1Deposit);
+  t.deepEqual(witness.witnessField, {
+    name: 'ymaxDeposit',
+    type: 'YmaxV1Deposit',
+  });
+  t.deepEqual(witness.witness, { portfolio: 5n });
+});
+
+test('validateYmaxDomain passes for valid domain', t => {
+  const domain = {
+    name: 'Ymax',
+    version: '1',
+    chainId: 42161n,
+    verifyingContract: MOCK_CONTRACT_ADDRESS,
+  };
+
+  t.notThrows(() => validateYmaxDomain(domain));
+});
+
+for (const domainThrowCase of [
+  {
+    title: 'invalid name',
+    domain: {
+      name: 'WrongName',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: MOCK_CONTRACT_ADDRESS,
+    },
+    message: /Invalid Ymax domain name/,
+  },
+  {
+    title: 'invalid version',
+    domain: {
+      name: 'Ymax',
+      version: '2',
+      chainId: 42161n,
+      verifyingContract: MOCK_CONTRACT_ADDRESS,
+    },
+    message: /Invalid Ymax domain version/,
+  },
+] satisfies DomainThrowCase[]) {
+  test(domainThrowCase.title, throwsYmaxDomainMacro, domainThrowCase);
+}
+
+test('validateYmaxDomain validates contract addresses', t => {
+  const validAddresses = {
+    '42161': MOCK_CONTRACT_ADDRESS,
+  };
+  const domain = {
+    name: 'Ymax',
+    version: '1',
+    chainId: 42161n,
+    verifyingContract: MOCK_CONTRACT_ADDRESS,
+  };
+
+  t.notThrows(() => validateYmaxDomain(domain, validAddresses));
+});
+
+test('validateYmaxDomain throws for non bigint chain ID', t => {
+  const domain = {
+    name: 'Ymax',
+    version: '1',
+    chainId: 1,
+    verifyingContract: MOCK_CONTRACT_ADDRESS,
+  };
+
+  t.throws(() => validateYmaxDomain(domain), {
+    message: /chain ID/i,
+  });
+});
+
+for (const domainThrowCase of [
+  {
+    title: 'unknown chain ID',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 1n, // mainnet, not in validAddresses
+      verifyingContract: MOCK_CONTRACT_ADDRESS,
+    },
+    validAddresses: {
+      '42161': MOCK_CONTRACT_ADDRESS,
+    },
+    message: /Unknown chain ID/,
+  },
+  {
+    title: 'wrong contract address',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0x0000000000000000000000000000000000000000' as const,
+    },
+    validAddresses: {
+      '42161': MOCK_CONTRACT_ADDRESS,
+    },
+    message: /Invalid verifying contract/,
+  },
+] satisfies DomainThrowCase[]) {
+  test(domainThrowCase.title, throwsYmaxDomainMacro, domainThrowCase);
+}
+
+test('validateYmaxDomain is case-insensitive for address comparison', t => {
+  const validAddresses = {
+    '42161': MOCK_CONTRACT_ADDRESS,
+  };
+  const domain = {
+    name: 'Ymax',
+    version: '1',
+    chainId: 42161n,
+    // Only the hex digits: a `0X` prefix is not a valid address.
+    verifyingContract:
+      `0x${MOCK_CONTRACT_ADDRESS.slice(2).toUpperCase()}` as const,
+  };
+
+  // Should pass because sameEvmAddress is case-insensitive
+  t.notThrows(() => validateYmaxDomain(domain, validAddresses));
+});
+
+test('validateYmaxDomain requires both chainId and verifyingContract', t => {
+  // Missing verifyingContract
+  t.throws(
+    () =>
+      validateYmaxDomain({
+        name: 'Ymax',
+        version: '1',
+        chainId: 42161n,
+      }),
+    { message: /chain ID and verifying contract/ },
+  );
+
+  // Missing chainId
+  t.throws(
+    () =>
+      validateYmaxDomain({
+        name: 'Ymax',
+        version: '1',
+        verifyingContract: MOCK_CONTRACT_ADDRESS,
+      }),
+    { message: /chain ID and verifying contract/ },
+  );
+});
+
+test('validateYmaxOperationTypeName passes for valid types', t => {
+  const validTypes: OperationTypeNames[] = [
+    'OpenPortfolio',
+    'Rebalance',
+    'SetTargetAllocation',
+    'Deposit',
+    'Withdraw',
+  ];
+
+  for (const typeName of validTypes) {
+    t.notThrows(() => validateYmaxOperationTypeName(typeName));
+  }
+});
+
+test('validateYmaxOperationTypeName throws for invalid type', t => {
+  t.throws(() => validateYmaxOperationTypeName('InvalidOperation'), {
+    message: /Unknown Ymax operation type/,
+  });
+});
+
+type WitnessSplitCase = {
+  witnessType: Parameters<typeof splitWitnessFieldType>[0];
+  primaryType: OperationTypeNames;
+};
+
+const splitWitnessFieldTypeMacro = (
+  t: ExecutionContext,
+  { witnessType, primaryType }: WitnessSplitCase,
+) => {
+  t.deepEqual(splitWitnessFieldType(witnessType), {
+    domain: { name: 'Ymax', version: '1' },
+    primaryType,
+  });
+};
+
+splitWitnessFieldTypeMacro.title = (
+  _providedTitle,
+  { witnessType }: WitnessSplitCase,
+) => `splitWitnessFieldType parses ${witnessType}`;
+
+for (const witnessCase of [
+  { witnessType: 'YmaxV1OpenPortfolio', primaryType: 'OpenPortfolio' },
+  { witnessType: 'YmaxV1Deposit', primaryType: 'Deposit' },
+  { witnessType: 'YmaxV1Withdraw', primaryType: 'Withdraw' },
+  { witnessType: 'YmaxV1Rebalance', primaryType: 'Rebalance' },
+  {
+    witnessType: 'YmaxV1SetTargetAllocation',
+    primaryType: 'SetTargetAllocation',
+  },
+] satisfies WitnessSplitCase[]) {
+  test(witnessCase.witnessType, splitWitnessFieldTypeMacro, witnessCase);
+}
+
+test('splitWitnessFieldType throws for invalid format', t => {
+  t.throws(() => splitWitnessFieldType('InvalidFormat' as any), {
+    message: /Invalid witness field type name/,
+  });
+});
+
+// XXX: Move to `types.test-d.ts`
+// Type-level tests (these just need to compile)
+test('YmaxOperationType types are correctly inferred', t => {
+  const grant: YmaxOperationType<'Grant'> = {
+    accountHolder: 'agoric1agent',
+    permissions: { allocation: true, maxWeightBps: 1_500n },
+    portfolio: 0n,
+  };
+  t.is(grant.permissions.maxWeightBps, 1_500n);
+
+  const invalidGrant: YmaxOperationType<'Grant'> = {
+    accountHolder: 'agoric1agent',
+    permissions: {
+      allocation: true,
+      // @ts-expect-error uint256 basis-point values are bigint
+      maxWeightBps: 1_500,
+    },
+    portfolio: 0n,
+  };
+  t.truthy(invalidGrant);
+
+  // OpenPortfolio type
+  const openPortfolio: YmaxOperationType<'OpenPortfolio'> = {
+    allocations: [{ instrument: 'test', portion: 100n }],
+  };
+  t.deepEqual(openPortfolio, {
+    allocations: [{ instrument: 'test', portion: 100n }],
+  });
+
+  // Deposit type
+  const deposit: YmaxOperationType<'Deposit'> = {
+    portfolio: 1n,
+  };
+  t.deepEqual(deposit, { portfolio: 1n });
+
+  // Withdraw type
+  const withdraw: YmaxOperationType<'Withdraw'> = {
+    portfolio: 2n,
+    withdraw: {
+      amount: 1000n,
+      token: MOCK_TOKEN_ADDRESS,
+    },
+  };
+  t.deepEqual(withdraw, {
+    portfolio: 2n,
+    withdraw: {
+      amount: 1000n,
+      token: MOCK_TOKEN_ADDRESS,
+    },
+  });
+
+  // Rebalance type
+  const rebalance: YmaxOperationType<'Rebalance'> = {
+    portfolio: 0n,
+  };
+  t.deepEqual(rebalance, {
+    portfolio: 0n,
+  });
+
+  // SetTargetAllocation type
+  const setTargetAllocation: YmaxOperationType<'SetTargetAllocation'> = {
+    allocations: [{ instrument: 'test', portion: 100n }],
+    portfolio: 0n,
+  };
+  t.deepEqual(setTargetAllocation, {
+    allocations: [{ instrument: 'test', portion: 100n }],
+    portfolio: 0n,
+  });
+});
+
+test('usable without lockdown, standalone or as permit2 witness', async t => {
+  const permit2Address = `0x${'2'.repeat(40)}`;
+  const script = `
+    const ymax = await import('@agoric/portfolio-api/src/evm-wallet/eip712-messages.js');
+    const permit2 = await import('@agoric/orchestration/src/utils/permit2.js');
+    const allocations = [{ instrument: 'Aave_Arbitrum', portion: 10000n }];
+
+    const standalone = ymax.getYmaxStandaloneOperationData(
+      { allocations, nonce: 1n, deadline: 2n },
+      'OpenPortfolio',
+      42161n,
+      '${MOCK_CONTRACT_ADDRESS}',
+    );
+    ymax.validateYmaxDomain(standalone.domain, {
+      '42161': '${MOCK_CONTRACT_ADDRESS}',
+    });
+
+    const witness = ymax.getYmaxWitness('OpenPortfolio', { allocations });
+    const permitted = { token: '${MOCK_TOKEN_ADDRESS}', amount: 1_000_000n };
+    const permit = {
+      spender: '${MOCK_CONTRACT_ADDRESS}',
+      nonce: 1n,
+      deadline: 2n,
+    };
+    const single = permit2.getPermitWitnessTransferFromData(
+      { ...permit, permitted },
+      '${permit2Address}',
+      42161n,
+      witness,
+    );
+    permit2.validatePermit2Domain(single.domain, { '42161': '${permit2Address}' });
+    const batch = permit2.getPermitBatchWitnessTransferFromData(
+      { ...permit, permitted: [permitted] },
+      '${permit2Address}',
+      42161n,
+      witness,
+    );
+    permit2.validatePermit2Domain(batch.domain, { '42161': '${permit2Address}' });
+  `;
+  await t.notThrowsAsync(runWithoutLockdown(script));
+});

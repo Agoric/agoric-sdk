@@ -21,6 +21,8 @@ by \`mkfifo\`) and failing commands are retried until the read value is empty.
 Alternatively, environment variable configuration \`npm_config_auth_type=legacy\`
 causes npm itself to prompt for and read OTP values from standard input.
 
+Set SAVED_OTP_FILE to share a successful OTP across multiple invocations.
+
 If the first operand is "lerna", the operation is extended to all packages.
 END_USAGE
   exit 1
@@ -39,6 +41,12 @@ set -ueo pipefail
 npm=npm
 style=
 otpfile=
+if test -z "${SAVED_OTP_FILE-}"; then
+  export SAVED_OTP_FILE=$(mktemp -t npm-dist-tag-otp.XXXXXX)
+  trap 'rm -f "$SAVED_OTP_FILE"' EXIT
+fi
+touch "$SAVED_OTP_FILE"
+chmod 0600 "$SAVED_OTP_FILE"
 case "${1:-}" in
   --dry-run)
     style="$1"
@@ -53,15 +61,28 @@ case "${1:-}" in
     ;;
 esac
 echo-to-stderr() { echo "$@"; } 1>&2
+otp=$(cat "$SAVED_OTP_FILE" 2>/dev/null || true)
 npm-otp() {
-  printf 1>&2 "Reading OTP from %s ... " "$otpfile"
-  otp=$(head -n 1 "$otpfile")
-  if test -z "$otp"; then
-    echo 1>&2 "No OTP"
-    return 66
-  fi
-  echo 1>&2 OK
-  npm --otp="$otp" "$@"
+  while true; do
+    if test -n "$otp"; then
+      echo 1>&2 "Reusing OTP ..."
+    else
+      printf 1>&2 "Reading fresh OTP from %s ... " "$otpfile"
+      otp=$(head -n 1 "$otpfile" 2> /dev/null || true)
+      if test -z "$otp"; then
+        echo 1>&2 "No OTP"
+        return 66
+      fi
+      echo "$otp" > "$SAVED_OTP_FILE"
+      echo 1>&2 OK
+    fi
+
+    # We redirect an empty input stream to prevent npm from prompting for OTP input
+    # if the provided OTP is invalid.
+    npm </dev/null --otp="$otp" "$@" && return 0
+    otp=
+    : > "$SAVED_OTP_FILE"
+  done
 }
 
 # Check for `lerna`.
@@ -77,7 +98,8 @@ case "${1-}" in
 
     # Strip the first argument (`lerna`), so that `$@` gives us remaining args.
     shift
-    exec npm run -- lerna exec --concurrency=1 --no-bail -- "$thisdir/$thisprog" "$style" "$@"
+    npm run -- lerna exec --concurrency=1 --no-bail -- "$thisdir/$thisprog" "$style" "$@"
+    exit $?
     ;;
 esac
 CMD="${1-"--help"}"

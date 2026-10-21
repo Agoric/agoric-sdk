@@ -1,5 +1,5 @@
-import v8 from 'v8';
-import vm from 'vm';
+import v8 from 'node:v8';
+import vm from 'node:vm';
 
 /* global globalThis */
 let bestGC = globalThis.gc;

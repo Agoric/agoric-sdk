@@ -42,7 +42,7 @@ const prepareBadHost = zone =>
     },
   );
 
-/** @typedef {ReturnType<ReturnType<prepareBadHost>>} BadHost */
+/** @typedef {ReturnType<ReturnType<typeof prepareBadHost>>} BadHost */
 
 /**
  * @param {any} t

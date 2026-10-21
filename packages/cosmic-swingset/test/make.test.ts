@@ -1,16 +1,24 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import anyTest from 'ava';
 
 // Use ambient authority only in test.before()
 import type { TestFn, Macro, ExecutionContext } from 'ava';
-import { spawn as ambientSpawn, type StdioOptions } from 'child_process';
-import * as ambientPath from 'path';
+import { spawn as ambientSpawn, type StdioOptions } from 'node:child_process';
+import * as ambientPath from 'node:path';
+import { rm as ambientRm } from 'node:fs/promises';
 
 import {
   prometheusSampleRegExp,
   prometheusNumberValue,
 } from '../tools/prometheus.js';
-import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
+import {
+  DEFAULT_GENESIS_EXPORT_DIR,
+  makeScenario2,
+  makeWalletTool,
+  pspawn,
+} from './scenario2.js';
 
 type TestContext = Awaited<ReturnType<typeof makeTestContext>>;
 
@@ -73,8 +81,11 @@ test.serial('make and exec', async t => {
     0,
     'make scenario2-run-chain-to-halt succeeds again',
   );
-  t.log('export');
-  const exportExitCode = await scenario2.export();
+  const exportDir = DEFAULT_GENESIS_EXPORT_DIR;
+  t.log(`rm -rf ${exportDir}`);
+  await ambientRm(exportDir, { recursive: true, force: true });
+  t.log(`export ${exportDir}`);
+  const exportExitCode = await scenario2.export(exportDir);
   t.log('export exit code:', exportExitCode);
   // TODO: check exit code? It varies.
 });

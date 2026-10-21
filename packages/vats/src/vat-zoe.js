@@ -1,6 +1,10 @@
 import { Far } from '@endo/far';
 import { makeDurableZoeKit } from '@agoric/zoe';
 
+/**
+ * @import {ZCFSpec} from '@agoric/zoe';
+ */
+
 const BUILD_PARAMS_KEY = 'buildZoeParams';
 
 export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
@@ -28,7 +32,7 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
 
       const vatAdminSvc = await adminVat;
 
-      /** @type {import('@agoric/zoe').ZCFSpec} */
+      /** @type {ZCFSpec} */
       const zcfSpec = { name: zcfBundleName };
 
       zoeBaggage.init(

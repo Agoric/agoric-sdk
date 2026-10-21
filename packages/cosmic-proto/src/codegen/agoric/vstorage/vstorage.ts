@@ -2,7 +2,12 @@
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** Data is the vstorage node data. */
+/**
+ * Data is the vstorage node data.
+ * @name Data
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.Data
+ */
 export interface Data {
   value: string;
 }
@@ -10,13 +15,21 @@ export interface DataProtoMsg {
   typeUrl: '/agoric.vstorage.Data';
   value: Uint8Array;
 }
-/** Data is the vstorage node data. */
+/**
+ * Data is the vstorage node data.
+ * @name DataSDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.Data
+ */
 export interface DataSDKType {
   value: string;
 }
 /**
  * Children are the immediate names (just one level deep) of subnodes leading to
  * more data from a given vstorage node.
+ * @name Children
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.Children
  */
 export interface Children {
   children: string[];
@@ -28,6 +41,9 @@ export interface ChildrenProtoMsg {
 /**
  * Children are the immediate names (just one level deep) of subnodes leading to
  * more data from a given vstorage node.
+ * @name ChildrenSDKType
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.Children
  */
 export interface ChildrenSDKType {
   children: string[];
@@ -37,8 +53,20 @@ function createBaseData(): Data {
     value: '',
   };
 }
+/**
+ * Data is the vstorage node data.
+ * @name Data
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.Data
+ */
 export const Data = {
   typeUrl: '/agoric.vstorage.Data' as const,
+  is(o: any): o is Data {
+    return o && (o.$typeUrl === Data.typeUrl || typeof o.value === 'string');
+  },
+  isSDK(o: any): o is DataSDKType {
+    return o && (o.$typeUrl === Data.typeUrl || typeof o.value === 'string');
+  },
   encode(
     message: Data,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -99,8 +127,31 @@ function createBaseChildren(): Children {
     children: [],
   };
 }
+/**
+ * Children are the immediate names (just one level deep) of subnodes leading to
+ * more data from a given vstorage node.
+ * @name Children
+ * @package agoric.vstorage
+ * @see proto type: agoric.vstorage.Children
+ */
 export const Children = {
   typeUrl: '/agoric.vstorage.Children' as const,
+  is(o: any): o is Children {
+    return (
+      o &&
+      (o.$typeUrl === Children.typeUrl ||
+        (Array.isArray(o.children) &&
+          (!o.children.length || typeof o.children[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ChildrenSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Children.typeUrl ||
+        (Array.isArray(o.children) &&
+          (!o.children.length || typeof o.children[0] === 'string')))
+    );
+  },
   encode(
     message: Children,
     writer: BinaryWriter = BinaryWriter.create(),

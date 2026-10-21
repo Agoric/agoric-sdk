@@ -9,7 +9,7 @@ import { LOCAL_CONFIG_KEY, fetchNetworkConfig } from './network-config.js';
  *
  * If none is set or it's 'local', return a local chain config.
  *
- * @param {{ env: typeof process.env, fetch: typeof fetch }} io
+ * @param {{ env: typeof process.env, fetch: typeof globalThis.fetch }} io
  * @returns {Promise<MinimalNetworkConfig>}
  */
 

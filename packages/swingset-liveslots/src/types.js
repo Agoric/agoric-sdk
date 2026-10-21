@@ -2,6 +2,10 @@
 export {};
 
 /**
+ * @import {CapData} from '@endo/marshal';
+ */
+
+/**
  * @callback makeLiveSlots
  */
 
@@ -29,7 +33,7 @@ export {};
  *   relates to *arbitrary* changes (per #10200, a non-true value still permits
  *   backwards-compatible addition of new optional fields)
  *
- * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
+ * @typedef {CapData<string>} SwingSetCapData
  *
  * @typedef {{
  *                methargs: SwingSetCapData, // of [method, args]

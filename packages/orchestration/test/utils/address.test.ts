@@ -1,4 +1,6 @@
-import { validateRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
+import '@endo/init/debug.js';
+
+import { decodeRemoteIbcAddress } from '@agoric/network/ibc/utils.js';
 import test from '@endo/ses-ava/prepare-endo.js';
 import type { Bech32Address } from '../../src/cosmos-api.ts';
 import type { CosmosChainAddress } from '../../src/orchestration-api.ts';
@@ -103,16 +105,21 @@ test('makeICQChannelAddress', t => {
     '/ibc-hop/connection-0/ibc-port/icqhost/unordered/icq-2',
     'accepts custom version',
   );
-  t.throws(
-    () =>
-      validateRemoteIbcAddress(
-        makeICQChannelAddress('connection-0', 'ic/q-/2'),
-      ),
+  const slashyAddress = makeICQChannelAddress('connection-0', 'ic/q-/2');
+  t.is(
+    slashyAddress,
+    '/ibc-hop/connection-0/ibc-port/icqhost/unordered/ic\\x2fq-\\x2f2',
+    'makeICQChannelAddress escapes slashes in version',
+  );
+  t.deepEqual(
+    decodeRemoteIbcAddress(slashyAddress),
     {
-      message:
-        /must be '\(\/ibc-hop\/CONNECTION\)\*\/ibc-port\/PORT\/\(ordered\|unordered\)\/VERSION'/,
+      hops: ['connection-0'],
+      rPortID: 'icqhost',
+      order: 'UNORDERED',
+      version: 'ic/q-/2',
     },
-    'makeICQChannelAddress not hardened against malformed version. use `validateRemoteIbcAddress` to detect this, or expect IBC ProtocolImpl to throw',
+    'accepts custom version',
   );
 });
 
@@ -133,10 +140,11 @@ const bech32 = test.macro({
 test(bech32, 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4', 'bc');
 test(bech32, 'cosmos1n4f2eqt2gm5mh6gevf8aw2wrf75q25yru09yvn', 'cosmos');
 test(bech32, '111qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4', '11');
-// @ts-expect-error intentionally invalid address
 test(
   bech32,
-  'qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4',
+  // intentionally invalid address (no bech32 separator); cast past the
+  // Bech32Address template type to exercise getBech32Prefix's runtime check
+  'qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4' as unknown as Bech32Address,
   null,
   'No separator character for "qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"',
 );

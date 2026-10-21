@@ -15,10 +15,10 @@ import { prepareICQConnectionKit } from './icq-connection-kit.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Remote} from '@agoric/internal';
- * @import {Connection, Port, PortAllocator} from '@agoric/network';
- * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {IBCConnectionID, RemoteIbcAddress} from '@agoric/network/ibc';
+ * @import {CastedPattern} from '@endo/patterns';
+ * @import {Connection, ConnectionHandler, Port, PortAllocator} from '@agoric/network';
  * @import {MapStore, SetStore} from '@agoric/store';
- * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {ICQConnection, IcaAccount, ICQConnectionKit, IcaAccountKit} from '../types.js';
  * @import {ICAChannelAddressOpts} from '../utils/address.js';
@@ -96,10 +96,18 @@ const prepareCosmosOrchestrationServiceKit = (
       public: M.interface('CosmosInterchainService', {
         makeAccount: M.call(M.string(), M.string(), M.string())
           .optional(M.record())
-          .returns(Vow$(M.remotable('IcaAccountKit'))),
+          .returns(
+            /** @type {CastedPattern<Vow<IcaAccount>>} */ (
+              Vow$(M.remotable('IcaAccount'))
+            ),
+          ),
         provideICQConnection: M.call(M.string())
           .optional(M.string())
-          .returns(Vow$(M.remotable('ICQConnection'))),
+          .returns(
+            /** @type {CastedPattern<Vow<ICQConnection>>} */ (
+              Vow$(M.remotable('ICQConnection'))
+            ),
+          ),
       }),
     },
     /** @param {Partial<CosmosOrchestrationPowers>} powers */
@@ -129,7 +137,12 @@ const prepareCosmosOrchestrationServiceKit = (
             remoteConnAddr,
           );
           return watch(
-            E(port).connect(remoteConnAddr, connectionKit.connectionHandler),
+            E(port).connect(
+              remoteConnAddr,
+              /** @type {Remote<ConnectionHandler>} */ (
+                /** @type {unknown} */ (connectionKit.connectionHandler)
+              ),
+            ),
             this.facets.channelOpenWatcher,
             { returnFacet: 'account', connectionKit },
           );
@@ -149,7 +162,12 @@ const prepareCosmosOrchestrationServiceKit = (
           }
           const connectionKit = makeICQConnectionKit(port);
           return watch(
-            E(port).connect(remoteConnAddr, connectionKit.connectionHandler),
+            E(port).connect(
+              remoteConnAddr,
+              /** @type {Remote<ConnectionHandler>} */ (
+                /** @type {unknown} */ (connectionKit.connectionHandler)
+              ),
+            ),
             this.facets.channelOpenWatcher,
             {
               connectionKit,

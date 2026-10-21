@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
@@ -14,6 +12,8 @@ import {
 /**
  * @import {Amount, Brand, Issuer, IssuerKit, Payment, Purse} from '@agoric/ertp';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {Ratio} from '@agoric/ertp';
  */
 
 /**
@@ -21,7 +21,7 @@ import {
  * @param {Brand<'nat'>} options.actualBrandIn
  * @param {Brand<'nat'>} options.actualBrandOut
  * @param {Ratio} options.initialPrice
- * @param {import('@agoric/time').TimerService} options.timer
+ * @param {TimerService} options.timer
  * @param {IssuerKit<'set', PriceDescription>} [options.quoteIssuerKit]
  * @returns {PriceAuthority & { setPrice: (Ratio) => void; disable: () => void }}
  */

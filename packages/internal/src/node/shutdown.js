@@ -1,9 +1,10 @@
 import process from 'node:process';
-import anylogger from 'anylogger';
+import anylogger from '../../vendor/anylogger.js';
 
 const console = anylogger('shutdown');
 
 export const makeFreshShutdown = (verbose = true) => {
+  /** @type {Set<(isSigInt: boolean) => unknown>} */
   const shutdownThunks = new Set();
 
   let shuttingDown = false;
@@ -40,12 +41,16 @@ export const makeFreshShutdown = (verbose = true) => {
       .catch(error => verbose && console.warn('Error shutting down', error))
       .finally(() => {
         // Let `beforeExit` exit cleanly
+        // `code` may be a signal string; the loose `>=` comparison is
+        // intentional. The cast is type-only (erased at runtime), so it
+        // preserves the original comparison semantics.
         if (!(code >= 0)) {
           process.exit();
         }
       });
   };
 
+  /** @type {NodeJS.UncaughtExceptionListener} */
   const uncaughtShutdown = e => {
     console.error(e);
     shutdown(-1);
@@ -58,6 +63,7 @@ export const makeFreshShutdown = (verbose = true) => {
   process.on('uncaughtException', uncaughtShutdown);
 
   return {
+    /** @param {(isSigInt: boolean) => unknown} thunk */
     registerShutdown: thunk => {
       shutdownThunks.add(thunk);
       return () => {
@@ -67,7 +73,9 @@ export const makeFreshShutdown = (verbose = true) => {
   };
 };
 
+/** @type {ReturnType<typeof makeFreshShutdown> | null} */
 let cachedShutdown = null;
+/** @param {Parameters<typeof makeFreshShutdown>} args */
 export const makeCachedShutdown = (...args) => {
   // It's possible our caller has specified different arguments.
   // Since they control verbosity only, first-one-wins is acceptable.

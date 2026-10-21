@@ -91,7 +91,8 @@ test.serial('test durable first-crank hazard 2', async t => {
   await eventLoopIteration();
 });
 
-test.serial.failing('test durable first-crank hazard 3', async t => {
+test.serial.skip('test durable first-crank hazard 3', async t => {
+  // TODO(#9377): This test demonstrates a crank bug. Re-enable when bug is fixed.
   nextLife();
   const zone3 = makeDurableZone(getBaggage(), 'durableRoot');
   await testPlay3(t, zone3);

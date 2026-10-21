@@ -1,7 +1,7 @@
-import { AmountMath, type NatAmount } from '@agoric/ertp';
+import { AmountMath, type Brand, type NatAmount } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { mustMatch, objectMap } from '@agoric/internal';
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
 import {
@@ -26,17 +26,27 @@ export const importCSV = (specifier: string, base: string) =>
 export type Dollars = `$${string}` | `-$${string}`;
 export const numeral = (amt: Dollars) => amt.replace(/[$,]/g, '');
 
-export type RebalanceScenario = {
+type Empty = Record<never, never>;
+
+type MovementDescTemplate<V extends NatAmount | Dollars> = V extends NatAmount
+  ? MovementDesc
+  : V extends Dollars
+    ? Omit<MovementDesc, 'amount'> & { amount: Dollars }
+    : never;
+
+export type RebalanceScenario<V extends NatAmount | Dollars = Dollars> = {
   description: string;
-  before: Partial<Record<YieldProtocol, Dollars>>;
+  before: Partial<Record<YieldProtocol, V>>;
   previous: string;
   proposal:
-    | { give: {}; want: {} }
-    | { give: { Deposit: Dollars }; want: {} }
-    | { want: { Cash: Dollars }; give: {} };
-  offerArgs?: { flow: (Omit<MovementDesc, 'amount'> & { amount: Dollars })[] };
-  after: Partial<Record<YieldProtocol, Dollars>>;
-  payouts: { Deposit?: Dollars; Cash?: Dollars };
+    | { give: Empty; want: Empty }
+    | { give: { Deposit: V }; want: Empty }
+    | { want: { Cash: V }; give: Empty };
+  offerArgs: V extends NatAmount
+    ? { flow?: MovementDesc[] }
+    : { flow: MovementDescTemplate<V>[] } | undefined;
+  after: Partial<Record<YieldProtocol, V>>;
+  payouts: { Deposit?: V; Cash?: V };
   positionsNet: Dollars;
   offerNet: Dollars;
   operationNet: Dollars;
@@ -47,7 +57,7 @@ const parseCSVRow = (row: string): string[] => {
   let current = '';
   let inQuotes = false;
 
-  for (let i = 0; i < row.length; i++) {
+  for (let i = 0; i < row.length; i += 1) {
     const char = row[i];
 
     if (char === '"') {
@@ -111,8 +121,8 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
       continue;
     }
 
-    const [label, aave, compound, usdn] = [row[0], ...row.slice(6)];
-    const [_l, Deposit, Cash, agoricLCA, nobleICA, acctEVM] = row;
+    const [label, aave, compound, _usdn] = [row[0], ...row.slice(6)];
+    const [_l, Deposit, Cash, _agoricLCA, _nobleICA, _acctEVM] = row;
     const [T2A, T2B, T2C] = row.slice(emptyHdCol);
 
     // Skip header row
@@ -146,7 +156,7 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
           if (pDef.match(/^LCA/)) return `@agoric`;
           if (pDef.match(/^ICA/)) return `@noble`;
           if (pDef.match(/^GMP/)) return `@Arbitrum`;
-          const { entries, keys } = Object;
+          const { entries } = Object;
           const [poolKey] =
             entries(PoolPlaces).find(
               ([_k, p]) =>
@@ -166,16 +176,17 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         const src = asPlaceRef(hd[srcCol]) as AssetPlaceRef;
         const dest = asPlaceRef(hd[destCol]);
 
-        const { give = {} } = currentScenario.proposal || {};
         const amount = T2B as Dollars;
-        assert(amount && amount.startsWith('$'), `bad amount in row ${rownum}`);
+        amount?.startsWith('$') || assert.fail(`bad amount in row ${rownum}`);
 
         flow.push({ src, dest, amount });
+        break;
       }
       case 'After':
         // console.debug('After row', row);
         currentScenario.after = parseProtocolAmounts(row);
         currentScenario.positionsNet = T2B as Dollars;
+        break;
       case 'Payouts':
         currentScenario.payouts = {
           ...parseCell('Deposit', Deposit),
@@ -183,12 +194,15 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         };
         currentScenario.offerNet = T2B as Dollars;
         currentScenario.operationNet = T2C as Dollars;
-      // console.debug(
-      //   'Payouts row',
-      //   row,
-      //   currentScenario.description,
-      //   currentScenario.payouts,
-      // );
+        // console.debug(
+        //   'Payouts row',
+        //   row,
+        //   currentScenario.description,
+        //   currentScenario.payouts,
+        // );
+        break;
+      default:
+      // pass
     }
   }
 
@@ -202,10 +216,10 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
 };
 
 export const withBrand = (
-  scenario: RebalanceScenario,
+  scenario: RebalanceScenario<Dollars>,
   brand: Brand<'nat'>,
   feeBrand = brand,
-) => {
+): RebalanceScenario<NatAmount> => {
   const { make } = AmountMath;
   const unit = make(brand, 1_000_000n);
   const $ = (amt: Dollars): NatAmount =>
@@ -213,21 +227,23 @@ export const withBrand = (
   const $$ = <C extends Record<string, Dollars>>(dollarCells: C) =>
     objectMap(dollarCells, a => $(a!));
 
+  const needsFee = m =>
+    m.dest === '@Arbitrum' ||
+    ['Compound', 'Aave'].some(p => m.dest.startsWith(p) || m.src.startsWith(p));
   const withFee = m =>
-    ['Compound', 'Aave'].some(p => m.dest.startsWith(p) || m.src.startsWith(p))
-      ? { ...m, fee: { brand: feeBrand, value: 100n } }
-      : m;
+    needsFee(m) ? { ...m, fee: { brand: feeBrand, value: 100n } } : m;
 
-  const flow = scenario.offerArgs?.flow;
-  const offerArgs = flow
-    ? harden({ flow: flow.map(m => withFee({ ...m, amount: $(m.amount) })) })
-    : harden({});
-
+  const flow = scenario.offerArgs?.flow?.map(
+    m => withFee({ ...m, amount: $(m.amount) }) as MovementDesc,
+  );
+  const offerArgs = flow ? harden({ flow }) : harden({});
   mustMatch(offerArgs, makeOfferArgsShapes(brand).rebalance);
 
   const proposal = objectMap(scenario.proposal, $$);
-  mustMatch(proposal, makeProposalShapes(brand, brand).rebalance);
+  mustMatch(proposal, makeProposalShapes(brand).rebalance);
+
   return harden({
+    ...scenario,
     before: $$(scenario.before),
     proposal,
     offerArgs,

@@ -1,44 +1,69 @@
-/** @file test for ProposalShapes, offerArgs shapes */
+/** @file test for ProposalShapes, offerArgs, vstorage shapes */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import {
+  type PortfolioAgentStatus,
+  type PortfolioPermissions,
+  type PortfolioPermissionsExt,
+  PortfolioPermissionsExtShape,
+  PortfolioPermissionsShape,
+} from '@agoric/portfolio-api';
+import {
+  TxStatus,
+  TxType,
+  type PublishedTx,
+} from '@agoric/portfolio-api/src/resolver.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
+import { PublishedTxShape } from '../src/resolver/types.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import {
+  FlowDetailShape,
+  FlowStatusShape,
+  FlowStepsShape,
   makeProposalShapes,
   PoolKeyShapeExt,
+  PortfolioAgentStatusShape,
   PortfolioStatusShapeExt,
+  PositionStatusShape,
+  TargetAllocationShape,
+  TargetAllocationShapeExt,
+  type StatusFor,
+  type TargetAllocation,
 } from '../src/type-guards.ts';
 
-const usdc = withAmountUtils(makeIssuerKit('USDC'));
-const { brand: USDC } = usdc;
+const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
+const usdc = usdcKit.make;
+const { brand: USDC } = usdcKit;
 const bld = withAmountUtils(makeIssuerKit('BLD'));
-const { brand: BLD } = bld;
 
 test('ProposalShapes', t => {
   const { brand: Poc26 } = makeIssuerKit('Poc26');
-  const shapes = makeProposalShapes(USDC, BLD, Poc26);
+  const shapes = makeProposalShapes(USDC, Poc26);
 
-  const usdc = (value: bigint) => AmountMath.make(USDC, value);
-  const fee = (value: bigint) => AmountMath.make(BLD, value);
   const poc26 = (value: bigint) => AmountMath.make(Poc26, value);
   const cases = harden({
     openPortfolio: {
       pass: {
+        noGive: { give: {} },
         noPositions: { give: { Access: poc26(1n) } },
         withDeposit: { give: { Deposit: usdc(123n), Access: poc26(1n) } },
-        aaveNeedsGMPFee: {
+        withDepositNoAccess: { give: { Deposit: usdc(123n) } },
+        aaveGMPFeePaidByContract: {
           give: {
             Deposit: usdc(6123n),
-            GmpFee: fee(123n),
             Access: poc26(1n),
           },
         },
-        withDepositAndFee: {
+        aaveGMPFeePaidByContractNoAccess: {
+          give: {
+            Deposit: usdc(6123n),
+          },
+        },
+        withDepositAndAccess: {
           give: {
             Deposit: usdc(10123n),
-            GmpFee: fee(7123n),
             Access: poc26(1n),
           },
         },
@@ -52,21 +77,13 @@ test('ProposalShapes', t => {
         depositWrongBrand: {
           give: { Deposit: poc26(123n), Access: poc26(1n) },
         },
-        gmpFeeWrongBrand: {
-          give: { GmpFee: usdc(123n), Access: poc26(1n) },
-        },
         openTopLevelStray: { give: { Access: poc26(1n) }, extra: 'property' },
       },
     },
     rebalance: {
       pass: {
         deposit: { give: { Deposit: usdc(123n) } },
-        depositWithFee: { give: { Deposit: usdc(123n), GmpFee: fee(50n) } },
         withdraw: { want: { Cash: usdc(123n) } },
-        withdrawWithFee: {
-          want: { Cash: usdc(123n) },
-          give: { GmpFee: fee(50n) },
-        },
       },
       fail: {
         both: { give: { Deposit: usdc(123n) }, want: { Cash: usdc(123n) } },
@@ -104,20 +121,131 @@ test('ProposalShapes', t => {
 
 test('offerArgs can carry fee', t => {
   const shapes = makeOfferArgsShapes(USDC);
-  const [amount, fee] = [usdc.make(200n), bld.make(100n)];
+  const [amount, fee] = [usdc(200n), bld.make(100n)];
   const specimen = harden({
     flow: [{ src: '@noble', dest: '@Arbitrum', amount, fee }],
   });
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });
 
+test('plan and offer flows are limited to 30 movements', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const movement = harden({
+    src: '@noble',
+    dest: 'Aave_Arbitrum',
+    amount: usdc(1n),
+  });
+
+  for (const shape of [
+    shapes.plan,
+    shapes.openPortfolio,
+    shapes.rebalance,
+    shapes.deposit,
+  ]) {
+    t.notThrows(() =>
+      mustMatch(harden({ flow: Array(30).fill(movement) }), shape),
+    );
+    t.throws(
+      () => mustMatch(harden({ flow: Array(31).fill(movement) }), shape),
+      {
+        message: /Array length 31 must be <= limit 30/,
+      },
+    );
+  }
+});
+
+test('plan dependency lists are limited to 29 steps', t => {
+  const { plan } = makeOfferArgsShapes(USDC);
+
+  t.notThrows(() =>
+    mustMatch(harden({ flow: [], order: [[0, Array(29).fill(0)]] }), plan),
+  );
+  t.throws(
+    () =>
+      mustMatch(harden({ flow: [], order: [[0, Array(30).fill(0)]] }), plan),
+    { message: /Array length 30 must be <= limit 29/ },
+  );
+});
+
+test('plan order is limited to 30 entries', t => {
+  const { plan } = makeOfferArgsShapes(USDC);
+  const entry = harden([0, []]);
+  t.notThrows(() =>
+    mustMatch(harden({ flow: [], order: Array(30).fill(entry) }), plan),
+  );
+  t.throws(
+    () => mustMatch(harden({ flow: [], order: Array(31).fill(entry) }), plan),
+    {
+      message: /Array length 31 must be <= limit 30/,
+    },
+  );
+});
+
 test('offerArgs can carry usdnOut', t => {
   const shapes = makeOfferArgsShapes(USDC);
-  const [amount, detail] = [usdc.make(200n), { usdnOut: 198n }];
+  const [amount, detail] = [usdc(200n), { usdnOut: 198n }];
   const specimen = harden({
     flow: [{ src: '@noble', dest: 'USDN', amount, detail }],
   });
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+});
+
+test('offerArgs can carry 1inch swap params', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const amount = usdc(200n);
+  const specimen = harden({
+    flow: [
+      {
+        src: '@Avalanche',
+        dest: '@Avalanche',
+        amount,
+        swap: {
+          provider: '1inch',
+          tokenIn: '0x0000000000000000000000000000000000000abc',
+          amountIn: 5_000_000n,
+          flags: 0n,
+          executor: '0x2222222222222222222222222222222222222222',
+          srcReceiver: '0x3333333333333333333333333333333333333333',
+          data: '0xdeadbeef',
+        },
+      },
+    ],
+  });
+  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+
+  const withTokenOut = harden({
+    flow: [
+      {
+        ...specimen.flow[0],
+        swap: {
+          ...specimen.flow[0].swap,
+          tokenOut: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+        },
+      },
+    ],
+  });
+  t.notThrows(() => mustMatch(withTokenOut, shapes.rebalance));
+});
+
+test('movementDescShape allows unknown additional properties', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const { movementDescShape } = shapes;
+  const amount = usdc(200n);
+
+  // Specimen with an unknown future property
+  const specimenWithExtra = harden({
+    src: '@noble',
+    dest: '@Arbitrum',
+    amount,
+    futureField: 'some-value',
+    anotherNewField: 42n,
+  });
+
+  // Current shape allows additional properties
+  t.notThrows(
+    () => mustMatch(specimenWithExtra, movementDescShape),
+    'movementDescShape should allow unknown properties',
+  );
 });
 
 test('PoolKeyExt shapes accept future pool keys', t => {
@@ -136,14 +264,108 @@ test('PoolKeyExt shapes accept future pool keys', t => {
     flowCount: 3,
     accountIdByChain: { agoric: 'agoric123', noble: 'noble456' },
     targetAllocation: { Aave_Base: 3333n, NewProtocol_Solana: 6667n },
+    policyVersion: 1,
+    rebalanceCount: 1,
   });
 
   t.notThrows(() => mustMatch(statusWithFutureKeys, PortfolioStatusShapeExt));
 });
 
+test('PortfolioPermissionsShape', t => {
+  const passCases = harden({
+    empty: {},
+    allocationOnly: {
+      allocation: true,
+    },
+    rebalanceOnly: {
+      rebalance: true,
+    },
+  } satisfies Record<string, PortfolioPermissions>);
+  const failCases = harden({
+    futurePermission: {
+      allocation: true,
+      futurePermission: false,
+    },
+    futureObject: {
+      future: { size: 1 },
+    },
+  }) satisfies Record<string, PortfolioPermissionsExt>;
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioPermissionsShape), name);
+  }
+});
+
+test('PortfolioPermissionsExtShape', t => {
+  const passCases = harden({
+    empty: {},
+    futurePermission: {
+      allocation: true,
+      futurePermission: false,
+    },
+    futureObject: {
+      future: { size: 1 },
+    },
+  }) satisfies Record<string, PortfolioPermissionsExt>;
+  const failCases = harden({});
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsExtShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioPermissionsExtShape), name);
+  }
+});
+
+test('PortfolioAgentStatusShape allows upgraded permission bags', t => {
+  const passCases = harden({
+    futurePermission: {
+      grantee: 'agoric1test',
+      permissions: { futurePermission: true },
+      state: 'active',
+      updatedAtPolicyVersion: 0,
+    },
+  } satisfies Record<string, PortfolioAgentStatus>);
+  const failCases = harden({});
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioAgentStatusShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioAgentStatusShape), name);
+  }
+});
+
+test('portfolio agent status shape allows future top-level fields', t => {
+  t.notThrows(
+    () =>
+      mustMatch(
+        harden({
+          grantee: 'agoric1test',
+          permissions: { allocation: true },
+          state: 'active',
+          updatedAtPolicyVersion: 1,
+          expiresAt: 1234567890,
+          revokedBy: 'agoric1admin',
+        }),
+        PortfolioAgentStatusShape,
+      ),
+    'agent status should allow additional top-level fields',
+  );
+});
+
 test('numeric position references are rejected', t => {
   const shapes = makeOfferArgsShapes(USDC);
-  const amount = usdc.make(200n);
+  const amount = usdc(200n);
 
   // Numeric position references from old design should be rejected
   const specimenWithNumber = harden({
@@ -153,4 +375,574 @@ test('numeric position references are rejected', t => {
   t.throws(() => mustMatch(specimenWithNumber, shapes.rebalance), {
     message: /Must match one of/,
   });
+});
+
+test('vstorage flow type matches shape', t => {
+  const amount = usdc(200n);
+  const passCases: Record<string, StatusFor['flow']> = harden({
+    runningFlow: {
+      state: 'run',
+      step: 1,
+      how: 'deposit',
+      type: 'deposit',
+      amount,
+    },
+    completedFlow: {
+      state: 'done',
+      type: 'deposit',
+      amount,
+    },
+    failedFlow: {
+      state: 'fail',
+      step: 0,
+      how: 'transfer',
+      error: 'Insufficient funds',
+      type: 'deposit',
+      amount,
+    },
+    failedFlowWithLocation: {
+      state: 'fail',
+      step: 1,
+      how: 'deposit',
+      error: 'Network timeout',
+      where: '@Arbitrum',
+      type: 'deposit',
+      amount,
+    },
+    rebalanceWithAgent: {
+      state: 'done',
+      type: 'rebalance',
+      agent: 'agent1',
+    },
+  });
+
+  const failCases = harden({
+    missingState: {
+      step: 1,
+      how: 'deposit',
+    },
+    invalidState: {
+      state: 'invalid',
+      step: 1,
+      how: 'deposit',
+    },
+    runMissingStep: {
+      state: 'run',
+      how: 'deposit',
+    },
+    runMissingHow: {
+      state: 'run',
+      step: 1,
+    },
+    failMissingError: {
+      state: 'fail',
+      step: 1,
+      how: 'deposit',
+    },
+  });
+
+  const { entries } = Object;
+  for (const [name, flowStatus] of entries(passCases)) {
+    t.notThrows(() => mustMatch(flowStatus, FlowStatusShape), `pass: ${name}`);
+  }
+  for (const [name, flowStatus] of entries(failCases)) {
+    t.false(matches(flowStatus, FlowStatusShape), `fail: ${name}`);
+  }
+});
+
+test('vstorage flow steps type matches shape', t => {
+  const passCases: Record<string, StatusFor['flowSteps']> = harden({
+    emptySteps: [],
+    singleStep: [
+      {
+        how: 'deposit',
+        amount: usdc(1000n),
+        src: '<Deposit>',
+        dest: '@noble',
+      },
+    ],
+    evmDepositStep: [
+      {
+        how: 'createAndDeposit',
+        amount: usdc(1000n),
+        src: '+Base',
+        dest: '@Base',
+      },
+    ],
+    multipleSteps: [
+      {
+        how: 'transfer',
+        amount: usdc(2000n),
+        src: '@noble',
+        dest: '@Arbitrum',
+      },
+      {
+        how: 'deposit',
+        amount: usdc(1800n),
+        src: '@Arbitrum',
+        dest: 'Aave_Arbitrum',
+      },
+    ],
+  });
+
+  const failCases = harden({
+    missingHow: [
+      {
+        amount: usdc(1000n),
+        src: '<Deposit>',
+        dest: '@noble',
+      },
+    ],
+    missingAmount: [
+      {
+        how: 'deposit',
+        src: '<Deposit>',
+        dest: '@noble',
+      },
+    ],
+    missingSrc: [
+      {
+        how: 'deposit',
+        amount: usdc(1000n),
+        dest: '@noble',
+      },
+    ],
+    missingDest: [
+      {
+        how: 'deposit',
+        amount: usdc(1000n),
+        src: '<Deposit>',
+      },
+    ],
+  });
+
+  const { entries } = Object;
+  for (const [name, flowSteps] of entries(passCases)) {
+    t.notThrows(() => mustMatch(flowSteps, FlowStepsShape), `pass: ${name}`);
+  }
+  for (const [name, flowSteps] of entries(failCases)) {
+    t.false(matches(flowSteps, FlowStepsShape), `fail: ${name}`);
+  }
+});
+
+test('vstorage flow detail type matches shape', t => {
+  const passCases = harden({
+    depositWithoutFromChain: {
+      type: 'deposit',
+      amount: usdc(1n),
+    },
+    depositWithFromChain: {
+      type: 'deposit',
+      amount: usdc(1n),
+      fromChain: 'Base',
+    },
+    withdrawWithToChain: {
+      type: 'withdraw',
+      amount: usdc(1n),
+      toChain: 'noble',
+    },
+    rebalanceWithAgent: {
+      type: 'rebalance',
+      agent: 'agent1',
+    },
+    rebalanceWithPendingInitiatingOperation: {
+      type: 'rebalance',
+      agent: 'agent1',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'pending',
+      },
+    },
+    rebalanceWithOkInitiatingOperation: {
+      type: 'rebalance',
+      agent: 'agent1',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 3 },
+      },
+    },
+    rebalanceWithErrorInitiatingOperation: {
+      type: 'rebalance',
+      agent: 'agent1',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'error',
+        error: 'mandate rejected',
+      },
+    },
+    depositWithOkOpenPortfolioInitiatingOperation: {
+      type: 'deposit',
+      amount: usdc(1n),
+      initiatingOperation: {
+        type: 'openPortfolio',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
+    },
+  });
+
+  const failCases = harden({
+    invalidFromChain: {
+      type: 'deposit',
+      amount: usdc(1n),
+      fromChain: 123,
+    },
+    invalidToChain: {
+      type: 'withdraw',
+      amount: usdc(1n),
+      toChain: 123,
+    },
+    initiatingOperationOkMissingResult: {
+      type: 'rebalance',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+      },
+    },
+    initiatingOperationErrorMissingError: {
+      type: 'rebalance',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'error',
+      },
+    },
+    depositWithSetTargetAllocationInitiatingOperation: {
+      type: 'deposit',
+      amount: usdc(1n),
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
+    },
+    rebalanceWithOpenPortfolioInitiatingOperation: {
+      type: 'rebalance',
+      initiatingOperation: {
+        type: 'openPortfolio',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
+    },
+    initiatingOperationPendingWithResult: {
+      type: 'rebalance',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'pending',
+        result: { policyVersion: 1 },
+      },
+    },
+    initiatingOperationOkWithError: {
+      type: 'rebalance',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+        error: 'unexpected',
+      },
+    },
+    withdrawWithInitiatingOperation: {
+      type: 'withdraw',
+      amount: usdc(1n),
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
+    },
+    claimRewardsWithInitiatingOperation: {
+      type: 'claimRewards',
+      initiatingOperation: {
+        type: 'setTargetAllocation',
+        targetAllocation: { Aave_Ethereum: 10000n },
+        status: 'ok',
+        result: { policyVersion: 1 },
+      },
+    },
+  });
+
+  for (const [name, flowDetail] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(flowDetail, FlowDetailShape), `pass: ${name}`);
+  }
+  for (const [name, flowDetail] of Object.entries(failCases)) {
+    t.false(matches(flowDetail, FlowDetailShape), `fail: ${name}`);
+  }
+});
+
+test('vstorage portfolio status accepts flow detail with fromChain', t => {
+  const status = harden({
+    positionKeys: [],
+    flowCount: 1,
+    accountIdByChain: {},
+    policyVersion: 1,
+    rebalanceCount: 0,
+    flowsRunning: {
+      flow1: {
+        type: 'deposit',
+        amount: usdc(1n),
+        fromChain: 'Base',
+      },
+    },
+  });
+  t.notThrows(() => mustMatch(status, PortfolioStatusShapeExt));
+});
+
+test('vstorage position type matches shape', t => {
+  const passCases: Record<string, StatusFor['position']> = harden({
+    usdnPosition: {
+      protocol: 'USDN',
+      accountId: 'cosmos:noble-1:noble1234567890abcdef1234567890abcdef12345678',
+      netTransfers: usdc(1000n),
+      totalIn: usdc(2000n),
+      totalOut: usdc(1000n),
+    },
+    aavePosition: {
+      protocol: 'Aave',
+      accountId: 'eip155:1:0x1234567890abcdef1234567890abcdef12345678',
+      netTransfers: usdc(500n),
+      totalIn: usdc(1500n),
+      totalOut: usdc(1000n),
+    },
+    compoundPosition: {
+      protocol: 'Compound',
+      accountId: 'eip155:42161:0x456def1234567890abcdef1234567890abcdef12',
+      netTransfers: usdc(0n),
+      totalIn: usdc(1000n),
+      totalOut: usdc(1000n),
+    },
+    beefyPosition: {
+      protocol: 'Beefy',
+      accountId: 'eip155:8453:0x789ghi1234567890abcdef1234567890abcdef12',
+      netTransfers: usdc(2000n),
+      totalIn: usdc(3000n),
+      totalOut: usdc(1000n),
+    },
+  });
+
+  const failCases = harden({
+    missingProtocol: {
+      accountId: 'cosmos:noble-1:noble1234567890abcdef1234567890abcdef12345678',
+      netTransfers: usdc(1000n),
+      totalIn: usdc(2000n),
+      totalOut: usdc(1000n),
+    },
+    invalidProtocol: {
+      protocol: 'InvalidProtocol',
+      accountId: 'cosmos:noble-1:noble1234567890abcdef1234567890abcdef12345678',
+      netTransfers: usdc(1000n),
+      totalIn: usdc(2000n),
+      totalOut: usdc(1000n),
+    },
+    missingAccountId: {
+      protocol: 'USDN',
+      netTransfers: usdc(1000n),
+      totalIn: usdc(2000n),
+      totalOut: usdc(1000n),
+    },
+  });
+
+  const { entries } = Object;
+  for (const [name, position] of entries(passCases)) {
+    t.notThrows(
+      () => mustMatch(position, PositionStatusShape),
+      `pass: ${name}`,
+    );
+  }
+  for (const [name, position] of entries(failCases)) {
+    t.false(matches(position, PositionStatusShape), `fail: ${name}`);
+  }
+});
+
+test('portfolio node includes flowsRunning, nobleForwardingAddress', t => {
+  const passCases: Record<string, StatusFor['portfolio']> = harden({
+    minimalInTheory: {
+      accountIdByChain: {},
+      positionKeys: [],
+      flowCount: 0,
+      policyVersion: 0,
+      rebalanceCount: 0,
+    },
+    minimalInPractice: {
+      accountIdByChain: {
+        agoric: 'cosmos:agoric-6:agoric11028',
+      },
+      depositAddress: 'agoric11028asdf',
+      nobleForwardingAddress: 'noble1sdlfjlsdjf',
+      positionKeys: [],
+      flowCount: 0,
+      policyVersion: 0,
+      rebalanceCount: 0,
+    },
+    status1: {
+      accountIdByChain: {
+        agoric: 'cosmos:agoric-3:agoric11028',
+        noble: 'cosmos:noble-1:noble11056',
+      },
+      accountsPending: [],
+      depositAddress: 'agoric11042',
+      flowCount: 2,
+      flowsRunning: {},
+      policyVersion: 0,
+      positionKeys: ['USDN'],
+      rebalanceCount: 0,
+    },
+  });
+
+  const failCases = harden({
+    badFlowsRunning: {
+      ...passCases.status1,
+      flowsRunning: { flow2: 'quack!' },
+    },
+    badNFA: {
+      ...passCases.status1,
+      nobleForwardingAddress: { value: 'noble1dlkj' },
+    },
+  });
+
+  const { entries } = Object;
+  for (const [name, position] of entries(passCases)) {
+    t.notThrows(
+      () => mustMatch(position, PortfolioStatusShapeExt),
+      `pass: ${name}`,
+    );
+  }
+  for (const [name, position] of entries(failCases)) {
+    t.false(matches(position, PortfolioStatusShapeExt), `fail: ${name}`);
+  }
+});
+
+test('published tx shape accepts nextTxId field', t => {
+  const cctp = {
+    type: TxType.CCTP_TO_EVM,
+    amount: 1n,
+    destinationAddress: 'eip155:42161:0x742d35Cc6635C0532925a3b8D9e5eb2b64',
+    nextTxId: 'tx2',
+  } as const;
+
+  const ibc = {
+    type: TxType.IBC_FROM_AGORIC,
+    dest: [
+      'ibc',
+      ['chain', 'cosmos:noble-1'],
+      ['port', 'transfer'],
+      ['channel', 'channel-21'],
+    ],
+    op: 'transfer',
+    seq: 2,
+    src: [
+      'ibc',
+      ['chain', 'cosmos:agoric-3'],
+      ['port', 'transfer'],
+      ['channel', 'channel-14'],
+    ],
+    nextTxId: 'tx3',
+  } as const;
+
+  const cases = harden({
+    hasSource: {
+      ...cctp,
+      status: TxStatus.PENDING,
+      sourceAddress: 'comsos:agoric:agoric123lkjsdlj',
+    },
+    cctpPending: {
+      ...cctp,
+      status: TxStatus.PENDING,
+    },
+    cctpSuccess: {
+      ...cctp,
+      status: TxStatus.SUCCESS,
+    },
+    ibcSetup: {
+      ...ibc,
+      status: TxStatus.SETUP,
+      incomplete: true,
+      seq: { status: 'pending' },
+    },
+    ibcPending: {
+      ...ibc,
+      status: TxStatus.PENDING,
+    },
+    ibcSuccess: {
+      ...ibc,
+      status: TxStatus.SUCCESS,
+    },
+    ibcFailure: {
+      ...ibc,
+      status: TxStatus.FAILED,
+      rejectionReason: 'Some IBC failure reason',
+    },
+  } satisfies Record<string, PublishedTx>);
+
+  for (const [name, specimen] of Object.entries(cases)) {
+    t.notThrows(
+      () => mustMatch(specimen, PublishedTxShape),
+      `${name} with nextTxId should match shape`,
+    );
+  }
+});
+
+test('TargetAllocation to USDC expressed as @Chain', t => {
+  const passCases = harden({
+    targetAllocationWithChain: {
+      Aave_Ethereum: 5000n,
+      '@Arbitrum': 5000n,
+    },
+  } satisfies Record<string, TargetAllocation>);
+
+  const extendedPassCases = harden({
+    ...passCases,
+    targetAllocationWithFutureChain: {
+      Aave_Ethereum: 5000n,
+      '@NewChain': 5000n,
+    },
+  });
+
+  const failCases = harden({
+    invalidChainKey: {
+      Aave_Ethereum: 5000n,
+      '@UnknownChain': 5000n,
+    },
+    depositWithFromChain: {
+      Aave_Ethereum: 5000n,
+      '+Arbitrum': 5000n,
+    },
+    withdrawWithToChain: {
+      Aave_Ethereum: 5000n,
+      '-Arbitrum': 5000n,
+    },
+    localChainAccount: {
+      Aave_Ethereum: 5000n,
+      '@agoric': 5000n,
+    },
+  });
+
+  const { entries } = Object;
+  for (const [name, targetAllocation] of entries(passCases)) {
+    t.notThrows(
+      () => mustMatch(targetAllocation, TargetAllocationShape),
+      `pass: ${name}`,
+    );
+  }
+
+  for (const [name, targetAllocation] of entries(extendedPassCases)) {
+    t.notThrows(
+      () => mustMatch(targetAllocation, TargetAllocationShapeExt),
+      `extended pass: ${name}`,
+    );
+  }
+
+  for (const [name, targetAllocation] of entries(failCases)) {
+    t.false(matches(targetAllocation, TargetAllocationShape), `fail: ${name}`);
+  }
 });

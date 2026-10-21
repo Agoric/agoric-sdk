@@ -1,0 +1,199 @@
+/* eslint-disable camelcase */
+
+import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import type { NetworkSpec } from '../../tools/network/network-spec.js';
+import type { PoolKey } from '../../src/type-guards.js';
+import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
+
+// @ts-expect-error TS2322: Type '"Polygon"' is not assignable to type 'SupportedChain'.
+const Polygon: SupportedChain = 'Polygon';
+
+// @ts-expect-error TS2322: Type '"Compound_Polygon"' is not assignable to type 'PoolKey'.
+const Compound_Polygon: PoolKey = 'Compound_Polygon';
+
+export const TEST_NETWORK: NetworkSpec = harden({
+  debug: true,
+  environment: 'test',
+  chains: [
+    { name: 'agoric', control: 'local' },
+    { name: 'noble', control: 'ibc' },
+    { name: 'Arbitrum', control: 'axelar' },
+    { name: 'Avalanche', control: 'axelar' },
+    { name: 'Base', control: 'axelar' },
+    { name: 'Ethereum', control: 'axelar' },
+    { name: 'Optimism', control: 'axelar' },
+    { name: Polygon, control: 'axelar' },
+  ],
+  pools: [
+    { pool: 'Aave_Arbitrum', chain: 'Arbitrum', protocol: 'Aave' },
+    { pool: 'Aave_Avalanche', chain: 'Avalanche', protocol: 'Aave' },
+    { pool: 'Aave_Base', chain: 'Base', protocol: 'Aave' },
+    { pool: 'Aave_Ethereum', chain: 'Ethereum', protocol: 'Aave' },
+    { pool: 'Aave_Optimism', chain: 'Optimism', protocol: 'Aave' },
+    { pool: 'Beefy_re7_Avalanche', chain: 'Avalanche', protocol: 'Beefy' },
+    { pool: 'Compound_Ethereum', chain: 'Ethereum', protocol: 'Compound' },
+    { pool: Compound_Polygon, chain: Polygon, protocol: 'Compound' },
+    { pool: 'USDN', chain: 'noble', protocol: 'USDN' },
+    { pool: 'USDNVault', chain: 'noble', protocol: 'USDN' },
+  ],
+  localPlaces: [
+    // Agoric seats/accounts
+    { id: '<Deposit>', chain: 'agoric' },
+    { id: '<Cash>', chain: 'agoric' },
+    { id: '+agoric', chain: 'agoric' },
+  ],
+  links: [
+    // USDN costs a fee to get into
+    {
+      src: '@noble',
+      dest: 'USDN',
+      transfer: 'local',
+      variableFeeBps: 5,
+      timeSec: 0,
+      feeMode: 'toUSDN',
+    },
+    {
+      src: '@noble',
+      dest: 'USDNVault',
+      transfer: 'local',
+      variableFeeBps: 5,
+      timeSec: 0,
+      feeMode: 'toUSDN',
+    },
+
+    // CCTP slow inbound compressed (EVM -> @agoric)
+    {
+      src: '@Polygon' as AssetPlaceRef,
+      dest: '@agoric',
+      transfer: 'cctpToNoble',
+      variableFeeBps: 0,
+      timeSec: 1080,
+      feeMode: 'evmToNoble',
+    },
+    {
+      src: '@Arbitrum',
+      dest: '@agoric',
+      transfer: 'cctpToNoble',
+      variableFeeBps: 0,
+      timeSec: 1080,
+      feeMode: 'evmToNoble',
+    },
+    {
+      src: '@Avalanche',
+      dest: '@agoric',
+      transfer: 'cctpToNoble',
+      variableFeeBps: 0,
+      timeSec: 1080,
+      feeMode: 'evmToNoble',
+    },
+    {
+      src: '@Base',
+      dest: '@agoric',
+      transfer: 'cctpToNoble',
+      variableFeeBps: 0,
+      timeSec: 1080,
+      feeMode: 'evmToNoble',
+    },
+    {
+      src: '@Ethereum',
+      dest: '@agoric',
+      transfer: 'cctpToNoble',
+      variableFeeBps: 0,
+      timeSec: 1080,
+      feeMode: 'evmToNoble',
+    },
+    {
+      src: '@Optimism',
+      dest: '@agoric',
+      transfer: 'cctpToNoble',
+      variableFeeBps: 0,
+      timeSec: 1080,
+      feeMode: 'evmToNoble',
+    },
+    // Return path
+    {
+      src: '@noble',
+      dest: '@Arbitrum',
+      transfer: 'cctpFromNoble',
+      variableFeeBps: 0,
+      timeSec: 20,
+      feeMode: 'makeEvmAccount',
+    },
+    {
+      src: '@noble',
+      dest: '@Polygon' as AssetPlaceRef,
+      transfer: 'cctpFromNoble',
+      variableFeeBps: 0,
+      timeSec: 20,
+      feeMode: 'makeEvmAccount',
+    },
+    {
+      src: '@noble',
+      dest: '@Avalanche',
+      transfer: 'cctpFromNoble',
+      variableFeeBps: 0,
+      timeSec: 20,
+      feeMode: 'makeEvmAccount',
+    },
+    {
+      src: '@noble',
+      dest: '@Base',
+      transfer: 'cctpFromNoble',
+      variableFeeBps: 0,
+      timeSec: 20,
+      feeMode: 'makeEvmAccount',
+    },
+    {
+      src: '@noble',
+      dest: '@Ethereum',
+      transfer: 'cctpFromNoble',
+      variableFeeBps: 0,
+      timeSec: 20,
+      feeMode: 'makeEvmAccount',
+    },
+    {
+      src: '@noble',
+      dest: '@Optimism',
+      transfer: 'cctpFromNoble',
+      variableFeeBps: 0,
+      timeSec: 20,
+      feeMode: 'makeEvmAccount',
+    },
+    // IBC connectivity both directions (needed for USDN flows & noble-origin transfers)
+    {
+      src: '@agoric',
+      dest: '@noble',
+      transfer: 'ibc',
+      variableFeeBps: 0,
+      timeSec: 10,
+    },
+    {
+      src: '@noble',
+      dest: '@agoric',
+      transfer: 'ibc',
+      variableFeeBps: 0,
+      timeSec: 10,
+    },
+    // CCTPv2 direct EVM-to-EVM routes (subset for tests)
+    {
+      src: '@Base',
+      dest: '@Avalanche',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 30,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+    {
+      src: '@Base',
+      dest: '@Arbitrum',
+      transfer: 'cctpV2',
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: 100_000n,
+      feeMode: 'evmToEvm',
+    },
+  ],
+});
+
+export default TEST_NETWORK;

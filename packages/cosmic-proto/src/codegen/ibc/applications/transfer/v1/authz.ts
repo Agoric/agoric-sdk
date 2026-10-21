@@ -6,15 +6,28 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Allocation defines the spend limit for a particular port and channel */
+/**
+ * Allocation defines the spend limit for a particular port and channel
+ * @name Allocation
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.Allocation
+ */
 export interface Allocation {
-  /** the port on which the packet will be sent */
+  /**
+   * the port on which the packet will be sent
+   */
   sourcePort: string;
-  /** the channel by which the packet will be sent */
+  /**
+   * the channel by which the packet will be sent
+   */
   sourceChannel: string;
-  /** spend limitation on the channel */
+  /**
+   * spend limitation on the channel
+   */
   spendLimit: Coin[];
-  /** allow list of receivers, an empty allow list permits any receiver address */
+  /**
+   * allow list of receivers, an empty allow list permits any receiver address
+   */
   allowList: string[];
   /**
    * allow list of memo strings, an empty list prohibits all memo strings;
@@ -26,7 +39,12 @@ export interface AllocationProtoMsg {
   typeUrl: '/ibc.applications.transfer.v1.Allocation';
   value: Uint8Array;
 }
-/** Allocation defines the spend limit for a particular port and channel */
+/**
+ * Allocation defines the spend limit for a particular port and channel
+ * @name AllocationSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.Allocation
+ */
 export interface AllocationSDKType {
   source_port: string;
   source_channel: string;
@@ -37,10 +55,15 @@ export interface AllocationSDKType {
 /**
  * TransferAuthorization allows the grantee to spend up to spend_limit coins from
  * the granter's account for ibc transfer on a specific channel
+ * @name TransferAuthorization
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.TransferAuthorization
  */
 export interface TransferAuthorization {
   $typeUrl?: '/ibc.applications.transfer.v1.TransferAuthorization';
-  /** port and channel amounts */
+  /**
+   * port and channel amounts
+   */
   allocations: Allocation[];
 }
 export interface TransferAuthorizationProtoMsg {
@@ -50,6 +73,9 @@ export interface TransferAuthorizationProtoMsg {
 /**
  * TransferAuthorization allows the grantee to spend up to spend_limit coins from
  * the granter's account for ibc transfer on a specific channel
+ * @name TransferAuthorizationSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.TransferAuthorization
  */
 export interface TransferAuthorizationSDKType {
   $typeUrl?: '/ibc.applications.transfer.v1.TransferAuthorization';
@@ -64,8 +90,45 @@ function createBaseAllocation(): Allocation {
     allowedPacketData: [],
   };
 }
+/**
+ * Allocation defines the spend limit for a particular port and channel
+ * @name Allocation
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.Allocation
+ */
 export const Allocation = {
   typeUrl: '/ibc.applications.transfer.v1.Allocation' as const,
+  aminoType: 'cosmos-sdk/Allocation' as const,
+  is(o: any): o is Allocation {
+    return (
+      o &&
+      (o.$typeUrl === Allocation.typeUrl ||
+        (typeof o.sourcePort === 'string' &&
+          typeof o.sourceChannel === 'string' &&
+          Array.isArray(o.spendLimit) &&
+          (!o.spendLimit.length || Coin.is(o.spendLimit[0])) &&
+          Array.isArray(o.allowList) &&
+          (!o.allowList.length || typeof o.allowList[0] === 'string') &&
+          Array.isArray(o.allowedPacketData) &&
+          (!o.allowedPacketData.length ||
+            typeof o.allowedPacketData[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is AllocationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Allocation.typeUrl ||
+        (typeof o.source_port === 'string' &&
+          typeof o.source_channel === 'string' &&
+          Array.isArray(o.spend_limit) &&
+          (!o.spend_limit.length || Coin.isSDK(o.spend_limit[0])) &&
+          Array.isArray(o.allow_list) &&
+          (!o.allow_list.length || typeof o.allow_list[0] === 'string') &&
+          Array.isArray(o.allowed_packet_data) &&
+          (!o.allowed_packet_data.length ||
+            typeof o.allowed_packet_data[0] === 'string')))
+    );
+  },
   encode(
     message: Allocation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -186,8 +249,32 @@ function createBaseTransferAuthorization(): TransferAuthorization {
     allocations: [],
   };
 }
+/**
+ * TransferAuthorization allows the grantee to spend up to spend_limit coins from
+ * the granter's account for ibc transfer on a specific channel
+ * @name TransferAuthorization
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.TransferAuthorization
+ */
 export const TransferAuthorization = {
   typeUrl: '/ibc.applications.transfer.v1.TransferAuthorization' as const,
+  aminoType: 'cosmos-sdk/TransferAuthorization' as const,
+  is(o: any): o is TransferAuthorization {
+    return (
+      o &&
+      (o.$typeUrl === TransferAuthorization.typeUrl ||
+        (Array.isArray(o.allocations) &&
+          (!o.allocations.length || Allocation.is(o.allocations[0]))))
+    );
+  },
+  isSDK(o: any): o is TransferAuthorizationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TransferAuthorization.typeUrl ||
+        (Array.isArray(o.allocations) &&
+          (!o.allocations.length || Allocation.isSDK(o.allocations[0]))))
+    );
+  },
   encode(
     message: TransferAuthorization,
     writer: BinaryWriter = BinaryWriter.create(),

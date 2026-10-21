@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 export enum ICAAccountType {
   DELEGATION = 0,
@@ -69,6 +69,11 @@ export function iCAAccountTypeToJSON(object: ICAAccountType): string {
       return 'UNRECOGNIZED';
   }
 }
+/**
+ * @name ICAAccount
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ICAAccount
+ */
 export interface ICAAccount {
   chainId: string;
   type: ICAAccountType;
@@ -79,6 +84,11 @@ export interface ICAAccountProtoMsg {
   typeUrl: '/stride.stakeibc.ICAAccount';
   value: Uint8Array;
 }
+/**
+ * @name ICAAccountSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ICAAccount
+ */
 export interface ICAAccountSDKType {
   chain_id: string;
   type: ICAAccountType;
@@ -93,8 +103,33 @@ function createBaseICAAccount(): ICAAccount {
     address: '',
   };
 }
+/**
+ * @name ICAAccount
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ICAAccount
+ */
 export const ICAAccount = {
   typeUrl: '/stride.stakeibc.ICAAccount' as const,
+  is(o: any): o is ICAAccount {
+    return (
+      o &&
+      (o.$typeUrl === ICAAccount.typeUrl ||
+        (typeof o.chainId === 'string' &&
+          isSet(o.type) &&
+          typeof o.connectionId === 'string' &&
+          typeof o.address === 'string'))
+    );
+  },
+  isSDK(o: any): o is ICAAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ICAAccount.typeUrl ||
+        (typeof o.chain_id === 'string' &&
+          isSet(o.type) &&
+          typeof o.connection_id === 'string' &&
+          typeof o.address === 'string'))
+    );
+  },
   encode(
     message: ICAAccount,
     writer: BinaryWriter = BinaryWriter.create(),

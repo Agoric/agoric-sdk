@@ -4,6 +4,11 @@ import { AmountMath } from '@agoric/ertp';
 import { Stable } from '@agoric/internal/src/tokens.js';
 
 /**
+ * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {VatSourceRef} from '../core/types.ts';
+ */
+
+/**
  * @param {BootstrapPowers} powers
  * @param {object} options
  * @param {{ registryRef: VatSourceRef }} options.options

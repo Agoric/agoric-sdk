@@ -3,7 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 
 	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
@@ -32,12 +32,14 @@ func (k Keeper) TriggerWriteAcknowledgement(
 func (k Keeper) TriggerOnAcknowledgementPacket(
 	ctx sdk.Context,
 	target string,
+	channelVersion string,
 	packet ibcexported.PacketI,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
 	event := types.AcknowledgementPacketEvent{
 		Target:          target,
+		ChannelVersion:  channelVersion,
 		Packet:          agtypes.CopyToIBCPacket(packet),
 		Acknowledgement: acknowledgement,
 		Relayer:         relayer,
@@ -54,13 +56,15 @@ func (k Keeper) TriggerOnAcknowledgementPacket(
 func (k Keeper) TriggerOnTimeoutPacket(
 	ctx sdk.Context,
 	target string,
+	channelVersion string,
 	packet ibcexported.PacketI,
 	relayer sdk.AccAddress,
 ) error {
 	event := types.TimeoutPacketEvent{
-		Target:  target,
-		Packet:  agtypes.CopyToIBCPacket(packet),
-		Relayer: relayer,
+		Target:         target,
+		ChannelVersion: channelVersion,
+		Packet:         agtypes.CopyToIBCPacket(packet),
+		Relayer:        relayer,
 	}
 
 	err := k.PushAction(ctx, event)

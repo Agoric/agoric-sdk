@@ -6,20 +6,33 @@
  */
 
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForGame1 } from '@agoric/smart-wallet/test/start-game1-proposal.js';
+import { getManifestForGame1 } from '@agoric/smart-wallet/tools/fixtures/start-game1-proposal.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @type {CoreEvalBuilder} */
 const game1ProposalBuilder = async ({ publishRef, install }) => {
+  const game1Path = await buildBundlePath(
+    import.meta.url,
+    '@agoric/smart-wallet/tools/fixtures/gameAssetContract.js',
+    'game1',
+  );
   return harden({
-    sourceSpec: '@agoric/smart-wallet/test/start-game1-proposal.js',
+    sourceSpec: '@agoric/smart-wallet/tools/fixtures/start-game1-proposal.js',
     getManifestCall: [
       getManifestForGame1.name,
       {
         game1Ref: publishRef(
           install(
-            '@agoric/smart-wallet/test/gameAssetContract.js',
-            '../bundles/bundle-game1.js',
-            { persist: true },
+            '@agoric/smart-wallet/tools/fixtures/gameAssetContract.js',
+            game1Path,
+            {
+              persist: true,
+            },
           ),
         ),
       },
@@ -27,7 +40,7 @@ const game1ProposalBuilder = async ({ publishRef, install }) => {
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('start-game1', game1ProposalBuilder);

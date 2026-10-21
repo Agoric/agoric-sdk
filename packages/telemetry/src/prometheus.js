@@ -3,7 +3,11 @@ import { Fail } from '@endo/errors';
 import { getPrometheusMeterProvider } from './index.js';
 import { makeSlogSender as makeOtelMetricsSender } from './otel-metrics.js';
 
-/** @param {import('./index.js').MakeSlogSenderOptions & {otelMeterName?: string}} opts */
+/**
+ * @import {MakeSlogSenderOptions} from './index.js';
+ */
+
+/** @param {MakeSlogSenderOptions & {otelMeterName?: string}} opts */
 export const makeSlogSender = async (opts = {}) => {
   const { env, otelMeterName, serviceName } = opts;
   if (!otelMeterName) throw Fail`OTel meter name is required`;

@@ -12,10 +12,10 @@ const walletScenario = test.macro({
   exec: async (t, chainName: string) => {
     const { useChain, retryUntilCondition } = await commonSetup(t);
 
-    const { bech32_prefix, staking } = useChain(chainName).chain;
-    const wallet = await createWallet(bech32_prefix);
+    const { bech32_prefix: bech32Prefix, staking } = useChain(chainName).chain;
+    const wallet = await createWallet(bech32Prefix);
     const addr = (await wallet.getAccounts())[0].address;
-    t.regex(addr, new RegExp(`^${bech32_prefix}1`));
+    t.regex(addr, new RegExp(`^${bech32Prefix}1`));
     t.log('Made temp wallet:', addr);
 
     const apiUrl = await useChain(chainName).getRestEndpoint();
@@ -34,7 +34,7 @@ const walletScenario = test.macro({
     // see https://github.com/cosmology-tech/starship/issues/417
     const { balances: updatedBalances } = await retryUntilCondition(
       () => queryClient.queryBalances(addr),
-      ({ balances }) => !!balances.length,
+      result => !!result.balances.length,
       `${chainName} balance available from faucet`,
     );
 

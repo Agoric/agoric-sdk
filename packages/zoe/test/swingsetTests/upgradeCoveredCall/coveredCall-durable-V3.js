@@ -8,6 +8,11 @@ import {
   OfferHandlerI,
 } from '../../../src/typeGuards.js';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {ContractMeta, OfferHandler, ZCF} from '@agoric/zoe';
+ */
+
 const sellSeatExpiredMsg = 'The covered call option is expired.';
 
 /** @type {ContractMeta<typeof start>} */
@@ -25,7 +30,7 @@ harden(meta);
  *
  * @param {ZCF} zcf
  * @param {unknown} _privateArgs
- * @param {import('@agoric/vat-data').Baggage} instanceBaggage
+ * @param {Baggage} instanceBaggage
  */
 export const start = async (zcf, _privateArgs, instanceBaggage) => {
   const firstTime = !instanceBaggage.has('DidStart');

@@ -66,6 +66,11 @@ func EndBlock(ctx sdk.Context, keeper Keeper) ([]abci.ValidatorUpdate, error) {
 		panic(err)
 	}
 
+	// Remove expired bundle installs.
+	if err := keeper.PruneExpiredBundleInstalls(ctx); err != nil {
+		return nil, err
+	}
+
 	// Save our EndBlock status.
 	endBlockHeight = ctx.BlockHeight()
 	endBlockTime = ctx.BlockTime().Unix()

@@ -1,7 +1,3 @@
-/// <reference types="@agoric/internal/exported" />
-/// <reference types="@agoric/ertp/exported" />
-/// <reference types="@agoric/zoe/exported" />
-
 export {
   ChoiceMethod,
   ElectionType,
@@ -41,3 +37,6 @@ export {
 } from './validators.js';
 
 export { ParamTypes } from './constants.js';
+
+// eslint-disable-next-line import/export -- doesn't know types
+export * from './types.js';

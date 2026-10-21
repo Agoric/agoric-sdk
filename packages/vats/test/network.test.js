@@ -1,5 +1,5 @@
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
 import {
   makePinnedHistoryTopic,
@@ -11,6 +11,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 
 import { prepareNetworkPowers } from '@agoric/network';
+import { encodeIbcEndpoint } from '@agoric/network/ibc/utils.js';
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
 import { makeFakeIbcBridge } from '../tools/fake-bridge.js';
@@ -144,7 +145,12 @@ test('network - ibc', async t => {
 
     t.log('Connecting to a Remote Port');
     const [hopName, portName, version] = ['connection-11', 'port-98', 'bar'];
-    const remoteEndpoint = `/ibc-hop/${hopName}/ibc-port/${portName}/unordered/${version}`;
+    const remoteEndpoint = encodeIbcEndpoint({
+      hops: [hopName],
+      portID: portName,
+      order: 'unordered',
+      version,
+    });
     const cP = E(p).connect(remoteEndpoint);
 
     const ev2 = await events.next();

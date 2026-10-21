@@ -1,8 +1,9 @@
-/* global VatData */
+/* global globalThis */
 import { Far } from '@endo/far';
 
 // import { defineKind, makeScalarBigMapStore } from '@agoric/vat-data';
-const { defineKind, makeScalarBigMapStore } = VatData;
+const { defineKind, makeScalarBigMapStore } = /** @type {any} */ (globalThis)
+  .VatData;
 
 function initialize(value) {
   return harden({ value });

@@ -3,12 +3,14 @@ package agoric.vibc;
 
 import "amino/amino.proto";
 import "gogoproto/gogo.proto";
-import "ibc/core/channel/v1/channel.proto";
+import "cosmos/msg/v1/msg.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types";
 
 // The module transactions.
 service Msg {
+  option (cosmos.msg.v1.service) = true;
+
   // Force sending an arbitrary packet on a channel.
   rpc SendPacket(MsgSendPacket) returns (MsgSendPacketResponse);
 }
@@ -18,7 +20,7 @@ message MsgSendPacket {
   option (gogoproto.equal) = false;
   option (amino.name)      = "vibc/SendPacket";
 
-  ibc.core.channel.v1.Packet packet = 1
+  Packet packet = 1
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "packet", (gogoproto.moretags) = "yaml:\"packet\""];
   bytes sender = 2 [
     (amino.encoding)     = "legacy_address",
@@ -31,3 +33,44 @@ message MsgSendPacket {
 
 // Empty response for SendPacket.
 message MsgSendPacketResponse {}
+
+// Packet defines a type that carries data across different chains through IBC.
+// The fields in the Packet correspond to the fields in the IBC packet
+// definition in ibc/core/channel/v1/channel.proto, but with amino and gogoproto
+// options to ensure compatibility with the Cosmos SDK's Protobuf code
+// generation and JSON encoding.  See ibc/core/channel/v1/channel.proto for more
+// details on the semantics of each field in the Packet.
+message Packet {
+  option (gogoproto.goproto_getters) = false;
+
+  // number corresponds to the order of sends and receives, where a Packet
+  // with an earlier sequence number must be sent and received before a Packet
+  // with a later sequence number.
+  uint64 sequence = 1;
+  // identifies the port on the sending chain.
+  string source_port = 2;
+  // identifies the channel end on the sending chain.
+  string source_channel = 3;
+  // identifies the port on the receiving chain.
+  string destination_port = 4;
+  // identifies the channel end on the receiving chain.
+  string destination_channel = 5;
+  // actual opaque bytes transferred directly to the application module
+  bytes data = 6;
+  // block height after which the packet times out
+  Height timeout_height = 7 [(gogoproto.nullable) = false];
+  // block timestamp (in nanoseconds) after which the packet times out
+  uint64 timeout_timestamp = 8;
+}
+
+// Height is a local type that enforces amino and gogoproto compatibility for
+// the Height type used in IBC.  See ibc/core/client/v1/client.proto for more
+// details on the Height type.
+message Height {
+  option (gogoproto.goproto_getters) = false;
+
+  // the revision that the client is currently on
+  uint64 revision_number = 1 [(amino.dont_omitempty) = true, (gogoproto.jsontag) = "revision_number"];
+  // the height within the given revision
+  uint64 revision_height = 2 [(amino.dont_omitempty) = true, (gogoproto.jsontag) = "revision_height"];
+}

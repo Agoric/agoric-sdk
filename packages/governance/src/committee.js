@@ -3,6 +3,7 @@ import { M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
 import { StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import {
@@ -16,9 +17,16 @@ import { ElectorateCreatorI, ElectoratePublicI } from './typeGuards.js';
 import { prepareVoterKit } from './voterKit.js';
 
 /**
+ * @import {Handle} from '@agoric/zoe';
+ * @import {Remote} from '@agoric/internal';
+ * @import {StoredPublishKit} from '@agoric/notifier';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {ContractMeta, Invitation, ZCF} from '@agoric/zoe';
  * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {QuestionRecord} from './electorateTools.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**
@@ -50,12 +58,12 @@ harden(meta);
  *   committeeName: string,
  *   committeeSize: number,
  * }>} zcf
- * @param {{ storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {{ storageNode: Remote<StorageNode>, marshaller: Remote<Marshaller>}} privateArgs
+ * @param {Baggage} baggage
  * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */
 export const start = (zcf, privateArgs, baggage) => {
-  /** @type {MapStore<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
+  /** @type {MapStore<Handle<'Question'>, QuestionRecord>} */
   const allQuestions = provideDurableMapStore(baggage, 'Question');
 
   // CRUCIAL: voteCap carries the ability to cast votes for any voter at
@@ -74,9 +82,14 @@ export const start = (zcf, privateArgs, baggage) => {
   const questionNode = E(privateArgs.storageNode).makeChildNode(
     'latestQuestion',
   );
+
+  const { marshaller: remoteMarshaller } = privateArgs;
+
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   /** @type {StoredPublishKit<QuestionDetails>} */
   const { subscriber: questionsSubscriber, publisher: questionsPublisher } =
-    makeStoredPublishKit(questionNode, privateArgs.marshaller);
+    makeStoredPublishKit(questionNode, cachingMarshaller);
 
   const makeCommitteeVoterInvitation = index => {
     // https://github.com/Agoric/agoric-sdk/pull/3448/files#r704003612
@@ -155,7 +168,7 @@ export const start = (zcf, privateArgs, baggage) => {
         /** @type {StoredPublishKit<OutcomeRecord>} */
         const { publisher: outcomePublisher } = makeStoredPublishKit(
           outcomeNode,
-          privateArgs.marshaller,
+          cachingMarshaller,
         );
 
         return startCounter(

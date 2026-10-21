@@ -127,7 +127,7 @@ test('governParam no votes', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<{}>} */
+  /** @type {Promise<GovernedPublicFacet<{}>>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -297,7 +297,7 @@ test('change multiple params used invitation', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<{}>} */
+  /** @type {Promise<GovernedPublicFacet<{}>>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -326,16 +326,6 @@ test('change multiple params used invitation', async t => {
     governorFacets.creatorFacet,
   ).voteOnParamChanges(installs.counter, 2n, paramChangesSpec);
 
-  outcomeOfUpdate
-    .then(o => t.fail(`update should break, ${o}`))
-    .catch(e =>
-      t.regex(
-        e.message,
-        /was not a live payment for brand/,
-        'Invitatation was burned and should not be usable',
-      ),
-    );
-
   const details = await detailsP;
   const positive = details.positions[0];
   await setUpVoterAndVote(
@@ -349,6 +339,10 @@ test('change multiple params used invitation', async t => {
 
   await E(timer).tick();
   await E(timer).tick();
+
+  await t.throwsAsync(outcomeOfUpdate, {
+    message: /is not live/,
+  });
 
   // no update2 because the value didn't change
 
@@ -368,7 +362,7 @@ test('change param continuing invitation', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<{}>} */
+  /** @type {Promise<GovernedPublicFacet<{}>>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),

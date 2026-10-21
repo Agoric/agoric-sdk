@@ -3,69 +3,214 @@
  * @see {@link preparePlanner}
  */
 import { makeTracer } from '@agoric/internal';
-import { type Vow, VowShape } from '@agoric/vow';
-import type { ZCF, ZCFSeat } from '@agoric/zoe';
+import {
+  PortfolioDelegatedClaimRewardsParamsShape,
+  PortfolioDelegatedRebalanceParamsShape,
+  type FlowKey,
+  type FundsFlowPlan,
+  type PlanObservations,
+  type PortfolioDelegatedClaimRewardsParams,
+  type PortfolioDelegatedRebalanceParams,
+} from '@agoric/portfolio-api';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
+import type { PortfolioDelegationClient } from './delegation.exo.ts';
+import { vetNoNewPositions } from './delegation-limits.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
-import type { MovementDesc, OfferArgsFor } from './type-guards-steps.ts';
-import { makeOfferArgsShapes } from './type-guards-steps.ts';
+import type { MovementDesc } from './type-guards-steps.ts';
+import { makeOfferArgsShapes, MAX_PLAN_STEPS } from './type-guards-steps.ts';
+import {
+  flowIdFromKey,
+  FlowKeyShape,
+  PlanObservationsShape,
+} from './type-guards.ts';
 
 const trace = makeTracer('PPLN');
 
 /**
  * Prepare a Planner exoClass for off-chain planning services.
  *
- * Planning is currently done off-chain
- * because it requires access to real-time APYs, balances, and market data that
- * are not readily available to the on-chain contract.
- *
- * @param zone - Durable storage zone
- * @param deps - Dependencies including rebalance flow and portfolio access
- * @returns Planner exo maker function
+ * Planning remains off-chain, where the planner can use APYs and other market
+ * data. This exo validates submitted plans against attested portfolio
+ * observations and contract policy before execution.
  */
 export const preparePlanner = (
   zone: Zone,
   {
-    rebalance,
-    zcf,
-    getPortfolio,
+    getPortfolioPlanner,
+    getPlannerDelegation,
     shapes,
   }: {
-    rebalance: (
-      seat: ZCFSeat,
-      offerArgs: OfferArgsFor['rebalance'],
-      kit: unknown, // XXX avoid circular reference
-    ) => Vow<any>; // XXX HostForGuest???
-    zcf: ZCF;
-    getPortfolio: (id: number) => PortfolioKit;
+    getPortfolioPlanner: (id: number) => PortfolioKit['planner'];
+    getPlannerDelegation: (
+      portfolioPlanner: PortfolioKit['planner'],
+    ) => PortfolioDelegationClient | undefined;
     shapes: ReturnType<typeof makeOfferArgsShapes>;
   },
 ) => {
-  const { movementDescShape } = shapes;
+  const { movementDescShape, plan: planShape } = shapes;
+  const planCompatShape = M.or(
+    planShape,
+    M.arrayOf(movementDescShape, { arrayLengthLimit: MAX_PLAN_STEPS }),
+  );
+
+  const portfolioIdShape = M.number();
+  const flowIdShape = M.number();
+  const policyVersionShape = M.number();
+  const rebalanceCountShape = M.number();
+
   const PlannerI = M.interface('Planner', {
-    submit: M.call(M.number(), M.arrayOf(movementDescShape)).returns(VowShape),
+    resolvePlan: M.call(
+      portfolioIdShape,
+      flowIdShape,
+      planCompatShape,
+      policyVersionShape,
+    )
+      .optional(rebalanceCountShape, PlanObservationsShape)
+      .returns(),
+    rejectPlan: M.call(portfolioIdShape, flowIdShape, M.string())
+      .optional(policyVersionShape, rebalanceCountShape)
+      .returns(),
+    rebalance: M.call(
+      portfolioIdShape,
+      PortfolioDelegatedRebalanceParamsShape,
+      planCompatShape,
+    ).returns(FlowKeyShape),
+    claimRewards: M.call(
+      portfolioIdShape,
+      PortfolioDelegatedClaimRewardsParamsShape,
+      planCompatShape,
+    ).returns(FlowKeyShape),
   });
 
-  return zone.exoClass('Planner', PlannerI, () => ({}), {
-    /**
-     * Submit a plan (sequence of moves) for execution.
-     *
-     * Used by off-chain planning services to carry out expressed wishes
-     * of a portfolio owner.
-     *
-     * @param portfolioId - Target portfolio identifier
-     * @param plan - Array of asset movements to execute
-     * @returns Vow that resolves when all movements complete
-     * @throws If portfolio not found. Rejects if plan validation or execution fails
-     */
-    submit(portfolioId: number, plan: MovementDesc[]): Vow<void> {
-      trace('TODO: vet plan', { portfolioId, plan });
-      const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
-      const pKit = getPortfolio(portfolioId);
-      return rebalance(emptySeat, { flow: plan }, pKit);
+  return zone.exoClass(
+    'Planner',
+    PlannerI,
+    () => ({ etc: undefined }),
+    {
+      resolvePlan(
+        portfolioId: number,
+        flowId: number,
+        planOrSteps: FundsFlowPlan | MovementDesc[],
+        policyVersion: number,
+        rebalanceCount = 0,
+        observations?: PlanObservations,
+      ) {
+        const traceFlow = trace
+          .sub(`portfolio${portfolioId}`)
+          .sub(`flow${flowId}`);
+        traceFlow('TODO(#11782): vet plan', planOrSteps);
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
+        vetNoNewPositions(portfolioPlanner.getTargetAllocation(), planOrSteps);
+        let acceptedSyncState;
+        try {
+          acceptedSyncState = portfolioPlanner.validateAndCommitPlanPolicy(
+            flowId,
+            observations,
+            policyVersion,
+            rebalanceCount,
+          );
+        } catch (reason) {
+          const message =
+            reason instanceof Error ? reason.message : String(reason);
+          traceFlow('reject plan against mandate', message);
+          portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
+          portfolioPlanner.rejectFlowPlan(flowId, message);
+          return;
+        }
+        portfolioPlanner.submitVersion(
+          acceptedSyncState.policyVersion,
+          acceptedSyncState.rebalanceCount,
+        );
+        portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
+      },
+      rejectPlan(
+        portfolioId: number,
+        flowId: number,
+        reason: string,
+        policyVersion: number,
+        rebalanceCount: number,
+      ) {
+        trace('reject plan', { portfolioId, flowId, reason });
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
+        portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
+        portfolioPlanner.rejectFlowPlan(flowId, reason);
+      },
+      rebalance(
+        portfolioId: number,
+        delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
+        planOrSteps: FundsFlowPlan | MovementDesc[],
+      ): FlowKey {
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
+        const delegationClient = getPlannerDelegation(portfolioPlanner);
+        assert(
+          delegationClient && delegationClient.getReader().isActive(),
+          `planner delegation must be active for portfolio ${portfolioId}`,
+        );
+
+        const autoFeatures = delegationClient.getReader().getAutoFeatures();
+        assert(
+          autoFeatures?.rebalance,
+          `portfolio ${portfolioId} auto-feature "rebalance" must be enabled`,
+        );
+
+        // The flow created by rebalance is guaranteed to have its plan sync kit
+        // fully ready.
+        const flowKey = delegationClient.rebalance(delegatedRebalanceParams);
+        const flowId = flowIdFromKey(flowKey);
+        trace.sub(`portfolio${portfolioId}`).sub(flowKey)(
+          'TODO(#11782): vet delegated plan',
+          planOrSteps,
+        );
+        vetNoNewPositions(portfolioPlanner.getTargetAllocation(), planOrSteps);
+        portfolioPlanner.submitVersion(
+          delegatedRebalanceParams.syncState.policyVersion,
+          delegatedRebalanceParams.syncState.rebalanceCount,
+        );
+        portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
+        return flowKey;
+      },
+      claimRewards(
+        portfolioId: number,
+        delegatedClaimRewardsParams: PortfolioDelegatedClaimRewardsParams,
+        planOrSteps: FundsFlowPlan | MovementDesc[],
+      ): FlowKey {
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
+        const delegationClient = getPlannerDelegation(portfolioPlanner);
+        assert(
+          delegationClient && delegationClient.getReader().isActive(),
+          `planner delegation must be active for portfolio ${portfolioId}`,
+        );
+
+        const autoFeatures = delegationClient.getReader().getAutoFeatures();
+        assert(
+          autoFeatures?.claimRewards,
+          `portfolio ${portfolioId} auto-feature "claimRewards" must be enabled`,
+        );
+
+        // The flow created by claimRewards is guaranteed to have its plan
+        // sync kit fully ready.
+        const flowKey = delegationClient.claimRewards(
+          delegatedClaimRewardsParams,
+        );
+        const flowId = flowIdFromKey(flowKey);
+        trace.sub(`portfolio${portfolioId}`).sub(flowKey)(
+          'TODO(#11782): vet delegated plan',
+          planOrSteps,
+        );
+        vetNoNewPositions(portfolioPlanner.getTargetAllocation(), planOrSteps);
+        portfolioPlanner.submitVersion(
+          delegatedClaimRewardsParams.syncState.policyVersion,
+          delegatedClaimRewardsParams.syncState.rebalanceCount,
+        );
+        portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
+        return flowKey;
+      },
     },
-  });
+    {
+      stateShape: { etc: M.any() },
+    },
+  );
 };
 
 export type PortfolioPlanner = ReturnType<ReturnType<typeof preparePlanner>>;

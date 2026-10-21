@@ -1,14 +1,34 @@
+name: Post-merge publishes/checks
+
 # Run after merge to trunk
 # Note that this relies on branch protection having:
 #  Require branches to be up to date before merging
 on:
   push:
     branches:
-      # $default-branch
       - master
       - 'release-*'
       - 'dev-*'
   workflow_dispatch:
+    inputs:
+      branch:
+        default: master
+        description: 'Branch whose committed versions to publish for mode=release; the workflow definition still comes from the "Use workflow from" ref'
+        required: false
+        type: string
+      mode:
+        default: dev-canary
+        description: 'Publish mode'
+        options:
+          - dev-canary
+          - release
+        type: choice
+      tag:
+        description:
+          'NPM dist-tag for mode=release (e.g. agoric-upgrade-23); required in
+          that mode so packages are never implicitly tagged `latest`'
+        required: false
+        type: string
 
 jobs:
   build:
@@ -18,9 +38,7 @@ jobs:
       matrix:
         node-version: ['node-new', 'node-old']
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version}}
@@ -28,21 +46,28 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   dev-canary:
+    if: ${{ github.event_name == 'push' || inputs.mode == 'dev-canary' }}
     needs: build
     runs-on: ubuntu-latest
+    # id-token: write enables npm OIDC trusted publishing; packages
+    # without a trusted publisher configured on npmjs.com fall back to
+    # the NPM_TOKEN .npmrc credential set up below.
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
 
       # Adapted from https://johnny.sh/notes/publish-canary-lerna-cicd/
+      # Transitional fallback for packages not yet onboarded to OIDC trusted
+      # publishing; remove once every published package has a trusted
+      # publisher configured on npmjs.com.
       - name: configure NPM token
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
@@ -74,7 +99,8 @@ jobs:
           # Prevent `lerna publish` from failing due to uncommitted changes.
           git stash || true
           # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-          yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
+          AGORIC_POSTPACK_PRESERVE_PACKAGE_JSON=1 \
+            yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
             --dist-tag=$TAG --preid=$TAG-$(git rev-parse --short=7 HEAD) \
             --no-push --no-verify-access --yes
           # restore any stashed changes for caching
@@ -83,9 +109,89 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  release-approval:
+    environment:
+      name: npm-publish-release
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: record approval
+        env:
+          NPM_DIST_TAG: ${{ inputs.tag }}
+          RELEASE_BRANCH: ${{ inputs.branch }}
+        run: |
+          printf "Approved publishing dist-tag '%s' from branch '%s'\n" \
+            "${NPM_DIST_TAG}" "${RELEASE_BRANCH}"
+
+  release-publish:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'release' }}
+    needs:
+      - build
+      - release-approval
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: validate inputs
+        env:
+          NPM_DIST_TAG: ${{ inputs.tag }}
+        run: |
+          set -o errexit -o xtrace
+
+          case "${NPM_DIST_TAG}" in
+            '' | latest)
+              printf "tag must name a release tag (e.g. agoric-upgrade-23); got '%s'\n" \
+                "${NPM_DIST_TAG}"
+              printf "Refusing to publish to '%s'.\n" "${NPM_DIST_TAG}"
+              exit 1
+              ;;
+            *[!A-Za-z0-9._-]* | .* | -*)
+              printf "tag must contain only letters, numbers, dots, underscores, and hyphens, and must not start with dot or hyphen; got '%s'\n" \
+                "${NPM_DIST_TAG}"
+              exit 1
+              ;;
+          esac
+
+      - uses: actions/checkout@v5
+
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: 'node-new'
+          ref: ${{ inputs.branch }}
+
+      - env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        name: configure NPM token
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+
+      - name: check credentials
+        run: npm whoami
+
+      - name: publish release versions to NPM
+        env:
+          NPM_DIST_TAG: ${{ inputs.tag }}
+        run: |
+          set -o errexit -o xtrace
+
+          git log --format="Publishing versions committed as of %H: %s" --max-count="1"
+
+          git stash || true
+
+          AGORIC_POSTPACK_PRESERVE_PACKAGE_JSON="1" \
+            yarn lerna publish from-package \
+            --concurrency "1" --dist-tag "${NPM_DIST_TAG}" --loglevel "verbose" \
+            --no-push --no-verify-access --yes
+
+          git stash pop || true
+
+      - if: failure()
+        name: notify on failure
+        uses: ./.github/actions/notify-status
+        with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   coverage:
@@ -93,7 +199,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{github.event_name == 'push' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
@@ -102,15 +209,17 @@ jobs:
           NODE_MEMORY_SIZE: '8192'
         name: generate test coverage report
         run: ./scripts/ci/generate-test-coverage-report.sh
-      - uses: actions/upload-artifact@v4
+
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage
+
       - name: Find Netlify site ID
         run: |
           echo "NETLIFY_SITE_ID=$(cat COVERAGE_NETLIFY_SITE_ID)" >> $GITHUB_ENV
 
-      - uses: nwtgck/actions-netlify@v1.1
+      - uses: nwtgck/actions-netlify@v4.0.0
         with:
           # Production deployment if a push or merged PR.
           production-deploy: ${{ github.event_name == 'push' && github.ref_name == 'master' }}
@@ -119,13 +228,11 @@ jobs:
           # github-token: ${{ secrets.GITHUB_TOKEN }}
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
         with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   benchmark:
@@ -133,7 +240,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{github.event_name == 'push'}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
@@ -142,15 +250,14 @@ jobs:
         env:
           AUTOBENCH_METRICS_URL: ${{ secrets.AUTOBENCH_METRICS_URL }}
         run: cd packages/swingset-runner && yarn ci:autobench
-      - uses: actions/upload-artifact@v4
+
+      - uses: actions/upload-artifact@v7
         with:
           name: benchmarkstats.json
           path: packages/swingset-runner/benchstats*.json
+
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
         with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}

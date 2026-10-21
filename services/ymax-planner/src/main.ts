@@ -1,100 +1,620 @@
+/* global process */
+
+import timersPromises from 'node:timers/promises';
+import { inspect, parseArgs } from 'node:util';
+
+import { SigningStargateClient, StargateClient } from '@cosmjs/stargate';
+import type { GraphQLClient } from 'graphql-request';
+import ky from 'ky';
+import * as ws from 'ws';
+
+import { Fail, q } from '@endo/errors';
+
+import { PROD_NETWORK } from '@agoric/portfolio-api/src/network/prod-network.js';
 import {
   fetchEnvNetworkConfig,
+  getInvocationUpdate,
+  makeTxSequencer,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  makeSequencingSmartWallet,
+  reflectWalletStore,
 } from '@agoric/client-utils';
-import { Fail } from '@endo/errors';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import type { CaipChainId } from '@agoric/orchestration';
+import {
+  deeplyFulfilledObject,
+  naturalCompare,
+  objectMap,
+  withDeferredCleanup,
+} from '@agoric/internal';
+import type { PortfolioKey } from '@agoric/portfolio-api';
+import {
+  CaipChainIds,
+  UsdcTokenIds,
+} from '@agoric/portfolio-api/src/constants.js';
+import {
+  axelarConfig,
+  axelarConfigTestnet,
+} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 
-import { SigningStargateClient } from '@cosmjs/stargate';
-
-import { getConfig } from './config.ts';
-import { CosmosRestClient } from './cosmos-rest-client.ts';
+import { FETCH_HEADERS, loadConfig } from './config.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
+import { makeGraphqlMultiClient } from './graphql-client.ts';
+import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
-import { createEVMContext } from './support.ts';
-import { SpectrumClient } from './spectrum-client.ts';
+import type { ChainGasState } from './gas-estimation.ts';
+import {
+  calculateInstrumentBlocks,
+  extractInstrumentTvls,
+} from './instrument-status.ts';
+import type {
+  InstrumentBlocks,
+  InstrumentSnapshot,
+  YdsInstrument,
+} from './instrument-status.ts';
+import { GAS_UNITS_PER_CLAIM, GAS_UNITS_PER_SWAP } from './rewards.ts';
+import {
+  createEVMContext,
+  prepareAbortController,
+  spectrumChainIdsByCluster,
+  WS_HEARTBEAT_INTERVAL_MS,
+} from './support.ts';
+import type { MakeAbortController } from './support.ts';
+import { makeEvmRpc, type EvmRpc } from './evm-scanner.ts';
+import { makeGasEstimator } from './gas-estimation.ts';
+import { makeSQLiteKeyValueStore } from './kv-store.ts';
+import { YdsNotifier } from './yds-notifier.ts';
+import {
+  YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
+  type YdsPortfolioSummary,
+  type RewardTokenRate,
+} from './yds-portfolio-balances.ts';
+import { getPoolTokenAddresses } from './evm-utils.ts';
+import { generateDiff } from './ses-utils.ts';
+import { makeNowISO } from './utils.ts';
 
-const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
-  await rpc.opened();
+const { fromEntries, entries } = Object;
+
+// exported for testing
+export const makeHealthLogger = (console: Pick<Console, 'warn' | 'error'>) => {
+  const health = new Map<string, 'ok' | 'failed'>();
+  const withHealthLogging = async <T>(
+    key: string,
+    promise: Promise<T>,
+    logContext?: unknown,
+  ): Promise<T | undefined> => {
+    await null;
+    try {
+      const result = await promise;
+      if (health.get(key) === 'failed') console.warn(`Recovered ${key}`);
+      health.set(key, 'ok');
+      return result;
+    } catch (err) {
+      const { name, message } = err ?? {};
+      let alertMessage = health.has(key)
+        ? `⚠️ Failed to update ${key}`
+        : `🚨 Failed to initialize ${key}`;
+      // Include sufficient detail for line-oriented log propagation.
+      if (name && message) {
+        alertMessage = `${alertMessage}: [${name}] ${message}`;
+      }
+      if (logContext) {
+        console.error(alertMessage, logContext, err);
+      } else {
+        console.error(alertMessage, err);
+      }
+      health.set(key, 'failed');
+      return undefined;
+    }
+  };
+  return withHealthLogging;
+};
+
+// XXX better yet: Tagged<string, 'CosmosTxId'> and
+// Tagged<string, 'CosmosChainId'>
+type CosmosTxId = string;
+type CosmosChainId = string;
+
+/**
+ * cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/routes/transactions.ts:
+ * TransactionSubmitBodySchema
+ */
+type YdsTransactionSubmitBody = {
+  txHash: CosmosTxId;
+  chain: CosmosChainId;
+  ymaxInstance: 'ymax0' | 'ymax1';
+};
+
+const assertChainId = async (
+  rpc: CosmosRPCClient,
+  chainId: string,
+  log?: typeof console.log,
+) => {
   const status = await rpc.request('status', {});
-  const chainId = status?.node_info?.network;
-  chainId || Fail`Chain ID not found in RPC status: ${status}`;
-  return chainId;
+  const actualChainId = status?.node_info?.network;
+  log?.(actualChainId, status);
+  actualChainId || Fail`Chain ID not found in RPC status: ${status}`;
+  actualChainId === chainId ||
+    Fail`Expected chain ID ${q(actualChainId)} to be ${q(chainId)}`;
+};
+
+const logChainAppInfo = async (
+  rpc: CosmosRPCClient,
+  log: typeof console.warn,
+) => {
+  const info = await rpc.request('abci_info', {});
+  log('Agoric chain app info:', info?.response);
+};
+
+export type SimplePowers = {
+  fetch: typeof fetch;
+  setTimeout: typeof setTimeout;
+  delay: (ms: number) => Promise<void>;
+  makeAbortController: MakeAbortController;
+};
+
+const nowISO = makeNowISO(Date.now);
+
+/**
+ * For debugging transactions sent at the same time, `makeNonce` defaults to
+ * wall-clock timestamps plus a counter.
+ */
+const lastNonce = { timestamp: '', counter: 0 };
+const defaultMakeNonce = () => {
+  const timestamp = nowISO();
+  if (timestamp !== lastNonce.timestamp) {
+    lastNonce.timestamp = timestamp;
+    lastNonce.counter = 1;
+  } else {
+    lastNonce.counter += 1;
+  }
+  return `${timestamp}.${lastNonce.counter}`;
 };
 
 export const main = async (
-  argv,
+  cliArgs: string[],
   {
+    console = globalThis.console,
     env = process.env,
     fetch = globalThis.fetch,
+    generateInterval = timersPromises.setInterval,
+    makeNonce = defaultMakeNonce,
+    now = globalThis.performance.now.bind(globalThis.performance),
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
+    AbortController = globalThis.AbortController,
+    AbortSignal = globalThis.AbortSignal,
+    WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  const config = await getConfig(env);
+  const { 'dry-run': isDryRun, verbose: isVerbose } = parseArgs({
+    args: cliArgs,
+    options: { 'dry-run': { type: 'boolean' }, verbose: { type: 'boolean' } },
+  }).values;
+  const makeMaybeLogger = (prefix: string): ((...args: unknown[]) => void) =>
+    isVerbose ? (...args) => console.log(prefix, ...args) : () => {};
+  const withHealthLogging = makeHealthLogger(console);
 
-  const delay = ms =>
-    new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
-  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
+  const makeAbortController = prepareAbortController({
+    setTimeout,
+    AbortController,
+    AbortSignal,
+  });
+
+  const simplePowers: SimplePowers = {
+    fetch,
+    setTimeout,
+    delay: ms => new Promise(resolve => setTimeout(resolve, ms)).then(() => {}),
+    makeAbortController,
+  };
+
+  const config = await loadConfig(env);
+  const { clusterName } = config;
+  const spectrumChainIds = spectrumChainIdsByCluster[clusterName];
+  const usdcTokensByChain = UsdcTokenIds[clusterName];
+
+  const axelarCfg = (
+    clusterName === 'mainnet' ? axelarConfig : axelarConfigTestnet
+  ) as typeof axelarConfig;
+
+  const evmTokenAddresses = getPoolTokenAddresses(axelarCfg);
+  const networkConfig = await fetchEnvNetworkConfig({
+    env: { AGORIC_NET: config.agoricNetworkSpec },
+    fetch,
+  });
   const agoricRpcAddr = networkConfig.rpcAddrs[0];
+  console.warn('Initializing planner:', networkConfig);
 
-  console.warn(`Initializing planner watching`, { agoricRpcAddr });
-  const rpc = new CosmosRPCClient(agoricRpcAddr);
-
-  const rpcChainId = await getChainIdFromRpc(rpc);
-
-  if (rpcChainId !== networkConfig.chainName) {
-    Fail`Mismatching chainId. config=${networkConfig.chainName}, rpc=${rpcChainId}`;
-  }
-
-  const walletUtils = await makeSmartWalletKit({ fetch, delay }, networkConfig);
-
-  const signingSmartWalletKit = await makeSigningSmartWalletKit(
-    { connectWithSigner, walletUtils },
-    config.mnemonic,
+  const rpc = new CosmosRPCClient(agoricRpcAddr, {
+    WebSocket,
+    heartbeats: generateInterval(6000),
+  });
+  await rpc.opened();
+  await assertChainId(rpc, networkConfig.chainName, (...logArgs) =>
+    console.warn('Agoric chain status:', ...logArgs),
   );
+  await logChainAppInfo(rpc, console.warn);
 
-  console.warn(`Using:`, {
-    networkConfig,
-    plannerAddress: signingSmartWalletKit.address,
+  const stargateQueryClient = await StargateClient.connect(agoricRpcAddr);
+
+  const walletUtils = await makeSmartWalletKit(simplePowers, networkConfig);
+  const signingSmartWalletKit =
+    await (async (): Promise<SigningSmartWalletKit> => {
+      const baseSswk = await makeSigningSmartWalletKit(
+        { connectWithSigner, walletUtils },
+        config.mnemonic,
+      );
+      const { address, query, pollOffer } = baseSswk;
+
+      if (isDryRun) {
+        const logBridgeAction = makeMaybeLogger('[sendBridgeAction]');
+        const stdoutIsTty = process.stdout.isTTY;
+        const bridgeActionInspectOpts = { depth: 6, colors: stdoutIsTty };
+        type SendBridgeAction = SigningSmartWalletKit['sendBridgeAction'];
+        const sendBridgeAction: SendBridgeAction = async (
+          action,
+          fee,
+          memo,
+          signerData,
+        ) => {
+          logBridgeAction(
+            inspect({ action, fee, memo, signerData }, bridgeActionInspectOpts),
+          );
+          return {
+            height: 0,
+            txIndex: 0,
+            code: 0,
+            transactionHash: '',
+            events: [],
+            msgResponses: [],
+            gasUsed: 0n,
+            gasWanted: 0n,
+          };
+        };
+        return {
+          ...walletUtils,
+          address,
+          query,
+          sendBridgeAction,
+          executeOffer: async offer => {
+            const offerP = pollOffer(address, offer.id);
+            await sendBridgeAction({ method: 'executeOffer', offer });
+            return offerP;
+          },
+        };
+      }
+
+      const fetchAccount = async () => {
+        const account = await stargateQueryClient.getAccount(address);
+        if (!account) throw Fail`Account not found for address ${address}`;
+        return {
+          address,
+          accountNumber: BigInt(account.accountNumber),
+          sequence: BigInt(account.sequence),
+        };
+      };
+      const txSequencer = await makeTxSequencer(fetchAccount, {
+        log: makeMaybeLogger('[TxSequencer]'),
+      });
+      return makeSequencingSmartWallet(baseSswk, txSequencer, {
+        log: makeMaybeLogger('[SigningSmartWallet]'),
+      });
+    })();
+  console.warn('Signer address:', signingSmartWalletKit.address);
+  const walletStore = reflectWalletStore(signingSmartWalletKit, {
+    setTimeout,
+    makeNonce,
+    fee: {
+      // As of 2025-11, a planner transaction consumes 160_000 to 185_000 gas
+      // units, so 400_000 includes a fudge factor of over 2x.
+      gas: '400000',
+      // As of 2025-11, validators seem to still be using the Agoric
+      // `minimum-gas-prices` recommendation of 0.01ubld per gas unit:
+      // https://community.agoric.com/t/network-change-instituting-fees-on-the-agoric-chain-to-mitigate-spam-transactions/109/2
+      // So 10_000 ubld = 0.01 BLD includes a fudge factor of over 2x.
+      amount: [{ denom: 'ubld', amount: '10000' }],
+    },
   });
 
-  const spectrum = new SpectrumClient(
-    { fetch, setTimeout },
-    {
-      baseUrl: config.spectrum.apiUrl,
-      timeout: config.spectrum.timeout,
-      retries: config.spectrum.retries,
-    },
+  const makeGqlSdk = <Sdk>(
+    makeSdk: (client: GraphQLClient) => Sdk,
+    endpoints: string[],
+  ): Sdk => {
+    const multiClient = makeGraphqlMultiClient(endpoints, simplePowers, {
+      requestLimits: config.requestLimits,
+    });
+    return makeSdk(multiClient);
+  };
+  const spectrumBlockchain = makeGqlSdk(
+    getSpectrumBlockchainSdk,
+    config.spectrumBlockchainEndpoints,
   );
-
-  const cosmosRest = new CosmosRestClient(
-    {
-      fetch,
-      setTimeout,
-    },
-    {
-      agoricNetwork: config.cosmosRest.agoricNetwork,
-      timeout: config.cosmosRest.timeout,
-      retries: config.cosmosRest.retries,
-    },
-  );
-
   const evmCtx = await createEVMContext({
-    // Any non-mainnet Agoric chain would be connected to Axelar testnet.
-    net: env.AGORIC_NET === 'mainnet' ? 'mainnet' : 'testnet',
-    alchemy: config.alchemy,
+    clusterName,
+    alchemyApiKey: config.alchemyApiKey,
+    makeHeartbeat: () => generateInterval(WS_HEARTBEAT_INTERVAL_MS),
+    log: (...args) => console.warn('EVM provider:', ...args),
   });
+
+  // Verify Alchemy chain availability.
+  const failedEvmChains = [] as Array<keyof typeof evmCtx.evmProviders>;
+  const evmHeights = await deeplyFulfilledObject(
+    objectMap(evmCtx.evmProviders, (provider, chainId) =>
+      provider
+        .getProvider()
+        .getBlockNumber()
+        .catch(err => {
+          failedEvmChains.push(chainId);
+          return { error: err.message };
+        }),
+    ),
+  );
+  console.warn('EVM chain heights:', evmHeights);
+  failedEvmChains.length === 0 ||
+    Fail`Could not connect to EVM chains: ${q(failedEvmChains)}. Ensure they are enabled in your Alchemy dashboard.`;
+
+  const gasEstimator = makeGasEstimator({
+    axelarApiAddress: config.axelar.apiUrl,
+    axelarChainIdMap: config.axelar.chainIdMap,
+    fetch,
+  });
+
+  const { db, kvStore } = makeSQLiteKeyValueStore(config.sqlite.dbPath, {
+    trace: () => {},
+  });
+
+  const oneInchClient = config.oneInch.apiKey
+    ? ky.create({
+        fetch,
+        prefixUrl: config.oneInch.apiUrl,
+        headers: { Authorization: `Bearer ${config.oneInch.apiKey}` },
+      })
+    : undefined;
+
+  const ydsApiKey = config.yds.apiKey;
+  const ydsClient = config.yds.url
+    ? ky.create({
+        fetch,
+        prefixUrl: config.yds.url,
+        headers: {
+          ...FETCH_HEADERS,
+          ...(ydsApiKey ? { 'x-resolver-auth-key': ydsApiKey } : undefined),
+        },
+        timeout: config.requestLimits.timeout,
+        retry: config.requestLimits.maxRetries,
+      })
+    : undefined;
+  const makeYdsCacheable = <T>(
+    name: string,
+    ttlMs: number,
+    fetcher: (
+      yds: Exclude<typeof ydsClient, undefined>,
+    ) => Promise<{ data: T } | undefined>,
+  ): (() => Promise<T | undefined>) | undefined => {
+    if (!ydsClient) return undefined;
+
+    let got: { timestamp: number; value: T | undefined } = {
+      timestamp: -Infinity,
+      value: undefined,
+    };
+    return async (): Promise<T | undefined> => {
+      const timestamp = now();
+      if (timestamp < got.timestamp + ttlMs) {
+        return got.value as T;
+      }
+      const resp = await withHealthLogging(
+        name,
+        fetcher(ydsClient),
+        config.requestLimits,
+      );
+      if (!resp) return undefined;
+
+      const value = resp.data;
+      got = { timestamp, value };
+      return value;
+    };
+  };
+
+  const getExchangeRates = makeYdsCacheable(
+    'exchange rates',
+    60_000,
+    async yds =>
+      yds.get('reward-token-rates').json<{ data: RewardTokenRate[] }>(),
+  );
+  const getGasCosts = makeYdsCacheable('gas costs', 60_000, async yds =>
+    yds.get('chains/gas').json<{ data: ChainGasState[] }>(),
+  );
+
+  let lastInstrumentBlocksString = '';
+  const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
+    const { noDepositInstruments, noWithdrawInstruments } = instrumentBlocks;
+    const sets = { noDepositInstruments, noWithdrawInstruments };
+    return JSON.stringify(objectMap(sets, s => [...s].sort()));
+  };
+  const getInstrumentSnapshot = ydsClient
+    ? async (): Promise<InstrumentSnapshot | undefined> => {
+        const resp = await withHealthLogging(
+          'instruments',
+          ydsClient.get('instruments?includeAll=true').json(),
+          config.requestLimits,
+        );
+        if (!resp) return undefined;
+        const instruments = (resp as any).data as YdsInstrument[];
+        const instrumentBlocks = calculateInstrumentBlocks(instruments);
+        const tvls = extractInstrumentTvls(instruments);
+
+        const newBlocksString = stringifyInstrumentBlocks(instrumentBlocks);
+        if (newBlocksString !== lastInstrumentBlocksString) {
+          console.warn('New instrument blocks:', instrumentBlocks, instruments);
+        }
+        lastInstrumentBlocksString = newBlocksString;
+
+        // TODO(AGO-550): return instrumentBlocks as `blocks`.
+        return { tvls };
+      }
+    : undefined;
+
+  let lastPortfolios: {
+    timestamp: number;
+    portfolioIdsString: string;
+    summaries: YdsPortfolioSummary[];
+  } = { timestamp: -Infinity, portfolioIdsString: '[]', summaries: [] };
+  const getPortfolioSummaries =
+    ydsClient && ydsApiKey
+      ? async (
+          portfolioIds: PortfolioKey[],
+        ): Promise<YdsPortfolioSummary[] | undefined> => {
+          if (!portfolioIds.length) return [];
+
+          portfolioIds = portfolioIds.toSorted(naturalCompare);
+          const portfolioIdsString = JSON.stringify(portfolioIds);
+          const timestamp = now();
+          if (
+            portfolioIdsString === lastPortfolios.portfolioIdsString &&
+            timestamp <
+              lastPortfolios.timestamp + YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS
+          ) {
+            return lastPortfolios.summaries;
+          }
+
+          const reqBody = { portfolioIds };
+          const resp = await withHealthLogging(
+            'portfolios',
+            ydsClient.post('portfolios:list', { json: reqBody }).json(),
+            config.requestLimits,
+          );
+          if (!resp) return undefined;
+          const summaries = ((resp as any).data as YdsPortfolioSummary[]).sort(
+            (a, b) => naturalCompare(a.portfolioId, b.portfolioId),
+          );
+
+          if (isVerbose) {
+            const logPrefix = '[getPortfolioSummaries]';
+            const seconds = (timestamp - lastPortfolios.timestamp) / 1000;
+            const elapsed = Number.isFinite(seconds)
+              ? `overwriting after ${seconds} seconds`
+              : 'initializing';
+            const idsDiff: string[] = [];
+            const sigilsByState = { common: ' ', removed: '-', added: '+' };
+            try {
+              const oldIdsString = lastPortfolios.portfolioIdsString;
+              const oldIds = JSON.parse(oldIdsString).sort(naturalCompare);
+              const diff = generateDiff(oldIds, portfolioIds, naturalCompare);
+              for (const { state, value } of diff) {
+                idsDiff.push(`${sigilsByState[state]}${value}`);
+              }
+            } catch (err) {
+              console.error(logPrefix, err);
+            }
+            const diffStr = idsDiff.length ? `\n${idsDiff.join('\n')}\n` : '';
+            console.warn(logPrefix, elapsed, diffStr, summaries);
+          }
+
+          lastPortfolios = { timestamp, portfolioIdsString, summaries };
+          return summaries;
+        }
+      : undefined;
+
+  const ydsNotifier = config.yds.url
+    ? new YdsNotifier(
+        { fetch, log: console.log.bind(console) },
+        {
+          ydsUrl: config.yds.url,
+          ydsApiKey: config.yds.apiKey as string,
+          timeout: config.requestLimits.timeout,
+          retries: config.requestLimits.maxRetries,
+        },
+      )
+    : undefined;
+  const postYdsTransaction = ydsClient
+    ? async (txHash: CosmosTxId): Promise<void> => {
+        const json: YdsTransactionSubmitBody = {
+          txHash,
+          chain: networkConfig.chainName,
+          ymaxInstance: config.contractInstance,
+        };
+        await null;
+        try {
+          await ydsClient.post('transactions', {
+            json,
+          });
+        } catch (cause) {
+          throw Error(
+            `While posting transaction to YDS ${JSON.stringify(json)}`,
+            { cause },
+          );
+        }
+      }
+    : undefined;
+
+  const retryProviders = fromEntries(
+    entries(evmCtx.evmProviders).map(([caip, provider]) => [
+      caip,
+      makeEvmRpc(provider, setTimeout, {
+        log: (...args) => console.warn(`EVM RPC [${caip}]:`, ...args),
+      }),
+    ]),
+  ) as Record<CaipChainId, EvmRpc>;
 
   const powers = {
-    evmCtx,
+    evmCtx: {
+      kvStore,
+      makeAbortController,
+      setTimeout,
+      now,
+      axelarApiUrl: config.axelar.apiUrl,
+      ydsNotifier,
+      retryProviders,
+      ...evmCtx,
+    },
     rpc,
-    spectrum,
-    cosmosRest,
+    setTimeout,
+    spectrumChainIds,
+    evmTokenAddresses,
+    spectrumBlockchain,
+    network: PROD_NETWORK,
+    getExchangeRates,
+    getGasCosts,
+    getInstrumentSnapshot,
+    getPortfolioSummaries,
     signingSmartWalletKit,
+    makeNonce,
+    walletStore,
+    getWalletInvocationUpdate: (messageId, opts) => {
+      const { getLastUpdate } = signingSmartWalletKit.query;
+      const retryOpts = { log: () => {}, setTimeout, ...opts };
+      return getInvocationUpdate(messageId, getLastUpdate, retryOpts);
+    },
+    now,
+    nowISO,
+    gasEstimator,
+    usdcTokensByChain,
+    chainNameToChainIdMap: CaipChainIds[clusterName],
+    merklClient: ky.create({ fetch, prefixUrl: 'https://api.merkl.xyz/' }),
+    oneInchClient,
+    postYdsTransaction,
+    autoClaimConfig: config.autoClaim,
+    autoRebalance: config.autoRebalance,
+    GAS_UNITS_PER_CLAIM,
+    GAS_UNITS_PER_SWAP,
   };
-  await startEngine(powers, {
-    depositIbcDenom: env.DEPOSIT_IBC_DENOM || 'USDC',
+
+  await withDeferredCleanup(async addCleanup => {
+    addCleanup(async () => {
+      await db.close();
+    });
+    addCleanup(async () => {
+      stargateQueryClient.disconnect();
+    });
+    await startEngine(powers, {
+      isDryRun,
+      contractInstance: config.contractInstance,
+      depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
+      feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+      balanceCacheTtlMs: YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
+    });
   });
 };
+
 harden(main);

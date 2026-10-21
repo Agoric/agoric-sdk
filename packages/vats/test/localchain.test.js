@@ -22,9 +22,11 @@ import {
 /**
  * @import {LocalChainAccount, LocalChainPowers} from '../src/localchain.js';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
+ * @import {TestFn} from 'ava';
+ * @import {AdditionalTransferPowers} from '../src/localchain.js';
  */
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
@@ -73,7 +75,7 @@ const makeTestContext = async _t => {
     const vowTools = prepareVowTools(zone.subZone('vows'));
 
     /**
-     * @type {import('../src/localchain.js').AdditionalTransferPowers}
+     * @type {AdditionalTransferPowers}
      */
     const powersForTransfer = zone.weakMapStore('powersForTransfer');
     const makeLC = prepareLocalChainTools(zone, {

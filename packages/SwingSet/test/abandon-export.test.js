@@ -12,6 +12,10 @@ import makeKernelKeeper, {
 import { makeKernelEndowments, buildDispatch } from './util.js';
 import { kser, kunser, kslot } from '@agoric/kmarshal';
 
+/**
+ * @import {ExecutionContext} from 'ava';
+ */
+
 const makeKernel = async () => {
   const endowments = makeKernelEndowments();
   const { kernelStorage } = endowments;
@@ -28,7 +32,7 @@ const makeKernel = async () => {
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {object[]} log
  * @param {string} type
  * @param {object} [details]

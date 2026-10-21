@@ -1,10 +1,10 @@
-import { Fail } from '@endo/errors';
+import { NonNullish } from '@agoric/internal';
 import { SubscriberShape } from '@agoric/notifier';
-import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { NonNullish } from '@agoric/internal';
 
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import {
@@ -13,6 +13,19 @@ import {
   KeywordShape,
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
+
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {PublishKit} from '@agoric/notifier';
+ * @import {InstanceAdminHelper} from '../internal-types.js';
+ * @import {WithdrawFacet} from '../internal-types.js';
+ * @import {ExitObj} from '../internal-types.js';
+ * @import {HandleOfferResult} from '../internal-types.js';
+ * @import {PaymentPKeywordRecord} from './types.ts';
+ * @import {Allocation} from '../types-index.js';
+ * @import {ProposalRecord, ZCFSeat} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
+ */
 
 export const coreUserSeatMethods = harden({
   getProposal: M.call().returns(M.promise()),
@@ -72,7 +85,7 @@ const assertHasNotExited = (c, msg) => {
  * The zoeSeatAdmin is passed by Zoe to the ContractFacet (zcf), to allow zcf to
  * query or update the allocation or exit the seat cleanly.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {() => PublishKit<any>} makeDurablePublishKit
  */
 export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
@@ -98,9 +111,6 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
   // the kit here. When resolveExitAndResult() is called, it saves
   // state.offerResult and resolves the promise if it exists, then removes the
   // table entry.
-  /**
-   * @typedef {WeakMap<ZCFSeat, unknown>}
-   */
   const ephemeralOfferResultStore = new WeakMap();
 
   // notice that this returns a maker function which we drop on the floor.

@@ -69,10 +69,7 @@ test('tryDecodeResponse from withdraw', t => {
   const ackStr =
     'ElIKPy9jb3Ntb3MuZGlzdHJpYnV0aW9uLnYxYmV0YTEuTXNnV2l0aGR' +
     'yYXdEZWxlZ2F0b3JSZXdhcmRSZXNwb25zZRIPCg0KBnVzdGFrZRIDMjAw';
-  const msg = tryDecodeResponse(
-    ackStr,
-    MsgWithdrawDelegatorRewardResponse.fromProtoMsg,
-  );
+  const msg = tryDecodeResponse(ackStr, MsgWithdrawDelegatorRewardResponse);
   t.deepEqual(msg, { amount: [{ amount: '200', denom: 'ustake' }] });
 });
 

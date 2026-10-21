@@ -1,9 +1,8 @@
 # Linear queue for the main branch.
 shared:
-  commit_message_template: &commit-message-template |-
-    {{ title }} (#{{ number }})
-
-    {{ body | trim }}
+  commit_message_format: &commit-message-format
+    title: pr-title
+    body: pr-body
   queue_conditions: &queue-conditions
     - base=master
     - or:
@@ -11,14 +10,16 @@ shared:
         - check-success=integration-test-result
         - label=bypass:integration
     - check-success=breakage
-  merge_conditions: &merge-conditions
-    - base=master
-    # Rebase PRs with fixup commits are allowed to enter the merge queue but
-    # should not be allowed to merge if there are leftover fixup commits after rebase
-    - or:
+    # Fixup commits are folded by the autosquash workflow once the PR is
+    # approved; keep the PR out of the queue until then, since that push would
+    # dequeue it.
+    - or: &no-fixup-commits
         - label=bypass:linear-history
         - check-success=no-fixup-commits
         - check-skipped=no-fixup-commits
+  merge_conditions: &merge-conditions
+    - base=master
+    - or: *no-fixup-commits
     # Require integration tests before merging only
     - or:
         - label=bypass:integration
@@ -38,9 +39,25 @@ shared:
   pr_queue_squash_conditions: &pr-queue-squash-conditions
     - base=master
     - label=automerge:squash
+  linear_history_rebase_conditions: &linear-history-rebase-conditions
+    - base=master
+    - label=automerge:rebase
+    - '#commits-behind=0'
+    - '#approved-reviews-by>=1'
+    - '#changes-requested-reviews-by=0'
+    - github-review-decision=APPROVED
+    - -linear-history
+    - -draft
+  # Copilot's commits are "copilot-swe-agent[bot]" but apparently the GH Author is "Copilot"
+  bot_author_conditions: &bot-author-conditions
+    - author~=\[bot\]$
+    - author=Copilot
 
 merge_queue:
   max_parallel_checks: 1
+  queued_label: null
+  dequeued_label: null
+  status_comments: none
 
 priority_rules:
   - name: high_priority
@@ -48,23 +65,27 @@ priority_rules:
       - label=priority:high
     priority: high
 
+defaults:
+  queue_rule:
+    merge_bot_account: 'mergify[bot]'
+    draft_bot_account: 'mergify[bot]'
+
 queue_rules:
   - name: rebase
-    commit_message_template: *commit-message-template
+    commit_message_format: *commit-message-format
     queue_conditions: *queue-conditions
     merge_conditions: *merge-conditions
     merge_method: merge
     update_method: rebase
-    autosquash: true
 
   - name: merge
-    commit_message_template: *commit-message-template
+    commit_message_format: *commit-message-format
     queue_conditions: *queue-conditions
     merge_conditions: *merge-conditions
     merge_method: merge
 
   - name: squash
-    commit_message_template: *commit-message-template
+    commit_message_format: *commit-message-format
     queue_conditions: *queue-conditions
     merge_conditions: *merge-conditions
     merge_method: squash
@@ -85,15 +106,18 @@ pull_request_rules:
     actions:
       queue:
         name: squash
-  - name: rebase and autosquash
+  # Bots can't be impersonated, so Mergify rebases their pull requests as itself.
+  - name: rebase to linear history (bot authors)
     conditions:
-      - base=master
-      - label=automerge:rebase
-      - '#commits-behind=0'
-      - or:
-          - -linear-history
-          - check-failure=no-fixup-commits
-      - -draft
+      - and: *linear-history-rebase-conditions
+      - or: *bot-author-conditions
+    actions:
+      rebase: {}
+  - name: rebase to linear history
+    conditions:
+      - and: *linear-history-rebase-conditions
+      - not:
+          or: *bot-author-conditions
     actions:
       rebase:
-        autosquash: true
+        bot_account: '{{ author }}'

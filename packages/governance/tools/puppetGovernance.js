@@ -4,8 +4,11 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 
 /**
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {ContractMeta, Installation, Instance, Invitation, IssuerKeywordRecord, ZCF, ZoeService} from '@agoric/zoe';
  * @import {GovernableStartFn} from '../src/types.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {start} from './puppetContractGovernor.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const makeBundle = async sourceRoot => {
@@ -28,7 +31,7 @@ const autoRefundBundleP = makeBundle(
  * @template {GovernableStartFn} T governed contract startfn
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Installation<T>>} governedP
- * @param {import('@agoric/time').TimerService} timer
+ * @param {TimerService} timer
  * @param {{ [k: string]: any, governedParams?: Record<string, unknown>, governedApis?: string[] }} termsOfGoverned
  * @param {{}} privateArgsOfGoverned
  * @param {IssuerKeywordRecord} [issuerKeywordRecord]
@@ -48,7 +51,7 @@ export const setUpGovernedContract = async (
 
   /**
    * @type {[
-   * Installation<import('./puppetContractGovernor.js').start>,
+   * Installation<typeof start>,
    * Installation<any>,
    * Installation<T>,
    * ]}

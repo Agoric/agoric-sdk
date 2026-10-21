@@ -109,6 +109,7 @@ const main = async () => {
   } = await commonSetup(runT, { config: '../config.fusdc.yaml' });
 
   const assertProvisioned = async (address: string) => {
+    await null;
     try {
       await vstorageClient.queryData(`published.wallet.${address}.current`);
     } catch {
@@ -116,10 +117,13 @@ const main = async () => {
     }
   };
 
-  const provisionWallet = async (mnemonic: string) => {
+  const provisionWallet = async (walletMnemonic: string) => {
     // provision-one must be called by the owner, so we need to add the key to the test keyring
     const keyname = 'temp';
-    const address = (await setupTestKeys([keyname], [mnemonic]))[keyname];
+    const { [keyname]: address } = await setupTestKeys(
+      [keyname],
+      [walletMnemonic],
+    );
     try {
       await provisionSmartWallet(address, {
         BLD: 100n,
@@ -139,6 +143,7 @@ const main = async () => {
     console.log('nobleAgoricChannelId', nobleAgoricChannelId);
     console.log('usdcDenom', usdcDenom);
 
+    await null;
     for (const oracle of oracles) {
       if (provisionOracles) {
         await provisionWallet(oracleMnemonics[oracle.split(':')[0]]);
@@ -164,7 +169,7 @@ const main = async () => {
     const accounts = ['lp'];
     await deleteTestKeys(accounts).catch();
     const wallets = await setupTestKeys(accounts);
-    const lpUser = await provisionSmartWallet(wallets['lp'], {
+    const lpUser = await provisionSmartWallet(wallets.lp, {
       USDC: 8_000n,
       BLD: 100n,
     });

@@ -4,6 +4,7 @@ import { makeError } from '@endo/errors';
  * @import {ChainHub} from "../types.js";
  * @import {AmountArg, Denom, DenomAmount, DenomArg} from "../orchestration-api.js";
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**

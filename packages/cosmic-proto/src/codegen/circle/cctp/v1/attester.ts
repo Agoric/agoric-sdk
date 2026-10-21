@@ -5,6 +5,9 @@ import { type JsonSafe } from '../../../json-safe.js';
 /**
  * A public key used to verify message signatures
  * @param attester ECDSA uncompressed public key, hex encoded
+ * @name Attester
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.Attester
  */
 export interface Attester {
   attester: string;
@@ -16,6 +19,9 @@ export interface AttesterProtoMsg {
 /**
  * A public key used to verify message signatures
  * @param attester ECDSA uncompressed public key, hex encoded
+ * @name AttesterSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.Attester
  */
 export interface AttesterSDKType {
   attester: string;
@@ -25,8 +31,25 @@ function createBaseAttester(): Attester {
     attester: '',
   };
 }
+/**
+ * A public key used to verify message signatures
+ * @param attester ECDSA uncompressed public key, hex encoded
+ * @name Attester
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.Attester
+ */
 export const Attester = {
   typeUrl: '/circle.cctp.v1.Attester' as const,
+  is(o: any): o is Attester {
+    return (
+      o && (o.$typeUrl === Attester.typeUrl || typeof o.attester === 'string')
+    );
+  },
+  isSDK(o: any): o is AttesterSDKType {
+    return (
+      o && (o.$typeUrl === Attester.typeUrl || typeof o.attester === 'string')
+    );
+  },
   encode(
     message: Attester,
     writer: BinaryWriter = BinaryWriter.create(),

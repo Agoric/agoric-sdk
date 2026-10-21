@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:05051d9823e2cd29ef968ad34e8e29e3ecfa222e892f2a57665637f733ab9b2e
+package:
+  name: "@graphql-tools/optimize"
+  version: 2.0.0
+upstream:
+  repo: ardatan/graphql-tools
+  issue: https://github.com/ardatan/graphql-tools/issues/7658
+  pr:
+status: proposed
+notes:
+createdAt: 2026-04-16T20:31:57.563Z
+updatedAt: 2026-04-16T20:31:57.563Z

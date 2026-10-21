@@ -2,6 +2,11 @@
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name EpochTracker
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.EpochTracker
+ */
 export interface EpochTracker {
   epochIdentifier: string;
   epochNumber: bigint;
@@ -12,6 +17,11 @@ export interface EpochTrackerProtoMsg {
   typeUrl: '/stride.stakeibc.EpochTracker';
   value: Uint8Array;
 }
+/**
+ * @name EpochTrackerSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.EpochTracker
+ */
 export interface EpochTrackerSDKType {
   epoch_identifier: string;
   epoch_number: bigint;
@@ -26,8 +36,33 @@ function createBaseEpochTracker(): EpochTracker {
     duration: BigInt(0),
   };
 }
+/**
+ * @name EpochTracker
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.EpochTracker
+ */
 export const EpochTracker = {
   typeUrl: '/stride.stakeibc.EpochTracker' as const,
+  is(o: any): o is EpochTracker {
+    return (
+      o &&
+      (o.$typeUrl === EpochTracker.typeUrl ||
+        (typeof o.epochIdentifier === 'string' &&
+          typeof o.epochNumber === 'bigint' &&
+          typeof o.nextEpochStartTime === 'bigint' &&
+          typeof o.duration === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is EpochTrackerSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EpochTracker.typeUrl ||
+        (typeof o.epoch_identifier === 'string' &&
+          typeof o.epoch_number === 'bigint' &&
+          typeof o.next_epoch_start_time === 'bigint' &&
+          typeof o.duration === 'bigint'))
+    );
+  },
   encode(
     message: EpochTracker,
     writer: BinaryWriter = BinaryWriter.create(),

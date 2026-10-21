@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import { bundlePaths, hashPaths } from './paths.js';
 
 const read = (name, path) => {
@@ -10,12 +10,16 @@ const read = (name, path) => {
 };
 
 /**
+ * @param { boolean } debug
  * @returns { Promise<string> }
  */
-export const getLockdownBundleSHA256 = async () => {
-  const path = hashPaths.lockdown;
+const getBundleSHA256 = async debug => {
+  const path = debug ? hashPaths.lockdownDebug : hashPaths.lockdown;
   return read('hash', path).then(data => data.trim());
 };
+
+export const getLockdownBundleSHA256 = () => getBundleSHA256(false);
+export const getDebugLockdownBundleSHA256 = () => getBundleSHA256(true);
 
 /**
  * @param { boolean } debug

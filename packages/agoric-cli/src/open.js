@@ -1,4 +1,3 @@
-/* eslint-env node */
 import opener from 'opener';
 import { assert, X } from '@endo/errors';
 import { getAccessToken } from '@agoric/access-token';

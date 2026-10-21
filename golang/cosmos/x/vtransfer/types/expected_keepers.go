@@ -2,21 +2,28 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capability "github.com/cosmos/ibc-go/modules/capability/types"
-	channel "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channel "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 )
 
 // ChannelKeeper defines the expected IBC channel keeper
 type ChannelKeeper interface {
 	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channel.Channel, found bool)
 	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
-	SendPacket(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI) error
-	WriteAcknowledgement(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
+	SendPacket(
+		ctx sdk.Context,
+		sourcePort string,
+		sourceChannel string,
+		timeoutHeight clienttypes.Height,
+		timeoutTimestamp uint64,
+		data []byte,
+	) (uint64, error)
+	WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
 	ChanOpenInit(ctx sdk.Context, order channel.Order, connectionHops []string, portID string,
-		portCap *capability.Capability, counterparty channel.Counterparty, version string) (string, *capability.Capability, error)
+		counterparty channel.Counterparty, version string) (string, error)
 	WriteOpenInitChannel(ctx sdk.Context, portID, channelID string, order channel.Order,
 		connectionHops []string, counterparty channel.Counterparty, version string)
-	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capability.Capability) error
-	TimeoutExecuted(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI) error
+	ChanCloseInit(ctx sdk.Context, portID, channelID string) error
+	TimeoutExecuted(ctx sdk.Context, packet channel.Packet) error
 }

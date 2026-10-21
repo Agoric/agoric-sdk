@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import { styleText } from 'node:util';
 import { makePspawn } from './helpers.js';
 
 // Use either an absolute template URL, or find it relative to DAPP_URL_BASE.
@@ -27,7 +27,7 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
   // Run the Git commands.
   log.info(`initializing ${DIR} from ${dappURL}`);
 
-  const pspawn = makePspawn({ log, chalk, spawn });
+  const pspawn = makePspawn({ log, spawn });
 
   let dappBranch = [];
   if (opts.dappBranch) {
@@ -80,6 +80,6 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
     },
   );
 
-  log.info(chalk.bold.yellow(`Done initializing ${DIR}`));
+  log.info(styleText(['bold', 'yellow'], `Done initializing ${DIR}`));
   return 0;
 }

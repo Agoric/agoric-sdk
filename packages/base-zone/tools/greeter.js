@@ -1,18 +1,17 @@
-import { M, getInterfaceGuardPayload } from '@endo/patterns';
+import { M, getInterfaceGuardPayload, objectMap } from '@endo/patterns';
 
 /**
- * @template {{}} T
+ * @import {Zone} from '../src/types.js';
+ */
+
+/**
+ * @template {Record<string, Function>} T
  * @param {T} obj
  * @param {unknown} that
  * @returns {T}
  */
 export const bindAllMethodsTo = (obj, that = obj) =>
-  /** @type {T} */
-  (
-    Object.fromEntries(
-      Object.entries(obj).map(([name, fn]) => [name, fn.bind(that)]),
-    )
-  );
+  objectMap(obj, fn => fn.bind(that));
 
 export const GreeterI = M.interface('Greeter', {
   greet: M.call().optional(M.string()).returns(M.string()),
@@ -38,7 +37,7 @@ export const GreeterWithAdminI = M.interface('GreeterWithAdmin', {
 });
 
 /**
- * @param {import('../src/types.js').Zone} zone
+ * @param {Zone} zone
  * @param {string} label
  * @param {string} nick
  */
@@ -51,7 +50,7 @@ export const prepareGreeterSingleton = (zone, label, nick) => {
 };
 
 /**
- * @param {import('../src/types.js').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareGreeter = zone =>
   zone.exoClass('Greeter', GreeterWithAdminI, nick => ({ nick }), {
@@ -60,7 +59,7 @@ export const prepareGreeter = zone =>
   });
 
 /**
- * @param {import('../src/types.js').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareGreeterKit = zone =>
   zone.exoClassKit(

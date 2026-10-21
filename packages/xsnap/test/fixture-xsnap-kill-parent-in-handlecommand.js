@@ -1,7 +1,7 @@
-import console from 'console';
-import * as proc from 'child_process';
-import * as os from 'os';
-import fs from 'fs';
+import console from 'node:console';
+import * as proc from 'node:child_process';
+import * as os from 'node:os';
+import fs from 'node:fs';
 import process from 'node:process';
 import { tmpName } from 'tmp';
 import '@endo/init';

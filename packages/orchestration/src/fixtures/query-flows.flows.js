@@ -10,6 +10,7 @@ const trace = makeTracer('BasicFlows');
 /**
  * @import {Chain, DenomArg, OrchestrationFlow, Orchestrator, ICQQueryFunction, CosmosChainInfo} from '@agoric/orchestration';
  * @import {QueryManyFn} from '@agoric/vats/src/localchain.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
  */
 
 /**

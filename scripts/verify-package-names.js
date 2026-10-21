@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * This script verifies that every package in the @agoric/sdk project has an
+ * This script verifies that every package in the \@agoric/sdk project has an
  * Agoric-controlled name and its name matches its `private` flag.
  *
  * This helps make more clear when viewing a package name whether it will be published.

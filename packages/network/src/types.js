@@ -6,12 +6,14 @@ export {};
 /**
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {PromiseVow, Remote} from '@agoric/vow';
+ * @import {Methods} from '@endo/exo';
+ * @import {Guarded} from '@endo/exo';
  */
 
 /**
- * @template {import('@endo/exo').Methods} M
+ * @template {Methods} M
  * @template {(...args: any[]) => any} I
- * @typedef {M & ThisType<{ self: import('@endo/exo').Guarded<M>, state: ReturnType<I> }>} ExoClassMethods
+ * @typedef {M & ThisType<{ self: Guarded<M>, state: ReturnType<I> }>} ExoClassMethods
  * Rearrange the exo types to make a cast of the methods (M) and init function (I) to a specific type.
  */
 

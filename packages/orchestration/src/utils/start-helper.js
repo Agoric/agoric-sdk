@@ -1,4 +1,5 @@
 import { prepareAsyncFlowTools } from '@agoric/async-flow';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -6,6 +7,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
+import { prepareProgressTracker } from './progress.js';
 import { prepareOrchestrator } from '../exos/orchestrator.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { makeOrchestrationFacade } from '../facade.js';
@@ -13,6 +15,9 @@ import { makeZoeTools } from './zoe-tools.js';
 import { makeZcfTools } from './zcf-tools.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal';
+ * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';
@@ -21,6 +26,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @import {Zone} from '@agoric/zone';
  * @import {Pattern} from '@endo/patterns';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**
@@ -52,7 +58,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @param {ZCF} zcf
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
- * @param {Marshaller} marshaller
+ * @param {Remote<Marshaller>} remoteMarshaller
  * @param {object} [opts]
  * @param {WithOrchestrationOpts['chainInfoValueShape']} [opts.chainInfoValueShape]
  * @internal
@@ -61,7 +67,7 @@ export const provideOrchestration = (
   zcf,
   baggage,
   remotePowers,
-  marshaller,
+  remoteMarshaller,
   opts = {},
 ) => {
   // separate zones
@@ -93,10 +99,19 @@ export const provideOrchestration = (
 
   const zcfTools = makeZcfTools(zcf, vowTools);
 
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    cachingMarshaller,
+  );
+  const makeProgressTracker = prepareProgressTracker(zones.orchestration, {
+    vowTools,
+  });
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zones.orchestration,
     {
+      makeProgressTracker,
       makeRecorderKit,
       zcf,
       timerService,
@@ -115,6 +130,7 @@ export const provideOrchestration = (
     zones.orchestration,
     {
       chainHub,
+      makeProgressTracker,
       makeRecorderKit,
       timerService,
       vowTools,
@@ -180,6 +196,7 @@ export const provideOrchestration = (
     ...defaultOrchestrateKit,
     makeOrchestrateKit,
     baggage,
+    cachingMarshaller,
     chainHub,
     vowTools,
     asyncFlowTools,
@@ -205,7 +222,7 @@ harden(provideOrchestration);
  *
  * @template {Record<string, unknown>} CT
  * @template {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  * }} PA
  * @template R
  * @param {(
@@ -220,16 +237,22 @@ harden(provideOrchestration);
  */
 export const withOrchestration =
   (contractFn, opts) => async (zcf, privateArgs, baggage) => {
-    const { marshaller, ...allOrchPowers } = privateArgs;
+    const { marshaller: remoteMarshaller, ...allOrchPowers } = privateArgs;
     const { storageNode: _, ...requiredOrchPowers } = allOrchPowers;
     const { publishAccountInfo, chainInfoValueShape } = opts ?? {};
+
     const { zone, ...tools } = provideOrchestration(
       zcf,
       baggage,
       publishAccountInfo ? allOrchPowers : requiredOrchPowers,
-      marshaller,
+      remoteMarshaller,
       { chainInfoValueShape },
     );
-    return contractFn(zcf, privateArgs, zone, tools);
+    const [startResult] = await Promise.all([
+      contractFn(zcf, privateArgs, zone, tools),
+      // Make sure that any errors in async-flow awake abort contract start
+      tools.asyncFlowTools.allWokenP,
+    ]);
+    return startResult;
   };
 harden(withOrchestration);

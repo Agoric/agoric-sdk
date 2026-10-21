@@ -1,9 +1,8 @@
 // @ts-check
-/* eslint-env node */
 
 import '@endo/init/debug.js';
 
-import * as http from 'http';
+import * as http from 'node:http';
 import test from 'ava';
 
 import { makeJsonHttpClient } from '../src/json-http-client-node.js';
@@ -12,7 +11,11 @@ import {
   makeHttpBundlePublisher,
 } from '../src/publish.js';
 
-/** @type {import('../src/publish.js').EndoZipBase64Bundle} */
+/**
+ * @import {EndoZipBase64Bundle} from '../src/publish.js';
+ */
+
+/** @type {EndoZipBase64Bundle} */
 const bundle = {
   moduleFormat: 'endoZipBase64',
   endoZipBase64: '',

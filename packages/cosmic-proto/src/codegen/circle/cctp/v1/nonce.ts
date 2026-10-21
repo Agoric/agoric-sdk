@@ -8,6 +8,9 @@ import { type JsonSafe } from '../../../json-safe.js';
  * @param source_domain the domain id, used to mark used nonces for received
  * messages
  * @param nonce the nonce number
+ * @name Nonce
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.Nonce
  */
 export interface Nonce {
   sourceDomain: number;
@@ -23,6 +26,9 @@ export interface NonceProtoMsg {
  * @param source_domain the domain id, used to mark used nonces for received
  * messages
  * @param nonce the nonce number
+ * @name NonceSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.Nonce
  */
 export interface NonceSDKType {
   source_domain: number;
@@ -34,8 +40,32 @@ function createBaseNonce(): Nonce {
     nonce: BigInt(0),
   };
 }
+/**
+ * The Nonce type functions both to mark receipt of received messages and a
+ * counter for sending messages
+ * @param source_domain the domain id, used to mark used nonces for received
+ * messages
+ * @param nonce the nonce number
+ * @name Nonce
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.Nonce
+ */
 export const Nonce = {
   typeUrl: '/circle.cctp.v1.Nonce' as const,
+  is(o: any): o is Nonce {
+    return (
+      o &&
+      (o.$typeUrl === Nonce.typeUrl ||
+        (typeof o.sourceDomain === 'number' && typeof o.nonce === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is NonceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Nonce.typeUrl ||
+        (typeof o.source_domain === 'number' && typeof o.nonce === 'bigint'))
+    );
+  },
   encode(
     message: Nonce,
     writer: BinaryWriter = BinaryWriter.create(),

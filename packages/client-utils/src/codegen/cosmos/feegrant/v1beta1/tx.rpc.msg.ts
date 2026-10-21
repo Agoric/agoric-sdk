@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgGrantAllowance,
   MsgGrantAllowanceResponse,
@@ -8,7 +8,7 @@ import {
   MsgRevokeAllowanceResponse,
   MsgPruneAllowances,
   MsgPruneAllowancesResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/feegrant/v1beta1/tx.js';
 /** Msg defines the feegrant msg service. */
 export interface Msg {
   /**
@@ -25,18 +25,14 @@ export interface Msg {
   revokeAllowance(
     request: MsgRevokeAllowance,
   ): Promise<MsgRevokeAllowanceResponse>;
-  /**
-   * PruneAllowances prunes expired fee allowances, currently up to 75 at a time.
-   *
-   * Since cosmos-sdk 0.50
-   */
+  /** PruneAllowances prunes expired fee allowances, currently up to 75 at a time. */
   pruneAllowances(
     request: MsgPruneAllowances,
   ): Promise<MsgPruneAllowancesResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.grantAllowance = this.grantAllowance.bind(this);
     this.revokeAllowance = this.revokeAllowance.bind(this);
@@ -82,3 +78,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

@@ -1,0 +1,96 @@
+diff --git a/blake3.js b/blake3.js
+index 860234209bc51647d26a18266bea094b7aca6953..d9fa333f77a081ba1bc3bb787ab639ab549afeab 100644
+--- a/blake3.js
++++ b/blake3.js
+@@ -31,7 +31,8 @@ const B3_Flags = {
+ };
+ const B3_IV = _md_ts_1.SHA256_IV.slice();
+ const B3_SIGMA = /* @__PURE__ */ (() => {
+-    const Id = Array.from({ length: 16 }, (_, i) => i);
++    const Id = new Array(16);
++    for (let i = 0; i < 16; i++) Id[i] = i;
+     const permute = (arr) => [2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8].map((i) => arr[i]);
+     const res = [];
+     for (let i = 0, v = Id; i < 7; i++, v = permute(v))
+diff --git a/esm/blake3.js b/esm/blake3.js
+index e7e6e48d27b478ca2287ce424dfd7e8531eb11c3..f1c5316bcc5075cae0964388b17a73bf603eb883 100644
+--- a/esm/blake3.js
++++ b/esm/blake3.js
+@@ -28,7 +28,8 @@ const B3_Flags = {
+ };
+ const B3_IV = SHA256_IV.slice();
+ const B3_SIGMA = /* @__PURE__ */ (() => {
+-    const Id = Array.from({ length: 16 }, (_, i) => i);
++    const Id = new Array(16);
++    for (let i = 0; i < 16; i++) Id[i] = i;
+     const permute = (arr) => [2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8].map((i) => arr[i]);
+     const res = [];
+     for (let i = 0, v = Id; i < 7; i++, v = permute(v))
+diff --git a/esm/legacy.js b/esm/legacy.js
+index 7067dca1b3ad3bccedf7dd0e14212fd8c1efbb0b..4d19205f9944e914d2f8f53d029e874d41a5fc53 100644
+--- a/esm/legacy.js
++++ b/esm/legacy.js
+@@ -89,7 +89,11 @@ export class SHA1 extends HashMD {
+ export const sha1 = /* @__PURE__ */ createHasher(() => new SHA1());
+ /** Per-round constants */
+ const p32 = /* @__PURE__ */ Math.pow(2, 32);
+-const K = /* @__PURE__ */ Array.from({ length: 64 }, (_, i) => Math.floor(p32 * Math.abs(Math.sin(i + 1))));
++const K = /* @__PURE__ */ (() => {
++  const arr = new Array(64);
++  for (let i = 0; i < 64; i++) arr[i] = Math.floor(p32 * Math.abs(Math.sin(i + 1)));
++  return arr;
++})();
+ /** md5 initial state: same as sha1, but 4 u32 instead of 5. */
+ const MD5_IV = /* @__PURE__ */ SHA1_IV.slice(0, 4);
+ // Reusable temporary buffer
+diff --git a/esm/utils.js b/esm/utils.js
+index 9614c8e5754cc1e94e26a81e9517f20499696b4e..754e896ae1dbc262a27fdfaf626fb1e3831bc28b 100644
+--- a/esm/utils.js
++++ b/esm/utils.js
+@@ -104,7 +104,11 @@ const hasHexBuiltin = /* @__PURE__ */ (() =>
+ // @ts-ignore
+ typeof Uint8Array.from([]).toHex === 'function' && typeof Uint8Array.fromHex === 'function')();
+ // Array where index 0xf0 (240) is mapped to string 'f0'
+-const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
++const hexes = /* @__PURE__ */ (() => {
++  const arr = new Array(256);
++  for (let i = 0; i < 256; i++) arr[i] = i.toString(16).padStart(2, '0');
++  return arr;
++})();
+ /**
+  * Convert byte array to hex string. Uses built-in function, when available.
+  * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'
+diff --git a/legacy.js b/legacy.js
+index 2f8f9c631628a71dec625c9534d1eaf5c5b10b8c..09f20343abe6140ba71c9cc807fcf05e8cc59de7 100644
+--- a/legacy.js
++++ b/legacy.js
+@@ -93,7 +93,11 @@ exports.SHA1 = SHA1;
+ exports.sha1 = (0, utils_ts_1.createHasher)(() => new SHA1());
+ /** Per-round constants */
+ const p32 = /* @__PURE__ */ Math.pow(2, 32);
+-const K = /* @__PURE__ */ Array.from({ length: 64 }, (_, i) => Math.floor(p32 * Math.abs(Math.sin(i + 1))));
++const K = /* @__PURE__ */ (() => {
++  const arr = new Array(64);
++  for (let i = 0; i < 64; i++) arr[i] = Math.floor(p32 * Math.abs(Math.sin(i + 1)));
++  return arr;
++})();
+ /** md5 initial state: same as sha1, but 4 u32 instead of 5. */
+ const MD5_IV = /* @__PURE__ */ SHA1_IV.slice(0, 4);
+ // Reusable temporary buffer
+diff --git a/utils.js b/utils.js
+index aed9199852dc91ae3a1a149a64fe806bf697a3ab..b27492229a9e611fd5e47cca32475a82f4333ab1 100644
+--- a/utils.js
++++ b/utils.js
+@@ -134,7 +134,11 @@ const hasHexBuiltin = /* @__PURE__ */ (() =>
+ // @ts-ignore
+ typeof Uint8Array.from([]).toHex === 'function' && typeof Uint8Array.fromHex === 'function')();
+ // Array where index 0xf0 (240) is mapped to string 'f0'
+-const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
++const hexes = /* @__PURE__ */ (() => {
++  const arr = new Array(256);
++  for (let i = 0; i < 256; i++) arr[i] = i.toString(16).padStart(2, '0');
++  return arr;
++})();
+ /**
+  * Convert byte array to hex string. Uses built-in function, when available.
+  * @example bytesToHex(Uint8Array.from([0xca, 0xfe, 0x01, 0x23])) // 'cafe0123'

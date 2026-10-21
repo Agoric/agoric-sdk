@@ -1,4 +1,5 @@
 #!/bin/bash
+# @file build every proposal submission declared under a3p-integration/proposals
 set -ueo pipefail
 
 # Look in the "proposals" subdirectory of the working directory for
@@ -14,11 +15,17 @@ IFS=$'\n'
 
 for proposal in ./proposals/?:*; do
   echo >&2 "Building $proposal ..."
-  cd $proposal
-  while read -r line; do
-    IFS=' ' parts=($line)
-    "$SCRIPT_DIR"/build-submission.sh ${parts[@]}
-  done < <(jq -r '.agoricProposal["sdk-generate"][]?' < package.json)
-  cd -
+
+  # Copy local packages if specified in vendorPackages
+  "$SCRIPT_DIR"/copy-local-packages.sh "$proposal"
+
+  cd "$proposal"
+  if [[ -f package.json ]]; then
+    while read -r line; do
+      IFS=' ' parts=($line)
+      "$SCRIPT_DIR"/build-submission.sh "${parts[@]}"
+    done < <(jq -r '.agoricProposal["sdk-generate"][]?' < package.json)
+  fi
+  cd - > /dev/null
   echo >&2 "Built $proposal"
 done
