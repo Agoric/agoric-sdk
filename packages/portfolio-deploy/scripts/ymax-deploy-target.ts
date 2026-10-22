@@ -477,25 +477,29 @@ const provideArgsFiles = async (
     | 'logger'
   >,
 ) => {
+  // Fingerprint *before* injecting a `chainMetadata` default.
   const prefix = overridesAssetPrefix(target);
+  const discriminator = digestJson(overridesText);
+  const assetName = `${prefix}${discriminator}.json`;
+
+  // Prefer overrides from a compatible existing release asset.
   const { assets, url: releaseUrl } = await release.readOnly().get();
   const existingOverrides = assets
     .map(({ name }) => name)
     .filter(name => name.startsWith(prefix) && name.endsWith('.json'));
-
-  // No override given this run; prefer whatever's already on the release.
-  if (!isPrivateArgsSpecified(overridesText) && existingOverrides.length > 0) {
-    existingOverrides.length === 1 ||
-      Fail`multiple ${q(`${prefix}*.json`)} assets exist for ${b(target)} (${q(existingOverrides)}); remove the stale ones (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`;
-    const assetName = existingOverrides[0];
-    const assetFile = distDir.join(assetName);
-    await release.join(assetName).copyTo(assetFile);
-    return { assetName, file: assetFile.readOnly() };
+  existingOverrides.length <= 1 ||
+    Fail`multiple ${q(`${prefix}*.json`)} assets exist for ${b(target)} (${q(existingOverrides)}); remove the stale ones (e.g. \`gh release delete-asset\`)`;
+  if (existingOverrides.length > 0) {
+    const existingAssetName = existingOverrides[0];
+    !isPrivateArgsSpecified(overridesText) ||
+      assetName === existingAssetName ||
+      Fail`${q(assetName)} would be a new privateArgsOverrides release asset for ${b(target)}, but ${q(existingAssetName)} already exists on the release; remove it (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides`;
+    const assetFile = distDir.join(existingAssetName);
+    await release.join(existingAssetName).copyTo(assetFile);
+    return { assetName: existingAssetName, file: assetFile.readOnly() };
   }
 
-  // Fingerprint the overrides *before* supplementing them with a fresh
-  // `chainMetadata` default.
-  const discriminator = digestJson(overridesText);
+  // Inject a `chainMetadata` default from fresh YDS data.
   let overridesJson = overridesText;
   const overrides = overridesJson ? JSON.parse(overridesJson) : {};
   if (!overrides.chainMetadata) {
@@ -572,11 +576,7 @@ const provideArgsFiles = async (
   }
   await diffFile?.writeText(diffText);
 
-  const assetName = `${overridesAssetPrefix(target)}${discriminator}.json`;
-  const stale = existingOverrides.filter(name => name !== assetName);
-  stale.length === 0 ||
-    Fail`${q(assetName)} would be a new private-args-overrides asset for ${b(target)}, but ${q(stale)} already exists on the release; remove the stale asset(s) (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`;
-
+  // Attach the privateArgsOverrides release asset first, then the rest.
   const assetFile = distDir.join(assetName);
   await assetFile.writeText(canonicalizePrivateArgs(overridesJson));
   const asset = release.join(assetName);

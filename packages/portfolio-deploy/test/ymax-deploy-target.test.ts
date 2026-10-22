@@ -3242,7 +3242,7 @@ test('phase-upgrade-generate rejects a conflicting privateArgsOverrides asset in
     ),
     {
       message: new RegExp(
-        `^"ymax0-main-privateArgsOverrides-[0-9a-f]+[.]json" would be a new private-args-overrides asset for ymax0-main, but ${RegExpEscape(JSON.stringify([existingOverridesName]))} already exists`,
+        `^"ymax0-main-privateArgsOverrides-[0-9a-f]+[.]json" would be a new privateArgsOverrides release asset for ymax0-main, but ${RegExpEscape(JSON.stringify(existingOverridesName))} already exists`,
       ),
     },
   );
