@@ -22,6 +22,7 @@ import { toAminoMsg } from '../src/ymax-authz-msgs.ts';
 import {
   main,
   makeGraph,
+  normalizeSignedAuthInfo,
   validateUpgradePrecondition,
 } from '../scripts/ymax-deploy-target.ts';
 
@@ -29,6 +30,200 @@ const bundle = await bundleSource(
   new URL('./fixtures/ymax-fake-bundle-source.js', import.meta.url).pathname,
 );
 const bundleId = `b1-${bundle.endoZipBase64Sha512}`;
+
+test('multisig normalization checks the declared signer subset', t => {
+  const unsigned = {
+    signer_infos: [
+      {
+        public_key: {
+          '@type': '/cosmos.crypto.multisig.LegacyAminoPubKey',
+          threshold: 2,
+          public_keys: Array.from({ length: 3 }, () => ({})),
+        },
+        mode_info: { single: { mode: 'SIGN_MODE_DIRECT' } },
+        sequence: '34',
+      },
+    ],
+  };
+  const mode = { single: { mode: 'SIGN_MODE_LEGACY_AMINO_JSON' } };
+  const makeSigned = (multi: unknown) => ({
+    signer_infos: [{ ...unsigned.signer_infos[0], mode_info: { multi } }],
+  });
+  const multi = {
+    bitarray: { extra_bits_stored: 3, elems: 'oA==' }, // Members 0 and 2.
+    mode_infos: [mode, mode],
+  };
+  const signed = makeSigned(multi);
+  t.deepEqual(normalizeSignedAuthInfo(signed, unsigned), unsigned);
+  t.deepEqual(signed.signer_infos[0]!.mode_info, { multi });
+  t.deepEqual(
+    normalizeSignedAuthInfo(
+      makeSigned({
+        bitarray: { extra_bits_stored: 3, elems: '4A==' },
+        mode_infos: [mode, mode, mode],
+      }),
+      unsigned,
+    ),
+    unsigned,
+  );
+
+  for (const [memberCount, bitarray] of [
+    [8, { elems: 'pQ==' }],
+    [8, { extra_bits_stored: 8, elems: 'pQ==' }],
+    [10, { extraBitsStored: 2, elements: 'oMA=' }],
+    [16, { extra_bits_stored: 0, elems: 'gYQ=' }],
+  ] as const) {
+    const signer = unsigned.signer_infos[0]!;
+    const expandedSigner = {
+      ...signer,
+      public_key: {
+        ...signer.public_key,
+        public_keys: Array.from({ length: memberCount }, () => ({})),
+      },
+    };
+    t.deepEqual(
+      normalizeSignedAuthInfo(
+        {
+          signer_infos: [
+            {
+              ...expandedSigner,
+              mode_info: {
+                multi: { bitarray, mode_infos: [mode, mode, mode, mode] },
+              },
+            },
+          ],
+        },
+        { signer_infos: [expandedSigner] },
+      ),
+      { signer_infos: [expandedSigner] },
+    );
+  }
+
+  const invalid: [invalidSelection: unknown, expectedError: string | RegExp][] =
+    [
+      [{ ...multi, bitarray: undefined }, /signer_infos\[0\].*bitarray/],
+      [
+        { ...multi, bitarray: { extra_bits_stored: 2, elems: 'oA==' } },
+        'bitarray length 2 does not match 3 public key members (1 bytes, extra=2 from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)',
+      ],
+      [
+        { ...multi, bitarray: { extra_bits_stored: 9, elems: 'oA==' } },
+        '(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be between 0 and 8; got 9',
+      ],
+      [
+        {
+          ...multi,
+          bitarray: {
+            extra_bits_stored: Number.MAX_SAFE_INTEGER + 1,
+            elems: 'oA==',
+          },
+        },
+        '(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be a safe integer; got 9007199254740992',
+      ],
+      [
+        { ...multi, bitarray: { extra_bits_stored: 3, elems: null } },
+        /signer_infos\[0\].*bitarray/,
+      ],
+      [
+        { ...multi, bitarray: { extra_bits_stored: 3, elems: '' } },
+        '(bitarray.elems ?? bitarray.elements) decodes to no bytes',
+      ],
+      [
+        { ...multi, bitarray: { extra_bits_stored: 3, elems: 'oA==AA==' } },
+        '(bitarray.elems ?? bitarray.elements) is not canonical base64',
+      ],
+      [
+        { ...multi, bitarray: { extra_bits_stored: 3, elems: 'oQ==' } },
+        'bitarray has nonzero unused padding bits in its final byte (0xa1, extra=3 from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)',
+      ],
+      [
+        {
+          ...multi,
+          bitarray: { extra_bits_stored: 3, elems: 'gA==' },
+          mode_infos: [mode],
+        },
+        'bitarray selects 1 members, fewer than threshold 2',
+      ],
+      [{ ...multi, mode_infos: undefined }, /signer_infos\[0\].*mode_infos/],
+      [
+        { ...multi, mode_infos: [mode] },
+        'bitarray selects 2 members but mode_infos contains 1 entries',
+      ],
+      [
+        { ...multi, mode_infos: [mode, mode, mode] },
+        'bitarray selects 2 members but mode_infos contains 3 entries',
+      ],
+      [
+        { ...multi, mode_infos: [] },
+        'bitarray selects 2 members but mode_infos contains 0 entries',
+      ],
+      [
+        {
+          ...multi,
+          mode_infos: [mode, { single: { mode: 'SIGN_MODE_DIRECT' } }],
+        },
+        /signer_infos\[0\].*mode_infos.*1.*single.*mode.*SIGN_MODE_LEGACY_AMINO_JSON/,
+      ],
+      [
+        { ...multi, mode_infos: [mode, {}] },
+        /signer_infos\[0\].*mode_infos.*1.*single/,
+      ],
+      [
+        { ...multi, mode_infos: [mode, { single: null }] },
+        /signer_infos\[0\].*mode_infos.*1.*single/,
+      ],
+      [
+        { ...multi, mode_infos: [mode, null] },
+        /signer_infos\[0\].*mode_infos.*1/,
+      ],
+      [
+        { ...multi, mode_infos: [mode, { multi: {} }] },
+        /signer_infos\[0\].*mode_infos.*1.*single/,
+      ],
+      [
+        { ...multi, mode_infos: [mode, { ...mode, multi: {} }] },
+        'mode_infos[1] contains an unsupported nested multisig',
+      ],
+    ];
+  const errorPrefix = 'signer_infos[0]: invalid multisig signer selection: ';
+  for (const [selection, detail] of invalid) {
+    t.throws(() => normalizeSignedAuthInfo(makeSigned(selection), unsigned), {
+      message: typeof detail === 'string' ? `${errorPrefix}${detail}` : detail,
+    });
+  }
+  for (const [publicKeyOverrides, detail] of [
+    [{ public_keys: undefined }, /signer_infos\[0\].*public_key.*public_keys/],
+    [
+      { threshold: Number.MAX_SAFE_INTEGER + 1 },
+      'Number(public_key.threshold) must be a safe integer; got 9007199254740992 from 9007199254740992',
+    ],
+    [
+      { threshold: 'invalid' },
+      'Number(public_key.threshold) must be a safe integer; got NaN from invalid',
+    ],
+    [
+      { threshold: 0 },
+      'Number(public_key.threshold) must be between 1 and 3 members; got 0',
+    ],
+    [
+      { threshold: 4 },
+      'Number(public_key.threshold) must be between 1 and 3 members; got 4',
+    ],
+  ] as const) {
+    const signer = unsigned.signer_infos[0]!;
+    const invalidUnsigned = {
+      signer_infos: [
+        {
+          ...signer,
+          public_key: { ...signer.public_key, ...publicKeyOverrides },
+        },
+      ],
+    };
+    t.throws(() => normalizeSignedAuthInfo(signed, invalidUnsigned), {
+      message: typeof detail === 'string' ? `${errorPrefix}${detail}` : detail,
+    });
+  }
+});
 
 test('policy prerequisite checks are enforced', t => {
   const e = new Set<string>();
