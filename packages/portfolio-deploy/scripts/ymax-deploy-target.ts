@@ -22,7 +22,8 @@ import type {
 import { pubkeyToAddress } from '@cosmjs/amino';
 import { decodePubkey } from '@cosmjs/proto-signing';
 import { StargateClient } from '@cosmjs/stargate';
-import { Fail } from '@endo/errors';
+import { assert as endoAssert, Fail } from '@endo/errors';
+import { M, mustMatch } from '@endo/patterns';
 import { execa } from 'execa';
 import fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
@@ -1616,7 +1617,133 @@ const findSignedTx = async (
   };
 };
 
-const normalizeSignedAuthInfo = (
+const multisigModeShape = M.splitRecord({
+  bitarray: M.and(
+    M.splitRecord(
+      {},
+      { extra_bits_stored: M.number(), extraBitsStored: M.number() },
+    ),
+    M.or(
+      M.splitRecord({ elems: M.string() }),
+      M.splitRecord({ elements: M.string() }),
+    ),
+  ),
+  mode_infos: M.arrayOf(
+    M.splitRecord({
+      single: M.splitRecord({ mode: 'SIGN_MODE_LEGACY_AMINO_JSON' }),
+    }),
+  ),
+});
+
+const multisigPublicKeyShape = M.splitRecord({
+  threshold: M.or(M.string(), M.number()),
+  public_keys: M.array(),
+});
+
+/* eslint-disable no-bitwise -- Count set bits in bytes. */
+const popcount = (bytes: Uint8Array): number => {
+  let count = 0;
+  for (let byte of bytes) {
+    while (byte !== 0) {
+      byte &= byte - 1;
+      count += 1;
+    }
+  }
+  return count;
+};
+/* eslint-enable no-bitwise */
+
+/**
+ * Validate signer selection using the bit length and final-byte layout of the
+ * {@link https://github.com/agoric-labs/cosmos-sdk/tree/Agoric/crypto/types/compact_bit_array.go | Cosmos SDK compact bitarray implementation}.
+ */
+const checkMultisigSelection = (
+  multi: any,
+  publicKey: any,
+  signerIndex: number,
+) => {
+  const fail = (detail: string): never =>
+    endoAssert.fail(
+      `signer_infos[${signerIndex}]: invalid multisig signer selection: ${detail}`,
+    );
+  mustMatch(
+    harden(publicKey),
+    multisigPublicKeyShape,
+    `signer_infos[${signerIndex}].public_key`,
+  );
+  mustMatch(
+    harden(multi),
+    multisigModeShape,
+    `signer_infos[${signerIndex}].mode_info.multi`,
+  );
+  const { bitarray, mode_infos: modeInfos } = multi;
+  const members = publicKey.public_keys;
+  const threshold = Number(publicKey.threshold);
+  if (!Number.isSafeInteger(threshold)) {
+    return fail(
+      `Number(public_key.threshold) must be a safe integer; got ${threshold} from ${String(publicKey.threshold)}`,
+    );
+  }
+  if (threshold < 1 || threshold > members.length) {
+    return fail(
+      `Number(public_key.threshold) must be between 1 and ${members.length} members; got ${threshold}`,
+    );
+  }
+  const encoded = bitarray.elems ?? bitarray.elements;
+  const extra = bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0;
+  if (!Number.isSafeInteger(extra)) {
+    return fail(
+      `(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be a safe integer; got ${String(extra)}`,
+    );
+  }
+  if (extra < 0 || extra > 8) {
+    return fail(
+      `(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be between 0 and 8; got ${extra}`,
+    );
+  }
+  const bytes = Buffer.from(encoded, 'base64');
+  const bitLength =
+    extra === 0 ? bytes.length * 8 : (bytes.length - 1) * 8 + extra;
+  if (bytes.length === 0) {
+    return fail('(bitarray.elems ?? bitarray.elements) decodes to no bytes');
+  }
+  if (bytes.toString('base64') !== encoded) {
+    return fail(
+      '(bitarray.elems ?? bitarray.elements) is not canonical base64',
+    );
+  }
+  if (bitLength !== members.length) {
+    return fail(
+      `bitarray length ${bitLength} does not match ${members.length} public key members (${bytes.length} bytes, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`,
+    );
+  }
+  // Canonical base64 does not constrain unused bits within the decoded byte.
+  if (extra > 0 && bytes.at(-1)! % 2 ** (8 - extra) !== 0) {
+    return fail(
+      `bitarray has nonzero unused padding bits in its final byte (0x${bytes.at(-1)!.toString(16).padStart(2, '0')}, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`,
+    );
+  }
+  const selected = popcount(bytes);
+  if (selected < threshold) {
+    return fail(
+      `bitarray selects ${selected} members, fewer than threshold ${threshold}`,
+    );
+  }
+  if (selected !== modeInfos.length) {
+    return fail(
+      `bitarray selects ${selected} members but mode_infos contains ${modeInfos.length} entries`,
+    );
+  }
+  for (const [index, modeInfo] of modeInfos.entries()) {
+    if (modeInfo?.multi) {
+      return fail(
+        `mode_infos[${index}] contains an unsupported nested multisig`,
+      );
+    }
+  }
+};
+
+export const normalizeSignedAuthInfo = (
   signedAuthInfo: any,
   unsignedAuthInfo: any,
 ) => {
@@ -1631,14 +1758,9 @@ const normalizeSignedAuthInfo = (
     if (
       unsignedPublicKey?.['@type'] === LegacyAminoPubKey.typeUrl &&
       unsignedModeInfo?.single?.mode === 'SIGN_MODE_DIRECT' &&
-      signedModeInfo?.multi?.bitarray &&
-      signedModeInfo.multi.mode_infos?.length ===
-        unsignedPublicKey.public_keys?.length &&
-      signedModeInfo.multi.mode_infos.every(
-        (modeInfo: any) =>
-          modeInfo?.single?.mode === 'SIGN_MODE_LEGACY_AMINO_JSON',
-      )
+      signedModeInfo?.multi
     ) {
+      checkMultisigSelection(signedModeInfo.multi, unsignedPublicKey, index);
       signerInfo.mode_info = unsignedModeInfo;
     }
     if (
