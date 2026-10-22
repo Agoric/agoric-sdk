@@ -589,10 +589,7 @@ test.serial('Presley completes the delegated mandate journey', async t => {
     value => value?.state === 'fail',
     'delegated plan exceeding maximum vault share did not fail',
   );
-  t.regex(
-    failedFlow.error,
-    /mandate\.maxVaultShare:"Compound_Base"/,
-  );
+  t.regex(failedFlow.error, /mandate\.maxVaultShare:"Compound_Base"/);
 
   await presley.revoke(presleyAgent.id);
   await reader.waitForAgents(
