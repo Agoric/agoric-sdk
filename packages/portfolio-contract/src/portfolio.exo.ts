@@ -383,6 +383,12 @@ const makeFlowsRunningRecord = (
   return harden(fromEntries(statusEntries));
 };
 
+/** Reject overlap before reserving a flow or changing its initiating policy. */
+const insistNoRunningFlows = (state: PortfolioKitState) => {
+  state.flowsRunning.getSize() === 0 ||
+    Fail`portfolio already has a running flow`;
+};
+
 const assertExternalDelegationTarget = (
   state: PortfolioKitState,
   agentId: number,
@@ -1289,11 +1295,13 @@ export const preparePortfolioKit = (
           }
         },
         /**
-         * Start a flow of asset movements. Reserves a flowId and records updates vstorage.
+         * Start a flow of asset movements (unless one is already running).
+         * If not rejected, reserves a flowId and publishes the new status.
          *
          * NB: `flowId` is a counter, not the key in vstorage.
          */
         startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
+          insistNoRunningFlows(this.state);
           const {
             nextFlowId: flowId,
             flowsRunning,
@@ -1838,6 +1846,9 @@ export const preparePortfolioKit = (
 
           !depositDetails || Fail`rebalance does not yet support deposit`;
 
+          // Verify state before setTargetAllocation can change it.
+          insistNoRunningFlows(this.state);
+
           let initiatingOperation:
             | SetTargetAllocationInitiatingOperation
             | undefined;
@@ -2070,6 +2081,10 @@ export const preparePortfolioKit = (
           // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           const { manager } = this.facets;
+
+          // Verify state before setTargetAllocation can change it.
+          insistNoRunningFlows(this.state);
+
           let initiatingOperation:
             | SetTargetAllocationInitiatingOperation
             | undefined;
