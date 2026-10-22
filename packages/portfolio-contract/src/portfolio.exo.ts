@@ -1056,10 +1056,10 @@ export const preparePortfolioKit = (
             detail.type !== 'rebalance' ||
             initiatingOperation?.type !== 'setTargetAllocation'
           ) {
-            throw Fail`flow ${q(`flow${flowId}`)} has no pending setTargetAllocation operation`;
+            throw Fail`${q(`flow${flowId}`)} has no pending setTargetAllocation operation`;
           }
           if (initiatingOperation.status !== 'pending') {
-            throw Fail`flow ${q(`flow${flowId}`)} setTargetAllocation operation is not pending`;
+            throw Fail`${q(`flow${flowId}`)} setTargetAllocation operation is not pending`;
           }
           flowsRunning.set(
             flowId,
@@ -1080,7 +1080,7 @@ export const preparePortfolioKit = (
           const detail = flowsRunning.get(flowId);
           const { resolver, ...sync } = detail.sync;
           if (!resolver) {
-            throw Fail`flow ${q(`flow${flowId}`)} has already been resolved`;
+            throw Fail`${q(`flow${flowId}`)} has already been resolved`;
           }
           try {
             vetFlowPlanPlaces(
