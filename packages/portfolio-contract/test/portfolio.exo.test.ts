@@ -1188,7 +1188,7 @@ test('rejected external lifecycle changes do not advance policyVersion', async t
 
   await assertRejectedWithoutPolicyChange(
     () => vowTools.when(evmHandler.changePermissions(99, { allocation: true })),
-    /no delegation found for agent 99/,
+    /no delegation found for "agent99"/,
   );
 
   await manager.setAutoFeatures({ rebalance: true });
@@ -1207,7 +1207,7 @@ test('rejected external lifecycle changes do not advance policyVersion', async t
       vowTools.when(
         evmHandler.changePermissions(granted.agentId, { allocation: true }),
       ),
-    /delegation agent 1 cannot be changed or revoked while .*revoked/,
+    /delegation "agent1" cannot be changed or revoked while .*revoked/,
   );
 });
 
@@ -1351,7 +1351,7 @@ test('allocation delegation cannot use rebalance', async t => {
       client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
     {
       message:
-        /delegation agent 1 does not have required permission "rebalance"/,
+        /delegation "agent1" does not have required permission "rebalance"/,
     },
   );
   t.is(getCallLog().length, 1, 'rebalance denial does not start a flow');
@@ -1400,7 +1400,7 @@ test('revoked delegation client is no longer usable', async t => {
         syncState: { policyVersion: 1, rebalanceCount: 0 },
       }),
     {
-      message: /delegation client is not active for agent 1/,
+      message: /delegation client is not active for "agent1"/,
     },
   );
 });
@@ -1478,7 +1478,7 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
       client.rebalance({ syncState: { policyVersion: 1, rebalanceCount: 0 } }),
     {
       message:
-        /delegation agent 1 does not have required permission "rebalance"/,
+        /delegation "agent1" does not have required permission "rebalance"/,
     },
   );
 

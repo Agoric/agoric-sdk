@@ -413,7 +413,7 @@ test('owner-signed grant, full replacement, revoke, and re-grant govern the rede
       },
       syncState: getSyncState(beforeRevoke),
     }),
-    { message: /delegation client is not active for agent "?1/ },
+    { message: /delegation client is not active for "agent1"/ },
   );
 
   const agentsAfterRevoke = await peteKit.readPublished(
@@ -1547,7 +1547,7 @@ test('delegated plans: an unauthorized client causes no verification', async t =
         privateKeyToAccount(evmTrader0PrivateKey),
       ),
     }),
-    { message: /delegation client is not active for agent "?1/ },
+    { message: /delegation client is not active for "agent1"/ },
   );
 });
 

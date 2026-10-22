@@ -389,15 +389,15 @@ const assertExternalDelegationTarget = (
 ) => {
   const { delegations, plannerAgentId } = state;
   delegations?.has(agentId) ||
-    Fail`no delegation found for agent ${q(agentId)}`;
+    Fail`no delegation found for ${q(`agent${agentId}`)}`;
   const delegation = delegations!.get(agentId);
   agentId !== plannerAgentId ||
     Fail`planner delegation cannot be changed or revoked externally`;
   delegation.grantee !== PortfolioPlannerAgent ||
     delegation.state === 'revoked' ||
-    Fail`active planner delegation agent ${q(agentId)} is not current`;
+    Fail`active planner delegation ${q(`agent${agentId}`)} is not current`;
   delegation.state === 'active' ||
-    Fail`delegation agent ${q(agentId)} cannot be changed or revoked while ${q(delegation.state)}`;
+    Fail`delegation ${q(`agent${agentId}`)} cannot be changed or revoked while ${q(delegation.state)}`;
 };
 
 export type PublishStatusFn = <K extends keyof StatusFor>(
@@ -685,15 +685,15 @@ export const preparePortfolioKit = (
           }
           const status = delegations.get(agentId);
           status.activeClient === client ||
-            Fail`delegation client is not active for agent ${q(agentId)}`;
+            Fail`delegation client is not active for ${q(`agent${agentId}`)}`;
           status.state === 'active' ||
-            Fail`delegation agent ${q(agentId)} is not active; current state is ${q(status.state)}`;
+            Fail`delegation ${q(`agent${agentId}`)} is not active; current state is ${q(status.state)}`;
 
           for (const permission of Object.keys(
             required,
           ) as (keyof PortfolioPermissions)[]) {
             status.permissions[permission] ||
-              Fail`delegation agent ${q(agentId)} does not have required permission ${q(permission)}`;
+              Fail`delegation ${q(`agent${agentId}`)} does not have required permission ${q(permission)}`;
           }
           return status;
         },
@@ -1056,10 +1056,10 @@ export const preparePortfolioKit = (
             detail.type !== 'rebalance' ||
             initiatingOperation?.type !== 'setTargetAllocation'
           ) {
-            throw Fail`flow ${q(flowId)} has no pending setTargetAllocation operation`;
+            throw Fail`flow ${q(`flow${flowId}`)} has no pending setTargetAllocation operation`;
           }
           if (initiatingOperation.status !== 'pending') {
-            throw Fail`flow ${q(flowId)} setTargetAllocation operation is not pending`;
+            throw Fail`flow ${q(`flow${flowId}`)} setTargetAllocation operation is not pending`;
           }
           flowsRunning.set(
             flowId,
@@ -1080,7 +1080,7 @@ export const preparePortfolioKit = (
           const detail = flowsRunning.get(flowId);
           const { resolver, ...sync } = detail.sync;
           if (!resolver) {
-            throw Fail`flow ${q(flowId)} has already been resolved`;
+            throw Fail`flow ${q(`flow${flowId}`)} has already been resolved`;
           }
           try {
             vetFlowPlanPlaces(
@@ -1453,10 +1453,10 @@ export const preparePortfolioKit = (
         ): PortfolioDelegationLifecycleResult {
           const { delegations, portfolioId } = this.state;
           delegations?.has(agentId) ||
-            Fail`no delegation found for agent ${q(agentId)}`;
+            Fail`no delegation found for ${q(`agent${agentId}`)}`;
           const delegation = delegations!.get(agentId);
           delegation.state === 'active' ||
-            Fail`delegation agent ${q(agentId)} is ${q(delegation.state)}`;
+            Fail`delegation ${q(`agent${agentId}`)} is ${q(delegation.state)}`;
 
           const updatedAtPolicyVersion =
             this.facets.manager.bumpPolicyVersion();
@@ -1482,7 +1482,7 @@ export const preparePortfolioKit = (
           }
           const delegation = delegations.get(agentId);
           if (!delegation) {
-            throw Fail`no delegation found for agent ${q(agentId)}`;
+            throw Fail`no delegation found for ${q(`agent${agentId}`)}`;
           }
           // A revoke is always a policy change.
           const updatedAtPolicyVersion =
