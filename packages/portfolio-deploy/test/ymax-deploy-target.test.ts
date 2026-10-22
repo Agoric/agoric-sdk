@@ -942,12 +942,12 @@ const makeScenario = (
           )
       : value;
   const fetchFn = async (url: string) => {
-    const urlObj = new URL(url);
-    if (urlObj.hostname.includes('ymax.app')) {
-      if (urlObj.pathname === '/instruments') {
+    const parsed = new URL(url);
+    if (parsed.hostname.match(/(^|\.)ymax\.app$/)) {
+      if (parsed.pathname === '/instruments') {
         const data = Object.values(mockYdsInstruments).slice(0, 1);
         return jsonRes({ data, count: data.length });
-      } else if (urlObj.pathname === '/reward-token-rates') {
+      } else if (parsed.pathname === '/reward-token-rates') {
         return jsonRes({ data: [] });
       }
       throw Error(`unexpected YDS fetch url: ${url}`);
@@ -3000,58 +3000,185 @@ const makeAuthzGenerateChainMocks = (
   return { connectRpc, makeWalletKit };
 };
 
-test('phase-upgrade-generate reuses an existing privateArgsOverrides asset when privateArgs is blank', async t => {
+// Exercise the direct detached-signing path so assertions inspect the actual
+// privateArgsOverrides encoded for the contract, as well as the release asset.
+const makeChainMetadataScenario = () => {
   const ctx = makeScenario();
+  const target = 'ymax0-main' as const;
   const releaseTag = happyPathReleaseTag;
-
-  const existingOverridesName = expectedOverridesAssetName(
-    'ymax0-main',
-    '{"oracle":"value-a"}',
-  );
+  const unsignedTxName = `${target}-unsigned-tx.json`;
   seedRelease(ctx.releases, releaseTag, {
     'bundle-ymax0.json': jsonText(examples.bundle),
     'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
     'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
     'ymax0-main-install.json': jsonText(examples.install.main0),
-    // A prior attempt materialized overrides but never got as far as the
-    // unsigned tx (so there's no upgrade/pending record yet to pin the
-    // path via validateExpectedOverridesAsset).
-    [existingOverridesName]: canonicalizePrivateArgs('{"oracle":"value-a"}'),
   });
-
+  const assets = ctx.releases.get(releaseTag)!.assets;
+  const ydsRequests: string[] = [];
+  let ydsUnavailable = false;
+  let ydsRewardTokenRates: unknown;
+  const fetchFn = async (url: string) => {
+    const parsed = new URL(url);
+    if (parsed.hostname.match(/(^|\.)ymax\.app$/)) {
+      ydsRequests.push(url);
+      if (ydsUnavailable) throw Error('YDS unavailable');
+      if (parsed.pathname === '/reward-token-rates' && ydsRewardTokenRates) {
+        return jsonRes({ data: ydsRewardTokenRates });
+      }
+    }
+    return ctx.fetchFn(url);
+  };
   const { connectRpc, makeWalletKit } = makeAuthzGenerateChainMocks();
-
-  await runPhase(
-    {
-      agoricSdk: ctx.agoricSdk,
-      execFile: ctx.execFile,
-      fetchFn: ctx.fetchFn,
-      connectRpc,
-      makeWalletKit,
-      stdout: ctx.stdout,
+  return {
+    ...ctx,
+    assets,
+    target,
+    ydsRequests,
+    setYdsUnavailable: () => {
+      ydsUnavailable = true;
     },
-    'phase-upgrade-generate',
-    { target: 'ymax0-main', tag: releaseTag },
-    {
-      ...ctx.env,
-      MNEMONIC: undefined,
-      GRANTEE: 'agoric1operator0000000000000000000000000000000',
-      // A workflow_dispatch optional string input left blank arrives as
-      // '', not undefined.
-      PRIVATE_ARGS_OVERRIDES: '',
+    changeYds: () => {
+      ydsRewardTokenRates = [
+        {
+          evmChainId: 42161,
+          sourceDenom: 'MORPHO',
+          sourceToken: '0x1111111111111111111111111111111111111111',
+          targetDenom: 'USDC',
+          targetToken: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+        },
+      ];
     },
+    // Model a retry after overrides were uploaded but before an unsigned tx
+    // was retained. Otherwise findUnsignedTx would bypass args generation.
+    discardUnsignedTx: () => {
+      assets.delete(unsignedTxName);
+    },
+    generate: (privateArgsOverrides: string | undefined) =>
+      runPhase(
+        { ...ctx, connectRpc, makeWalletKit, fetchFn },
+        'phase-upgrade-generate',
+        { target, tag: releaseTag },
+        {
+          ...ctx.env,
+          MNEMONIC: undefined,
+          GRANTEE: undefined,
+          PRIVATE_ARGS_OVERRIDES: privateArgsOverrides,
+        },
+      ),
+    readTxOverrides: () => {
+      const tx = JSON.parse(assets.get(unsignedTxName)!);
+      const capData = JSON.parse(tx.body.messages[0].spend_action);
+      const invocation = JSON.parse(capData.body.slice(1));
+      return invocation.message.args[0].privateArgsOverrides;
+    },
+  };
+};
+
+for (const chainMetadata of [
+  {},
+  { Arbitrum: { caipChainId: 'eip155:42161' } },
+]) {
+  test(`chainMetadata: explicit ${JSON.stringify(chainMetadata)} wins without YDS`, async t => {
+    const ctx = makeChainMetadataScenario();
+    ctx.setYdsUnavailable();
+    const overrides = JSON.stringify({ oracle: 'value-a', chainMetadata });
+    await ctx.generate(overrides);
+
+    const assetName = expectedOverridesAssetName(ctx.target, overrides);
+    t.deepEqual(JSON.parse(ctx.assets.get(assetName)!), {
+      oracle: 'value-a',
+      chainMetadata,
+    });
+    t.deepEqual(ctx.readTxOverrides(), {
+      oracle: 'value-a',
+      chainMetadata,
+      postalServiceInstance: 'board0371',
+    });
+    t.deepEqual(ctx.ydsRequests, []);
+  });
+}
+
+test('chainMetadata: blank retry preserves recorded metadata without YDS', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.generate(overrides);
+  const assetName = expectedOverridesAssetName(ctx.target, overrides);
+  const recordedText = ctx.assets.get(assetName)!;
+  const recordedOverrides = JSON.parse(recordedText);
+  t.truthy(recordedOverrides.chainMetadata.Arbitrum);
+  const firstTxOverrides = ctx.readTxOverrides();
+
+  ctx.discardUnsignedTx();
+  ctx.ydsRequests.length = 0;
+  ctx.setYdsUnavailable();
+  await ctx.generate('');
+
+  t.deepEqual(ctx.ydsRequests, []);
+  t.is(ctx.assets.get(assetName), recordedText);
+  t.deepEqual(ctx.readTxOverrides(), firstTxOverrides);
+  t.deepEqual(
+    [...ctx.assets.keys()].filter(name =>
+      name.startsWith(`${ctx.target}-privateArgsOverrides-`),
+    ),
+    [assetName],
+  );
+});
+
+test('chainMetadata: asset identity excludes generated defaults', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.generate(overrides);
+
+  const expectedName = expectedOverridesAssetName(ctx.target, overrides);
+  t.deepEqual(
+    [...ctx.assets.keys()].filter(name =>
+      name.startsWith(`${ctx.target}-privateArgsOverrides-`),
+    ),
+    [expectedName],
+  );
+  const resolved = JSON.parse(ctx.assets.get(expectedName)!);
+  t.like(resolved, {
+    oracle: 'value-a',
+    chainMetadata: { Arbitrum: { caipChainId: 'eip155:42161' } },
+  });
+  t.true(ctx.ydsRequests.some(url => new URL(url).pathname === '/instruments'));
+  t.not(
+    expectedName,
+    expectedOverridesAssetName(ctx.target, JSON.stringify(resolved)),
+    'privateArgsOverrides discriminator does not consider injected defaults',
+  );
+  t.deepEqual(ctx.readTxOverrides(), {
+    ...resolved,
+    postalServiceInstance: 'board0371',
+  });
+});
+
+test('chainMetadata: explicit-input retry keeps recorded and transaction metadata consistent when YDS changes', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.generate(overrides);
+  const assetName = expectedOverridesAssetName(ctx.target, overrides);
+  const recordedText = ctx.assets.get(assetName)!;
+  const firstTxOverrides = ctx.readTxOverrides();
+
+  // Verify that replacing YDS responses has an effect.
+  const fresh = makeChainMetadataScenario();
+  fresh.changeYds();
+  await fresh.generate(overrides);
+  t.notDeepEqual(
+    fresh.readTxOverrides().chainMetadata,
+    firstTxOverrides.chainMetadata,
+    'resolved overrides are derived from current YDS data',
   );
 
-  const assets = ctx.releases.get(releaseTag)?.assets;
-  const overridesNames = [...(assets?.keys() ?? [])].filter(name =>
-    name.startsWith('ymax0-main-privateArgsOverrides-'),
-  );
-  t.deepEqual(overridesNames, [existingOverridesName]);
-  t.is(
-    assets?.get(existingOverridesName),
-    canonicalizePrivateArgs('{"oracle":"value-a"}'),
-  );
-  t.truthy(assets?.get('ymax0-main-authz-unsigned-tx.json'));
+  ctx.discardUnsignedTx();
+  ctx.changeYds();
+  await ctx.generate(overrides);
+
+  t.is(ctx.assets.get(assetName), recordedText);
+  t.deepEqual(ctx.readTxOverrides(), firstTxOverrides);
+  const localPath = `${ctx.repoRoot}/packages/portfolio-deploy/dist/${assetName}`;
+  t.deepEqual(JSON.parse(ctx.files.get(localPath)!), JSON.parse(recordedText));
 });
 
 test('phase-upgrade-generate rejects a conflicting privateArgsOverrides asset instead of adding a second one', async t => {
@@ -3694,12 +3821,12 @@ test.serial(
       'In "upgrade" method of (ContractControl): arg 0: (an object) - Must match one of (a string)';
     const messageId = `upgrade.${examples.upgrade.main0.upgradeBlockTime}`;
     const fetchFn = async (url: string) => {
-      const urlObj = new URL(url);
-      if (urlObj.hostname.includes('ymax.app')) {
-        if (urlObj.pathname === '/instruments') {
+      const parsed = new URL(url);
+      if (parsed.hostname.match(/(^|\.)ymax\.app$/)) {
+        if (parsed.pathname === '/instruments') {
           const data = Object.values(ydsInstruments).slice(0, 1);
           return jsonRes({ data, count: data.length });
-        } else if (urlObj.pathname === '/reward-token-rates') {
+        } else if (parsed.pathname === '/reward-token-rates') {
           return jsonRes({ data: [] });
         }
         throw Error(`unexpected YDS fetch url: ${url}`);
