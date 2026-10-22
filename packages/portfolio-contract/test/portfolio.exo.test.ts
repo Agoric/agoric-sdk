@@ -1761,7 +1761,7 @@ for (const activeType of [
   'rebalance',
   'withdraw',
 ] as const) {
-  test.failing(`startFlow rejects overlap with ${activeType} until finishFlow`, async t => {
+  test(`startFlow rejects overlap with ${activeType} until finishFlow`, async t => {
     const storage = makeFakeStorageKit('published', { sequence: true });
     const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
       storage,
@@ -1816,7 +1816,7 @@ for (const activeType of [
   });
 }
 
-test.failing('delegated requests reject an active claimRewards flow with matching sync state', async t => {
+test('delegated requests reject an active claimRewards flow with matching sync state', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
   const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
     storage,
@@ -1882,7 +1882,7 @@ test.failing('delegated requests reject an active claimRewards flow with matchin
   );
 });
 
-test.failing('overlapping owner rebalances preserve policy and target allocation', async t => {
+test('overlapping owner rebalances preserve policy and target allocation', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
   const { makePortfolioKit, getPortfolioStatus, getCallLog } = makeTestSetup({
     storage,

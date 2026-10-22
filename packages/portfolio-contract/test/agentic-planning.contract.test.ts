@@ -505,7 +505,7 @@ test('delegated plan commits allocation after observation checks', async t => {
   );
 });
 
-test.failing('valid attested plan is rejected while the opening flow is active', async t => {
+test('valid attested plan is rejected while the opening flow is active', async t => {
   const { walletFactory, trader, portfolioRead, mcpPowers, cancelOpening } =
     await setupTest(t);
   const mcp = makeMcp(
