@@ -31,7 +31,7 @@ import {
 import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
-import type { StatusFor } from '../src/type-guards.ts';
+import type { FlowDetail, StatusFor } from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 import { contractsMock } from './mocks.ts';
@@ -1665,7 +1665,7 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
   const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
     storage,
   });
-  const { manager, planner } = makePortfolioKit({ portfolioId: 1 });
+  const { manager, planner, reporter } = makePortfolioKit({ portfolioId: 1 });
 
   const amount = { brand: USDC, value: 100n };
   const steps = [{ src: '@agoric' as const, dest: '@noble' as const, amount }];
@@ -1695,6 +1695,8 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
     );
   }
 
+  reporter.finishFlow(flowId);
+
   // Flow started with pre-resolved steps: awaitingSteps is false immediately
   const { flowId: flowId2 } = manager.startFlow(
     { type: 'withdraw', amount },
@@ -1709,6 +1711,8 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
       'awaitingSteps is false immediately when steps are provided at startFlow',
     );
   }
+
+  reporter.finishFlow(flowId2);
 
   // rejectFlowPlan also publishes status immediately
   const { flowId: flowId3, stepsP } = manager.startFlow({
@@ -1749,4 +1753,158 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
   }
 
   await t.throwsAsync(vowTools.when(stepsP), { message: 'insufficient funds' });
+});
+
+for (const activeType of [
+  'deposit',
+  'claimRewards',
+  'rebalance',
+  'withdraw',
+] as const) {
+  test.failing(`startFlow rejects overlap with ${activeType} until finishFlow`, async t => {
+    const storage = makeFakeStorageKit('published', { sequence: true });
+    const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
+      storage,
+    });
+    const { manager, planner, reporter } = makePortfolioKit({ portfolioId: 1 });
+    const amount = harden({ brand: USDC, value: 100n });
+    const details: FlowDetail[] = [
+      { type: 'deposit', amount },
+      { type: 'claimRewards' },
+      { type: 'rebalance' },
+      { type: 'withdraw', amount },
+    ];
+    const activeDetail = details.find(detail => detail.type === activeType)!;
+    const { flowId, stepsP } = manager.startFlow(activeDetail);
+    t.is(flowId, 1);
+
+    // The flow must already exclude others, even before publication completes.
+    const assertNoFlowCanStart = (when: string) => {
+      for (const detail of details) {
+        t.throws(
+          () => manager.startFlow(detail, []),
+          { message: 'portfolio already has a running flow' },
+          `new ${detail.type} flow (${when})`,
+        );
+      }
+    };
+    assertNoFlowCanStart('after first startFlow');
+
+    const before = await getPortfolioStatus!(1);
+    t.deepEqual(Object.keys(before.flowsRunning!), [`flow${flowId}`]);
+    t.is(before.flowCount, 1);
+
+    // Resolving or rejecting a plan does not finish its execution.
+    if (activeType === 'claimRewards') {
+      planner.rejectFlowPlan(flowId, 'synthetic rejection');
+      await t.throwsAsync(vowTools.when(stepsP), {
+        message: 'synthetic rejection',
+      });
+    } else {
+      planner.resolveFlowPlan(flowId, []);
+      await vowTools.when(stepsP);
+    }
+    assertNoFlowCanStart('after first startFlow stepsP settlement');
+
+    reporter.finishFlow(flowId);
+    t.deepEqual((await getPortfolioStatus!(1)).flowsRunning, {});
+    t.is(
+      manager.startFlow({ type: 'rebalance' }, []).flowId,
+      2,
+      'rejected requests do not consume flow IDs',
+    );
+  });
+}
+
+test.failing('delegated requests reject an active claimRewards flow with matching sync state', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
+  const { manager, reader, delegationHelper, reporter } = makePortfolioKit({
+    portfolioId: 1,
+  });
+  manager.setTargetAllocation({ USDN: 100n });
+  const { agentId } = await manager.grantDelegation('agoric1delegate', {
+    allocation: true,
+    rebalance: true,
+    claimRewards: true,
+  });
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+  reporter.publishStatus();
+  const before = await getPortfolioStatus!(1);
+  const syncState = harden({
+    policyVersion: before.policyVersion,
+    rebalanceCount: before.rebalanceCount,
+  });
+
+  // Model observations verified before a claimRewards request won the race.
+  const verifiedObservations = harden({
+    portfolioId: 1,
+    syncState,
+    observations: { balances: {}, instrumentTvls: {} },
+    issuedAt: 0n,
+    deadline: 300n,
+  });
+  t.is(client.claimRewards({ syncState }), 'flow1');
+  reader.checkVersion(syncState.policyVersion, syncState.rebalanceCount);
+  const running = await getPortfolioStatus!(1);
+  const calls = getCallLog();
+  for (const attempt of [
+    () => client.rebalance({ syncState }),
+    () => client.claimRewards({ syncState }),
+    () =>
+      delegationHelper.submitTargetAllocation(
+        client,
+        agentId,
+        {
+          syncState,
+          targetAllocation: { USDN: 100n },
+          plan: { flow: [] },
+        },
+        verifiedObservations,
+      ),
+  ]) {
+    t.throws(attempt, { message: 'portfolio already has a running flow' });
+  }
+
+  t.deepEqual(await getPortfolioStatus!(1), running);
+  t.deepEqual(getCallLog(), calls, 'rejected requests never call executePlan');
+  reporter.finishFlow(1);
+
+  t.is(
+    client.rebalance({ syncState }),
+    'flow2',
+    'rejected requests do not consume flow IDs',
+  );
+});
+
+test.failing('overlapping owner rebalances preserve policy and target allocation', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getPortfolioStatus, getCallLog } = makeTestSetup({
+    storage,
+  });
+  const { manager, evmHandler, simpleRebalanceHandler } = makePortfolioKit({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x4545454545454545454545454545454545454545',
+  });
+  manager.setTargetAllocation({ USDN: 100n });
+  manager.startFlow({ type: 'rebalance' });
+  const before = await getPortfolioStatus!(1);
+
+  t.throws(() => evmHandler.rebalance([{ instrument: 'USDN', portion: 50n }]), {
+    message: 'portfolio already has a running flow',
+  });
+  t.throws(
+    () =>
+      simpleRebalanceHandler.handle({} as any, {
+        targetAllocation: { USDN: 50n },
+      }),
+    { message: 'portfolio already has a running flow' },
+  );
+  t.deepEqual(await getPortfolioStatus!(1), before);
+  t.deepEqual(getCallLog(), []);
 });
