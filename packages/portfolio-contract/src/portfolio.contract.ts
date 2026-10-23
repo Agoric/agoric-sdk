@@ -74,7 +74,10 @@ import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord, Passable } from '@endo/pass-style';
 import { M, objectMap } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
-import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
+import {
+  prepareEVMWalletHandlerKit,
+  type EVMPortfolioPowers,
+} from './evm-wallet-handler.exo.ts';
 import {
   makePortfolioObservationsVerifier,
   type PortfolioObservationsVerifier,
@@ -898,6 +901,14 @@ export const contract = async (
         proposalShapes.openPortfolio,
       );
     },
+  } satisfies Record<PortfolioPublicInvitationMaker, any> & ThisType<any>);
+
+  /**
+   * Powers reserved for the EVM wallet handler, which only invokes them for
+   * EIP-712 messages whose signer it verified. Kept off the public facet so
+   * nobody else can open a portfolio with an unverified `sourceAccountId`.
+   */
+  const evmPortfolioPowers = zone.exo('EVMPortfolioPowers', interfaceTODO, {
     /**
      * Open a portfolio for EVM users with a signed Permit2 deposit.
      *
@@ -1049,9 +1060,7 @@ export const contract = async (
         );
       }
     },
-  } satisfies Record<PortfolioPublicInvitationMaker, any> &
-    Record<'openPortfolioFromEVM' | 'validateEVMMessageDomain', any> &
-    ThisType<any>);
+  } satisfies EVMPortfolioPowers);
 
   const prepareResultOnlyInvitation = <R>(
     description: string,
@@ -1092,7 +1101,7 @@ export const contract = async (
       storageNode: E(storageNode).makeChildNode('evmWallets'),
       vowTools,
       timerService,
-      portfolioContractPublicFacet: publicFacet,
+      evmPortfolioPowers,
       publishStatus,
       permit2Addresses,
     },

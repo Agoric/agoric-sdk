@@ -85,7 +85,13 @@ type EIP712Data = WithSignature<
 };
 
 type PortfolioEVMFacet = PortfolioKit['evmHandler'];
-interface PortfolioContractPublicFacet {
+
+/**
+ * Contract powers reserved for the EVM wallet handler. Not on the public
+ * facet: `openPortfolioFromEVM` wires the portfolio's `sourceAccountId`, which
+ * must only come from a verified EIP-712 signature.
+ */
+export interface EVMPortfolioPowers {
   openPortfolioFromEVM(
     data:
       | YmaxOperationDetails<'OpenPortfolio'>['data']
@@ -222,11 +228,11 @@ export const prepareEVMPortfolioOperationManager = (
   zone: Zone,
   {
     vowTools: { asVow, watch, when },
-    portfolioContractPublicFacet,
+    evmPortfolioPowers,
     publishStatus,
   }: {
     vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
-    portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
+    evmPortfolioPowers: ERemote<EVMPortfolioPowers>;
     publishStatus: PublishStatus;
   },
 ) => {
@@ -247,9 +253,7 @@ export const prepareEVMPortfolioOperationManager = (
           evmHandler,
           grantResult,
           autoFeaturesResult,
-        }: Awaited<
-          ReturnType<PortfolioContractPublicFacet['openPortfolioFromEVM']>
-        >) {
+        }: Awaited<ReturnType<EVMPortfolioPowers['openPortfolioFromEVM']>>) {
           await null;
           try {
             const reader = await E(evmHandler).getReaderFacet();
@@ -383,7 +387,7 @@ export const prepareEVMPortfolioOperationManager = (
             ? wallet.portfolios.get(BigInt(portfolioId))
             : undefined;
 
-        await E(portfolioContractPublicFacet).validateEVMMessageDomain(
+        await E(evmPortfolioPowers).validateEVMMessageDomain(
           operationDetails.domain,
           portfolio,
         );
@@ -396,7 +400,7 @@ export const prepareEVMPortfolioOperationManager = (
             if (!permitDetails) {
               throw Fail`Missing permit details for OpenPortfolio operation`;
             }
-            const result = E(portfolioContractPublicFacet).openPortfolioFromEVM(
+            const result = E(evmPortfolioPowers).openPortfolioFromEVM(
               data,
               permitDetails,
             );
@@ -702,14 +706,14 @@ export const prepareEVMWalletHandlerKit = (
     storageNode,
     vowTools,
     timerService,
-    portfolioContractPublicFacet,
+    evmPortfolioPowers,
     publishStatus,
     permit2Addresses,
   }: {
     storageNode: ERemote<StorageNode>;
     vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
     timerService: ERemote<TimerService>;
-    portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
+    evmPortfolioPowers: ERemote<EVMPortfolioPowers>;
     publishStatus: PublishStatus;
     permit2Addresses: { [chainId in `${number | bigint}`]?: Address };
   },
@@ -727,7 +731,7 @@ export const prepareEVMWalletHandlerKit = (
   const { insertNonce, removeExpiredNonces } = makeNonceManager(zone);
   const { handleOperation } = prepareEVMPortfolioOperationManager(zone, {
     vowTools,
-    portfolioContractPublicFacet,
+    evmPortfolioPowers,
     publishStatus,
   });
 
