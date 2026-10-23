@@ -1,5 +1,8 @@
 # Agoric Cosmos daemon
 
+For the shared native/external JavaScript API, descriptor configuration, and
+wire protocol, see the [VM bridge guide](../../packages/cosmic-swingset/docs/vm-bridge.md).
+
 ## Selecting the Agoric VM
 
 `agd` uses an embedded Agoric VM by default. It delegates to the JavaScript VM

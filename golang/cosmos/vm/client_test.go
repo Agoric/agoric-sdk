@@ -17,7 +17,7 @@ type errorWrapper struct {
 
 // ConnectVMClientCodec creates an RPC client codec and a sender to the
 // in-process implementation of the VM.
-func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, vm.Sender) {
+func ConnectVMClientCodec(ctx context.Context, sendFunc func(int, int, string)) (*vm.ClientCodec, vm.Sender) {
 	vmClientCodec := vm.NewClientCodec(ctx, sendFunc)
 	vmClient := rpc.NewClientWithCodec(vmClientCodec)
 
@@ -27,7 +27,7 @@ func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, 
 		}
 
 		msg := vm.Message{
-			Port:       nodePort,
+			Port:       1,
 			NeedsReply: needReply,
 			Data:       jsonRequest,
 		}
@@ -46,23 +46,24 @@ type Fixture struct {
 }
 
 func NewFixture(t *testing.T) *Fixture {
-	nodePort := 42
-
 	f := &Fixture{}
 	agdServer := vm.NewAgdServer()
 
 	sendFunc := func(port int, reply int, str string) {
+		if port != 1 {
+			t.Errorf("unexpected node port %d", port)
+		}
 		switch str {
 		case "ping":
 			time.AfterFunc(100*time.Millisecond, func() {
-				fmt.Printf("sendFunc: port=%d, reply=%d, str=%s\n", port, reply, str)
+				fmt.Printf("sendFunc: reply=%d, str=%s\n", reply, str)
 				if reply != 0 {
 					f.ReplyToGo(reply, false, "pong")
 				}
 			})
 		case "wait":
 			time.AfterFunc(300*time.Millisecond, func() {
-				fmt.Printf("sendFunc: port=%d, reply=%d, str=%s\n", port, reply, str)
+				fmt.Printf("sendFunc: reply=%d, str=%s\n", reply, str)
 				if reply != 0 {
 					f.ReplyToGo(reply, false, "done-waiting")
 				}
@@ -74,7 +75,6 @@ func NewFixture(t *testing.T) *Fixture {
 
 	vmClientCodec, sendToNode := ConnectVMClientCodec(
 		context.Background(),
-		int(nodePort),
 		sendFunc,
 	)
 
@@ -124,6 +124,17 @@ func TestClient_oneOutbound(t *testing.T) {
 	}
 	if ret != "pong" {
 		t.Errorf("ping want pong, got %s", ret)
+	}
+}
+
+func TestClient_NoReply(t *testing.T) {
+	f := NewFixture(t)
+	response, err := f.SendToNode(context.Background(), false, "ping")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response != "<no-reply-requested>" {
+		t.Fatalf("unexpected no-reply acknowledgement %q", response)
 	}
 }
 

@@ -11,11 +11,16 @@ import (
 // VM receive a Message.
 const ReceiveMessageMethod = "agvm.ReceiveMessage"
 
-// Message is what we send to the VM.
+// AgdReceiveMessageMethod is the reverse RPC method, invoked by the JS adapter
+// in packages/cosmic-swingset/src/agcc-agvm.js to address a Go service port.
+const AgdReceiveMessageMethod = "agd.ReceiveMessage"
+
+// Message is the shared Go/JS wire shape. Port selects the recipient in either
+// direction. See cosmic-swingset/docs/vm-bridge.md.
 type Message struct {
-	Port       int
-	Data       string
-	NeedsReply bool
+	Port       int    `json:"port"`
+	Data       string `json:"data"`
+	NeedsReply bool   `json:"needsReply"`
 }
 
 // ClientCodec implements rpc.ClientCodec.
@@ -36,7 +41,7 @@ var _ rpc.ClientCodec = (*ClientCodec)(nil)
 // state.
 type ClientCodec struct {
 	ctx     context.Context
-	send    func(port, rPort int, msg string)
+	send    func(port int, replyID int, msg string)
 	inbound chan *rpc.Response
 
 	// reqMutex protects outbound requests.

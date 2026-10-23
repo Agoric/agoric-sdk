@@ -1,6 +1,6 @@
 // @ts-check
-import fs from 'fs';
-import readline from 'readline';
+import fs from 'node:fs';
+import readline from 'node:readline';
 
 const debug = (..._args) => {}; // console.error(..._args);
 

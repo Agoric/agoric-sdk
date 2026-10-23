@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -130,4 +131,49 @@ func TestVMExecutableValidation(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestVMFileDescriptorProcess(t *testing.T) {
+	if os.Getenv("AGD_TEST_FD_PROCESS") != "1" {
+		return
+	}
+	require.Equal(t, "4", os.Getenv("AGVM_INPUT_FD"))
+	require.Equal(t, "5", os.Getenv("AGVM_OUTPUT_FD"))
+	input := os.NewFile(4, "from-agd")
+	output := os.NewFile(5, "to-agd")
+	defer input.Close()
+	defer output.Close()
+	message := make([]byte, 4)
+	_, err := io.ReadFull(input, message)
+	require.NoError(t, err)
+	require.Equal(t, "ping", string(message))
+	_, err = output.WriteString("pong")
+	require.NoError(t, err)
+}
+
+func TestVMCommandPipeDescriptors(t *testing.T) {
+	t.Setenv("AGD_TEST_FD_PROCESS", "1")
+	t.Setenv("AGVM_INPUT_FD", "99")
+	t.Setenv("AGVM_OUTPUT_FD", "100")
+	vmInput, toVM, err := os.Pipe()
+	require.NoError(t, err)
+	defer vmInput.Close()
+	defer toVM.Close()
+	fromVM, vmOutput, err := os.Pipe()
+	require.NoError(t, err)
+	defer fromVM.Close()
+	defer vmOutput.Close()
+	command := NewVMCommand(log.NewNopLogger(), os.Args[0], []string{"-test.run=^TestVMFileDescriptorProcess$"}, vmInput, vmOutput)
+	require.NoError(t, command.Start())
+	t.Cleanup(func() { _ = command.Process.Kill() })
+	vmInput.Close()
+	vmOutput.Close()
+	_, err = toVM.WriteString("ping")
+	require.NoError(t, err)
+	require.NoError(t, fromVM.SetReadDeadline(time.Now().Add(10*time.Second)))
+	response := make([]byte, 4)
+	_, err = io.ReadFull(fromVM, response)
+	require.NoError(t, err)
+	require.Equal(t, "pong", string(response))
+	require.NoError(t, command.Wait())
 }

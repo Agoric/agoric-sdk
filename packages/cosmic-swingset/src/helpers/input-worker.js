@@ -17,7 +17,7 @@ const debug = (..._args) => {}; // console.error(..._args);
  * @param {import('worker_threads').MessagePort} parent
  */
 export const makeInputWorkerHandler = parent => {
-  /** @type {ReturnType<makeJsonRPCInterceptor>} */
+  /** @type {ReturnType<typeof makeJsonRPCInterceptor>} */
   let intercept;
   return data => {
     debug('message handler received', data);

@@ -11,7 +11,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import tmp from 'tmp';
 
 import { Fail, q } from '@endo/errors';
-import { E, Far } from '@endo/far';
+import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { isNat } from '@endo/nat';
 import { M, mustMatch } from '@endo/patterns';
@@ -61,6 +61,7 @@ import {
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {AgoricBridge, AgoricSender, AgoricMessageHandler} from './agcc-shim.js';
  * @import {KVStore} from '@agoric/internal/src/kv-store.js';
  * @import {SwingStore} from '@agoric/swing-store';
  * @import {StateSyncExporter} from './export-kernel-db.js';
@@ -218,7 +219,7 @@ export const makeQueueStorage = (call, queuePath) => {
 };
 
 /**
- * @param {any} agcc
+ * @param {AgoricSender} agcc
  * @param {string} stateDBDir
  * @param {object} options
  * @param {typeof process.env} [options.env]
@@ -253,16 +254,23 @@ export const makeLaunchChain = (
     testingOverrides = {},
   },
 ) => {
-  /** @typedef {[args: Parameters<typeof agcc.send>, ret: ReturnType<typeof agcc.send>]} SavedChainSend */
+  /** @typedef {[args: [port: number, messageJSON: string], ret: ReturnType<typeof agcc.send>]} SavedChainSend */
   /** @type {SavedChainSend[]} */
   let savedChainSends = [];
 
   // Send a chain downcall, recording what we sent and received.
-  function chainSend(...sendArgs) {
-    const ret = agcc.send(...sendArgs);
-    savedChainSends.push([sendArgs, ret]);
+  /** @type {AgoricSender['send']} */
+  const chainSend = (port, messageJSON, opts) => {
+    const ret = agcc.send(port, messageJSON, opts);
+    savedChainSends.push([[port, messageJSON], ret]);
     return ret;
-  }
+  };
+  const directCallOptions = harden({
+    /** @param {string} error */
+    handleError: error => {
+      throw Error(error);
+    },
+  });
 
   const clearChainSends = async () => {
     // TODO: Make `readyForCommit` an explicit `launch` input rather than
@@ -324,7 +332,8 @@ export const makeLaunchChain = (
     // eslint-disable-next-line dot-notation
     if (slogfile) env['SLOGFILE'] = slogfile;
 
-    const sendToChainStorage = msg => chainSend(portNums.storage, msg);
+    const sendToChainStorage = msg =>
+      chainSend(portNums.storage, msg, directCallOptions);
     // this object is used to store the mailbox state.
     const fromBridgeMailbox = data => {
       const ack = toNumber(data.ack);
@@ -382,9 +391,10 @@ export const makeLaunchChain = (
           method: 'swingStoreUpdateExportData',
           args: entries,
         }),
+        directCallOptions,
       );
     };
-    function doOutboundBridge(dstID, msg) {
+    function doOutboundBridge(dstID, msg, opts = {}) {
       const portNum = portNums[dstID];
       if (portNum === undefined) {
         const portKey =
@@ -399,7 +409,7 @@ export const makeLaunchChain = (
           `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${portKey}`,
         );
       }
-      const respStr = chainSend(portNum, stringify(msg));
+      const respStr = chainSend(portNum, stringify(msg), opts);
       try {
         return JSON.parse(respStr);
       } catch (e) {
@@ -408,7 +418,7 @@ export const makeLaunchChain = (
     }
 
     const toStorage = Far('BridgeStorageHandler', message => {
-      return doOutboundBridge(BridgeId.STORAGE, message);
+      return doOutboundBridge(BridgeId.STORAGE, message, directCallOptions);
     });
 
     const makeInstallationPublisher = () => {
@@ -576,6 +586,12 @@ export const makeLaunchChain = (
   return launchChain;
 };
 
+/**
+ * @param {string} progname
+ * @param {string[]} args
+ * @param {{ env: typeof process.env, homedir: string, path?: typeof nativePath,
+ *   agcc: AgoricBridge }} io
+ */
 export default async function main(
   progname,
   args,
@@ -597,45 +613,20 @@ export default async function main(
   /** @type {EReturn<typeof launch>['blockingSend'] | undefined} */
   let blockingSend;
 
-  const portHandlers = {};
-  let lastPort = 0;
-  function registerPortHandler(portHandler) {
-    lastPort += 1;
-    const port = lastPort;
-    portHandlers[port] = async (...phArgs) =>
-      E.resolve(portHandler(...phArgs)).catch(e => {
-        console.error('portHandler threw', e);
-        throw e;
-      });
-    return port;
-  }
+  /** @type {AgoricMessageHandler} */
+  const fromGo = (port, messageJSON, replier) => {
+    port === 1 || Fail`unexpected node port ${port}, expected 1`;
+    void Promise.resolve()
+      .then(() => toSwingSet(JSON.parse(messageJSON)))
+      .then(
+        result =>
+          replier.resolve(stringify(result === undefined ? null : result)),
+        reason => replier.reject(String((reason && reason.stack) || reason)),
+      );
+  };
 
-  function fromGo(port, str, replier) {
-    // console.error(`inbound ${port} ${str}`);
-    const handler = portHandlers[port];
-    if (!handler) {
-      replier.reject(`invalid requested port ${port}`);
-      return;
-    }
-    const action = JSON.parse(str);
-    const p = Promise.resolve(handler(action));
-    void E.when(
-      p,
-      res => {
-        // console.error(`Replying in Node to ${str} with`, res);
-        replier.resolve(stringify(res !== undefined ? res : null));
-      },
-      rej => {
-        // console.error(`Rejecting in Node to ${str} with`, rej);
-        replier.reject(`${(rej && rej.stack) || rej}`);
-      },
-    );
-  }
-
-  // Actually run the main ag-chain-cosmos program.  Before we start the daemon,
-  // there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
-  const nodePort = registerPortHandler(toSwingSet);
-  agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
+  // Startup supplies the only sender facet; all Go actions reach fromGo.
+  const sender = agcc.start(fromGo, [progname, ...args]);
 
   /**
    * @type {undefined | {
@@ -778,7 +769,7 @@ export default async function main(
     }
   }
 
-  const launchChain = makeLaunchChain(agcc, stateDBDir, {
+  const launchChain = makeLaunchChain(sender, stateDBDir, {
     env,
     fs,
     path,
@@ -791,7 +782,7 @@ export default async function main(
   /** @type {((obj: object) => void) | undefined} */
   let writeSlogObject;
 
-  async function toSwingSet(action, _replier) {
+  async function toSwingSet(action) {
     // console.log(`toSwingSet`, action);
 
     await null;

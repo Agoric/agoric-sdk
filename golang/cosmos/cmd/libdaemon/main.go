@@ -36,8 +36,6 @@ type goReturn = struct {
 	err error
 }
 
-const SwingSetPort = 123
-
 var logger = log.NewLogger(os.Stderr).With("module", "cmd/libdaemon")
 
 var vmClientCodec *vm.ClientCodec
@@ -45,7 +43,7 @@ var agdServer *vm.AgdServer
 
 // ConnectVMClientCodec creates an RPC client codec and a sender to the
 // in-process implementation of the VM.
-func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, vm.Sender) {
+func ConnectVMClientCodec(ctx context.Context, sendFunc func(int, int, string)) (*vm.ClientCodec, vm.Sender) {
 	vmClientCodec = vm.NewClientCodec(ctx, sendFunc)
 	vmClient := rpc.NewClientWithCodec(vmClientCodec)
 
@@ -55,7 +53,7 @@ func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, 
 		}
 
 		msg := vm.Message{
-			Port:       nodePort,
+			Port:       1,
 			NeedsReply: needReply,
 			Data:       jsonRequest,
 		}
@@ -87,7 +85,7 @@ func handlePanic(caller string) {
 }
 
 //export RunAgCosmosDaemon
-func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
+func RunAgCosmosDaemon(toNode C.sendFunc, cosmosArgs []*C.char) {
 	defer handlePanic("RunAgCosmosDaemon")
 
 	userHomeDir, err := os.UserHomeDir()
@@ -109,7 +107,6 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 
 	vmClientCodec, sendToNode = ConnectVMClientCodec(
 		context.Background(),
-		int(nodePort),
 		sendFunc,
 	)
 
@@ -138,7 +135,6 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 		os.Exit(exitCode)
 	}()
 	// fmt.Fprintln(os.Stderr, "Done starting Cosmos")
-	return SwingSetPort
 }
 
 //export ReplyToGo
@@ -157,7 +153,7 @@ type errorWrapper struct {
 }
 
 //export SendToGo
-func SendToGo(port C.int, msg C.Body) C.Body {
+func SendToGo(port C.int, msg C.Body, isError *C.int) C.Body {
 	defer handlePanic("SendToGo")
 	msgStr := C.GoString(msg)
 	// fmt.Fprintln(os.Stderr, "Send to Go", msgStr)
@@ -169,11 +165,13 @@ func SendToGo(port C.int, msg C.Body) C.Body {
 	}
 
 	err := agdServer.ReceiveMessage(message, &respStr)
+	*isError = 0
 	if err == nil {
 		return C.CString(respStr)
 	}
 
 	// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
+	*isError = 1
 	errResp := errorWrapper{
 		Error: err.Error(),
 	}
