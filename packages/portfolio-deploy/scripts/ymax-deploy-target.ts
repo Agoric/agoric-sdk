@@ -30,7 +30,7 @@ import type {
 import { pubkeyToAddress } from '@cosmjs/amino';
 import { decodePubkey } from '@cosmjs/proto-signing';
 import { StargateClient } from '@cosmjs/stargate';
-import { assert as endoAssert, Fail, b, q } from '@endo/errors';
+import { Fail, b, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 import { execa } from 'execa';
 import fs from 'node:fs';
@@ -1858,10 +1858,13 @@ const checkMultisigSelection = (
   publicKey: any,
   signerIndex: number,
 ) => {
-  const fail = (detail: string): never =>
-    endoAssert.fail(
-      `signer_infos[${signerIndex}]: invalid multisig signer selection: ${detail}`,
-    );
+  const fail = (strings: TemplateStringsArray, ...subs: unknown[]) => {
+    const prefixedStrings = [
+      `signer_infos[${signerIndex}]: invalid multisig signer selection: ${strings[0]}`,
+      ...strings.slice(1),
+    ];
+    throw Fail(prefixedStrings, ...subs);
+  };
   mustMatch(
     harden(publicKey),
     multisigPublicKeyShape,
@@ -1875,67 +1878,36 @@ const checkMultisigSelection = (
   const { bitarray, mode_infos: modeInfos } = multi;
   const members = publicKey.public_keys;
   const threshold = Number(publicKey.threshold);
-  if (!Number.isSafeInteger(threshold)) {
-    return fail(
-      `Number(public_key.threshold) must be a safe integer; got ${threshold} from ${String(publicKey.threshold)}`,
-    );
-  }
-  if (threshold < 1 || threshold > members.length) {
-    return fail(
-      `Number(public_key.threshold) must be between 1 and ${members.length} members; got ${threshold}`,
-    );
-  }
+  (Number.isSafeInteger(threshold) &&
+    threshold >= 1 &&
+    threshold <= members.length) ||
+    fail`Number(public_key.threshold) must be a safe integer between 1 and ${members.length} keys; got ${threshold} from input ${publicKey.threshold}`;
   const encoded = bitarray.elems ?? bitarray.elements;
   const extra = bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0;
-  if (!Number.isSafeInteger(extra)) {
-    return fail(
-      `(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be a safe integer; got ${String(extra)}`,
-    );
-  }
-  if (extra < 0 || extra > 8) {
-    return fail(
-      `(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be between 0 and 8; got ${extra}`,
-    );
-  }
+  (Number.isSafeInteger(extra) && extra >= 0 && extra <= 8) ||
+    fail`(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be a safe integer between 0 and 8; got ${extra}`;
   const bytes = Buffer.from(encoded, 'base64');
   const bitLength =
     extra === 0 ? bytes.length * 8 : (bytes.length - 1) * 8 + extra;
-  if (bytes.length === 0) {
-    return fail('(bitarray.elems ?? bitarray.elements) decodes to no bytes');
+  bytes.length > 0 ||
+    fail`(bitarray.elems ?? bitarray.elements) decodes to no bytes`;
+  bytes.toString('base64') === encoded ||
+    fail`(bitarray.elems ?? bitarray.elements) is not canonical base64`;
+  bitLength === members.length ||
+    fail`bitarray length ${bitLength} does not match key count ${members.length} (${bytes.length} bytes, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`;
+  if (extra !== 0) {
+    // The final byte must not set bits beyond those used for `extra`.
+    bytes.at(-1)! % 2 ** (8 - extra) === 0 ||
+      fail`bitarray has non-zero padding bits in its final byte (0x${b(bytes.at(-1)!.toString(16).padStart(2, '0'))}, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`;
   }
-  if (bytes.toString('base64') !== encoded) {
-    return fail(
-      '(bitarray.elems ?? bitarray.elements) is not canonical base64',
-    );
-  }
-  if (bitLength !== members.length) {
-    return fail(
-      `bitarray length ${bitLength} does not match ${members.length} public key members (${bytes.length} bytes, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`,
-    );
-  }
-  // Canonical base64 does not constrain unused bits within the decoded byte.
-  if (extra > 0 && bytes.at(-1)! % 2 ** (8 - extra) !== 0) {
-    return fail(
-      `bitarray has nonzero unused padding bits in its final byte (0x${bytes.at(-1)!.toString(16).padStart(2, '0')}, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`,
-    );
-  }
-  const selected = popcount(bytes);
-  if (selected < threshold) {
-    return fail(
-      `bitarray selects ${selected} members, fewer than threshold ${threshold}`,
-    );
-  }
-  if (selected !== modeInfos.length) {
-    return fail(
-      `bitarray selects ${selected} members but mode_infos contains ${modeInfos.length} entries`,
-    );
-  }
+  const sigCount = popcount(bytes);
+  sigCount >= threshold ||
+    fail`bitarray selects ${sigCount} keys, fewer than threshold ${threshold}`;
+  modeInfos.length === sigCount ||
+    fail`bitarray selects ${sigCount} keys but mode_infos contains ${modeInfos.length}`;
   for (const [index, modeInfo] of modeInfos.entries()) {
-    if (modeInfo?.multi) {
-      return fail(
-        `mode_infos[${index}] contains an unsupported nested multisig`,
-      );
-    }
+    !modeInfo?.multi ||
+      fail`mode_infos[${index}] contains an unsupported nested multisig`;
   }
 };
 
