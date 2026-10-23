@@ -188,8 +188,7 @@ type RunningFlowDetail = {
   sync: MaybeResolvedVowKit<FundsFlow>;
 } & FlowDetail;
 
-// exported for testing
-export type PortfolioKitState = {
+type PortfolioKitState = {
   portfolioId: number;
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
@@ -384,7 +383,10 @@ const makeFlowsRunningRecord = (
   return harden(fromEntries(statusEntries));
 };
 
-/** Reject overlap with the last allocated flow, tolerating older stuck flows. */
+/**
+ * Gate delegated flows on the last allocated flow finishing (tolerating older
+ * stuck flows).
+ */
 const insistLatestFlowFinished = (state: PortfolioKitState) => {
   !state.flowsRunning.has(state.nextFlowId - 1) ||
     Fail`portfolio already has a running flow`;
@@ -774,6 +776,9 @@ export const preparePortfolioKit = (
               observations,
             );
           }
+
+          // Check and reserve synchronously, after any observation verification.
+          insistLatestFlowFinished(this.state);
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
@@ -840,6 +845,8 @@ export const preparePortfolioKit = (
                 Fail`delegated rebalance requires target allocation`)
               : undefined;
 
+          // Check and reserve synchronously, after any observation verification.
+          insistLatestFlowFinished(this.state);
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
@@ -877,6 +884,8 @@ export const preparePortfolioKit = (
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
 
+          // Check and reserve synchronously, after any observation verification.
+          insistLatestFlowFinished(this.state);
           const flowDetail: FlowDetail = {
             type: 'claimRewards',
             agent: `agent${agentId}`,
@@ -1301,7 +1310,6 @@ export const preparePortfolioKit = (
          * NB: `flowId` is a counter, not the key in vstorage.
          */
         startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
-          insistLatestFlowFinished(this.state);
           const {
             nextFlowId: flowId,
             flowsRunning,
@@ -1846,9 +1854,6 @@ export const preparePortfolioKit = (
 
           !depositDetails || Fail`rebalance does not yet support deposit`;
 
-          // Verify state before setTargetAllocation can change it.
-          insistLatestFlowFinished(this.state);
-
           let initiatingOperation:
             | SetTargetAllocationInitiatingOperation
             | undefined;
@@ -2081,9 +2086,6 @@ export const preparePortfolioKit = (
           // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           const { manager } = this.facets;
-
-          // Verify state before setTargetAllocation can change it.
-          insistLatestFlowFinished(this.state);
 
           let initiatingOperation:
             | SetTargetAllocationInitiatingOperation
