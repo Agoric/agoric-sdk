@@ -1812,10 +1812,12 @@ const findSignedTx = async (
 
 const multisigModeShape = M.splitRecord({
   bitarray: M.and(
+    // "extra bits stored" might be omitted (it defaults to 0).
     M.splitRecord(
       {},
       { extra_bits_stored: M.number(), extraBitsStored: M.number() },
     ),
+    // "elements" is required but has multiple spellings.
     M.or(
       M.splitRecord({ elems: M.string() }),
       M.splitRecord({ elements: M.string() }),
@@ -1823,6 +1825,7 @@ const multisigModeShape = M.splitRecord({
   ),
   mode_infos: M.arrayOf(
     M.splitRecord({
+      // We only support one signing mode.
       single: M.splitRecord({ mode: 'SIGN_MODE_LEGACY_AMINO_JSON' }),
     }),
   ),
