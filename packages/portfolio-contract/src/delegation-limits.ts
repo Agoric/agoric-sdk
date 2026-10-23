@@ -14,7 +14,7 @@ import {
   isInterChainAccountRef,
   isPortfolioBalancePlaceRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
-import { Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { maxWeightClosure } from './max-weight-closure.ts';
 import { fullOrder, makeDependencies, makeSchedule } from './schedule-order.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
@@ -59,9 +59,9 @@ export const assertMandateForAllocation = (
 
   for (const [instrument, portion = 0n] of entries(targetAllocation)) {
     if (isInterChainAccountRef(instrument)) continue;
-    totalPortions > 0n || Fail`mandate.maxWeight.zeroTotal:${instrument}`;
+    totalPortions > 0n || Fail`mandate.maxWeight.zeroTotal:${q(instrument)}`;
     portion * 10_000n <= maxScaledPortion ||
-      Fail`mandate.maxWeight:${instrument}`;
+      Fail`mandate.maxWeight:${q(instrument)}: portion ${q(portion)} of total ${q(totalPortions)} exceeds maxWeightBps ${q(maxWeightBps)}`;
   }
 };
 harden(assertMandateForAllocation);
@@ -90,18 +90,20 @@ export const assertMandateForPlanObservations = (
     if (isInterChainAccountRef(instrument) || portion === 0n) continue;
 
     const status = observations.instrumentTvls[instrument];
-    status || Fail`mandate.instrumentData.missing:${instrument}`;
+    status || Fail`mandate.instrumentData.missing:${q(instrument)}`;
     if (minVaultTvlUsd !== undefined) {
       status.tvlUsd >= minVaultTvlUsd ||
-        Fail`mandate.minVaultTvl:${instrument}`;
+        Fail`mandate.minVaultTvl:${q(instrument)}: tvlUsd ${q(status.tvlUsd)} is below minVaultTvlUsd ${q(minVaultTvlUsd)}`;
     }
     if (maxVaultShareBps !== undefined) {
-      totalPortions > 0n || Fail`mandate.maxVaultShare.zeroTotal:${instrument}`;
+      totalPortions > 0n ||
+        Fail`mandate.maxVaultShare.zeroTotal:${q(instrument)}`;
       portfolioValueMicroUsd * portion * 10_000n <=
         status.tvlUsd *
           MICRO_USDC_PER_USD *
           totalPortions *
-          BigInt(maxVaultShareBps) || Fail`mandate.maxVaultShare:${instrument}`;
+          BigInt(maxVaultShareBps) ||
+        Fail`mandate.maxVaultShare:${q(instrument)}: portion ${q(portion)} of total ${q(totalPortions)} with portfolio value ${q(portfolioValueMicroUsd)} micro-USD exceeds maxVaultShareBps ${q(maxVaultShareBps)} of vault tvlUsd ${q(status.tvlUsd)}`;
     }
   }
 };
@@ -118,8 +120,7 @@ export const vetNoNewPositions = (
   const unexpected = destinations.filter(
     dest => isInstrumentId(dest) && !allowedPositions.includes(dest),
   );
-  unexpected.length === 0 ||
-    Fail`plan cannot add positions: ${unexpected.join(', ')}`;
+  unexpected.length === 0 || Fail`plan cannot add positions: ${q(unexpected)}`;
 };
 harden(vetNoNewPositions);
 
@@ -168,13 +169,13 @@ const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
   const flow = plan.flow.map((movement): PlanOperation => {
     const { src, dest, amount, claimRewards } = movement;
     if (!isPortfolioBalancePlaceRef(src)) {
-      throw Fail`allocation plan does not support deposit or withdrawal place ${src}`;
+      throw Fail`allocation plan does not support deposit or withdrawal place ${q(src)}`;
     }
     if (!isPortfolioBalancePlaceRef(dest)) {
-      throw Fail`allocation plan does not support deposit or withdrawal place ${dest}`;
+      throw Fail`allocation plan does not support deposit or withdrawal place ${q(dest)}`;
     }
     src !== dest ||
-      Fail`allocation plan does not support self-movement at ${src}`;
+      Fail`allocation plan does not support self-movement at ${q(src)}`;
     if (!claimRewards) return { kind: 'move', src, dest, amount };
 
     if (
@@ -182,7 +183,7 @@ const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
       !isInterChainAccountRef(dest) ||
       dest !== `@${chainOf(src)}`
     ) {
-      throw Fail`claimRewards requires an instrument source and its chain account destination: ${src} -> ${dest}`;
+      throw Fail`claimRewards requires an instrument source and its chain account destination: ${q(src)} -> ${q(dest)}`;
     }
     return { kind: 'claimRewards', src, dest, claimRewards };
   });
@@ -211,12 +212,12 @@ export const vetObservationPlaces = (
     keys(observations.balances) as PortfolioBalancePlaceRef[],
   );
   const missing = [...expected].filter(place => !observed.has(place));
-  missing.length === 0 || Fail`missing balance observation for ${missing}`;
+  missing.length === 0 || Fail`missing balance observation for ${q(missing)}`;
   // Nonzero extras would inflate the portfolio total used by mandate checks.
   const extra = [...observed].filter(
     place => !expected.has(place) && observations.balances[place] !== 0n,
   );
-  extra.length === 0 || Fail`unexpected balance observation for ${extra}`;
+  extra.length === 0 || Fail`unexpected balance observation for ${q(extra)}`;
 };
 harden(vetObservationPlaces);
 
@@ -232,7 +233,7 @@ const vetAllocationCeilings = (
     totalPortions > 0n || Fail`plan target allocation has zero total`;
     const ceiling = targetAllocation[place] ?? 0n;
     balance * totalPortions <= totalBalance * ceiling ||
-      Fail`plan exceeds target allocation at ${place}`;
+      Fail`plan final balance exceeds target allocation at ${q(place)}: balance ${q(balance)} of total ${q(totalBalance)} vs target portion ${q(ceiling)} of ${q(totalPortions)}`;
   }
 };
 
@@ -299,7 +300,7 @@ const vetPartialPlanAllocation = (
       maxBalance * totalPortions <= totalBalance * ceiling;
     withinTarget ||
       maxBalance <= initialBalance ||
-      Fail`plan exceeds target allocation at ${place}`;
+      Fail`plan intermediate balance exceeds target allocation at ${q(place)}: initial balance ${q(initialBalance)}, peak balance ${q(maxBalance)} of total ${q(totalBalance)} vs target portion ${q(ceiling)} of ${q(totalPortions)}`;
   }
 };
 
@@ -331,7 +332,7 @@ const projectPlanBalances = (
     if (kind === 'claimRewards') continue;
     if (isInstrumentId(dest)) {
       observations.balances[dest] !== undefined ||
-        Fail`missing balance observation for ${dest}`;
+        Fail`missing balance observation for ${q(dest)}`;
     }
   }
 
@@ -349,7 +350,8 @@ const projectPlanBalances = (
     }
     for (const [src, debit] of debits.entries()) {
       const balance = balances.get(src) ?? 0n;
-      balance >= debit || Fail`unfunded plan movement from ${src}`;
+      balance >= debit ||
+        Fail`unfunded plan movement from ${q(src)}: balance ${q(balance)} < debit ${q(debit)}`;
     }
 
     for (const ix of ready) {

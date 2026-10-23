@@ -425,7 +425,8 @@ test('safety rejects a temporary increase needed to reduce exposure', t => {
     { Aave_Arbitrum: 100_050_000n, '@Arbitrum': 100_050_000n },
   );
   t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
-    message: /plan exceeds target allocation.*Aave_Arbitrum/,
+    message:
+      /plan (final|intermediate) balance exceeds target allocation.*Aave_Arbitrum/,
   });
 });
 
@@ -504,7 +505,10 @@ test('plan allocation is bounded by instrument ceilings', t => {
   t.throws(
     () =>
       vetPlanAllocation(targetAllocation, overCompoundCeiling, observations),
-    { message: /plan exceeds target allocation.*Compound_Arbitrum/ },
+    {
+      message:
+        /plan (final|intermediate) balance exceeds target allocation.*Compound_Arbitrum/,
+    },
   );
 });
 
@@ -534,7 +538,10 @@ test('plan allocation checks exact ceiling arithmetic', t => {
   t.throws(
     () =>
       vetPlanAllocation(targetAllocation, planFor(20_000_000n), observations),
-    { message: /plan exceeds target allocation.*Aave_Arbitrum/ },
+    {
+      message:
+        /plan (final|intermediate) balance exceeds target allocation.*Aave_Arbitrum/,
+    },
   );
   t.notThrows(() =>
     vetPlanAllocation(targetAllocation, planFor(20_000_550n), observations),
@@ -568,7 +575,10 @@ test('allocation operation rejects a plan over its target ceiling', t => {
         plan,
         harden(observations),
       ),
-    { message: /plan exceeds target allocation.*Compound_Arbitrum/ },
+    {
+      message:
+        /plan (final|intermediate) balance exceeds target allocation.*Compound_Arbitrum/,
+    },
   );
 });
 
@@ -1006,7 +1016,8 @@ test('plan allocation rejects unsafe partial success among unordered steps', t =
   };
 
   t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
-    message: /plan exceeds target allocation.*Aave_Arbitrum/,
+    message:
+      /plan (final|intermediate) balance exceeds target allocation.*Aave_Arbitrum/,
   });
 });
 

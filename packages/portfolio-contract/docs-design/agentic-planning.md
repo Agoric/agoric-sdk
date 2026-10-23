@@ -124,7 +124,7 @@ sequenceDiagram
   C-->>C: assertMandate({ allocation: { maxWeightBps: 6000n }, ... })
   Note over C,API: The omitted smart-wallet/vstorage path publishes<br/>the invocation failure for YDS indexing
   A-->>API: GET /portfolios/portfolio351/activity
-  API-->>A: { txStatuses: [{ txHash: 'tx3', flowKey: null, state: 'fail',<br/>error: 'mandate.maxWeight:"PDQ"', ... }], ... }
+  API-->>A: { txStatuses: [{ txHash: 'tx3', flowKey: null, state: 'fail',<br/>error: 'mandate.maxWeight:"PDQ": portion "[200005700n]" of total "[200005700n]" exceeds maxWeightBps "[6000n]"', ... }], ... }
 ```
 
 The rejection happens before a flow is assigned. The smart wallet publishes the

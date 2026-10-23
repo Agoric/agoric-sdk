@@ -65,7 +65,7 @@ const MAX_SAFE_AGENT_ID = BigInt(Number.MAX_SAFE_INTEGER);
 
 const agentIdFromEIP712 = (agentId: bigint): number => {
   (agentId > 0n && agentId <= MAX_SAFE_AGENT_ID) ||
-    Fail`invalid delegation agent id ${agentId}`;
+    Fail`invalid delegation agent id ${q(agentId)}`;
   return Number(agentId);
 };
 

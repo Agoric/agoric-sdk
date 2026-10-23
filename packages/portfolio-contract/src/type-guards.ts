@@ -60,7 +60,7 @@ import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
-import { Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { M, type Pattern } from '@endo/patterns';
 import type { EVMContractAddresses } from './portfolio.contract.js';
@@ -180,7 +180,7 @@ export const portfolioIdFromKey = (portfolioKey: `portfolio${number}`) => {
   // TODO: const strId = stripPrefix('portfolio', portfolioKey);
   // TODO: const id = Number(strId);
   const id = Number(portfolioKey.replace(/^portfolio/, ''));
-  isNat(id) || Fail`bad key: ${portfolioKey}`;
+  isNat(id) || Fail`bad portfolio key: ${q(portfolioKey)}`;
   return id;
 };
 
@@ -190,7 +190,7 @@ export const portfolioIdFromKey = (portfolioKey: `portfolio${number}`) => {
 export const flowIdFromKey = (flowKey: `flow${number}`) => {
   const strId = stripPrefix('flow', flowKey);
   const id = Number(strId);
-  isNat(id) || Fail`bad key: ${flowKey}`;
+  isNat(id) || Fail`bad flow key: ${q(flowKey)}`;
   return id;
 };
 
@@ -203,11 +203,11 @@ export const flowIdFromKey = (flowKey: `flow${number}`) => {
 export const portfolioIdOfPath = (path: string | string[]) => {
   const segments = typeof path === 'string' ? path.split('.') : path;
   const where = segments.indexOf('portfolios');
-  where >= 0 || Fail`bad path: ${path}`;
+  where >= 0 || Fail`bad portfolio path: ${q(path)}`;
   const segment = segments[where + 1];
   return tryNow(
     () => portfolioIdFromKey(segment as any),
-    _err => Fail`bad path: ${path}`,
+    _err => Fail`bad portfolio path: ${q(path)}`,
   );
 };
 

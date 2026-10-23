@@ -151,7 +151,7 @@ const extractContractAddresses = <T extends keyof EVMContractAddresses>(
               ],
             ] as const)
           : []
-        : Fail`missing ${key} address for chain ${chainName}`,
+        : Fail`missing ${q(key)} address for chain ${q(chainName)}`,
     ),
   ) satisfies Partial<Record<AxelarChain, AccountId>>;
   return addresses;
@@ -944,10 +944,10 @@ export const contract = async (
       const fromChain =
         eip155ChainIdToAxelarChain[`${Number(permitDetails.chainId)}`];
       if (!fromChain) {
-        throw Fail`no Axelar chain for EIP-155 chainId ${permitDetails.chainId}`;
+        throw Fail`no Axelar chain for EIP-155 chainId ${q(permitDetails.chainId)}`;
       }
       sameEvmAddress(permitDetails.token, contracts[fromChain].usdc) ||
-        Fail`permit2 token address ${permitDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
+        Fail`permit2 token address ${q(permitDetails.token)} does not match usdc contract address ${q(contracts[fromChain].usdc)} for chain ${q(fromChain)}`;
       const amount = AmountMath.make(brands.USDC, permitDetails.amount);
       const grantee =
         'grantee' in data && data.grantee !== undefined
