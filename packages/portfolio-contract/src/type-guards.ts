@@ -117,7 +117,18 @@ export const makeProposalShapes = (
     { exit: M.any() },
     {},
   ) as TypedPattern<ProposalType['deposit']>;
-  return harden({ openPortfolio, rebalance, withdraw, deposit });
+  const transferOwnershipToEVM = M.splitRecord(
+    {},
+    { give: {}, want: {}, exit: M.any() },
+    {},
+  ) as TypedPattern<ProposalType['transferOwnershipToEVM']>;
+  return harden({
+    openPortfolio,
+    rebalance,
+    withdraw,
+    deposit,
+    transferOwnershipToEVM,
+  });
 };
 harden(makeProposalShapes);
 // XXX avoid ReturnType - make an inline type and assert that it matches in a type test

@@ -796,6 +796,7 @@ export const contract = async (
     contracts,
     deliverDelegation,
     verifyPortfolioObservations,
+    timerService,
   });
 
   /**

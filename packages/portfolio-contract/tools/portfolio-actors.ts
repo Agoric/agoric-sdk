@@ -245,6 +245,33 @@ export const makeTrader = (
       };
       return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
     },
+    /**
+     * Designate an EVM account as the portfolio's new owner. Settles once
+     * that account accepts (see {@link makeEvmTrader}), or when the transfer
+     * is superseded or expires.
+     */
+    async transferOwnershipToEVM(
+      _t: ExecutionContext,
+      offerArgs: OfferArgsFor['transferOwnershipToEVM'],
+    ) {
+      if (!openId) throw Error('not open');
+      const invitationMakerName: PortfolioContinuingInvitationMaker =
+        'TransferOwnershipToEVM';
+      const id = `TransferOwnershipToEVM-${(nonce += 1)}`;
+      const invitationSpec: InvitationSpec = {
+        source: 'continuing' as const,
+        invitationMakerName,
+        previousOffer: openId,
+      };
+
+      const proposal: ProposalType['transferOwnershipToEVM'] = {};
+      return wallet.executeContinuingOffer({
+        id,
+        invitationSpec,
+        proposal,
+        offerArgs,
+      });
+    },
     getPortfolioId: () => portfolioIdOfPath(stripRoot(self.getPortfolioPath())),
     getPortfolioPath: () => portfolioPath || assert.fail('no portfolio'),
     getPortfolioStatus: () =>
