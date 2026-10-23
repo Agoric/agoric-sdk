@@ -236,6 +236,38 @@ export const prepareEVMPortfolioOperationManager = (
     publishStatus: PublishStatus;
   },
 ) => {
+  /**
+   * Hold `evmHandler` in `wallet` and republish the wallet's portfolio paths.
+   *
+   * @returns the id of the attached portfolio
+   */
+  const attachPortfolio = async (
+    { portfolios }: EVMWallet,
+    walletNode: Remote<StorageNode>,
+    evmHandler: Remote<PortfolioEVMFacet>,
+  ): Promise<number> => {
+    const reader = await E(evmHandler).getReaderFacet();
+    const portfolioId = await E(reader).getPortfolioId();
+
+    portfolios.init(BigInt(portfolioId), evmHandler);
+
+    const portfolioPaths = await Promise.all(
+      [...portfolios.values()].map(async pHandler => {
+        const pReader = E(pHandler).getReaderFacet();
+        // Vow is fulfilled promptly
+        const path = await when(E(pReader).getStoragePath());
+        return path as StatusFor['evmWalletPortfolios'][number];
+      }),
+    );
+
+    publishStatus<'evmWalletPortfolios'>(
+      E(walletNode).makeChildNode('portfolio'),
+      portfolioPaths,
+    );
+
+    return portfolioId;
+  };
+
   const makeOutcomeHandlers = zone.exoClassKit(
     'OperationOutcomeHandlers',
     /// XXX should have interface guard
@@ -256,27 +288,11 @@ export const prepareEVMPortfolioOperationManager = (
         }: Awaited<ReturnType<EVMPortfolioPowers['openPortfolioFromEVM']>>) {
           await null;
           try {
-            const reader = await E(evmHandler).getReaderFacet();
-            const portfolioId = await E(reader).getPortfolioId();
-            const {
-              wallet: { portfolios },
+            const { wallet, storageNode } = this.state;
+            const portfolioId = await attachPortfolio(
+              wallet,
               storageNode,
-            } = this.state;
-
-            portfolios.init(BigInt(portfolioId), evmHandler);
-
-            const portfolioPaths = await Promise.all(
-              [...portfolios.values()].map(async pHandler => {
-                const pReader = E(pHandler).getReaderFacet();
-                // Vow is fulfilled promptly
-                const path = await when(E(pReader).getStoragePath());
-                return path as StatusFor['evmWalletPortfolios'][number];
-              }),
-            );
-
-            publishStatus<'evmWalletPortfolios'>(
-              E(storageNode).makeChildNode('portfolio'),
-              portfolioPaths,
+              evmHandler,
             );
 
             // A plain open (neither grantee nor features) keeps the bare
