@@ -7,7 +7,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
-import { ackNFA } from './contract-test-support.ts';
+import { ackNFA, stripStoredPortfolioKit } from './contract-test-support.ts';
 import { makeEvmTraderKit, setupTrader } from './contract-setup.ts';
 import { evmTrader1PrivateKey } from './mocks.ts';
 
@@ -56,9 +56,112 @@ const setupTransfer = async (t: Parameters<typeof setupTrader>[0]) => {
   };
 };
 
+test('Agoric owner transfers a portfolio to an EVM account', async t => {
+  const { trader1, evmTrader, evmAccount, getNow, startTransfer } =
+    await setupTransfer(t);
+  const portfolioId = trader1.getPortfolioId();
+
+  const deadline = (await getNow()) + 600n;
+  const { doneP } = await startTransfer(evmAccount.address, deadline);
+
+  const accepted = await evmTrader
+    .forChain('Arbitrum')
+    .acceptOwnership(portfolioId);
+  t.like(accepted, { status: 'ok', result: `portfolio${portfolioId}` });
+
+  const sourceAccountId =
+    `eip155:42161:${evmAccount.address.toLowerCase()}` as const;
+  const { result } = await doneP;
+  t.deepEqual(result, { sourceAccountId });
+
+  const status = await trader1.getPortfolioStatus();
+  t.is(status.sourceAccountId, sourceAccountId);
+  t.is(status.pendingOwnerTransfer, undefined);
+  // acceptOwnership found it among the EVM wallet's portfolios
+  t.is(evmTrader.getPortfolioId(), portfolioId);
+
+  // The new owner can act on the portfolio...
+  t.regex(
+    await evmTrader
+      .forChain('Arbitrum')
+      .setTargetAllocation([{ instrument: 'Aave_Arbitrum', portion: 10000n }]),
+    /^flow\d+$/,
+  );
+  // ...and the previous owner can no longer.
+  await t.throwsAsync(trader1.simpleRebalance(t, { give: {}, want: {} }, {}), {
+    message: /is owned by EVM account/,
+  });
+  await t.throwsAsync(
+    trader1.transferOwnershipToEVM(t, {
+      evmAddress: evmAccount.address,
+      deadline: (await getNow()) + 600n,
+    }),
+    { message: /is owned by EVM account/ },
+  );
+});
+
+test('portfolios stored before the upgrade can be transferred', async t => {
+  const {
+    trader1,
+    evmTrader,
+    evmAccount,
+    getNow,
+    startTransfer,
+    contractBaggage,
+  } = await setupTransfer(t);
+  const portfolioId = trader1.getPortfolioId();
+  // e.g. an Agoric portfolio stored before `evmHandler` and `ownerTransfer`
+  stripStoredPortfolioKit(contractBaggage!, portfolioId);
+
+  const { doneP } = await startTransfer(
+    evmAccount.address,
+    (await getNow()) + 600n,
+  );
+  const accepted = await evmTrader
+    .forChain('Arbitrum')
+    .acceptOwnership(portfolioId);
+  t.like(accepted, { status: 'ok', result: `portfolio${portfolioId}` });
+  t.like(await doneP, {
+    result: {
+      sourceAccountId: `eip155:42161:${evmAccount.address.toLowerCase()}`,
+    },
+  });
+});
+
+test('only the designated EVM account can accept', async t => {
+  const deployed = await setupTransfer(t);
+  const { trader1, evmTrader, evmAccount, getNow, startTransfer } = deployed;
+  const portfolioId = trader1.getPortfolioId();
+  const { evmTrader: otherTrader, evmAccount: otherAccount } =
+    await makeEvmTraderKit(deployed, { privateKey: evmTrader1PrivateKey });
+
+  const { doneP } = await startTransfer(
+    evmAccount.address,
+    (await getNow()) + 600n,
+  );
+
+  const rejected = await otherTrader
+    .forChain('Arbitrum')
+    .acceptOwnership(portfolioId);
+  t.like(rejected, { status: 'error' });
+  t.true(
+    rejected.status === 'error' &&
+      rejected.error.includes(`not "${otherAccount.address}"`),
+    rejected.status === 'error' ? rejected.error : undefined,
+  );
+
+  // The designated transfer is still pending.
+  const accepted = await evmTrader
+    .forChain('Arbitrum')
+    .acceptOwnership(portfolioId);
+  t.like(accepted, { status: 'ok' });
+  await doneP;
+});
+
 test('a newer transfer supersedes a pending one', async t => {
   const deployed = await setupTransfer(t);
-  const { trader1, evmAccount, getNow, startTransfer } = deployed;
+  const { trader1, evmTrader, evmAccount, getNow, startTransfer } = deployed;
+  const portfolioId = trader1.getPortfolioId();
   const { evmAccount: otherAccount } = await makeEvmTraderKit(deployed, {
     privateKey: evmTrader1PrivateKey,
   });
@@ -74,15 +177,24 @@ test('a newer transfer supersedes a pending one', async t => {
   await t.throwsAsync(firstP, {
     message: 'superseded by a newer ownership transfer',
   });
-  t.like(await trader1.getPortfolioStatus(), {
-    pendingOwnerTransfer: { evmAddress: evmAccount.address },
-  });
-  void secondP;
+
+  const accepted = await evmTrader
+    .forChain('Arbitrum')
+    .acceptOwnership(portfolioId);
+  t.like(accepted, { status: 'ok' });
+  await secondP;
 });
 
 test('an unaccepted transfer expires at its deadline', async t => {
-  const { trader1, evmAccount, getNow, startTransfer, timerService } =
-    await setupTransfer(t);
+  const {
+    trader1,
+    evmTrader,
+    evmAccount,
+    getNow,
+    startTransfer,
+    timerService,
+  } = await setupTransfer(t);
+  const portfolioId = trader1.getPortfolioId();
 
   const deadline = (await getNow()) + 600n;
   const { doneP } = await startTransfer(evmAccount.address, deadline);
@@ -99,6 +211,14 @@ test('an unaccepted transfer expires at its deadline', async t => {
     message: `ownership transfer expired at ${deadline}`,
   });
   t.is((await trader1.getPortfolioStatus()).pendingOwnerTransfer, undefined);
+
+  const rejected = await evmTrader
+    .forChain('Arbitrum')
+    .acceptOwnership(portfolioId);
+  t.like(rejected, {
+    status: 'error',
+    error: `Error: portfolio${portfolioId} has no pending ownership transfer`,
+  });
 });
 
 test('a superseding transfer expires at its own deadline', async t => {

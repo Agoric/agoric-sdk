@@ -2255,6 +2255,41 @@ export const preparePortfolioKit = (
             reason => trace(`portfolio${portfolioId}`, 'cancel failed', reason),
           );
         },
+        /**
+         * Complete the pending ownership transfer, as accepted by `signer`
+         * on EVM chain `chainId`.
+         *
+         * Callers must verify that `signer` signed the acceptance, and that
+         * `chainId` designates a supported chain.
+         *
+         * @returns the portfolio's evmHandler, for the new owner's wallet
+         */
+        complete(signer: EvmAddress, chainId: bigint, now: bigint) {
+          const { pendingOwnerTransfer: pending, portfolioId } = this.state;
+          assertAgoricOwned(this.state);
+          if (!pending) {
+            throw Fail`portfolio${q(portfolioId)} has no pending ownership transfer`;
+          }
+          // A mismatched signer must not cancel the designated transfer.
+          sameEvmAddress(pending.evmAddress, signer) ||
+            Fail`portfolio${q(portfolioId)} is being transferred to ${q(pending.evmAddress)}, not ${q(signer)}`;
+          if (now > pending.deadline) {
+            this.facets.ownerTransfer.expire();
+            this.facets.ownerTransfer.cancelExpiry();
+            throw Fail`ownership transfer of portfolio${q(portfolioId)} expired at ${q(pending.deadline)}`;
+          }
+
+          // Store the authenticated EVM account in CAIP-10 format, like
+          // `openPortfolioFromEVM`.
+          const sourceAccountId =
+            `eip155:${chainId}:${signer.toLowerCase()}` as AccountId;
+          this.state.sourceAccountId = sourceAccountId;
+          this.state.pendingOwnerTransfer = undefined;
+          pending.resolver.resolve(harden({ sourceAccountId }));
+          this.facets.ownerTransfer.cancelExpiry();
+          this.facets.reporter.publishStatus();
+          return this.facets.evmHandler;
+        },
       },
       /** Held by the timer service only, to expire ownership transfers. */
       ownerTransferExpiry: {

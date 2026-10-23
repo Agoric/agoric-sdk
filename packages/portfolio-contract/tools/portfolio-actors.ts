@@ -544,6 +544,30 @@ export const makeEvmTrader = ({
           await submitMessage(message);
           return getMessageResult(expectedNonce, deadline) as Promise<string>;
         },
+        /**
+         * Accept ownership of a portfolio designated to this trader by its
+         * Agoric owner, and return the resulting message status.
+         */
+        async acceptOwnership(portfolioIdToAccept: number) {
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              portfolio: BigInt(portfolioIdToAccept),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'AcceptOwnership',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          const status = await getMessageStatus(expectedNonce, deadline);
+          if (status.status === 'ok') {
+            await updatePortfolioPath(portfolioIdToAccept);
+          }
+          return status;
+        },
         async rebalance() {
           const currentPortfolioId = self.getPortfolioId();
           const deadline = await getDeadline();
