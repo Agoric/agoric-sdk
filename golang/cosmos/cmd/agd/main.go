@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"os"
@@ -82,28 +83,28 @@ func main() {
 
 	exitCode := 0
 	launchVM := func(agdServer *vm.AgdServer, logger log.Logger, appOpts servertypes.AppOptions) error {
-		args := []string{"ag-chain-cosmos", "--home", gaia.DefaultNodeHome}
-		args = append(args, os.Args[1:]...)
+		argv := []string{"ag-chain-cosmos", "--home", gaia.DefaultNodeHome}
+		argv = append(argv, os.Args[1:]...)
 
-		vmSpec := cast.ToString(appOpts.Get(daemoncmd.FlagSplitVm))
-		var binary string
-
-		switch vmSpec {
-		case "embedded", "default":
+		binary := cast.ToString(appOpts.Get(daemoncmd.FlagVMPath))
+		if binary == "" {
 			var lookErr error
 			binary, lookErr = FindCosmicSwingsetBinary()
 			if lookErr != nil {
 				return lookErr
 			}
-		default:
-			// The user provided a binary path.
-			binary = vmSpec
+		}
+		// Validate discovered and explicitly selected programs alike. Resolve PATH
+		// names before syscall.Exec, which does not perform a PATH search.
+		binary, err := exec.LookPath(binary)
+		if err != nil {
+			return fmt.Errorf("cannot execute Agoric VM: %s", err)
 		}
 
-		if vmSpec == "embedded" {
+		if !cast.ToBool(appOpts.Get(daemoncmd.FlagSplitVm)) {
 			// We completely delegate to our default app for running the actual chain.
-			logger.Info("agd delegating to JS executable", "binary", binary, "args", args)
-			return syscall.Exec(binary, args, os.Environ())
+			logger.Info("agd delegating to JS executable", "binary", binary, "args", argv)
+			return syscall.Exec(binary, argv, os.Environ())
 		}
 
 		// Split the execution between us and the VM.
@@ -117,8 +118,7 @@ func main() {
 		}
 
 		// Start the command running, then continue.
-		args[0] = binary
-		cmd := NewVMCommand(logger, binary, args, vmFromAgd, vmToAgd)
+		cmd := NewVMCommand(logger, binary, argv[1:], vmFromAgd, vmToAgd)
 		shutdown = makeShutdown(cmd, agdToVm)
 
 		if err := cmd.Start(); err != nil {

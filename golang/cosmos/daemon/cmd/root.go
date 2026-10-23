@@ -271,6 +271,14 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 		case "export":
 			addAgoricVMFlags(command)
 			extendCosmosExportCommand(command)
+		case "rollback":
+			addAgoricVMFlags(command)
+		case "comet":
+			for _, subCommand := range command.Commands() {
+				if subCommand.Name() == "bootstrap-state" {
+					addAgoricVMFlags(subCommand)
+				}
+			}
 		case "snapshots":
 			for _, subCommand := range command.Commands() {
 				switch subCommand.Name() {
@@ -306,23 +314,28 @@ const (
 	// FlagSplitVm is the command-line flag for subcommands that can use a
 	// split-process Agoric VM.  The default is to use an embedded VM.
 	FlagSplitVm      = "split-vm"
+	FlagVMPath       = "vm-path"
 	EmbeddedVmEnvVar = "AGD_EMBEDDED_VM"
 )
 
 // hasVMController returns true if we have a VM (are running in split-vm mode,
 // or with an embedded VM).
 func hasVMController(serverCtx *server.Context) bool {
-	return serverCtx.Viper.GetString(FlagSplitVm) != "" ||
+	return serverCtx.Viper.GetBool(FlagSplitVm) ||
 		os.Getenv(EmbeddedVmEnvVar) != ""
 }
 
 func addAgoricVMFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().String(
+	cmd.PersistentFlags().Bool(
 		FlagSplitVm,
-		"embedded",
-		"Specify the external Agoric VM program",
+		false,
+		"Run the Agoric VM in a separate process",
 	)
-	cmd.Flag(FlagSplitVm).NoOptDefVal = "default"
+	cmd.PersistentFlags().String(
+		FlagVMPath,
+		"",
+		"Path to the Agoric VM program (empty uses automatic discovery)",
+	)
 }
 
 func addStartFlags(startCmd *cobra.Command) {

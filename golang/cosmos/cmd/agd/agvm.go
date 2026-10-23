@@ -11,9 +11,10 @@ import (
 // NewVMCommand creates a new OS command to run the Agoric VM.  It sets up the
 // file descriptors for the VM to communicate with agd, and passes their numbers
 // via AGVM_FROM_AGD and AGVM_TO_AGD environment variables.
+// args contains only the program's arguments, without the executable name.
 func NewVMCommand(logger log.Logger, binary string, args []string, vmFromAgd, vmToAgd *os.File) *exec.Cmd {
 	logger.Info("agd connecting to VM", "binary", binary, "args", args)
-	cmd := exec.Command(binary, args[1:]...)
+	cmd := exec.Command(binary, args...)
 
 	// Manage the file descriptors.
 	cmd.Stdout = os.Stdout
