@@ -14,7 +14,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
-import type { AxelarChain, FundsFlow } from '@agoric/portfolio-api';
+import type { AxelarChain } from '@agoric/portfolio-api';
 import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -27,7 +27,6 @@ import {
   PortfolioStateShape,
   preparePortfolioKit,
   type AccountInfoFor,
-  type PortfolioKitState,
 } from '../src/portfolio.exo.ts';
 import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
@@ -151,33 +150,7 @@ const makeTestSetup = (
     ? opts.storage.rootNode.makeChildNode('ymax0').makeChildNode('portfolios')
     : makeMockNode('published.ymax0.portfolios');
 
-  // Seed flows left by pre-guard code by wrapping the mock Zone.
-  const portfolioZone = harden({
-    ...zone,
-    ...(opts.legacyFlows && {
-      exoClassKit: ((...kitArgs: Parameters<typeof zone.exoClassKit>) => {
-        const [name, interfaces, init, behavior, options] = kitArgs;
-        const initPortfolio = (state: PortfolioKitState) => {
-          state.nextFlowId = opts.legacyFlows!.nextFlowId;
-          for (const id of opts.legacyFlows!.runningIds) {
-            const oldFlow = harden({
-              type: 'rebalance',
-              sync: vowTools.makeVowKit<FundsFlow>(),
-            } as const);
-            state.flowsRunning.init(id, oldFlow);
-          }
-        };
-        const newInit = (...initArgs) => {
-          const state = init(...initArgs);
-          if (name === 'Portfolio') initPortfolio(state as PortfolioKitState);
-          return state;
-        };
-        return zone.exoClassKit(name, interfaces, newInit, behavior, options);
-      }) as typeof zone.exoClassKit,
-    }),
-  });
-
-  const makePortfolioKit = preparePortfolioKit(portfolioZone, {
+  const makePortfolioKit = preparePortfolioKit(zone, {
     portfoliosNode,
     marshaller,
     usdcBrand: USDC,
@@ -1693,7 +1666,7 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
   const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
     storage,
   });
-  const { manager, planner, reporter } = makePortfolioKit({ portfolioId: 1 });
+  const { manager, planner } = makePortfolioKit({ portfolioId: 1 });
 
   const amount = { brand: USDC, value: 100n };
   const steps = [{ src: '@agoric' as const, dest: '@noble' as const, amount }];
@@ -1723,8 +1696,6 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
     );
   }
 
-  reporter.finishFlow(flowId);
-
   // Flow started with pre-resolved steps: awaitingSteps is false immediately
   const { flowId: flowId2 } = manager.startFlow(
     { type: 'withdraw', amount },
@@ -1739,8 +1710,6 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
       'awaitingSteps is false immediately when steps are provided at startFlow',
     );
   }
-
-  reporter.finishFlow(flowId2);
 
   // rejectFlowPlan also publishes status immediately
   const { flowId: flowId3, stepsP } = manager.startFlow({
@@ -1789,38 +1758,53 @@ for (const activeType of [
   'rebalance',
   'withdraw',
 ] as const) {
-  test(`startFlow rejects overlap with ${activeType} until finishFlow`, async t => {
+  test(`delegated flows reject overlap with the latest ${activeType} flow`, async t => {
     const storage = makeFakeStorageKit('published', { sequence: true });
-    const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
-      storage,
-    });
+    const { makePortfolioKit, getCallLog, getPortfolioStatus, vowTools } =
+      makeTestSetup({ storage });
     const { manager, planner, reporter } = makePortfolioKit({ portfolioId: 1 });
-    const amount = harden({ brand: USDC, value: 100n });
-    const details: FlowDetail[] = [
-      { type: 'deposit', amount },
-      { type: 'claimRewards' },
-      { type: 'rebalance' },
-      { type: 'withdraw', amount },
+    manager.setTargetAllocation({ USDN: 100n });
+    await manager.grantDelegation('agoric1delegate', {
+      allocation: true,
+      rebalance: true,
+      claimRewards: true,
+    });
+    const [, client] = getCallLog()[0] as [
+      'deliverDelegation',
+      ...Parameters<PortfolioKitDeps['deliverDelegation']>,
     ];
-    const activeDetail = details.find(detail => detail.type === activeType)!;
-    const { flowId, stepsP } = manager.startFlow(activeDetail);
-    t.is(flowId, 1);
-
-    // The flow must already exclude others, even before publication completes.
-    const assertNoFlowCanStart = (when: string) => {
-      for (const detail of details) {
-        t.throws(
-          () => manager.startFlow(detail, []),
-          { message: 'portfolio already has a running flow' },
-          `new ${detail.type} flow (${when})`,
-        );
-      }
-    };
-    assertNoFlowCanStart('after first startFlow');
-
+    const amount = harden({ brand: USDC, value: 100n });
+    const detail = (
+      activeType === 'deposit' || activeType === 'withdraw'
+        ? { type: activeType, amount }
+        : { type: activeType }
+    ) as FlowDetail;
+    const { flowId, stepsP } = manager.startFlow(detail);
+    t.is(flowId, 1); // xxx
     const before = await getPortfolioStatus!(1);
-    t.deepEqual(Object.keys(before.flowsRunning!), [`flow${flowId}`]);
-    t.is(before.flowCount, 1);
+    t.deepEqual(Object.keys(before.flowsRunning!), [`flow${flowId}`]); // xxx
+    t.is(before.flowCount, 1); // xxx
+
+    const syncState = harden({
+      policyVersion: before.policyVersion,
+      rebalanceCount: before.rebalanceCount,
+    });
+    const calls = getCallLog();
+    for (const attempt of [
+      () => client.rebalance({ syncState }),
+      () => client.claimRewards({ syncState }),
+    ]) {
+      t.throws(attempt, { message: 'portfolio already has a running flow' });
+    }
+    await t.throwsAsync(
+      client.setTargetAllocation({
+        syncState,
+        targetAllocation: { USDN: 100n },
+      }),
+      { message: 'portfolio already has a running flow' },
+    );
+    t.deepEqual(await getPortfolioStatus!(1), before);
+    t.deepEqual(getCallLog(), calls);
 
     // Resolving or rejecting a plan does not finish its execution.
     if (activeType === 'claimRewards') {
@@ -1832,14 +1816,14 @@ for (const activeType of [
       planner.resolveFlowPlan(flowId, []);
       await vowTools.when(stepsP);
     }
-    assertNoFlowCanStart('after first startFlow stepsP settlement');
-
+    t.throws(() => client.claimRewards({ syncState }), {
+      message: 'portfolio already has a running flow',
+    });
     reporter.finishFlow(flowId);
-    t.deepEqual((await getPortfolioStatus!(1)).flowsRunning, {});
     t.is(
-      manager.startFlow({ type: 'rebalance' }, []).flowId,
-      2,
-      'rejected requests do not consume flow IDs',
+      client.claimRewards({ syncState }),
+      'flow2',
+      'denials do not consume flow IDs',
     );
   });
 }
@@ -1910,90 +1894,77 @@ test('delegated requests reject an active claimRewards flow with matching sync s
   );
 });
 
-test('overlapping owner rebalances preserve policy and target allocation', async t => {
+test('delegated starts ignore older stuck flows once the last allocated flow finishes', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
-  const { makePortfolioKit, getPortfolioStatus, getCallLog } = makeTestSetup({
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
     storage,
   });
-  const { manager, evmHandler, simpleRebalanceHandler } = makePortfolioKit({
-    portfolioId: 1,
-    sourceAccountId: 'eip155:42161:0x4545454545454545454545454545454545454545',
-  });
-  manager.setTargetAllocation({ USDN: 100n });
+  const { manager, reporter } = makePortfolioKit({ portfolioId: 1 });
+  await manager.grantDelegation('agoric1delegate', { claimRewards: true });
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+  manager.startFlow({ type: 'rebalance' });
   manager.startFlow({ type: 'rebalance' });
   const before = await getPortfolioStatus!(1);
 
-  t.throws(() => evmHandler.rebalance([{ instrument: 'USDN', portion: 50n }]), {
+  const syncState = harden({
+    policyVersion: before.policyVersion,
+    rebalanceCount: before.rebalanceCount,
+  });
+  t.throws(() => client.claimRewards({ syncState }), {
     message: 'portfolio already has a running flow',
   });
-  t.throws(
-    () =>
-      simpleRebalanceHandler.handle({} as any, {
-        targetAllocation: { USDN: 50n },
-      }),
-    { message: 'portfolio already has a running flow' },
-  );
-  t.deepEqual(await getPortfolioStatus!(1), before);
-  t.deepEqual(getCallLog(), []);
-});
-
-test('older stuck flows do not block starts after the most recent flow finished', async t => {
-  const storage = makeFakeStorageKit('published', { sequence: true });
-  const { makePortfolioKit, getPortfolioStatus } = makeTestSetup({
-    storage,
-    legacyFlows: { nextFlowId: 3, runningIds: [1] },
-  });
-  const { manager, reporter } = makePortfolioKit({ portfolioId: 1 });
-  // Flow 1 is stuck, but the most recently allocated flow (2) has finished.
-  t.is(manager.startFlow({ type: 'rebalance' }, []).flowId, 3);
-  t.throws(() => manager.startFlow({ type: 'claimRewards' }), {
+  reporter.finishFlow(2);
+  t.is(client.claimRewards({ syncState }), 'flow3');
+  t.throws(() => client.claimRewards({ syncState }), {
     message: 'portfolio already has a running flow',
   });
   reporter.finishFlow(3);
-  t.is(manager.startFlow({ type: 'claimRewards' }, []).flowId, 4);
+  t.is(client.claimRewards({ syncState }), 'flow4');
   t.deepEqual(Object.keys((await getPortfolioStatus!(1)).flowsRunning!), [
     'flow1',
     'flow4',
   ]);
 });
 
-test('the most recent legacy flow still blocks new starts', t => {
-  const { makePortfolioKit } = makeTestSetup({
-    legacyFlows: { nextFlowId: 3, runningIds: [1, 2] },
-  });
-  const { manager, reporter } = makePortfolioKit({ portfolioId: 1 });
-  t.throws(() => manager.startFlow({ type: 'rebalance' }), {
-    message: 'portfolio already has a running flow',
-  });
-  reporter.finishFlow(2);
-  t.is(manager.startFlow({ type: 'rebalance' }, []).flowId, 3);
-});
-
-test('owner rebalance ignores older stuck flows but rejects overlap with the latest', async t => {
+test('owner rebalances may start while a delegated or owner flow is running', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
-  const { makePortfolioKit, getPortfolioStatus } = makeTestSetup({
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
     storage,
-    legacyFlows: { nextFlowId: 3, runningIds: [1] },
   });
-  const { evmHandler, simpleRebalanceHandler, reporter } = makePortfolioKit({
+  const { manager, evmHandler, simpleRebalanceHandler } = makePortfolioKit({
     portfolioId: 1,
     sourceAccountId: 'eip155:42161:0x4545454545454545454545454545454545454545',
   });
-  t.is(evmHandler.rebalance([{ instrument: 'USDN', portion: 100n }]), 'flow3');
+  await manager.grantDelegation('agoric1delegate', { claimRewards: true });
+  manager.setTargetAllocation({ USDN: 100n });
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
   const before = await getPortfolioStatus!(1);
-  t.throws(
-    () =>
-      simpleRebalanceHandler.handle({} as any, {
-        targetAllocation: { USDN: 50n },
-      }),
-    { message: 'portfolio already has a running flow' },
+
+  t.is(
+    client.claimRewards({
+      syncState: {
+        policyVersion: before.policyVersion,
+        rebalanceCount: before.rebalanceCount,
+      },
+    }),
+    'flow1',
   );
-  t.deepEqual(await getPortfolioStatus!(1), before);
-  reporter.finishFlow(3);
+  t.is(evmHandler.rebalance([{ instrument: 'USDN', portion: 75n }]), 'flow2');
   t.is(
     simpleRebalanceHandler.handle({} as any, {
       targetAllocation: { USDN: 50n },
     }),
-    'flow4',
+    'flow3',
   );
+  const after = await getPortfolioStatus!(1);
+
+  t.deepEqual(Object.keys(after.flowsRunning!), ['flow1', 'flow2', 'flow3']);
+  t.deepEqual(after.targetAllocation, { USDN: 50n });
+  t.is(after.policyVersion, before.policyVersion + 2);
 });
