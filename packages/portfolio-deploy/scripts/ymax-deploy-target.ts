@@ -1858,48 +1858,47 @@ const checkMultisigSelection = (
   publicKey: any,
   signerIndex: number,
 ) => {
+  const label = `signer_infos[${signerIndex}]`;
+  mustMatch(harden(publicKey), multisigPublicKeyShape, `${label}.public_key`);
+  mustMatch(harden(multi), multisigModeShape, `${label}.mode_info.multi`);
+  const members = publicKey.public_keys;
+  const threshold = Number(publicKey.threshold);
+  const { bitarray, mode_infos: modeInfos } = multi;
+  const encoded = bitarray.elems ?? bitarray.elements;
+  const bytes = Buffer.from(encoded, 'base64');
+  // `extra` indicates the count of bits to take from an incomplete final octet.
+  const extra = bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0;
+  const bitLength =
+    extra === 0 ? bytes.length * 8 : (bytes.length - 1) * 8 + extra;
+
   const fail = (strings: TemplateStringsArray, ...subs: unknown[]) => {
     const prefixedStrings = [
-      `signer_infos[${signerIndex}]: invalid multisig signer selection: ${strings[0]}`,
+      `${label}: invalid multisig signer selection: ${strings[0]}`,
       ...strings.slice(1),
     ];
     throw Fail(prefixedStrings, ...subs);
   };
-  mustMatch(
-    harden(publicKey),
-    multisigPublicKeyShape,
-    `signer_infos[${signerIndex}].public_key`,
-  );
-  mustMatch(
-    harden(multi),
-    multisigModeShape,
-    `signer_infos[${signerIndex}].mode_info.multi`,
-  );
-  const { bitarray, mode_infos: modeInfos } = multi;
-  const members = publicKey.public_keys;
-  const threshold = Number(publicKey.threshold);
+
   (Number.isSafeInteger(threshold) &&
     threshold >= 1 &&
     threshold <= members.length) ||
     fail`Number(public_key.threshold) must be a safe integer between 1 and ${members.length} keys; got ${threshold} from input ${publicKey.threshold}`;
-  const encoded = bitarray.elems ?? bitarray.elements;
-  const extra = bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0;
+
   (Number.isSafeInteger(extra) && extra >= 0 && extra <= 8) ||
     fail`(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be a safe integer between 0 and 8; got ${extra}`;
-  const bytes = Buffer.from(encoded, 'base64');
-  const bitLength =
-    extra === 0 ? bytes.length * 8 : (bytes.length - 1) * 8 + extra;
   bytes.length > 0 ||
     fail`(bitarray.elems ?? bitarray.elements) decodes to no bytes`;
   bytes.toString('base64') === encoded ||
     fail`(bitarray.elems ?? bitarray.elements) is not canonical base64`;
-  bitLength === members.length ||
-    fail`bitarray length ${bitLength} does not match key count ${members.length} (${bytes.length} bytes, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`;
   if (extra !== 0) {
     // The final byte must not set bits beyond those used for `extra`.
     bytes.at(-1)! % 2 ** (8 - extra) === 0 ||
       fail`bitarray has non-zero padding bits in its final byte (0x${b(bytes.at(-1)!.toString(16).padStart(2, '0'))}, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`;
   }
+
+  bitLength === members.length ||
+    fail`bitarray length ${bitLength} does not match key count ${members.length} (${bytes.length} bytes, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`;
+
   const sigCount = popcount(bytes);
   sigCount >= threshold ||
     fail`bitarray selects ${sigCount} keys, fewer than threshold ${threshold}`;
