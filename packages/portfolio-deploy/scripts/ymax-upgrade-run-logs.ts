@@ -1,13 +1,14 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 /** @file query upgrade run slogs for a ymax control tx */
 
+import { writeFile } from 'node:fs/promises';
+import { URLSearchParams } from 'node:url';
+import { parseArgs } from 'node:util';
 import {
   getControlAddress,
   isPortfolioContract,
 } from '@agoric/portfolio-api/src/portfolio-constants.js';
-import { writeFile } from 'node:fs/promises';
-import { URLSearchParams } from 'node:url';
-import { parseArgs } from 'node:util';
+import type { YmaxContractNetwork } from '../src/ymax-release-policy.mjs';
 
 const usage = `Usage:
   packages/portfolio-deploy/scripts/ymax-upgrade-run-logs.ts [options]
@@ -41,8 +42,6 @@ const options = {
   'tx-limit': { type: 'string', default: '20' },
   'window-minutes': { type: 'string', default: '15' },
 } as const;
-
-type Network = 'devnet' | 'main';
 
 type NetworkConfig = {
   apiAddrs?: string[];
@@ -118,10 +117,10 @@ const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
 
 const quote = (specimen: string) => JSON.stringify(specimen);
 
-const networkConfigUrl = (network: Network) =>
+const networkConfigUrl = (network: YmaxContractNetwork) =>
   `https://${network}.agoric.net/network-config`;
 
-const getApiAddr = async (network: Network) => {
+const getApiAddr = async (network: YmaxContractNetwork) => {
   trace(`fetching ${network} network config`);
   const config = await fetchJson<NetworkConfig>(networkConfigUrl(network));
   return must(
@@ -348,7 +347,7 @@ const queryGrafana = async ({
 
 const toIso = (ms: number) => new Date(ms).toISOString();
 
-const defaultPodForNetwork = (network: Network) =>
+const defaultPodForNetwork = (network: YmaxContractNetwork) =>
   network === 'devnet' ? 'validator-primary-0' : undefined;
 
 const main = async (argv = process.argv) => {
