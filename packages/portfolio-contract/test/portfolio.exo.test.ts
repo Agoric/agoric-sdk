@@ -19,6 +19,7 @@ import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
+import type { ZCFSeat } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
 import { Far } from '@endo/pass-style';
 import { hexToBytes } from '@noble/hashes/utils';
@@ -1749,4 +1750,26 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
   }
 
   await t.throwsAsync(vowTools.when(stepsP), { message: 'insufficient funds' });
+});
+
+test('Agoric owner offers are rejected once EVM-owned', async t => {
+  const { makePortfolioKit } = makeTestSetup();
+  const {
+    rebalanceHandler,
+    simpleRebalanceHandler,
+    depositHandler,
+    withdrawHandler,
+  } = makePortfolioKit({
+    portfolioId: 460,
+    sourceAccountId: 'eip155:42161:0x2222222222222222222222222222222222222222',
+  });
+  // The guard runs before the seat is touched.
+  const seat = {} as ZCFSeat;
+  const message =
+    'portfolio460 is owned by EVM account "eip155:42161:0x2222222222222222222222222222222222222222"';
+
+  await t.throwsAsync(rebalanceHandler.handle(seat, {}), { message });
+  t.throws(() => simpleRebalanceHandler.handle(seat, {}), { message });
+  t.throws(() => depositHandler.handle(seat, {}), { message });
+  t.throws(() => withdrawHandler.handle(seat), { message });
 });

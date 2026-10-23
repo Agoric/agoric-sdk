@@ -369,6 +369,18 @@ const makePortfolioAgentsRecord = (
   );
 
 /** publish everyting about flowsRunning but the sync VowKit */
+/**
+ * Offers from the Agoric account that opened a portfolio stop working once
+ * its ownership moves to an EVM account.
+ */
+const assertAgoricOwned = ({
+  portfolioId,
+  sourceAccountId,
+}: Pick<PortfolioKitState, 'portfolioId' | 'sourceAccountId'>) => {
+  !sourceAccountId ||
+    Fail`portfolio${q(portfolioId)} is owned by EVM account ${q(sourceAccountId)}`;
+};
+
 const makeFlowsRunningRecord = (
   flowsRunning: PortfolioKitState['flowsRunning'],
 ): StatusFor['portfolio']['flowsRunning'] => {
@@ -2029,6 +2041,7 @@ export const preparePortfolioKit = (
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
+          assertAgoricOwned(this.state);
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           // XXX not wired to record `initiatingOperation` (AGO-1125) like the
           // other setTargetAllocation call sites: this legacy path has no
@@ -2050,6 +2063,7 @@ export const preparePortfolioKit = (
       },
       depositHandler: {
         handle(seat: ZCFSeat, offerArgs: unknown) {
+          assertAgoricOwned(this.state);
           mustMatch(offerArgs, offerArgsShapes.deposit);
           const proposal =
             seat.getProposal() as unknown as ProposalType['deposit'];
@@ -2074,6 +2088,7 @@ export const preparePortfolioKit = (
       },
       simpleRebalanceHandler: {
         handle(seat: ZCFSeat, offerArgs: unknown): FlowKey {
+          assertAgoricOwned(this.state);
           // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           const { manager } = this.facets;
@@ -2108,6 +2123,7 @@ export const preparePortfolioKit = (
       },
       withdrawHandler: {
         handle(seat: ZCFSeat) {
+          assertAgoricOwned(this.state);
           const proposal =
             seat.getProposal() as unknown as ProposalType['withdraw'];
           const flowDetail = {
