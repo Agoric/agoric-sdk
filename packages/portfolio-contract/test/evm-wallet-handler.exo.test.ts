@@ -1530,3 +1530,51 @@ test('EIP712DataShape rejects a non-string hash', async t => {
     { message: /hash/ },
   );
 });
+
+test('handleOperation rejects AcceptOwnership until supported', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    getStatuses,
+    mockWallet,
+    mockStorageNode,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vowAcceptOwnership', {
+    portfolios: [],
+    namePrefix: 'acceptOwnership_',
+  });
+
+  const operationDetails: YmaxOperationDetails<'AcceptOwnership'> = {
+    operation: 'AcceptOwnership',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
+    },
+    data: { portfolio: 3n },
+  };
+
+  await vowTools.when(
+    handleOperation({
+      wallet: mockWallet,
+      storageNode: mockStorageNode,
+      address: '0xEvmWalletAddress',
+      operationDetails: harden(operationDetails),
+      nonce: 790n,
+      deadline: 1700000000n,
+    }),
+  );
+
+  t.is(mockWallet.portfolios.getSize(), 0);
+  t.is(getCalls().validateEVMMessageDomain.length, 0);
+  t.like(getStatuses(), [
+    { nonce: 790n, status: 'pending' },
+    {
+      nonce: 790n,
+      status: 'error',
+      error: 'Error: "AcceptOwnership" is not supported yet',
+    },
+  ]);
+});

@@ -759,3 +759,26 @@ test('usable without lockdown, standalone or as permit2 witness', async t => {
   `;
   await t.notThrowsAsync(runWithoutLockdown(script));
 });
+
+test('getYmaxStandaloneOperationData for AcceptOwnership', t => {
+  const data = {
+    portfolio: 3n,
+    nonce: 1n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'AcceptOwnership',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'AcceptOwnership');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.AcceptOwnership, [
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+});
