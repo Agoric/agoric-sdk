@@ -687,8 +687,18 @@ export const contract = async (
     txfrCtx,
   );
 
-  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
-  const getPortfolio = (id: number) => portfolios.get(id);
+  /**
+   * Each portfolio's kit, as of its creation: facets added to the kind by
+   * later upgrades are missing from older entries. Only `manager` has
+   * existed since the first release.
+   */
+  const portfolios = zone.mapStore<
+    number,
+    Pick<PortfolioKit, 'manager'> & Partial<PortfolioKit>
+  >('portfolios');
+  /** Get a portfolio's kit, with all of its current facets. */
+  const getPortfolio = (id: number): PortfolioKit =>
+    portfolios.get(id).manager.getKit();
 
   const plannerDelegations = zone.mapStore<
     PortfolioKit['planner'],
