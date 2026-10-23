@@ -108,6 +108,11 @@ export interface EVMPortfolioPowers {
     domain: YmaxFullDomain,
     portfolio?: Remote<PortfolioEVMFacet>,
   ): Promise<void>;
+  completeOwnershipTransfer(
+    portfolioId: bigint,
+    signer: Address,
+    domain: YmaxFullDomain,
+  ): Promise<PortfolioEVMFacet>;
 }
 
 /** @private */
@@ -322,6 +327,27 @@ export const prepareEVMPortfolioOperationManager = (
           return this.facets.BasicOutcomeWatcher.onRejected(reason);
         },
       },
+      AcceptOwnershipOutcomeWatcher: {
+        async onFulfilled(evmHandler: Remote<PortfolioEVMFacet>) {
+          await null;
+          try {
+            const { wallet, storageNode } = this.state;
+            const portfolioId = await attachPortfolio(
+              wallet,
+              storageNode,
+              evmHandler,
+            );
+            return this.facets.BasicOutcomeWatcher.onFulfilled(
+              `portfolio${portfolioId}`,
+            );
+          } catch (e) {
+            return this.facets.BasicOutcomeWatcher.onRejected(e);
+          }
+        },
+        onRejected(reason: unknown) {
+          return this.facets.BasicOutcomeWatcher.onRejected(reason);
+        },
+      },
       BasicOutcomeWatcher: {
         onFulfilled(result: unknown) {
           const { storageNode, address, nonce, deadline } = this.state;
@@ -377,7 +403,11 @@ export const prepareEVMPortfolioOperationManager = (
         status: 'pending',
       });
 
-      const { BasicOutcomeWatcher, OpenOutcomeWatcher } = makeOutcomeHandlers({
+      const {
+        AcceptOwnershipOutcomeWatcher,
+        BasicOutcomeWatcher,
+        OpenOutcomeWatcher,
+      } = makeOutcomeHandlers({
         wallet,
         address,
         storageNode,
@@ -388,9 +418,21 @@ export const prepareEVMPortfolioOperationManager = (
       await null;
       try {
         if (operationDetails.operation === 'AcceptOwnership') {
-          // The portfolio is not held by this wallet (yet); fail explicitly
-          // rather than on the lookup below.
-          throw Fail`${q(operationDetails.operation)} is not supported yet`;
+          // The portfolio is not held by this wallet yet, and its domain is
+          // validated against the portfolio when completing the transfer.
+          const {
+            data: { portfolio: portfolioId },
+            domain,
+            permitDetails,
+          } = operationDetails;
+          !permitDetails ||
+            Fail`${q(operationDetails.operation)} does not support deposit permits`;
+          const result = E(evmPortfolioPowers).completeOwnershipTransfer(
+            portfolioId,
+            address,
+            domain,
+          );
+          return watch(result, AcceptOwnershipOutcomeWatcher);
         }
         const portfolioId =
           operationDetails.operation !== 'OpenPortfolio' &&

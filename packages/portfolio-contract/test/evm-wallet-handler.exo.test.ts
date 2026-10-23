@@ -17,6 +17,7 @@ import type { VowTools } from '@agoric/vow';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { Fail, q } from '@endo/errors';
 import { privateKeyToAccount } from 'viem/accounts';
 import { parseSignature } from 'viem';
 import { hashTypedData } from 'viem/utils';
@@ -41,6 +42,13 @@ type OpenPortfolioArgs = Parameters<EVMPortfolioPowers['openPortfolioFromEVM']>;
 type ValidateEVMMessageDomainArgs = Parameters<
   EVMPortfolioPowers['validateEVMMessageDomain']
 >;
+
+type CompleteOwnershipTransferArgs = Parameters<
+  EVMPortfolioPowers['completeOwnershipTransfer']
+>;
+
+/** Portfolio id for which the mock `completeOwnershipTransfer` rejects */
+const NO_PENDING_TRANSFER_PORTFOLIO_ID = 999n;
 
 type WithdrawArgs = Parameters<PortfolioEVMFacet['withdraw']>;
 
@@ -196,12 +204,15 @@ const makeMockEVMPortfolioPowers = ({
   zone,
   vowTools,
   calls,
+  ownershipTransferCalls,
   namePrefix = '',
   getNextPortfolioId,
 }: {
   zone: Zone;
   vowTools: VowTools;
   calls: MockPortfolioCalls;
+  // kept apart from `calls`, whose snapshots predate ownership transfers
+  ownershipTransferCalls: CompleteOwnershipTransferArgs[];
   namePrefix: string;
   getNextPortfolioId: () => number;
 }) => {
@@ -232,6 +243,19 @@ const makeMockEVMPortfolioPowers = ({
       },
       async validateEVMMessageDomain(...args: ValidateEVMMessageDomainArgs) {
         calls.validateEVMMessageDomain.push(args);
+      },
+      async completeOwnershipTransfer(...args: CompleteOwnershipTransferArgs) {
+        ownershipTransferCalls.push(args);
+        const [portfolioId] = args;
+        portfolioId !== NO_PENDING_TRANSFER_PORTFOLIO_ID ||
+          Fail`portfolio${q(Number(portfolioId))} has no pending ownership transfer`;
+        return makeMockPortfolioEvmHandler({
+          zone,
+          vowTools,
+          portfolioId: Number(portfolioId),
+          calls,
+          namePrefix: `${namePrefix}${portfolioId}_`,
+        });
       },
     },
   );
@@ -305,10 +329,12 @@ const makeHandleOperationTestSetup = (
 
   const mockWallet = makeMockWallet(zone, portfolioEntries, namePrefix);
   const mockStorageNode = makeMockStorageNode(zone, namePrefix);
+  const ownershipTransferCalls: CompleteOwnershipTransferArgs[] = [];
   const mockEVMPortfolioPowers = makeMockEVMPortfolioPowers({
     zone,
     namePrefix,
     calls,
+    ownershipTransferCalls,
     vowTools,
     getNextPortfolioId,
   });
@@ -331,6 +357,7 @@ const makeHandleOperationTestSetup = (
     vowTools,
     usdcBrand,
     getCalls,
+    getOwnershipTransferCalls: () => harden([...ownershipTransferCalls]),
     mockWallet,
     mockStorageNode,
     getStatuses,
@@ -1530,21 +1557,11 @@ test('EIP712DataShape rejects a non-string hash', async t => {
   );
 });
 
-test('handleOperation rejects AcceptOwnership until supported', async t => {
-  const { zone } = t.context;
-  const {
-    vowTools,
-    getCalls,
-    getStatuses,
-    mockWallet,
-    mockStorageNode,
-    handleOperation,
-  } = makeHandleOperationTestSetup(zone, 'vowAcceptOwnership', {
-    portfolios: [],
-    namePrefix: 'acceptOwnership_',
-  });
-
-  const operationDetails: YmaxOperationDetails<'AcceptOwnership'> = {
+const acceptOwnershipDetails = (
+  portfolio: bigint,
+  extra: Partial<FullMessageDetails> = {},
+) =>
+  harden({
     operation: 'AcceptOwnership',
     domain: {
       name: 'Ymax',
@@ -1552,28 +1569,122 @@ test('handleOperation rejects AcceptOwnership until supported', async t => {
       chainId: 42161n,
       verifyingContract: '0xVerifyingContractAddress' as const,
     },
-    data: { portfolio: 3n },
-  };
+    data: { portfolio },
+    ...extra,
+  } as YmaxOperationDetails<'AcceptOwnership'> &
+    Pick<FullMessageDetails, 'permitDetails'>);
+
+test('handleOperation accepts an ownership transfer into the wallet', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    getOwnershipTransferCalls,
+    getStatuses,
+    mockWallet,
+    mockStorageNode,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vowAcceptOwnership', {
+    portfolios: [{ id: 1 }],
+    namePrefix: 'acceptOwnership_',
+  });
+  const operationDetails = acceptOwnershipDetails(3n);
 
   await vowTools.when(
     handleOperation({
       wallet: mockWallet,
       storageNode: mockStorageNode,
       address: '0xEvmWalletAddress',
-      operationDetails: harden(operationDetails),
+      operationDetails,
       nonce: 790n,
       deadline: 1700000000n,
     }),
   );
 
-  t.is(mockWallet.portfolios.getSize(), 0);
+  t.deepEqual(getOwnershipTransferCalls(), [
+    [3n, '0xEvmWalletAddress', operationDetails.domain],
+  ]);
+  // The domain is validated against the transferred portfolio instead.
   t.is(getCalls().validateEVMMessageDomain.length, 0);
+  t.deepEqual([...mockWallet.portfolios.keys()], [1n, 3n]);
   t.like(getStatuses(), [
     { nonce: 790n, status: 'pending' },
+    { nonce: 790n, status: 'ok', result: 'portfolio3' },
+  ]);
+});
+
+test('handleOperation reports a rejected ownership transfer', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getStatuses,
+    mockWallet,
+    mockStorageNode,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vowAcceptOwnershipRejected', {
+    portfolios: [],
+    namePrefix: 'acceptOwnershipRejected_',
+  });
+
+  await vowTools.when(
+    handleOperation({
+      wallet: mockWallet,
+      storageNode: mockStorageNode,
+      address: '0xEvmWalletAddress',
+      operationDetails: acceptOwnershipDetails(
+        NO_PENDING_TRANSFER_PORTFOLIO_ID,
+      ),
+      nonce: 791n,
+      deadline: 1700000000n,
+    }),
+  );
+
+  t.is(mockWallet.portfolios.getSize(), 0);
+  t.like(getStatuses(), [
+    { nonce: 791n, status: 'pending' },
     {
-      nonce: 790n,
+      nonce: 791n,
       status: 'error',
-      error: 'Error: "AcceptOwnership" is not supported yet',
+      error: 'Error: portfolio999 has no pending ownership transfer',
+    },
+  ]);
+});
+
+test('handleOperation rejects AcceptOwnership with a deposit permit', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getOwnershipTransferCalls,
+    getStatuses,
+    mockWallet,
+    mockStorageNode,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vowAcceptOwnershipPermit', {
+    portfolios: [],
+    namePrefix: 'acceptOwnershipPermit_',
+  });
+
+  await vowTools.when(
+    handleOperation({
+      wallet: mockWallet,
+      storageNode: mockStorageNode,
+      address: '0xEvmWalletAddress',
+      operationDetails: acceptOwnershipDetails(3n, {
+        permitDetails: {} as FullMessageDetails['permitDetails'],
+      }),
+      nonce: 792n,
+      deadline: 1700000000n,
+    }),
+  );
+
+  t.is(getOwnershipTransferCalls().length, 0);
+  t.is(mockWallet.portfolios.getSize(), 0);
+  t.like(getStatuses(), [
+    { nonce: 792n, status: 'pending' },
+    {
+      nonce: 792n,
+      status: 'error',
+      error: 'Error: "AcceptOwnership" does not support deposit permits',
     },
   ]);
 });
