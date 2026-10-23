@@ -22,6 +22,7 @@ import {
 } from '@agoric/orchestration';
 import {
   coerceAccountId,
+  isEvmAddressShape,
   parseAccountId,
   parseAccountIdArg,
   sameEvmAddress,
@@ -48,6 +49,8 @@ import {
   type PortfolioDelegatedSetTargetAllocationParams,
   type PortfolioGrantResult,
   type PortfolioDelegationLifecycleResult,
+  type PortfolioPendingOwnerTransfer,
+  type PortfolioTransferOwnershipResult,
   type PortfolioSetAutoFeaturesResult,
   type SetTargetAllocationInitiatingOperation,
   PortfolioAutoFeaturesExtShape,
@@ -58,15 +61,17 @@ import {
   SupportedChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type {
-  TargetAllocation as EIP712Allocation,
-  YmaxFullDomain,
+import {
+  MAX_YMAX_DEADLINE_OFFSET,
+  type TargetAllocation as EIP712Allocation,
+  type YmaxFullDomain,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { MapStore } from '@agoric/store';
+import type { TimerService, TimestampRecord } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
+import type { Vow, VowKit, VowResolver, VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { bare, Fail, q, X } from '@endo/errors';
@@ -188,6 +193,11 @@ type RunningFlowDetail = {
   sync: MaybeResolvedVowKit<FundsFlow>;
 } & FlowDetail;
 
+type PendingOwnerTransfer = PortfolioPendingOwnerTransfer & {
+  /** settles the `TransferOwnershipToEVM` offer result */
+  resolver: VowResolver<PortfolioTransferOwnershipResult>;
+};
+
 type PortfolioKitState = {
   portfolioId: number;
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
@@ -205,6 +215,8 @@ type PortfolioKitState = {
   sourceAccountId?: AccountId;
   /** Noble ICA retained while its forwarding-account registration is retried. */
   nobleAccountUnderProvision?: NobleAccountInfo;
+  /** Ownership transfer to an EVM account, awaiting its acceptance. */
+  pendingOwnerTransfer?: PendingOwnerTransfer;
   /** reserved for future use */
   etc: unknown;
 };
@@ -225,6 +237,13 @@ export const PortfolioStateShape = {
   rebalanceCount: M.number(),
   sourceAccountId: M.opt(M.string()),
   nobleAccountUnderProvision: M.opt(M.any()),
+  pendingOwnerTransfer: M.opt(
+    M.splitRecord({
+      evmAddress: M.string(),
+      deadline: M.nat(),
+      resolver: M.remotable('resolver'),
+    }),
+  ),
   etc: M.any(),
 };
 harden(PortfolioStateShape);
@@ -440,6 +459,7 @@ export const preparePortfolioKit = (
     contracts,
     deliverDelegation,
     verifyPortfolioObservations,
+    timerService,
   }: {
     rebalance: (
       seat: ZCFSeat,
@@ -497,6 +517,7 @@ export const preparePortfolioKit = (
       permissions: PortfolioPermissionsExt,
     ) => Promise<void>;
     verifyPortfolioObservations: PortfolioObservationsVerifier;
+    timerService: ERemote<TimerService>;
   },
 ) => {
   // Ephemeral node cache
@@ -589,6 +610,7 @@ export const preparePortfolioKit = (
         rebalanceCount: 0,
         sourceAccountId,
         nobleAccountUnderProvision: undefined,
+        pendingOwnerTransfer: undefined,
         etc: undefined,
       };
     },
@@ -914,6 +936,7 @@ export const preparePortfolioKit = (
             rebalanceCount,
             sourceAccountId,
             enabledAutoFeatures,
+            pendingOwnerTransfer,
           } = this.state;
 
           const agoricAux = (): Pick<
@@ -944,6 +967,12 @@ export const preparePortfolioKit = (
             ...(accounts.has('agoric') ? agoricAux() : {}),
             ...(targetAllocation && { targetAllocation }),
             ...(sourceAccountId && { sourceAccountId }),
+            ...(pendingOwnerTransfer && {
+              pendingOwnerTransfer: {
+                evmAddress: pendingOwnerTransfer.evmAddress,
+                deadline: pendingOwnerTransfer.deadline,
+              },
+            }),
             accountsPending: [...accountsPending.keys()],
             policyVersion,
             rebalanceCount,
@@ -2137,6 +2166,112 @@ export const preparePortfolioKit = (
         },
       },
 
+      transferOwnershipHandler: {
+        handle(seat: ZCFSeat, offerArgs: unknown) {
+          assertAgoricOwned(this.state);
+          mustMatch(offerArgs, offerArgsShapes.transferOwnershipToEVM);
+          const { evmAddress, deadline } = offerArgs;
+          isEvmAddressShape(evmAddress) ||
+            Fail`invalid EVM address ${q(evmAddress)}`;
+          // Nothing to pay out: the result settles when the transfer is
+          // accepted, superseded or expired.
+          seat.exit();
+          const { ownerTransfer } = this.facets;
+          return vowTools.asVow(async () => {
+            // Resolves promptly
+            const now = await E(timerService).getCurrentTimestamp();
+            return ownerTransfer.initiate(evmAddress, deadline, now);
+          });
+        },
+      },
+      ownerTransfer: {
+        /**
+         * Designate `evmAddress` as the portfolio's new owner, pending its
+         * acceptance until `deadline`, superseding any previous designation.
+         *
+         * @returns a vow for the offer result, settled when the transfer is
+         *   accepted, superseded or expired
+         */
+        initiate(
+          evmAddress: EvmAddress,
+          deadline: bigint,
+          now: TimestampRecord,
+        ): Vow<PortfolioTransferOwnershipResult> {
+          assertAgoricOwned(this.state);
+          deadline >= now.absValue ||
+            Fail`deadline ${q(deadline)} has already passed (now ${q(now.absValue)})`;
+          deadline < now.absValue + MAX_YMAX_DEADLINE_OFFSET ||
+            Fail`deadline ${q(deadline)} is too far in the future (now ${q(now.absValue)})`;
+
+          const { pendingOwnerTransfer: superseded } = this.state;
+          if (superseded) {
+            superseded.resolver.reject(
+              Error('superseded by a newer ownership transfer'),
+            );
+            this.facets.ownerTransfer.cancelExpiry();
+          }
+
+          const { vow, resolver } =
+            vowTools.makeVowKit<PortfolioTransferOwnershipResult>();
+          this.state.pendingOwnerTransfer = harden({
+            evmAddress,
+            deadline,
+            resolver,
+          });
+          this.facets.reporter.publishStatus();
+
+          // The transfer can be accepted through `deadline`, inclusive.
+          // The waker also serves as this portfolio's cancel token.
+          const { ownerTransferExpiry } = this.facets;
+          const { portfolioId } = this.state;
+          void E.when(
+            E(timerService).setWakeup(
+              harden({ ...now, absValue: deadline + 1n }),
+              ownerTransferExpiry,
+              ownerTransferExpiry,
+            ),
+            undefined,
+            reason =>
+              trace(`portfolio${portfolioId}`, 'setWakeup failed', reason),
+          );
+          return vow;
+        },
+        /** Expire the pending ownership transfer. */
+        expire() {
+          const { pendingOwnerTransfer: pending } = this.state;
+          if (!pending) return;
+          this.state.pendingOwnerTransfer = undefined;
+          pending.resolver.reject(
+            Error(`ownership transfer expired at ${pending.deadline}`),
+          );
+          this.facets.reporter.publishStatus();
+        },
+        /** Cancel the expiry wakeup of the pending ownership transfer. */
+        cancelExpiry() {
+          const { portfolioId } = this.state;
+          void E.when(
+            E(timerService).cancel(this.facets.ownerTransferExpiry),
+            undefined,
+            reason => trace(`portfolio${portfolioId}`, 'cancel failed', reason),
+          );
+        },
+      },
+      /** Held by the timer service only, to expire ownership transfers. */
+      ownerTransferExpiry: {
+        /**
+         * Any wakeup expires the pending transfer if its deadline has
+         * passed, whichever transfer scheduled it.
+         *
+         * @param timestamp the current time, as of the wakeup, which is no
+         *   earlier than the time it was scheduled for
+         */
+        wake({ absValue }: TimestampRecord) {
+          const { pendingOwnerTransfer: pending } = this.state;
+          if (pending && absValue > pending.deadline) {
+            this.facets.ownerTransfer.expire();
+          }
+        },
+      },
       invitationMakers: {
         Rebalance() {
           const { rebalanceHandler } = this.facets;
@@ -2172,6 +2307,15 @@ export const preparePortfolioKit = (
             'simpleRebalance',
             undefined,
             proposalShapes.rebalance,
+          );
+        },
+        TransferOwnershipToEVM() {
+          const { transferOwnershipHandler } = this.facets;
+          return zcf.makeInvitation(
+            transferOwnershipHandler,
+            'transferOwnershipToEVM',
+            undefined,
+            proposalShapes.transferOwnershipToEVM,
           );
         },
       } satisfies Record<PortfolioContinuingInvitationMaker, any> &

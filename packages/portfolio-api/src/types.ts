@@ -104,6 +104,7 @@ export type ProposalType = {
     | { want: { Cash: NatAmount }; give: Empty };
   withdraw: { want: { Cash: NatAmount }; give: Empty };
   deposit: { give: { Deposit: NatAmount }; want: Empty };
+  transferOwnershipToEVM: { give?: Empty; want?: Empty };
 };
 
 /**
@@ -407,6 +408,17 @@ export type PortfolioGrantResult = {
 /** Result of an owner-signed external delegation lifecycle operation. */
 export type PortfolioDelegationLifecycleResult = PortfolioGrantResult;
 
+/** An ownership transfer from a portfolio's Agoric owner to an EVM account. */
+export type PortfolioPendingOwnerTransfer = {
+  evmAddress: `0x${string}`;
+  deadline: bigint;
+};
+
+/** Result of a `TransferOwnershipToEVM` offer, once the transfer is accepted. */
+export type PortfolioTransferOwnershipResult = {
+  sourceAccountId: AccountId;
+};
+
 /** Result of a `SetAutoFeatures` operation, referencing the resulting policyVersion. */
 export type PortfolioSetAutoFeaturesResult = {
   portfolioId: number;
@@ -510,12 +522,21 @@ export type StatusFor = {
     nobleForwardingAddress?: Bech32Address;
     targetAllocation?: TargetAllocation;
     /**
-     * CAIP-10 account ID of the authenticated EVM account that opened this portfolio.
-     * Derived from `permit2Payload.owner` in `openPortfolioFromEVM()`.
-     * The Permit2 signature is verified on-chain by the `depositFactory` contract
-     * when it receives the GMP call via `sendCreateAndDepositCall()`.
+     * CAIP-10 account ID of the authenticated EVM account that owns this portfolio.
+     * For a portfolio opened from EVM, derived from `permit2Payload.owner` in
+     * `openPortfolioFromEVM()`. The Permit2 signature is verified on-chain by
+     * the `depositFactory` contract when it receives the GMP call via
+     * `sendCreateAndDepositCall()`.
+     * For a portfolio transferred from its Agoric owner, the signer of the
+     * accepted `AcceptOwnership` message, on that message's domain chain.
      */
     sourceAccountId?: AccountId;
+    /**
+     * Ownership transfer designated by the portfolio's Agoric owner, awaiting
+     * an `AcceptOwnership` message signed by `evmAddress` until `deadline`
+     * (in seconds).
+     */
+    pendingOwnerTransfer?: PortfolioPendingOwnerTransfer;
     /** incremented by the contract every time the user sends a transaction that the planner should respond to */
     policyVersion: number;
     /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
@@ -608,4 +629,5 @@ export type PortfolioContinuingInvitationMaker =
   | 'Deposit'
   | 'Withdraw'
   | 'Rebalance'
-  | 'SimpleRebalance';
+  | 'SimpleRebalance'
+  | 'TransferOwnershipToEVM';
