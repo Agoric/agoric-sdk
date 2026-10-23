@@ -188,7 +188,8 @@ type RunningFlowDetail = {
   sync: MaybeResolvedVowKit<FundsFlow>;
 } & FlowDetail;
 
-type PortfolioKitState = {
+// exported for testing
+export type PortfolioKitState = {
   portfolioId: number;
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
@@ -383,9 +384,9 @@ const makeFlowsRunningRecord = (
   return harden(fromEntries(statusEntries));
 };
 
-/** Reject overlap before reserving a flow or changing its initiating policy. */
-const insistNoRunningFlows = (state: PortfolioKitState) => {
-  state.flowsRunning.getSize() === 0 ||
+/** Reject overlap with the last allocated flow, tolerating older stuck flows. */
+const insistLatestFlowFinished = (state: PortfolioKitState) => {
+  !state.flowsRunning.has(state.nextFlowId - 1) ||
     Fail`portfolio already has a running flow`;
 };
 
@@ -1300,7 +1301,7 @@ export const preparePortfolioKit = (
          * NB: `flowId` is a counter, not the key in vstorage.
          */
         startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
-          insistNoRunningFlows(this.state);
+          insistLatestFlowFinished(this.state);
           const {
             nextFlowId: flowId,
             flowsRunning,
@@ -1846,7 +1847,7 @@ export const preparePortfolioKit = (
           !depositDetails || Fail`rebalance does not yet support deposit`;
 
           // Verify state before setTargetAllocation can change it.
-          insistNoRunningFlows(this.state);
+          insistLatestFlowFinished(this.state);
 
           let initiatingOperation:
             | SetTargetAllocationInitiatingOperation
@@ -2082,7 +2083,7 @@ export const preparePortfolioKit = (
           const { manager } = this.facets;
 
           // Verify state before setTargetAllocation can change it.
-          insistNoRunningFlows(this.state);
+          insistLatestFlowFinished(this.state);
 
           let initiatingOperation:
             | SetTargetAllocationInitiatingOperation

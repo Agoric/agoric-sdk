@@ -14,7 +14,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
-import type { AxelarChain } from '@agoric/portfolio-api';
+import type { AxelarChain, FundsFlow } from '@agoric/portfolio-api';
 import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -27,6 +27,7 @@ import {
   PortfolioStateShape,
   preparePortfolioKit,
   type AccountInfoFor,
+  type PortfolioKitState,
 } from '../src/portfolio.exo.ts';
 import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
@@ -69,6 +70,7 @@ const makeSpies = <T extends Record<string, Callable>>(
 const makeTestSetup = (
   opts: {
     storage?: ReturnType<typeof makeFakeStorageKit>;
+    legacyFlows?: { nextFlowId: number; runningIds: number[] };
   } = {},
 ) => {
   const zone = makeHeapZone();
@@ -149,7 +151,33 @@ const makeTestSetup = (
     ? opts.storage.rootNode.makeChildNode('ymax0').makeChildNode('portfolios')
     : makeMockNode('published.ymax0.portfolios');
 
-  const makePortfolioKit = preparePortfolioKit(zone, {
+  // Seed flows left by pre-guard code by wrapping the mock Zone.
+  const portfolioZone = harden({
+    ...zone,
+    ...(opts.legacyFlows && {
+      exoClassKit: ((...kitArgs: Parameters<typeof zone.exoClassKit>) => {
+        const [name, interfaces, init, behavior, options] = kitArgs;
+        const initPortfolio = (state: PortfolioKitState) => {
+          state.nextFlowId = opts.legacyFlows!.nextFlowId;
+          for (const id of opts.legacyFlows!.runningIds) {
+            const oldFlow = harden({
+              type: 'rebalance',
+              sync: vowTools.makeVowKit<FundsFlow>(),
+            } as const);
+            state.flowsRunning.init(id, oldFlow);
+          }
+        };
+        const newInit = (...initArgs) => {
+          const state = init(...initArgs);
+          if (name === 'Portfolio') initPortfolio(state as PortfolioKitState);
+          return state;
+        };
+        return zone.exoClassKit(name, interfaces, newInit, behavior, options);
+      }) as typeof zone.exoClassKit,
+    }),
+  });
+
+  const makePortfolioKit = preparePortfolioKit(portfolioZone, {
     portfoliosNode,
     marshaller,
     usdcBrand: USDC,
@@ -1907,4 +1935,65 @@ test('overlapping owner rebalances preserve policy and target allocation', async
   );
   t.deepEqual(await getPortfolioStatus!(1), before);
   t.deepEqual(getCallLog(), []);
+});
+
+test('older stuck flows do not block starts after the most recent flow finished', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getPortfolioStatus } = makeTestSetup({
+    storage,
+    legacyFlows: { nextFlowId: 3, runningIds: [1] },
+  });
+  const { manager, reporter } = makePortfolioKit({ portfolioId: 1 });
+  // Flow 1 is stuck, but the most recently allocated flow (2) has finished.
+  t.is(manager.startFlow({ type: 'rebalance' }, []).flowId, 3);
+  t.throws(() => manager.startFlow({ type: 'claimRewards' }), {
+    message: 'portfolio already has a running flow',
+  });
+  reporter.finishFlow(3);
+  t.is(manager.startFlow({ type: 'claimRewards' }, []).flowId, 4);
+  t.deepEqual(Object.keys((await getPortfolioStatus!(1)).flowsRunning!), [
+    'flow1',
+    'flow4',
+  ]);
+});
+
+test('the most recent legacy flow still blocks new starts', t => {
+  const { makePortfolioKit } = makeTestSetup({
+    legacyFlows: { nextFlowId: 3, runningIds: [1, 2] },
+  });
+  const { manager, reporter } = makePortfolioKit({ portfolioId: 1 });
+  t.throws(() => manager.startFlow({ type: 'rebalance' }), {
+    message: 'portfolio already has a running flow',
+  });
+  reporter.finishFlow(2);
+  t.is(manager.startFlow({ type: 'rebalance' }, []).flowId, 3);
+});
+
+test('owner rebalance ignores older stuck flows but rejects overlap with the latest', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getPortfolioStatus } = makeTestSetup({
+    storage,
+    legacyFlows: { nextFlowId: 3, runningIds: [1] },
+  });
+  const { evmHandler, simpleRebalanceHandler, reporter } = makePortfolioKit({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x4545454545454545454545454545454545454545',
+  });
+  t.is(evmHandler.rebalance([{ instrument: 'USDN', portion: 100n }]), 'flow3');
+  const before = await getPortfolioStatus!(1);
+  t.throws(
+    () =>
+      simpleRebalanceHandler.handle({} as any, {
+        targetAllocation: { USDN: 50n },
+      }),
+    { message: 'portfolio already has a running flow' },
+  );
+  t.deepEqual(await getPortfolioStatus!(1), before);
+  reporter.finishFlow(3);
+  t.is(
+    simpleRebalanceHandler.handle({} as any, {
+      targetAllocation: { USDN: 50n },
+    }),
+    'flow4',
+  );
 });
