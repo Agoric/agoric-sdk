@@ -33,6 +33,7 @@ import type {
   StatusFor,
 } from '@agoric/portfolio-api';
 import {
+  MAX_YMAX_DEADLINE_OFFSET,
   YmaxPortfolioMessageSchema,
   type YmaxFullDomain,
   type YmaxPermitWitnessTransferFromData,
@@ -60,7 +61,6 @@ import type { PortfolioKit } from './portfolio.exo.ts';
 
 const trace = makeTracer('PEWH');
 
-const MAX_DEADLINE_OFFSET = 60n * 60n * 24n; // 1 day in seconds
 const MAX_SAFE_AGENT_ID = BigInt(Number.MAX_SAFE_INTEGER);
 
 const agentIdFromEIP712 = (agentId: bigint): number => {
@@ -671,7 +671,7 @@ export const prepareEVMWalletMessageHandler = (
             )}`;
           }
 
-          deadline < localChainTime + MAX_DEADLINE_OFFSET ||
+          deadline < localChainTime + MAX_YMAX_DEADLINE_OFFSET ||
             Fail`Deadline too far in the future: ${q(deadline)} vs ${q(localChainTime)}`;
           insertNonce({ walletOwner, nonce, deadline });
 
