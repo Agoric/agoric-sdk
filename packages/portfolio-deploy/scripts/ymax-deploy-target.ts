@@ -544,9 +544,8 @@ const provideArgsFiles = async (
     await prevRelease.ref.join(matches[0]).copyTo(localCopy);
     return localCopy.readOnly();
   })();
-  const prevPrivateArgs = (await prevPrivateArgsFile?.readJSON()) as
-    | PrivateArgsInfo
-    | undefined;
+  const prevPrivateArgs =
+    await prevPrivateArgsFile?.readJSON<PrivateArgsInfo>();
   const privateArgsInfo: typeof prevPrivateArgs = prevPrivateArgs && {
     releaseUrl,
     allegedPrivateArgs: { ...prevPrivateArgs.allegedPrivateArgs, ...overrides },
