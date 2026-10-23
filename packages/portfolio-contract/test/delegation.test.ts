@@ -159,6 +159,36 @@ const openPetePortfolio = async (
   return { receiver, peteKit, peteArbitrum, portfolioId };
 };
 
+/** End the synthetic opening deposit before exercising delegated admission. */
+const cancelOpeningFlow = async (
+  t: ExecutionContext,
+  deployed: Deployed,
+  evmTraderKit: EvmTraderKit,
+) => {
+  const { evmTrader } = evmTraderKit;
+  const status = await evmTrader.getPortfolioStatus();
+  const entries = Object.entries(status.flowsRunning ?? {});
+  t.is(entries.length, 1);
+  const [flowKey, detail] = entries[0];
+  t.is(detail.type, 'deposit');
+  const invitation = await E(
+    deployed.started.creatorFacet,
+  ).makePlannerInvitation();
+  const seat = await E(deployed.zoe).offer(invitation, emptyProposal);
+  const planner = await E(seat).getOfferResult();
+  // These fixtures use synthetic balances; they do not execute the deposit.
+  // Reject via the real planner so executePlan's finally releases its slot.
+  await E(planner).rejectPlan(
+    evmTrader.getPortfolioId(),
+    Number(flowKey.slice('flow'.length)),
+    'opening deposit omitted in delegation fixture',
+    status.policyVersion,
+    status.rebalanceCount,
+  );
+  await eventLoopIteration();
+  t.deepEqual((await evmTrader.getPortfolioStatus()).flowsRunning, {});
+};
+
 const redeemAndCheckDelegation = async ({
   t,
   zoe,
@@ -298,6 +328,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
     },
   });
 
+  await cancelOpeningFlow(t, deployed, peteKit);
   const before = await peteKit.evmTrader.getPortfolioStatus();
   const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
     targetAllocation: {
@@ -494,6 +525,7 @@ const testSignedGlobalLimits = async (t: ExecutionContext) => {
     readPublished: peteKit.readPublished,
   });
 
+  await cancelOpeningFlow(t, deployed, peteKit);
   const acceptedRequest = await peteAgent.proposeTargetAllocation({
     Aave_Arbitrum: 50n,
     Compound_Arbitrum: 50n,
@@ -659,6 +691,7 @@ test('Granted rebalance may retain an instrument key with zero portion', async t
     },
   });
 
+  await cancelOpeningFlow(t, deployed, peteKit);
   const before = await peteKit.evmTrader.getPortfolioStatus();
   const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
     targetAllocation: {
@@ -713,6 +746,7 @@ test('Delegation is active only while registered on the portfolio', async t => {
     },
   });
 
+  await cancelOpeningFlow(t, deployed, peteKit);
   const before = await peteKit.evmTrader.getPortfolioStatus();
   const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
     targetAllocation: {
@@ -932,6 +966,7 @@ test('Pete may open a portfolio and grant control in a single signed message', a
   // The grant is live end-to-end: the grantee rebalances through the redeemed
   // delegation facet, proving the single-message open+grant produced a usable
   // delegation.
+  await cancelOpeningFlow(t, deployed, peteKit);
   const before = await peteKit.evmTrader.getPortfolioStatus();
   const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
     targetAllocation: {
@@ -1210,6 +1245,7 @@ const setupPlanDelegation = async (
   });
   const { receiver, peteKit, peteArbitrum, portfolioId } =
     await openPetePortfolio(deployed);
+  await cancelOpeningFlow(t, deployed, peteKit);
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
     harden({ allocation: true }),

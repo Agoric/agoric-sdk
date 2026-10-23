@@ -108,6 +108,9 @@ test('planner exo resolvePlan method', async t => {
       { policyVersion: 1, rebalanceCount: 1 },
       'rebalanceCount 1 after .resolvePlan(plan, ...)',
     );
+
+    // This unit test has no executor, so manually finish the resolved flow.
+    aPortfolio.reporter.finishFlow(flowId);
   }
 
   {
@@ -130,6 +133,8 @@ test('planner exo resolvePlan method', async t => {
       { policyVersion: 1, rebalanceCount: 2 },
       'rebalanceCount 2 after second resolvePlan',
     );
+
+    aPortfolio.reporter.finishFlow(flowId);
   }
 
   {
@@ -144,6 +149,8 @@ test('planner exo resolvePlan method', async t => {
       () => planner.resolvePlan(portfolioId, flowId, newPositionPlan, 1, 2),
       { message: /plan cannot add positions/i },
     );
+
+    aPortfolio.reporter.finishFlow(flowId);
   }
 });
 
@@ -232,7 +239,13 @@ test('planner rejects delegated plans that fail observation-time validation', as
     afterFlow.rebalanceCount + 1,
   );
 
+  // The executePlan stub only captures stepsP. Simulate the production
+  // executor's finally cleanup after observing the rejected plan.
+  t.truthy((await getPortfolioStatus(1)).flowsRunning?.[flowKey]);
+  portfolio.reporter.finishFlow(flowId);
+
   const beforeRace = await getPortfolioStatus(1);
+  t.deepEqual(beforeRace.flowsRunning, {});
   const racedFlowKey = await delegationClient.setTargetAllocation({
     targetAllocation: { Aave_Base: 100n },
     syncState: {
@@ -268,6 +281,9 @@ test('planner rejects delegated plans that fail observation-time validation', as
     (await getPortfolioStatus(1)).rebalanceCount,
     afterPolicyChange.rebalanceCount + 1,
   );
+
+  portfolio.reporter.finishFlow(racedFlowId);
+  t.deepEqual((await getPortfolioStatus(1)).flowsRunning, {});
 });
 
 test('planner accepts already-committed delegated target allocation after policy race', async t => {
