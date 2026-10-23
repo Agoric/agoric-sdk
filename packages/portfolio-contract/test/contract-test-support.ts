@@ -29,6 +29,8 @@ import {
   type PortfolioAutoFeatures,
 } from '@agoric/portfolio-api';
 import { type TargetAllocation as PermittedAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { MapStore } from '@agoric/store';
+import type { Baggage } from '@agoric/vat-data';
 import { E, passStyleOf } from '@endo/far';
 import { type ExecutionContext } from 'ava';
 import {
@@ -718,8 +720,22 @@ const erc4626TestMacro = test.macro({
   },
 });
 
+/**
+ * Make a portfolio's stored kit look like one stored by the first release,
+ * before facets other than `manager` were added to the kind. Upgrades don't
+ * add facets to kits already stored.
+ */
+const stripStoredPortfolioKit = (contractBaggage: Baggage, id: number) => {
+  const portfolios: MapStore<number, { manager: unknown }> = contractBaggage
+    .get('contract')
+    .get('portfolios');
+  const { manager } = portfolios.get(id);
+  portfolios.set(id, harden({ manager }));
+};
+
 export {
   range,
+  stripStoredPortfolioKit,
   evmTraderPrivateKeys,
   pendingTxOpts,
   snapshotTimed,

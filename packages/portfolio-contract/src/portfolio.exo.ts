@@ -1163,6 +1163,13 @@ export const preparePortfolioKit = (
        * initAccountInfo(info) is optional before the terminal call.
        */
       manager: {
+        /**
+         * Get all of this portfolio's facets, including any added since the
+         * portfolio was created. For use within the contract only.
+         */
+        getKit() {
+          return this.facets;
+        },
         getNobleAccountUnderProvision(): NobleAccountInfo | undefined {
           return this.state.nobleAccountUnderProvision;
         },

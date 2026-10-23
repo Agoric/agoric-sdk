@@ -16,6 +16,7 @@ import {
   type FundsFlowPlan,
   type MovementDesc,
 } from '@agoric/portfolio-api';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
 import { type TargetAllocation } from '../src/type-guards.ts';
 import { setupTrader } from './contract-setup.ts';
@@ -25,6 +26,7 @@ import {
   setupPlanner,
   makeCreateAndDepositScenarioRunner,
   keys,
+  stripStoredPortfolioKit,
 } from './contract-test-support.ts';
 
 test('request rebalance - send same targetAllocation', async t => {
@@ -383,4 +385,37 @@ test('create portfolio and deposit using planner (upgrade)', async t => {
   const powers = await setupPlanner(t, { defaultFlowConfig: null });
   const runScenario = makeCreateAndDepositScenarioRunner(t, powers);
   await runScenario({ restartOverrides: {} });
+});
+
+test('planner reaches portfolios stored before its facet existed', async t => {
+  const { common, trader1, planner1, contractBaggage } = await setupPlanner(t);
+  await planner1.redeem();
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
+  const pId: number = trader1.getPortfolioId();
+  stripStoredPortfolioKit(contractBaggage!, pId);
+
+  const targetAllocation: TargetAllocation = { USDN: 100n };
+  // Settles once the planner resolves the flow it starts.
+  const traderP = trader1.simpleRebalance(
+    t,
+    { give: {}, want: {} },
+    { targetAllocation },
+  );
+  let status = await trader1.getPortfolioStatus();
+  for (let i = 0; i < 100 && !keys(status.flowsRunning ?? {}).length; i += 1) {
+    await eventLoopIteration();
+    status = await trader1.getPortfolioStatus();
+  }
+  const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+  const [[flowId]] = getRunningFlowEntries(flowsRunning);
+  await t.notThrowsAsync(
+    E(planner1.stub).resolvePlan(
+      pId,
+      Number(flowId.replace('flow', '')),
+      [],
+      policyVersion,
+      rebalanceCount,
+    ),
+  );
+  await traderP;
 });
