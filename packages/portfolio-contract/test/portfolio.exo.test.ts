@@ -19,6 +19,7 @@ import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
+import type { ZCFSeat } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
 import { Far } from '@endo/pass-style';
 import { hexToBytes } from '@noble/hashes/utils';
@@ -1934,37 +1935,68 @@ test('owner rebalances may start while a delegated or owner flow is running', as
   const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
     storage,
   });
-  const { manager, evmHandler, simpleRebalanceHandler } = makePortfolioKit({
+  // An EVM-owned portfolio, and an Agoric-owned one: each owner has its own
+  // way to rebalance.
+  const evmKit = makePortfolioKit({
     portfolioId: 1,
     sourceAccountId: 'eip155:42161:0x4545454545454545454545454545454545454545',
   });
-  await manager.grantDelegation('agoric1delegate', { claimRewards: true });
-  manager.setTargetAllocation({ USDN: 100n });
-  const [, client] = getCallLog()[0] as [
-    'deliverDelegation',
-    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  const agoricKit = makePortfolioKit({ portfolioId: 2 });
+  const ownerRebalances = [
+    () => evmKit.evmHandler.rebalance([{ instrument: 'USDN', portion: 75n }]),
+    () =>
+      agoricKit.simpleRebalanceHandler.handle({} as any, {
+        targetAllocation: { USDN: 50n },
+      }),
   ];
-  const before = await getPortfolioStatus!(1);
+  for (const [i, { manager }] of [evmKit, agoricKit].entries()) {
+    const portfolioId = i + 1;
+    await manager.grantDelegation('agoric1delegate', { claimRewards: true });
+    manager.setTargetAllocation({ USDN: 100n });
+    const [, client] = getCallLog()
+      .filter(([name]) => name === 'deliverDelegation')
+      .at(-1) as [
+      'deliverDelegation',
+      ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+    ];
+    const before = await getPortfolioStatus!(portfolioId);
 
-  t.is(
-    client.claimRewards({
-      syncState: {
-        policyVersion: before.policyVersion,
-        rebalanceCount: before.rebalanceCount,
-      },
-    }),
-    'flow1',
-  );
-  t.is(evmHandler.rebalance([{ instrument: 'USDN', portion: 75n }]), 'flow2');
-  t.is(
-    simpleRebalanceHandler.handle({} as any, {
-      targetAllocation: { USDN: 50n },
-    }),
-    'flow3',
-  );
-  const after = await getPortfolioStatus!(1);
+    t.is(
+      client.claimRewards({
+        syncState: {
+          policyVersion: before.policyVersion,
+          rebalanceCount: before.rebalanceCount,
+        },
+      }),
+      'flow1',
+    );
+    t.is(ownerRebalances[i](), 'flow2');
+    t.is(ownerRebalances[i](), 'flow3');
+    const after = await getPortfolioStatus!(portfolioId);
 
-  t.deepEqual(Object.keys(after.flowsRunning!), ['flow1', 'flow2', 'flow3']);
-  t.deepEqual(after.targetAllocation, { USDN: 50n });
-  t.is(after.policyVersion, before.policyVersion + 2);
+    t.deepEqual(Object.keys(after.flowsRunning!), ['flow1', 'flow2', 'flow3']);
+    t.is(after.policyVersion, before.policyVersion + 2);
+  }
+});
+
+test('Agoric owner offers are rejected once EVM-owned', async t => {
+  const { makePortfolioKit } = makeTestSetup();
+  const {
+    rebalanceHandler,
+    simpleRebalanceHandler,
+    depositHandler,
+    withdrawHandler,
+  } = makePortfolioKit({
+    portfolioId: 460,
+    sourceAccountId: 'eip155:42161:0x2222222222222222222222222222222222222222',
+  });
+  // The guard runs before the seat is touched.
+  const seat = {} as ZCFSeat;
+  const message =
+    'portfolio460 is owned by EVM account "eip155:42161:0x2222222222222222222222222222222222222222"';
+
+  await t.throwsAsync(rebalanceHandler.handle(seat, {}), { message });
+  t.throws(() => simpleRebalanceHandler.handle(seat, {}), { message });
+  t.throws(() => depositHandler.handle(seat, {}), { message });
+  t.throws(() => withdrawHandler.handle(seat), { message });
 });
