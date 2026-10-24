@@ -30,6 +30,8 @@ loadAgcc(
         },
         makeInputWorker: () =>
           new Worker(new URL('./agd-input-worker.js', import.meta.url)),
+        makeMonitor: () =>
+          new Worker(new URL('./rpc-monitor-worker.js', import.meta.url)),
         onFinish: () => process.exit(0),
         onError: error => {
           log.error('RPC service stopped', error);

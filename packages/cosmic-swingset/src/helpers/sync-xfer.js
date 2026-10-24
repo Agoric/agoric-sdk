@@ -59,15 +59,28 @@ export function* makeTextEncoder(input) {
 }
 harden(makeTextEncoder);
 
-export const makeTransferClient = sharedBuf => {
+/**
+ * @param {SharedArrayBuffer} sharedBuf
+ * @param {{ check: () => void }} [lifecycle]
+ */
+export const makeTransferClient = (sharedBuf, lifecycle) => {
   const control = new Int32Array(sharedBuf, 0, 2);
   const outb = new Uint8Array(control.buffer, 2 * Int32Array.BYTES_PER_ELEMENT);
+  const wait = expected => {
+    do {
+      lifecycle?.check();
+      // This is a failure-state poll, not a deadline for a healthy Go service.
+      Atomics.wait(control, 0, expected, 100);
+      lifecycle?.check();
+    } while (Atomics.load(control, 0) === expected);
+  };
 
   return Far('TransferClient', {
     prepareToRead(cb) {
+      lifecycle?.check();
       control[0] = TRANSFER_CLIENT_READY;
       cb(sharedBuf);
-      Atomics.wait(control, 0, TRANSFER_CLIENT_READY);
+      wait(TRANSFER_CLIENT_READY);
       debug('current state', control[0]);
     },
     /**
@@ -76,7 +89,7 @@ export const makeTransferClient = sharedBuf => {
      */
     read(decoder) {
       decoder.next();
-      Atomics.wait(control, 0, TRANSFER_READY_TO_READ);
+      wait(TRANSFER_READY_TO_READ);
       while (control[0] === TRANSFER_READ_PARTIAL) {
         const thisTransfer = Math.min(control[1], outb.byteLength);
         const s = decoder.next(outb.subarray(0, thisTransfer));
@@ -86,7 +99,7 @@ export const makeTransferClient = sharedBuf => {
         control[0] = TRANSFER_CLIENT_READY;
         Atomics.notify(control, 0);
         debug('waiting to exit TRANSFER_CLIENT_READY');
-        Atomics.wait(control, 0, TRANSFER_CLIENT_READY);
+        wait(TRANSFER_CLIENT_READY);
       }
 
       decoder.next(outb.subarray(0, control[1]));
@@ -98,12 +111,17 @@ export const makeTransferClient = sharedBuf => {
 };
 harden(makeTransferClient);
 
-export const makeTransferServer = sharedBuf => {
+/**
+ * @param {SharedArrayBuffer} sharedBuf
+ * @param {{ check: () => void }} [lifecycle]
+ */
+export const makeTransferServer = (sharedBuf, lifecycle) => {
   const control = new Int32Array(sharedBuf, 0, 2);
   const outb = new Uint8Array(control.buffer, 2 * Int32Array.BYTES_PER_ELEMENT);
 
   return Far('TransferServer', {
     prepareToWrite(cb) {
+      lifecycle?.check();
       if (control[0] !== TRANSFER_CLIENT_READY) {
         throw Error(`Unexpected transfer state ${control[0]}`);
       }
@@ -116,6 +134,7 @@ export const makeTransferServer = sharedBuf => {
      * @param {Encoder} encoder
      */
     write(encoder) {
+      lifecycle?.check();
       // Prepare the generator.
       encoder.next();
       let { value: buf, done } = encoder.next(outb);
@@ -146,7 +165,11 @@ export const makeTransferServer = sharedBuf => {
             i < buf.length ? TRANSFER_READ_PARTIAL : TRANSFER_READ_DONE;
           Atomics.notify(control, 0);
           debug('waiting to exit TRANSFER_READ_PARTIAL');
-          Atomics.wait(control, 0, TRANSFER_READ_PARTIAL);
+          while (Atomics.load(control, 0) === TRANSFER_READ_PARTIAL) {
+            lifecycle?.check();
+            Atomics.wait(control, 0, TRANSFER_READ_PARTIAL, 100);
+          }
+          lifecycle?.check();
         }
 
         if (done) {

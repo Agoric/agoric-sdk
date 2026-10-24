@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
+	"net"
+	"net/rpc/jsonrpc"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -176,4 +179,73 @@ func TestVMCommandPipeDescriptors(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "pong", string(response))
 	require.NoError(t, command.Wait())
+}
+
+func TestVMShutdownHandshake(t *testing.T) {
+	local, peer := net.Pipe()
+	client := jsonrpc.NewClient(local)
+	defer client.Close()
+	defer peer.Close()
+	type shutdownRequest struct {
+		Method string `json:"method"`
+		Params []struct {
+			Port int `json:"port"`
+		} `json:"params"`
+		ID uint64 `json:"id"`
+	}
+	requests := make(chan shutdownRequest, 1)
+	serverErrors := make(chan error, 1)
+	go func() {
+		var request shutdownRequest
+		if err := json.NewDecoder(peer).Decode(&request); err != nil {
+			serverErrors <- err
+			return
+		}
+		requests <- request
+		serverErrors <- json.NewEncoder(peer).Encode(map[string]interface{}{
+			"id": request.ID, "result": "<shutdown>", "error": nil,
+		})
+	}()
+	require.NoError(t, requestVMShutdown(client, 1, 5*time.Second))
+	require.NoError(t, <-serverErrors)
+	request := <-requests
+	require.Equal(t, "agvm.Shutdown", request.Method)
+	require.Len(t, request.Params, 1)
+	require.Equal(t, 1, request.Params[0].Port)
+}
+
+func TestVMShutdownHandshakeTimeout(t *testing.T) {
+	local, peer := net.Pipe()
+	client := jsonrpc.NewClient(local)
+	defer client.Close()
+	defer peer.Close()
+	// The peer deliberately never reads, so even the request write is blocked.
+	require.ErrorContains(t, requestVMShutdown(client, 1, time.Millisecond), "timed out requesting VM shutdown")
+}
+
+func TestVMShutdownProcess(t *testing.T) {
+	if os.Getenv("AGD_TEST_SHUTDOWN_PROCESS") != "1" {
+		return
+	}
+	_, err := io.Copy(io.Discard, os.Stdin)
+	if err != nil {
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+func TestVMShutdownReapsOnce(t *testing.T) {
+	input, writer, err := os.Pipe()
+	require.NoError(t, err)
+	defer input.Close()
+	defer writer.Close()
+	command := exec.Command(os.Args[0], "-test.run=^TestVMShutdownProcess$")
+	command.Env = append(os.Environ(), "AGD_TEST_SHUTDOWN_PROCESS=1")
+	command.Stdin = input
+	require.NoError(t, command.Start())
+	t.Cleanup(func() { _ = command.Process.Kill() })
+	shutdown, done := makeShutdown(command, writer)
+	require.NoError(t, shutdown())
+	<-done
+	require.NoError(t, shutdown())
 }

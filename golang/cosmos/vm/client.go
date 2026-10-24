@@ -11,6 +11,10 @@ import (
 // VM receive a Message.
 const ReceiveMessageMethod = "agvm.ReceiveMessage"
 
+// ShutdownMethod requests orderly external-VM shutdown after outstanding calls
+// have settled. Keep in sync with cosmic-swingset/src/helpers/rpc-service.js.
+const ShutdownMethod = "agvm.Shutdown"
+
 // AgdReceiveMessageMethod is the reverse RPC method, invoked by the JS adapter
 // in packages/cosmic-swingset/src/agcc-agvm.js to address a Go service port.
 const AgdReceiveMessageMethod = "agd.ReceiveMessage"

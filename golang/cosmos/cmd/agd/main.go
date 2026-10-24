@@ -8,6 +8,8 @@ import (
 	"net/rpc/jsonrpc"
 	"os"
 	"os/exec"
+	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -30,24 +32,60 @@ const TerminateSubprocessGracePeriod = 3 * time.Second
 // termination signal, waiting for it to exit, then killing it.
 const KillSubprocessGracePeriod = 5 * time.Second
 
-// makeShutdown returns a function that terminates the vm.
-func makeShutdown(cmd *exec.Cmd, writer *os.File) func() error {
-	return func() error {
-		// Stop talking to the subprocess.
-		_ = writer.Close()
-		go func() {
-			// Wait a bit.
-			time.Sleep(TerminateSubprocessGracePeriod)
-			// Then punch it in the shoulder.
-			_ = cmd.Process.Signal(os.Interrupt)
-			// Wait a bit.
-			time.Sleep(KillSubprocessGracePeriod)
-			// Then blow it away.
-			_ = cmd.Process.Kill()
-		}()
-		// Wait for it to keel over.
-		return cmd.Wait()
+// requestVMShutdown bounds the handshake, including a potentially blocked pipe
+// write. The caller still closes the connection and reaps the child on failure.
+func requestVMShutdown(client *rpc.Client, nodePort int, timeout time.Duration) error {
+	done := make(chan error, 1)
+	go func() {
+		var reply string
+		done <- client.Call(vm.ShutdownMethod, vm.Message{Port: nodePort}, &reply)
+	}()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case err := <-done:
+		return err
+	case <-timer.C:
+		return errors.New("timed out requesting VM shutdown")
 	}
+}
+
+// makeShutdown reaps a started VM once, sharing its exit result with shutdown
+// and the unexpected-exit observer. Shutdown is idempotent and cancels escalation
+// as soon as the process exits.
+func makeShutdown(cmd *exec.Cmd, writer *os.File) (func() error, <-chan struct{}) {
+	done := make(chan struct{})
+	var waitErr error
+	go func() {
+		waitErr = cmd.Wait()
+		close(done)
+	}()
+	var once sync.Once
+	shutdown := func() error {
+		once.Do(func() {
+			_ = writer.Close()
+			go func() {
+				timer := time.NewTimer(TerminateSubprocessGracePeriod)
+				defer timer.Stop()
+				select {
+				case <-done:
+					return
+				case <-timer.C:
+					_ = cmd.Process.Signal(os.Interrupt)
+				}
+				timer.Reset(KillSubprocessGracePeriod)
+				select {
+				case <-done:
+					return
+				case <-timer.C:
+					_ = cmd.Process.Kill()
+				}
+			}()
+		})
+		<-done
+		return waitErr
+	}
+	return shutdown, done
 }
 
 // main is the entry point of the agd daemon.  It determines whether to
@@ -56,6 +94,7 @@ func makeShutdown(cmd *exec.Cmd, writer *os.File) func() error {
 func main() {
 	var vmClient *rpc.Client
 	var shutdown func() error
+	var shuttingDown atomic.Bool
 
 	nodePort := 1
 	var sendToNode vm.Sender = func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
@@ -64,9 +103,10 @@ func main() {
 		}
 
 		if jsonRequest == "shutdown" {
-			// We could ask nicely, but don't bother.
 			if shutdown != nil {
-				return "", shutdown()
+				shuttingDown.Store(true)
+				requestErr := requestVMShutdown(vmClient, nodePort, TerminateSubprocessGracePeriod)
+				return "", errors.Join(requestErr, shutdown())
 			}
 			return "", nil
 		}
@@ -119,11 +159,11 @@ func main() {
 
 		// Start the command running, then continue.
 		cmd := NewVMCommand(logger, binary, argv[1:], vmFromAgd, vmToAgd)
-		shutdown = makeShutdown(cmd, agdToVm)
-
 		if err := cmd.Start(); err != nil {
 			return err
 		}
+		var vmExited <-chan struct{}
+		shutdown, vmExited = makeShutdown(cmd, agdToVm)
 		if vmFromAgd.Close() != nil {
 			return err
 		}
@@ -147,8 +187,13 @@ func main() {
 
 		go func() {
 			// Premature exit from `agd start` should exit the process.
-			_ = cmd.Wait()
-			os.Exit(exitCode)
+			<-vmExited
+			if !shuttingDown.Load() {
+				if err := shutdown(); err != nil && exitCode == 0 {
+					os.Exit(1)
+				}
+				os.Exit(exitCode)
+			}
 		}()
 
 		return nil

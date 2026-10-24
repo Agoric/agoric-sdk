@@ -10,6 +10,8 @@ const bridge = makeAgcc(4, 5, {
   },
   makeInputWorker: () =>
     new Worker(new URL('../../src/agd-input-worker.js', import.meta.url)),
+  makeMonitor: () =>
+    new Worker(new URL('../../src/rpc-monitor-worker.js', import.meta.url)),
   onFinish: () => process.exit(0),
   onError: error => {
     fs.writeSync(2, String(error));

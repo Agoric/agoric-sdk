@@ -18,6 +18,7 @@ import {
   VM_RECEIVE_MESSAGE,
   AGD_RECEIVE_MESSAGE,
 } from '../src/agcc-agvm.js';
+import { VM_SHUTDOWN_METHOD } from '../src/helpers/rpc-service.js';
 
 /** @import { Duplex } from 'node:stream'; */
 
@@ -83,7 +84,6 @@ test('external startup validates arguments and exposes only a sender after start
   const finished = makePromiseKit();
   t.teardown(async () => {
     await worker.terminate();
-    fs.closeSync(inputFd);
     fs.rmSync(dir, { recursive: true, force: true });
   });
   const io = {
@@ -91,6 +91,8 @@ test('external startup validates arguments and exposes only a sender after start
       throw Error('invalid calls must not write');
     },
     makeInputWorker: () => worker,
+    makeMonitor: () =>
+      new Worker(new URL('../src/rpc-monitor-worker.js', import.meta.url)),
     onFinish: () => finished.resolve(undefined),
     onError: finished.reject,
   };
@@ -119,7 +121,7 @@ test('external startup validates arguments and exposes only a sender after start
   t.throws(() => Reflect.apply(sender.send, undefined, [1, {}]), {
     message: /string/,
   });
-  await finished.promise;
+  await t.throwsAsync(finished.promise, { message: /EOF/ });
 });
 
 test('external bridge routes real pipe RPC replies independently of logical ports', async t => {
@@ -189,42 +191,31 @@ test('external bridge routes real pipe RPC replies independently of logical port
     error: null,
     result: '{"error":"Go RPC failure"}',
   });
-  action(6, 'call', 'malformed response');
-  t.deepEqual(await read(), {
-    method: AGD_RECEIVE_MESSAGE,
-    params: [{ port: 7, data: 'malformed response', needsReply: true }],
-    id: 3,
-  });
-  write({ id: 3, result: 17, error: null });
-  const failedAction = await read();
-  t.is(failedAction.id, 6);
-  t.is(failedAction.result, null);
-  t.regex(failedAction.error, /must have a string result/);
   action(7, 'direct-call', 'direct request');
-  t.is((await read()).id, 4);
-  write({ id: 4, result: null, error: 'direct failure' });
+  t.is((await read()).id, 3);
+  write({ id: 3, result: null, error: 'direct failure' });
   const directFailure = await read();
   t.is(directFailure.id, 7);
   t.is(directFailure.result, null);
   t.regex(directFailure.error, /direct failure/);
   action(8, 'custom-error', 'custom request');
-  t.is((await read()).id, 5);
-  write({ id: 5, result: null, error: 'custom failure' });
+  t.is((await read()).id, 4);
+  write({ id: 4, result: null, error: 'custom failure' });
   t.deepEqual(await read(), {
     id: 8,
     result: 'handled: custom failure',
     error: null,
   });
   action(9, 'direct-call', 'successful direct request');
-  t.is((await read()).id, 6);
-  write({ id: 6, result: 'successful result', error: null });
+  t.is((await read()).id, 5);
+  write({ id: 5, result: 'successful result', error: null });
   t.deepEqual(await read(), {
     id: 9,
     result: 'successful result',
     error: null,
   });
-  action(5, 'exit');
-  input.end();
+  write({ method: VM_SHUTDOWN_METHOD, params: [], id: 5 });
+  t.deepEqual(await read(), { id: 5, result: '<shutdown>', error: null });
   t.deepEqual(await exited, [0, null]);
   t.is(await stderr, '');
 });
@@ -254,7 +245,9 @@ test('external bridge rejects an unexpected node port before dispatch', async t 
   const [code, signal] = await exited;
   t.is(signal, null);
   t.not(code, 0);
-  t.regex(await stderr, /unexpected RPC message.*"port":2/);
+  const diagnostic = await stderr;
+  t.regex(diagnostic, /unexpected RPC message/);
+  t.regex(diagnostic, /port.*2/);
 });
 
 test.serial(

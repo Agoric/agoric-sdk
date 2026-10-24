@@ -3,7 +3,7 @@ import { Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assertFileDescriptor } from './agcc-shim.js';
 import stringify from './helpers/json-stable-stringify.js';
-import { makeJsonRpcService } from './helpers/input-worker.js';
+import { makeJsonRpcService } from './helpers/rpc-service.js';
 
 /**
  * @import { AgoricBridge, AgoricSender } from './agcc-shim.js';
@@ -25,6 +25,7 @@ const NO_REPLY_REQUESTED = '<no-reply-requested>';
  * @param {{
  *   write: (fd: number, text: string) => void,
  *   makeInputWorker: () => Worker,
+ *   makeMonitor: () => Worker,
  *   onFinish: () => void,
  *   onError: (error: unknown) => void,
  * }} io
@@ -49,10 +50,6 @@ export const makeAgcc = (inputFd, outputFd, io) => {
         [...argv].every(arg => typeof arg === 'string')) ||
         Fail`argv must be a nonempty array of strings`;
       started = true;
-
-      /** @param {Record<string, unknown>} rpcMessage */
-      const writeMessage = rpcMessage =>
-        io.write(outputFd, `${stringify(rpcMessage)}\n`);
 
       /** @param {unknown} rpcMessage */
       const acceptRPCRequest = rpcMessage => {
@@ -83,8 +80,8 @@ export const makeAgcc = (inputFd, outputFd, io) => {
         const { promise, resolve, reject } = makePromiseKit();
         if (needsReply) {
           void promise.then(
-            result => writeMessage({ id, result: String(result), error: null }),
-            reason => writeMessage({ id, result: null, error: String(reason) }),
+            result => rpcService.reply(id, String(result)),
+            reason => rpcService.reply(id, null, String(reason)),
           );
         } else {
           // Go's net/rpc requires an acknowledgement even when no application
@@ -97,7 +94,7 @@ export const makeAgcc = (inputFd, outputFd, io) => {
           reject(error);
         }
         if (!needsReply) {
-          writeMessage({ id, result: NO_REPLY_REQUESTED, error: null });
+          rpcService.reply(id, NO_REPLY_REQUESTED);
         }
       };
 
@@ -105,9 +102,12 @@ export const makeAgcc = (inputFd, outputFd, io) => {
         io.makeInputWorker(),
         inputFd,
         acceptRPCRequest,
+        {
+          write: text => io.write(outputFd, text),
+          makeMonitor: io.makeMonitor,
+        },
       );
       void rpcService.start().then(io.onFinish, io.onError);
-      let lastSendId = 0;
       /** @type {AgoricSender} */
       const sender = harden({
         send(port, messageJSON, opts = {}) {
@@ -117,23 +117,13 @@ export const makeAgcc = (inputFd, outputFd, io) => {
           (Number.isInteger(port) && port > 0 && port <= 2 ** 31 - 1) ||
             Fail`invalid Go service port ${port}`;
           typeof messageJSON === 'string' || Fail`message must be a string`;
-          lastSendId += 1;
-          const id = lastSendId;
-          Number.isSafeInteger(id) || Fail`RPC request ID exhausted`;
-          const wakeup = rpcService.makeReplyWakeup(id);
-          writeMessage({
-            method: AGD_RECEIVE_MESSAGE,
-            params: [{ port, data: messageJSON, needsReply: true }],
-            id,
-          });
-          const reply = wakeup.wait();
-          reply.id === id || Fail`Expected id ${id}, got ${reply.id}`;
+          const reply = rpcService.call(AGD_RECEIVE_MESSAGE, [
+            { port, data: messageJSON, needsReply: true },
+          ]);
           if (reply.error != null) {
             return handleError(String(reply.error));
           }
-          typeof reply.result === 'string' ||
-            Fail`RPC reply ${id} must have a string result`;
-          return reply.result;
+          return /** @type {string} */ (reply.result);
         },
       });
       return sender;
