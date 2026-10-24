@@ -1,11 +1,27 @@
 /**
  * @file define ymax release targets, prerequisite policy, and release-artifact validation helpers
  *
- * @import { InstallRecord, PendingUpgradeRecord, Target, UpgradeRecord } from '../scripts/ymax-deploy-target.ts'
+ * @import { InstallRecord, PendingUpgradeRecord, UpgradeRecord } from '../scripts/ymax-deploy-target.ts'
  */
 
 import { createHash } from 'node:crypto';
 
+/**
+ * @typedef {'ymax0' | 'ymax1'} YmaxContractName
+ * cf. \@agoric/portfolio-api/src/portfolio-constants.js PORTFOLIO_CONTRACT_NAMES
+ *
+ * @typedef {'devnet' | 'main'} YmaxContractNetwork
+ *
+ * @typedef {'ymax0-devnet' | 'ymax0-main' | 'ymax1-main'} Target
+ *
+ * @typedef {{
+ *   contract: YmaxContractName;
+ *   network: YmaxContractNetwork;
+ *   chainId: string;
+ * }} TargetInfo
+ */
+
+/** @type {Record<Target, TargetInfo>} */
 export const targetInfo = {
   'ymax0-devnet': {
     contract: 'ymax0',
@@ -49,16 +65,48 @@ export const canonicalizePrivateArgs = specimen => {
 };
 
 /** @param {Target} target */
+export const previousPrivateArgsAssetPrefix = target =>
+  `${target}-allegedPreviousPrivateArgs-`;
+
+/** @param {Target} target */
+export const privateArgsAssetPrefix = target => `${target}-allegedPrivateArgs-`;
+
+/** @param {Target} target */
 export const overridesAssetPrefix = target => `${target}-privateArgsOverrides-`;
+
+/**
+ * @param {string | undefined} json
+ * @returns {string}
+ */
+export const digestJson = json => {
+  const text = canonicalizePrivateArgs(json);
+  const digest = createHash('sha256').update(text).digest('hex').slice(0, 12);
+  return digest;
+};
 
 /**
  * @param {Target} target
  * @param {string | undefined} specimen
  */
-export const expectedOverridesAssetName = (target, specimen) => {
-  const text = canonicalizePrivateArgs(specimen);
-  const digest = createHash('sha256').update(text).digest('hex').slice(0, 12);
-  return `${overridesAssetPrefix(target)}${digest}.json`;
+export const expectedOverridesAssetName = (target, specimen) =>
+  `${overridesAssetPrefix(target)}${digestJson(specimen)}.json`;
+
+/**
+ * @param {Target} target
+ * @param {ReturnType<typeof expectedOverridesAssetName>} filename
+ */
+export const extractOverridesDiscriminator = (target, filename) => {
+  const prefix = overridesAssetPrefix(target);
+  if (!filename.startsWith(prefix)) {
+    throw Error(`release asset ${filename} is missing prefix ${prefix}`);
+  }
+  const leftTrimmed = filename.slice(prefix.length);
+  const suffix = '.json';
+  if (!leftTrimmed.endsWith(suffix)) {
+    throw Error(`release asset ${filename} is missing suffix ${suffix}`);
+  }
+  const rightTrimmed = leftTrimmed.slice(0, -suffix.length);
+  return rightTrimmed;
 };
 
 export const bundleIdFromBundleRecord = (
@@ -357,9 +405,11 @@ export const makeReleasePlan = ({
   releaseTag,
   target,
 }) => {
-  if (!(target in targetInfo)) throw Error(`unsupported target: ${target}`);
+  if (!Object.hasOwn(targetInfo, target)) {
+    throw Error(`unsupported target: ${target}`);
+  }
   if (!['bundle-only', 'deploy'].includes(mode)) {
-    throw Error(`unsupported --mode: ${mode}`);
+    throw Error(`unsupported mode: ${mode}`);
   }
 
   const { assetNames, getAssetText, release } = reader;

@@ -25,11 +25,24 @@ import {
   normalizeSignedAuthInfo,
   validateUpgradePrecondition,
 } from '../scripts/ymax-deploy-target.ts';
+import { ydsInstruments, ydsTestnetInstruments } from '../tools/mocks.js';
+
+const {
+  escape: RegExpEscape = str => str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+} = RegExp;
 
 const bundle = await bundleSource(
   new URL('./fixtures/ymax-fake-bundle-source.js', import.meta.url).pathname,
 );
 const bundleId = `b1-${bundle.endoZipBase64Sha512}`;
+
+const jsonRes = (data: unknown) =>
+  ({
+    ok: true,
+    status: 200,
+    json: async () => data,
+    text: async () => JSON.stringify(data),
+  }) as Response;
 
 test('multisig normalization checks the declared signer subset', t => {
   const unsigned = {
@@ -424,6 +437,9 @@ const mockGh = (
     opts?: { encoding?: BufferEncoding | 'buffer'; reject?: boolean },
   ) => {
     const [sub1, sub2, tag] = args;
+    if (sub1 === 'release' && sub2 === 'list') {
+      return { stdout: '[]' };
+    }
     if (sub1 === 'release' && sub2 === 'view') {
       const release = releases.get(tag);
       if (!release && opts?.reject === false) {
@@ -901,7 +917,10 @@ const fakeUpgradeLogs = (
   return { stdout };
 };
 
-const makeScenario = (repoRoot = '/agoric-sdk') => {
+const makeScenario = (
+  repoRoot = '/agoric-sdk',
+  { ydsInstruments: mockYdsInstruments = ydsInstruments } = {},
+) => {
   const { agoricSdk, files } = mockDeployPackage(repoRoot);
   const releases = new Map<
     string,
@@ -923,17 +942,23 @@ const makeScenario = (repoRoot = '/agoric-sdk') => {
           )
       : value;
   const fetchFn = async (url: string) => {
+    const parsed = new URL(url);
+    if (parsed.hostname.match(/(^|\.)ymax\.app$/)) {
+      if (parsed.pathname === '/instruments') {
+        const data = Object.values(mockYdsInstruments).slice(0, 1);
+        return jsonRes({ data, count: data.length });
+      } else if (parsed.pathname === '/reward-token-rates') {
+        return jsonRes({ data: [] });
+      }
+      throw Error(`unexpected YDS fetch url: ${url}`);
+    }
     if (url.endsWith('/network-config')) {
       const network = url.includes('devnet.') ? 'devnet' : 'main';
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          chainName: network === 'devnet' ? 'agoricdev-25' : 'agoric-3',
-          rpcAddrs: [`https://${network}.rpc.agoric.net:443`],
-          apiAddrs: [`https://${network}.api.agoric.net:443`],
-        }),
-      } as Response;
+      return jsonRes({
+        chainName: network === 'devnet' ? 'agoricdev-25' : 'agoric-3',
+        rpcAddrs: [`https://${network}.rpc.agoric.net:443`],
+        apiAddrs: [`https://${network}.api.agoric.net:443`],
+      });
     }
     const release = [...releases.values()][0];
     const pendingText =
@@ -987,14 +1012,6 @@ const makeScenario = (repoRoot = '/agoric-sdk') => {
         },
       },
     };
-    // fetchJsonResilient reads the body via text(), so provide both.
-    const jsonRes = (data: unknown) =>
-      ({
-        ok: true,
-        status: 200,
-        json: async () => data,
-        text: async () => JSON.stringify(data),
-      }) as Response;
     if (url.includes('/cosmos/tx/v1beta1/txs?')) {
       return jsonRes({ tx_responses: [tx] });
     }
@@ -1175,34 +1192,30 @@ const renderGraphTree = (
   root: string,
 ): string => {
   const expanded = new Set<string>();
+
   const visit = (
     name: string,
     prefix: string,
     branch: string,
     ancestors: Set<string>,
   ): string[] => {
-    const cycle = ancestors.has(name);
-    const line = `${prefix}${branch}${name}${cycle ? ' (cycle)' : ''}`;
-    if (cycle) {
-      return [line];
-    }
-    if (expanded.has(name)) {
-      return [`${prefix}${branch}${name} (seen)`];
-    }
+    const line = `${prefix}${branch}${name}`;
+    if (ancestors.has(name)) return [`${line} (cycle)`];
+    if (expanded.has(name)) return [`${line} (seen)`];
     expanded.add(name);
+
     const deps = Object.values(nodes[name]?.deps || {});
+    const lastIdx = deps.length - 1;
+    const newPrefix = `${prefix}${branch === '└─ ' ? '   ' : branch === '├─ ' ? '│  ' : ''}`;
+    const newAncestors = new Set([...ancestors, name]);
     return [
       line,
-      ...deps.flatMap((dep, index) =>
-        visit(
-          dep,
-          `${prefix}${branch === '└─ ' ? '   ' : branch === '├─ ' ? '│  ' : ''}`,
-          index === deps.length - 1 ? '└─ ' : '├─ ',
-          new Set([...ancestors, name]),
-        ),
+      ...deps.flatMap((dep, idx) =>
+        visit(dep, newPrefix, idx === lastIdx ? '└─ ' : '├─ ', newAncestors),
       ),
     ];
   };
+
   return visit(root, '', '', new Set()).join('\n');
 };
 
@@ -1271,7 +1284,7 @@ test('ymax0-devnet phase-upgrade-submit does not require local bundle', async t 
     normalize,
     fetchFn,
     execFile: baseExecFile,
-  } = makeScenario();
+  } = makeScenario(undefined, { ydsInstruments: ydsTestnetInstruments });
   const execFile = async (
     cmd: string,
     args: string[],
@@ -2879,7 +2892,10 @@ test('operator must remove upgrade artifact to change privateArgsOverrides', asy
   t.is(overridesAfterFirstRun.length, 1);
   const [firstOverridesName, firstOverridesText] = overridesAfterFirstRun[0];
   t.true(firstOverridesName.endsWith('.json'));
-  t.is(firstOverridesText, '{\n  "oracle": "value-a"\n}\n');
+  {
+    const { chainMetadata: _, ...overrides } = JSON.parse(firstOverridesText);
+    t.deepEqual(overrides, { oracle: 'value-a' });
+  }
   t.true(
     execs.some(
       event =>
@@ -2984,100 +3000,249 @@ const makeAuthzGenerateChainMocks = (
   return { connectRpc, makeWalletKit };
 };
 
-test('phase-upgrade-generate reuses an existing privateArgsOverrides asset when privateArgs is blank', async t => {
+// Exercise the direct detached-signing path so assertions inspect the actual
+// privateArgsOverrides encoded for the contract, as well as the release asset.
+const makeChainMetadataScenario = () => {
   const ctx = makeScenario();
+  const target = 'ymax0-main' as const;
   const releaseTag = happyPathReleaseTag;
-
-  const existingOverridesName = expectedOverridesAssetName(
-    'ymax0-main',
-    '{"oracle":"value-a"}',
-  );
+  const unsignedTxName = `${target}-unsigned-tx.json`;
   seedRelease(ctx.releases, releaseTag, {
     'bundle-ymax0.json': jsonText(examples.bundle),
     'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
     'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
     'ymax0-main-install.json': jsonText(examples.install.main0),
-    // A prior attempt materialized overrides but never got as far as the
-    // unsigned tx (so there's no upgrade/pending record yet to pin the
-    // path via validateExpectedOverridesAsset).
-    [existingOverridesName]: canonicalizePrivateArgs('{"oracle":"value-a"}'),
   });
-
+  const assets = ctx.releases.get(releaseTag)!.assets;
+  const ydsRequests: string[] = [];
+  let ydsUnavailable = false;
+  let ydsRewardTokenRates: unknown;
+  const fetchFn = async (url: string) => {
+    const parsed = new URL(url);
+    if (parsed.hostname.match(/(^|\.)ymax\.app$/)) {
+      ydsRequests.push(url);
+      if (ydsUnavailable) throw Error('YDS unavailable');
+      if (parsed.pathname === '/reward-token-rates' && ydsRewardTokenRates) {
+        return jsonRes({ data: ydsRewardTokenRates });
+      }
+    }
+    return ctx.fetchFn(url);
+  };
   const { connectRpc, makeWalletKit } = makeAuthzGenerateChainMocks();
+  return {
+    ...ctx,
+    assets,
+    target,
+    ydsRequests,
+    setYdsUnavailable: () => {
+      ydsUnavailable = true;
+    },
+    changeYds: () => {
+      ydsRewardTokenRates = [
+        {
+          evmChainId: 42161,
+          sourceDenom: 'MORPHO',
+          sourceToken: '0x1111111111111111111111111111111111111111',
+          targetDenom: 'USDC',
+          targetToken: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+        },
+      ];
+    },
+    // Model a retry after overrides were uploaded but before an unsigned tx
+    // was retained. Otherwise findUnsignedTx would bypass args generation.
+    discardUnsignedTx: () => {
+      assets.delete(unsignedTxName);
+    },
+    generate: (privateArgsOverrides: string | undefined) =>
+      runPhase(
+        { ...ctx, connectRpc, makeWalletKit, fetchFn },
+        'phase-upgrade-generate',
+        { target, tag: releaseTag },
+        {
+          ...ctx.env,
+          MNEMONIC: undefined,
+          GRANTEE: undefined,
+          PRIVATE_ARGS_OVERRIDES: privateArgsOverrides,
+        },
+      ),
+    readTxOverrides: () => {
+      const tx = JSON.parse(assets.get(unsignedTxName)!);
+      const capData = JSON.parse(tx.body.messages[0].spend_action);
+      const invocation = JSON.parse(capData.body.slice(1));
+      return invocation.message.args[0].privateArgsOverrides;
+    },
+  };
+};
 
-  await runPhase(
-    {
+for (const chainMetadata of [
+  {},
+  { Arbitrum: { caipChainId: 'eip155:42161' } },
+]) {
+  test(`chainMetadata: explicit ${JSON.stringify(chainMetadata)} wins without YDS`, async t => {
+    const ctx = makeChainMetadataScenario();
+    ctx.setYdsUnavailable();
+    const overrides = JSON.stringify({ oracle: 'value-a', chainMetadata });
+    await ctx.generate(overrides);
+
+    const assetName = expectedOverridesAssetName(ctx.target, overrides);
+    t.deepEqual(JSON.parse(ctx.assets.get(assetName)!), {
+      oracle: 'value-a',
+      chainMetadata,
+    });
+    t.deepEqual(ctx.readTxOverrides(), {
+      oracle: 'value-a',
+      chainMetadata,
+      postalServiceInstance: 'board0371',
+    });
+    t.deepEqual(ctx.ydsRequests, []);
+  });
+}
+
+test('chainMetadata: blank retry preserves recorded metadata without YDS', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.generate(overrides);
+  const assetName = expectedOverridesAssetName(ctx.target, overrides);
+  const recordedText = ctx.assets.get(assetName)!;
+  const recordedOverrides = JSON.parse(recordedText);
+  t.truthy(recordedOverrides.chainMetadata.Arbitrum);
+  const firstTxOverrides = ctx.readTxOverrides();
+
+  ctx.discardUnsignedTx();
+  ctx.ydsRequests.length = 0;
+  ctx.setYdsUnavailable();
+  await ctx.generate('');
+
+  t.deepEqual(ctx.ydsRequests, []);
+  t.is(ctx.assets.get(assetName), recordedText);
+  t.deepEqual(ctx.readTxOverrides(), firstTxOverrides);
+  t.deepEqual(
+    [...ctx.assets.keys()].filter(name =>
+      name.startsWith(`${ctx.target}-privateArgsOverrides-`),
+    ),
+    [assetName],
+  );
+});
+
+test('chainMetadata: asset identity excludes generated defaults', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.generate(overrides);
+
+  const expectedName = expectedOverridesAssetName(ctx.target, overrides);
+  t.deepEqual(
+    [...ctx.assets.keys()].filter(name =>
+      name.startsWith(`${ctx.target}-privateArgsOverrides-`),
+    ),
+    [expectedName],
+  );
+  const resolved = JSON.parse(ctx.assets.get(expectedName)!);
+  t.like(resolved, {
+    oracle: 'value-a',
+    chainMetadata: { Arbitrum: { caipChainId: 'eip155:42161' } },
+  });
+  t.true(ctx.ydsRequests.some(url => new URL(url).pathname === '/instruments'));
+  t.not(
+    expectedName,
+    expectedOverridesAssetName(ctx.target, JSON.stringify(resolved)),
+    'privateArgsOverrides discriminator does not consider injected defaults',
+  );
+  t.deepEqual(ctx.readTxOverrides(), {
+    ...resolved,
+    postalServiceInstance: 'board0371',
+  });
+});
+
+test('chainMetadata: explicit-input retry keeps recorded and transaction metadata consistent when YDS changes', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.generate(overrides);
+  const assetName = expectedOverridesAssetName(ctx.target, overrides);
+  const recordedText = ctx.assets.get(assetName)!;
+  const firstTxOverrides = ctx.readTxOverrides();
+
+  // Verify that replacing YDS responses has an effect.
+  const fresh = makeChainMetadataScenario();
+  fresh.changeYds();
+  await fresh.generate(overrides);
+  t.notDeepEqual(
+    fresh.readTxOverrides().chainMetadata,
+    firstTxOverrides.chainMetadata,
+    'resolved overrides are derived from current YDS data',
+  );
+
+  ctx.discardUnsignedTx();
+  ctx.changeYds();
+  await ctx.generate(overrides);
+
+  t.is(ctx.assets.get(assetName), recordedText);
+  t.deepEqual(ctx.readTxOverrides(), firstTxOverrides);
+  const localPath = `${ctx.repoRoot}/packages/portfolio-deploy/dist/${assetName}`;
+  t.deepEqual(JSON.parse(ctx.files.get(localPath)!), JSON.parse(recordedText));
+});
+
+test('phase-upgrade-generate rejects a conflicting privateArgsOverrides asset instead of adding a second one', async t => {
+  const privateArgsOverrides1 = '{"oracle":"value-a"}';
+  const privateArgsOverrides2 = '{"oracle":"value-b"}';
+  const makeInputs = (ctx: ReturnType<typeof makeScenario>) => {
+    const assets = {
+      'bundle-ymax0.json': jsonText(examples.bundle),
+      'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+      'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+      'ymax0-main-install.json': jsonText(examples.install.main0),
+    };
+    const env = {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE: 'agoric1operator0000000000000000000000000000000',
+      PRIVATE_ARGS_OVERRIDES: privateArgsOverrides1,
+    };
+    const { connectRpc, makeWalletKit } = makeAuthzGenerateChainMocks();
+    const runPowers = {
       agoricSdk: ctx.agoricSdk,
       execFile: ctx.execFile,
       fetchFn: ctx.fetchFn,
       connectRpc,
       makeWalletKit,
       stdout: ctx.stdout,
-    },
-    'phase-upgrade-generate',
-    { target: 'ymax0-main', tag: releaseTag },
-    {
-      ...ctx.env,
-      MNEMONIC: undefined,
-      GRANTEE: 'agoric1operator0000000000000000000000000000000',
-      // A workflow_dispatch optional string input left blank arrives as
-      // '', not undefined.
-      PRIVATE_ARGS_OVERRIDES: '',
-    },
-  );
+    };
+    return { assets, env, runPowers };
+  };
 
-  const assets = ctx.releases.get(releaseTag)?.assets;
-  const overridesNames = [...(assets?.keys() ?? [])].filter(name =>
-    name.startsWith('ymax0-main-privateArgsOverrides-'),
-  );
-  t.deepEqual(overridesNames, [existingOverridesName]);
-  t.is(
-    assets?.get(existingOverridesName),
-    canonicalizePrivateArgs('{"oracle":"value-a"}'),
-  );
-  t.truthy(assets?.get('ymax0-main-authz-unsigned-tx.json'));
-});
-
-test('phase-upgrade-generate rejects a conflicting privateArgsOverrides asset instead of adding a second one', async t => {
-  const ctx = makeScenario();
   const releaseTag = happyPathReleaseTag;
+  const existingOverridesName = await (async () => {
+    const ctx = makeScenario();
+    const setupInputs = makeInputs(ctx);
+    seedRelease(ctx.releases, releaseTag, setupInputs.assets);
+    await runPhase(
+      setupInputs.runPowers,
+      'phase-upgrade-generate',
+      { target: 'ymax0-main', tag: releaseTag },
+      setupInputs.env,
+    );
+    const setupAssets = ctx.releases.get(releaseTag)!.assets;
+    return [...setupAssets.keys()].find(name =>
+      name.startsWith('ymax0-main-privateArgsOverrides-'),
+    ) as string;
+  })();
 
-  const existingOverridesName = expectedOverridesAssetName(
-    'ymax0-main',
-    '{"oracle":"value-a"}',
-  );
+  const ctx = makeScenario();
+  const runPhaseInputs = makeInputs(ctx);
   seedRelease(ctx.releases, releaseTag, {
-    'bundle-ymax0.json': jsonText(examples.bundle),
-    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
-    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
-    'ymax0-main-install.json': jsonText(examples.install.main0),
-    [existingOverridesName]: canonicalizePrivateArgs('{"oracle":"value-a"}'),
+    ...runPhaseInputs.assets,
+    [existingOverridesName]: canonicalizePrivateArgs(privateArgsOverrides1),
   });
-
-  const { connectRpc, makeWalletKit } = makeAuthzGenerateChainMocks();
 
   await t.throwsAsync(
     runPhase(
-      {
-        agoricSdk: ctx.agoricSdk,
-        execFile: ctx.execFile,
-        fetchFn: ctx.fetchFn,
-        connectRpc,
-        makeWalletKit,
-        stdout: ctx.stdout,
-      },
+      runPhaseInputs.runPowers,
       'phase-upgrade-generate',
       { target: 'ymax0-main', tag: releaseTag },
-      {
-        ...ctx.env,
-        MNEMONIC: undefined,
-        GRANTEE: 'agoric1operator0000000000000000000000000000000',
-        PRIVATE_ARGS_OVERRIDES: '{"oracle":"value-b"}',
-      },
+      { ...runPhaseInputs.env, PRIVATE_ARGS_OVERRIDES: privateArgsOverrides2 },
     ),
     {
       message: new RegExp(
-        `^${expectedOverridesAssetName('ymax0-main', '{"oracle":"value-b"}').replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')} would be a new private-args-overrides asset for ymax0-main, but ${existingOverridesName.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')} already exists`,
+        `^"ymax0-main-privateArgsOverrides-[0-9a-f]+[.]json" would be a new privateArgsOverrides release asset for ymax0-main, but ${RegExpEscape(JSON.stringify(existingOverridesName))} already exists`,
       ),
     },
   );
@@ -3091,43 +3256,64 @@ test('phase-upgrade-generate rejects a conflicting privateArgsOverrides asset in
 });
 
 test('phase-upgrade-generate is idempotent when privateArgs matches the existing overrides asset', async t => {
-  const ctx = makeScenario();
+  // Re-supplying this must not be treated as a conflicting override.
+  const privateArgsOverrides = '{"oracle":"value-a"}';
+
+  const makeInputs = (ctx: ReturnType<typeof makeScenario>) => {
+    const assets = {
+      'bundle-ymax0.json': jsonText(examples.bundle),
+      'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+      'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+      'ymax0-main-install.json': jsonText(examples.install.main0),
+    };
+    const env = {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE: 'agoric1operator0000000000000000000000000000000',
+      PRIVATE_ARGS_OVERRIDES: privateArgsOverrides,
+    };
+    const { connectRpc, makeWalletKit } = makeAuthzGenerateChainMocks();
+    const runPowers = {
+      agoricSdk: ctx.agoricSdk,
+      execFile: ctx.execFile,
+      fetchFn: ctx.fetchFn,
+      connectRpc,
+      makeWalletKit,
+      stdout: ctx.stdout,
+    };
+    return { assets, env, runPowers };
+  };
+
   const releaseTag = happyPathReleaseTag;
+  const existingOverridesName = await (async () => {
+    const ctx = makeScenario();
+    const setupInputs = makeInputs(ctx);
+    seedRelease(ctx.releases, releaseTag, setupInputs.assets);
+    await runPhase(
+      setupInputs.runPowers,
+      'phase-upgrade-generate',
+      { target: 'ymax0-main', tag: releaseTag },
+      setupInputs.env,
+    );
+    const setupAssets = ctx.releases.get(releaseTag)!.assets;
+    return [...setupAssets.keys()].find(name =>
+      name.startsWith('ymax0-main-privateArgsOverrides-'),
+    ) as string;
+  })();
 
-  const existingOverridesName = expectedOverridesAssetName(
-    'ymax0-main',
-    '{"oracle":"value-a"}',
-  );
+  const ctx = makeScenario();
+  const runPhaseInputs = makeInputs(ctx);
   seedRelease(ctx.releases, releaseTag, {
-    'bundle-ymax0.json': jsonText(examples.bundle),
-    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
-    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
-    'ymax0-main-install.json': jsonText(examples.install.main0),
-    [existingOverridesName]: canonicalizePrivateArgs('{"oracle":"value-a"}'),
+    ...runPhaseInputs.assets,
+    [existingOverridesName]: canonicalizePrivateArgs(privateArgsOverrides),
   });
-
-  const { connectRpc, makeWalletKit } = makeAuthzGenerateChainMocks();
 
   await t.notThrowsAsync(
     runPhase(
-      {
-        agoricSdk: ctx.agoricSdk,
-        execFile: ctx.execFile,
-        fetchFn: ctx.fetchFn,
-        connectRpc,
-        makeWalletKit,
-        stdout: ctx.stdout,
-      },
+      runPhaseInputs.runPowers,
       'phase-upgrade-generate',
       { target: 'ymax0-main', tag: releaseTag },
-      {
-        ...ctx.env,
-        MNEMONIC: undefined,
-        GRANTEE: 'agoric1operator0000000000000000000000000000000',
-        // Same value as what's already recorded: re-supplying it explicitly
-        // must not be treated as a conflicting override.
-        PRIVATE_ARGS_OVERRIDES: '{"oracle":"value-a"}',
-      },
+      runPhaseInputs.env,
     ),
   );
 
@@ -3384,7 +3570,7 @@ test('ymax1-main upgrade requires ymax0-main upgrade evidence', async t => {
   );
 });
 
-test('phase-upgrade-submit materializes default overrides', async t => {
+test('phase-upgrade-submit materializes privateArgsOverrides', async t => {
   const { agoricSdk, files, releases, stdout, normalize, ...other } =
     makeScenario();
   const { env, execs, fetchFn, execFile: baseExecFile } = other;
@@ -3433,7 +3619,9 @@ test('phase-upgrade-submit materializes default overrides', async t => {
     ...(releases.get('v0.3.2604-beta1')?.assets.entries() ?? []),
   ].filter(([name]) => name.startsWith('ymax0-main-privateArgsOverrides-'));
   t.is(overridesAssets.length, 1);
-  t.is(overridesAssets[0]?.[1], '{}\n');
+  const overridesText = overridesAssets[0]?.[1];
+  const overrides = JSON.parse(overridesText);
+  t.deepEqual(Object.keys(overrides), ['chainMetadata']);
 });
 
 test.serial(
@@ -3517,13 +3705,6 @@ test.serial(
       if (url.endsWith('/network-config')) {
         return ctx.fetchFn(url);
       }
-      const jsonRes = (data: unknown) =>
-        ({
-          ok: true,
-          status: 200,
-          json: async () => data,
-          text: async () => JSON.stringify(data),
-        }) as Response;
       if (url.includes('/cosmos/tx/v1beta1/txs?')) {
         const query = new URL(url).searchParams.get('query');
         return jsonRes({
@@ -3640,6 +3821,16 @@ test.serial(
       'In "upgrade" method of (ContractControl): arg 0: (an object) - Must match one of (a string)';
     const messageId = `upgrade.${examples.upgrade.main0.upgradeBlockTime}`;
     const fetchFn = async (url: string) => {
+      const parsed = new URL(url);
+      if (parsed.hostname.match(/(^|\.)ymax\.app$/)) {
+        if (parsed.pathname === '/instruments') {
+          const data = Object.values(ydsInstruments).slice(0, 1);
+          return jsonRes({ data, count: data.length });
+        } else if (parsed.pathname === '/reward-token-rates') {
+          return jsonRes({ data: [] });
+        }
+        throw Error(`unexpected YDS fetch url: ${url}`);
+      }
       if (url.includes('/agoric/vstorage/data/published.wallet.')) {
         const update = {
           body: `#${JSON.stringify({
@@ -3649,18 +3840,12 @@ test.serial(
           })}`,
           slots: [],
         };
-        const data = {
+        return jsonRes({
           value: JSON.stringify({
             blockHeight: '78',
             values: [JSON.stringify(update)],
           }),
-        };
-        return {
-          ok: true,
-          status: 200,
-          json: async () => data,
-          text: async () => JSON.stringify(data),
-        } as Response;
+        });
       }
       return ctx.fetchFn(url);
     };
