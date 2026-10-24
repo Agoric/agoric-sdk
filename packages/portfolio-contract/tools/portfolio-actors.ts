@@ -245,6 +245,33 @@ export const makeTrader = (
       };
       return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
     },
+    /**
+     * Designate an EVM account as the portfolio's new owner. Settles once
+     * that account accepts (see {@link makeEvmTrader}), or when the transfer
+     * is superseded or expires.
+     */
+    async transferOwnershipToEVM(
+      _t: ExecutionContext,
+      offerArgs: OfferArgsFor['transferOwnershipToEVM'],
+    ) {
+      if (!openId) throw Error('not open');
+      const invitationMakerName: PortfolioContinuingInvitationMaker =
+        'TransferOwnershipToEVM';
+      const id = `TransferOwnershipToEVM-${(nonce += 1)}`;
+      const invitationSpec: InvitationSpec = {
+        source: 'continuing' as const,
+        invitationMakerName,
+        previousOffer: openId,
+      };
+
+      const proposal: ProposalType['transferOwnershipToEVM'] = {};
+      return wallet.executeContinuingOffer({
+        id,
+        invitationSpec,
+        proposal,
+        offerArgs,
+      });
+    },
     getPortfolioId: () => portfolioIdOfPath(stripRoot(self.getPortfolioPath())),
     getPortfolioPath: () => portfolioPath || assert.fail('no portfolio'),
     getPortfolioStatus: () =>
@@ -516,6 +543,30 @@ export const makeEvmTrader = ({
           const expectedNonce = nonce;
           await submitMessage(message);
           return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        /**
+         * Accept ownership of a portfolio designated to this trader by its
+         * Agoric owner, and return the resulting message status.
+         */
+        async acceptOwnership(portfolioIdToAccept: number) {
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              portfolio: BigInt(portfolioIdToAccept),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'AcceptOwnership',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          const status = await getMessageStatus(expectedNonce, deadline);
+          if (status.status === 'ok') {
+            await updatePortfolioPath(portfolioIdToAccept);
+          }
+          return status;
         },
         async rebalance() {
           const currentPortfolioId = self.getPortfolioId();

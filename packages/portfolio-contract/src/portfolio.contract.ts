@@ -73,6 +73,7 @@ import { E, type ERef } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord, Passable } from '@endo/pass-style';
 import { M, objectMap } from '@endo/patterns';
+import type { Address as EvmAddress } from 'abitype';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import {
   prepareEVMWalletHandlerKit,
@@ -687,8 +688,18 @@ export const contract = async (
     txfrCtx,
   );
 
-  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
-  const getPortfolio = (id: number) => portfolios.get(id);
+  /**
+   * Each portfolio's kit, as of its creation: facets added to the kind by
+   * later upgrades are missing from older entries. Only `manager` has
+   * existed since the first release.
+   */
+  const portfolios = zone.mapStore<
+    number,
+    Pick<PortfolioKit, 'manager'> & Partial<PortfolioKit>
+  >('portfolios');
+  /** Get a portfolio's kit, with all of its current facets. */
+  const getPortfolio = (id: number): PortfolioKit =>
+    portfolios.get(id).manager.getKit();
 
   const plannerDelegations = zone.mapStore<
     PortfolioKit['planner'],
@@ -786,6 +797,7 @@ export const contract = async (
     contracts,
     deliverDelegation,
     verifyPortfolioObservations,
+    timerService,
   });
 
   /**
@@ -1059,6 +1071,31 @@ export const contract = async (
           domain.verifyingContract,
         );
       }
+    },
+    /**
+     * Complete the pending transfer of a portfolio from its Agoric owner to
+     * `signer`, who signed an `AcceptOwnership` message for it in `domain`.
+     *
+     * @returns the portfolio's evmHandler, for the new owner's wallet
+     */
+    async completeOwnershipTransfer(
+      portfolioId: bigint,
+      signer: EvmAddress,
+      domain: YmaxFullDomain,
+    ): Promise<PortfolioKit['evmHandler']> {
+      const id = Number(portfolioId);
+      const kit = portfolios.has(id)
+        ? getPortfolio(id)
+        : Fail`no portfolio${q(id)}`;
+      // Also checks that the domain chain is supported. The portfolio id
+      // alone does not tell ymax instances apart; the verifying contract does.
+      kit.evmHandler.validateRepresentativeInfo(
+        domain.chainId,
+        domain.verifyingContract,
+      );
+      // Resolves promptly
+      const { absValue: now } = await E(timerService).getCurrentTimestamp();
+      return kit.ownerTransfer.complete(signer, BigInt(domain.chainId), now);
     },
   } satisfies EVMPortfolioPowers);
 

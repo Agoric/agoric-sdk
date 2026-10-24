@@ -202,6 +202,12 @@ export const YmaxPortfolioMessageSchema = {
 } as const satisfies EIP712MessageSchema;
 export type YmaxPortfolioMessageSchema = typeof YmaxPortfolioMessageSchema;
 
+/**
+ * Ymax messages must have a `deadline` (in seconds) less than this far in
+ * the future.
+ */
+export const MAX_YMAX_DEADLINE_OFFSET = 60n * 60n * 24n; // 1 day
+
 type YmaxPortfolioMessageKit = EIP712MessageKit<YmaxPortfolioMessageSchema>;
 const ymaxPortfolioMessageKit: YmaxPortfolioMessageKit = makeEIP712MessageKit(
   YmaxPortfolioMessageSchema,

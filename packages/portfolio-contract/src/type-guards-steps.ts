@@ -120,6 +120,12 @@ export type OfferArgsFor = {
   deposit: { flow?: MovementDesc[] };
   openPortfolio: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
   rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
+  transferOwnershipToEVM: {
+    /** the EVM account designated as the new owner */
+    evmAddress: `0x${string}`;
+    /** time (in seconds) after which the transfer can no longer be accepted */
+    deadline: bigint;
+  };
 };
 
 /**
@@ -206,6 +212,11 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       },
       {},
     ) as TypedPattern<OfferArgsFor['rebalance']>,
+    transferOwnershipToEVM: M.splitRecord(
+      { evmAddress: M.string(), deadline: M.nat() },
+      {},
+      {},
+    ) as TypedPattern<OfferArgsFor['transferOwnershipToEVM']>,
     plan: M.splitRecord(
       { flow: flowShape },
       { order: orderShape },
