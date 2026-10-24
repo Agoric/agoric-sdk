@@ -30,7 +30,7 @@ import type {
 import { pubkeyToAddress } from '@cosmjs/amino';
 import { decodePubkey } from '@cosmjs/proto-signing';
 import { StargateClient } from '@cosmjs/stargate';
-import { assert as endoAssert, Fail, b, q } from '@endo/errors';
+import { Fail, b, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 import { execa } from 'execa';
 import fs from 'node:fs';
@@ -1812,10 +1812,12 @@ const findSignedTx = async (
 
 const multisigModeShape = M.splitRecord({
   bitarray: M.and(
+    // "extra bits stored" might be omitted (it defaults to 0).
     M.splitRecord(
       {},
       { extra_bits_stored: M.number(), extraBitsStored: M.number() },
     ),
+    // "elements" is required but has multiple spellings.
     M.or(
       M.splitRecord({ elems: M.string() }),
       M.splitRecord({ elements: M.string() }),
@@ -1823,6 +1825,7 @@ const multisigModeShape = M.splitRecord({
   ),
   mode_infos: M.arrayOf(
     M.splitRecord({
+      // We only support one signing mode.
       single: M.splitRecord({ mode: 'SIGN_MODE_LEGACY_AMINO_JSON' }),
     }),
   ),
@@ -1855,84 +1858,55 @@ const checkMultisigSelection = (
   publicKey: any,
   signerIndex: number,
 ) => {
-  const fail = (detail: string): never =>
-    endoAssert.fail(
-      `signer_infos[${signerIndex}]: invalid multisig signer selection: ${detail}`,
-    );
-  mustMatch(
-    harden(publicKey),
-    multisigPublicKeyShape,
-    `signer_infos[${signerIndex}].public_key`,
-  );
-  mustMatch(
-    harden(multi),
-    multisigModeShape,
-    `signer_infos[${signerIndex}].mode_info.multi`,
-  );
-  const { bitarray, mode_infos: modeInfos } = multi;
+  const label = `signer_infos[${signerIndex}]`;
+  mustMatch(harden(publicKey), multisigPublicKeyShape, `${label}.public_key`);
+  mustMatch(harden(multi), multisigModeShape, `${label}.mode_info.multi`);
   const members = publicKey.public_keys;
   const threshold = Number(publicKey.threshold);
-  if (!Number.isSafeInteger(threshold)) {
-    return fail(
-      `Number(public_key.threshold) must be a safe integer; got ${threshold} from ${String(publicKey.threshold)}`,
-    );
-  }
-  if (threshold < 1 || threshold > members.length) {
-    return fail(
-      `Number(public_key.threshold) must be between 1 and ${members.length} members; got ${threshold}`,
-    );
-  }
+  const { bitarray, mode_infos: modeInfos } = multi;
   const encoded = bitarray.elems ?? bitarray.elements;
-  const extra = bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0;
-  if (!Number.isSafeInteger(extra)) {
-    return fail(
-      `(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be a safe integer; got ${String(extra)}`,
-    );
-  }
-  if (extra < 0 || extra > 8) {
-    return fail(
-      `(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be between 0 and 8; got ${extra}`,
-    );
-  }
   const bytes = Buffer.from(encoded, 'base64');
+  // `extra` indicates the count of bits to take from an incomplete final octet.
+  const extra = bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0;
   const bitLength =
     extra === 0 ? bytes.length * 8 : (bytes.length - 1) * 8 + extra;
-  if (bytes.length === 0) {
-    return fail('(bitarray.elems ?? bitarray.elements) decodes to no bytes');
+
+  const fail = (strings: TemplateStringsArray, ...subs: unknown[]) => {
+    const prefixedStrings = [
+      `${label}: invalid multisig signer selection: ${strings[0]}`,
+      ...strings.slice(1),
+    ];
+    throw Fail(prefixedStrings, ...subs);
+  };
+
+  (Number.isSafeInteger(threshold) &&
+    threshold >= 1 &&
+    threshold <= members.length) ||
+    fail`Number(public_key.threshold) must be a safe integer between 1 and ${members.length} keys; got ${threshold} from input ${publicKey.threshold}`;
+
+  (Number.isSafeInteger(extra) && extra >= 0 && extra <= 8) ||
+    fail`(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be a safe integer between 0 and 8; got ${extra}`;
+  bytes.length > 0 ||
+    fail`(bitarray.elems ?? bitarray.elements) decodes to no bytes`;
+  bytes.toString('base64') === encoded ||
+    fail`(bitarray.elems ?? bitarray.elements) is not canonical base64`;
+  if (extra !== 0) {
+    // The final byte must not set bits beyond those used for `extra`.
+    bytes.at(-1)! % 2 ** (8 - extra) === 0 ||
+      fail`bitarray has non-zero padding bits in its final byte (0x${b(bytes.at(-1)!.toString(16).padStart(2, '0'))}, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`;
   }
-  if (bytes.toString('base64') !== encoded) {
-    return fail(
-      '(bitarray.elems ?? bitarray.elements) is not canonical base64',
-    );
-  }
-  if (bitLength !== members.length) {
-    return fail(
-      `bitarray length ${bitLength} does not match ${members.length} public key members (${bytes.length} bytes, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`,
-    );
-  }
-  // Canonical base64 does not constrain unused bits within the decoded byte.
-  if (extra > 0 && bytes.at(-1)! % 2 ** (8 - extra) !== 0) {
-    return fail(
-      `bitarray has nonzero unused padding bits in its final byte (0x${bytes.at(-1)!.toString(16).padStart(2, '0')}, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`,
-    );
-  }
-  const selected = popcount(bytes);
-  if (selected < threshold) {
-    return fail(
-      `bitarray selects ${selected} members, fewer than threshold ${threshold}`,
-    );
-  }
-  if (selected !== modeInfos.length) {
-    return fail(
-      `bitarray selects ${selected} members but mode_infos contains ${modeInfos.length} entries`,
-    );
-  }
+
+  bitLength === members.length ||
+    fail`bitarray length ${bitLength} does not match key count ${members.length} (${bytes.length} bytes, extra=${extra} from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)`;
+
+  const sigCount = popcount(bytes);
+  sigCount >= threshold ||
+    fail`bitarray selects ${sigCount} keys, fewer than threshold ${threshold}`;
+  modeInfos.length === sigCount ||
+    fail`bitarray selects ${sigCount} keys but mode_infos contains ${modeInfos.length}`;
   for (const [index, modeInfo] of modeInfos.entries()) {
-    if (modeInfo?.multi) {
-      return fail(
-        `mode_infos[${index}] contains an unsupported nested multisig`,
-      );
-    }
+    !modeInfo?.multi ||
+      fail`mode_infos[${index}] contains an unsupported nested multisig`;
   }
 };
 
