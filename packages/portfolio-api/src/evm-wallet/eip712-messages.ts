@@ -118,6 +118,13 @@ const OperationTypes = {
     { name: 'features', type: 'PortfolioAutoFeatures' },
     PortfolioIdParam,
   ],
+  /**
+   * Accept ownership of a portfolio whose current owner (an Agoric account)
+   * designated the signer as its new owner. Completes the transfer: the
+   * portfolio's source EVM account becomes the signer's account on the
+   * domain's chain.
+   */
+  AcceptOwnership: [PortfolioIdParam],
   // `satisfies Record<string, readonly TypedDataParameter[]>` rather than
   // abitype's own `TypedData` (whose `TypedDataParameter` is strictly
   // `{name, type}`) so struct fields here can carry the repo-local `optional`

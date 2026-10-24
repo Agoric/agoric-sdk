@@ -367,6 +367,11 @@ export const prepareEVMPortfolioOperationManager = (
 
       await null;
       try {
+        if (operationDetails.operation === 'AcceptOwnership') {
+          // The portfolio is not held by this wallet (yet); fail explicitly
+          // rather than on the lookup below.
+          throw Fail`${q(operationDetails.operation)} is not supported yet`;
+        }
         const portfolioId =
           operationDetails.operation !== 'OpenPortfolio' &&
           operationDetails.operation !== 'OpenPortfolioWithAutoFeatures' &&
