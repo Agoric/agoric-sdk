@@ -1,6 +1,7 @@
 import '@endo/init/unsafe-fast.js';
 import process from 'node:process';
 import { parentPort, workerData } from 'node:worker_threads';
+import { TRANSFER_STATE } from '../../src/helpers/sync-xfer.js';
 
 if (!parentPort) throw Error('Fault fixture requires a worker');
 const port = parentPort;
@@ -31,9 +32,9 @@ if (workerData === 'monitor-exit') {
       const prefix = new TextEncoder().encode('{"id":1,"result":"');
       payload.set(prefix);
       Atomics.store(control, 1, prefix.length);
-      Atomics.store(control, 0, 3); // TRANSFER_READ_PARTIAL
+      Atomics.store(control, 0, TRANSFER_STATE.CHUNK_AVAILABLE);
       Atomics.notify(control, 0);
-      Atomics.wait(control, 0, 3);
+      Atomics.wait(control, 0, TRANSFER_STATE.CHUNK_AVAILABLE);
     }
     process.exit(17);
   });

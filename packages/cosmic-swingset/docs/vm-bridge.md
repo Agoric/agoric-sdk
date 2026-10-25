@@ -207,6 +207,7 @@ during shutdown is not reported as premature VM exit.
 
 ## Follow-on work
 
-F4/F5 repair and document the remaining shared-memory transfer state machine and
-UTF-8 codec behavior. F3 adds failure checks around those transfers; it does not
-replace those planned correctness repairs.
+The [shared-memory transfer contract](shared-memory-transfer.md) documents F4's
+layout, ownership, state machine, generator handoffs, and stale-ID regression.
+F5 will repair the remaining UTF-8 codec behavior, including strict final
+decoding and incremental encoding into the reusable destination.

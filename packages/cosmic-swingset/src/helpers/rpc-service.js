@@ -4,7 +4,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeRpcLifecycle } from './rpc-lifecycle.js';
 import stringify from './json-stable-stringify.js';
 import {
-  DEFAULT_BUFFER_SIZE,
+  makeTransferBuffer,
   makeTransferClient,
   makeTextDecoder,
 } from './sync-xfer.js';
@@ -32,7 +32,7 @@ export const VM_SHUTDOWN_METHOD = 'agvm.Shutdown';
 export const makeJsonRpcService = (worker, fd, dispatch, io) => {
   const lifecycle = makeRpcLifecycle();
   const transfer = makeTransferClient(
-    new SharedArrayBuffer(io.bufferSize || DEFAULT_BUFFER_SIZE),
+    makeTransferBuffer(io.bufferSize),
     lifecycle,
   );
   const completion = makePromiseKit();
