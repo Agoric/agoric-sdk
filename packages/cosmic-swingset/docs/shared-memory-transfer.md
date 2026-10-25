@@ -77,10 +77,13 @@ before its side of that final handoff is complete.
 ## Generator contract
 
 An encoder initially yields `undefined` to receive the reusable payload buffer.
-Each subsequent `next(payload)` can yield a `Uint8Array`, yield `undefined` to
-publish the whole supplied buffer, or return its final `Uint8Array`. A shorter
-in-place chunk can use `payload.subarray(0, length)`. Final completion requires
-an explicit byte chunk; an empty final array is valid.
+Each subsequent `next(payload)` can yield a `Uint8Array`, yield an explicit byte
+count for the prefix already written into `payload`, or yield `undefined` to
+publish the whole supplied buffer. It returns its final `Uint8Array` or byte
+count. Numeric counts must be integers in `[0, payload.byteLength]`; a shorter
+in-place chunk can alternatively use `payload.subarray(0, length)`. Final
+completion requires an explicit chunk or count; an empty final array or count
+zero is valid. In-place prefixes are published without a redundant payload copy.
 
 Each yield's fragments are non-final even when that yield fits entirely in one
 payload. Only the last fragment of the generator's final return receives final
@@ -100,6 +103,31 @@ Entry/final state checks and local operation guards reject unprepared, duplicate
 or reentrant operations. Protocol and codec exceptions publish `ABORTED` and
 notify the peer, preventing a codec failure from stranding the other endpoint.
 The RPC layer additionally propagates its transport lifecycle failure.
+
+## UTF-8 codecs
+
+`makeTextEncoder` uses `TextEncoder.encodeInto` to fill the destination supplied
+on each resume and yields or returns the explicit number of bytes written. It
+does not allocate an encoded byte array for the entire string. The encoder
+advances by `read` UTF-16 code units, preserving surrogate pairs and encoding
+whole code points. Lone surrogates follow the standard `TextEncoder` behavior
+and become U+FFFD replacement characters.
+
+An empty string completes with byte count zero. For nonempty remaining input,
+zero progress throws a capacity error rather than yielding indefinitely. A
+destination needs enough room for the next code point: one byte for ASCII,
+two or three for other BMP characters, and four for supplementary characters.
+Thus a four-byte payload accommodates any encoding unit; smaller payloads can
+still transport text whose units fit. If a later code point does not fit after
+earlier chunks were sent, the transfer aborts instead of returning partial text.
+
+`makeTextDecoder` streams chunks through a fatal UTF-8 decoder and flushes it at
+end-of-input. Malformed bytes, overlong encodings, encoded surrogates, out-of-range
+code points, and incomplete final sequences fail instead of being replaced or
+dropped. A leading U+FEFF is preserved as string data. The input-line pipeline
+also decodes complete buffer lines strictly, including its final unterminated
+line, so corrupt wire bytes cannot become replacement characters before JSON
+parsing or the shared-memory transfer.
 
 ## Stale response-ID investigation
 

@@ -77,9 +77,12 @@ test('bridge selection requires complete, whole decimal FD configuration', async
 
 test('external startup validates arguments and exposes only a sender after start', async t => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agcc-start-'));
-  const inputFd = fs.openSync(path.join(dir, 'input'), 'w+');
+  const inputPath = path.join(dir, 'input');
+  fs.writeFileSync(inputPath, '');
+  const inputFd = 0;
   const worker = new Worker(
-    new URL('../src/agd-input-worker.js', import.meta.url),
+    new URL('fixtures/file-input-worker.js', import.meta.url),
+    { workerData: { inputPath } },
   );
   const finished = makePromiseKit();
   t.teardown(async () => {

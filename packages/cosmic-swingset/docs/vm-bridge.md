@@ -145,6 +145,8 @@ The reader owns the input descriptor, including closing it at completion. Pipes
 and sockets use libuv polling rather than a blocking filesystem read, so shutdown
 can cancel input while the Go peer keeps its write end open. Regular files use a
 filesystem stream. Shared library modules receive their IO from entrypoints.
+File-input test fixtures open and close their files within the reader worker,
+keeping Node's automatic descriptor cleanup in the same worker as ownership.
 
 The typed parent/reader messages are defined in `rpc-service.js`:
 
@@ -182,6 +184,8 @@ transfer participants inspect this state at every wait, polling at most every
 for healthy Go requests. Failure publication also has an observable in-progress
 state, so a publisher disappearing before it finishes writing a diagnostic
 cannot strand a caller.
+During publication, a waiter can report the generic `RPC transport failed`
+before the detailed diagnostic is available.
 
 [`rpc-monitor-worker.js`](../src/rpc-monitor-worker.js) independently watches a
 `MessagePort` lease held by the reader. Reader disappearance closes the lease,
@@ -205,9 +209,10 @@ the unexpected-exit observer share that result. Existing interrupt/kill grace
 periods remain as a fallback and are cancelled when the VM exits. Expected exit
 during shutdown is not reported as premature VM exit.
 
-## Follow-on work
+## Transfer and codec details
 
 The [shared-memory transfer contract](shared-memory-transfer.md) documents F4's
 layout, ownership, state machine, generator handoffs, and stale-ID regression.
-F5 will repair the remaining UTF-8 codec behavior, including strict final
-decoding and incremental encoding into the reusable destination.
+It also describes F5's strict UTF-8 decoding, incremental encoding into reusable
+destinations, explicit byte counts, and insufficient-capacity behavior. Line
+input rejects malformed UTF-8 before parsing RPC records.

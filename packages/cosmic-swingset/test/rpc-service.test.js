@@ -15,15 +15,17 @@ import { makeJsonRpcService } from '../src/helpers/rpc-service.js';
 
 test('RPC input EOF is a transport failure rather than successful completion', async t => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rpc-eof-'));
-  const fd = fs.openSync(path.join(dir, 'empty'), 'w+');
+  const inputPath = path.join(dir, 'empty');
+  fs.writeFileSync(inputPath, '');
   const worker = new Worker(
-    new URL('../src/agd-input-worker.js', import.meta.url),
+    new URL('fixtures/file-input-worker.js', import.meta.url),
+    { workerData: { inputPath } },
   );
   t.teardown(async () => {
     await worker.terminate();
     fs.rmSync(dir, { recursive: true, force: true });
   });
-  const service = makeJsonRpcService(worker, fd, () => {}, {
+  const service = makeJsonRpcService(worker, 0, () => {}, {
     write: () => {},
     makeMonitor: () =>
       new Worker(new URL('../src/rpc-monitor-worker.js', import.meta.url)),
@@ -87,13 +89,18 @@ const runDriver = (t, mode) => {
   };
 };
 
+// A waiter can observe FAILING before the peer finishes publishing its detail.
+// That documented state fails immediately with the generic transport error.
 for (const [mode, expected] of /** @type {[string, RegExp][]} */ ([
-  ['reader-exit', /input worker disappeared/],
-  ['reader-early-exit', /input worker disappeared/],
-  ['reader-partial-exit', /input worker disappeared/],
-  ['reader-error', /input worker disappeared|reader crash/],
-  ['monitor-exit', /lifetime monitor disappeared/],
-  ['monitor-early-exit', /lifetime monitor disappeared/],
+  ['reader-exit', /input worker disappeared|RPC transport failed/],
+  ['reader-early-exit', /input worker disappeared|RPC transport failed/],
+  ['reader-partial-exit', /input worker disappeared|RPC transport failed/],
+  [
+    'reader-error',
+    /input worker disappeared|reader crash|RPC transport failed/,
+  ],
+  ['monitor-exit', /lifetime monitor disappeared|RPC transport failed/],
+  ['monitor-early-exit', /lifetime monitor disappeared|RPC transport failed/],
   ['write-error', /write failed/],
   ['stop-pending', /explicit stop/],
   ['close-pending', /outstanding calls/],
@@ -118,9 +125,18 @@ for (const [
   name,
   response,
   expected,
-] of /** @type {[string, string | undefined, RegExp][]} */ ([
+] of /** @type {[string, string | Uint8Array | undefined, RegExp][]} */ ([
   ['EOF', undefined, /EOF|RPC transport failed/],
   ['malformed JSON', '{not JSON}\n', /JSON|RPC transport failed/],
+  [
+    'malformed UTF-8 inside otherwise valid JSON',
+    Uint8Array.from([
+      ...new TextEncoder().encode('{"id":1,"result":"'),
+      0xff,
+      ...new TextEncoder().encode('","error":null}\n'),
+    ]),
+    /encoded data|UTF-8|utf-8|RPC transport failed/,
+  ],
   [
     'mismatched reply',
     '{"id":99,"result":"wrong","error":null}\n',

@@ -14,6 +14,7 @@ export const makeReadlineLoop = async (input, acceptLine, signal) => {
     input.destroy();
     return;
   }
+  const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
   try {
     await pipeline(
       input,
@@ -24,7 +25,7 @@ export const makeReadlineLoop = async (input, acceptLine, signal) => {
           let end = line.length;
           if (line[end - 1] === 10) end -= 1;
           if (line[end - 1] === 13) end -= 1;
-          acceptLine(line.subarray(0, end).toString('utf8'));
+          acceptLine(decoder.decode(line.subarray(0, end)));
         }
       },
       { signal },

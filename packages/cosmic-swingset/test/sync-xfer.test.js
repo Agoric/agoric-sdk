@@ -47,36 +47,19 @@ test('text decoder', t => {
 });
 
 test('text encoder', t => {
-  const bufs = [];
+  const chunks = [];
   const encoder = makeTextEncoder('hello world bobob');
+  const destination = new Uint8Array(3);
   encoder.next();
-  const outb = new Uint8Array(3);
-  let { value: buf, done } = encoder.next(outb);
   for (;;) {
-    if (buf === undefined) {
-      // They used our buffer.
-      buf = outb;
-    }
-    let i = 0;
-    while (i < buf.length) {
-      const thisTransfer = Math.min(buf.length - i, outb.byteLength);
-      if (outb !== buf) {
-        outb.set(buf.subarray(i, i + thisTransfer));
-      }
-      i += thisTransfer;
-      t.log('partial encode', outb);
-      bufs.push(Uint8Array.from(outb.subarray(0, thisTransfer)));
-    }
-
-    if (done) {
-      break;
-    }
-    ({ value: buf, done } = encoder.next());
+    const next = encoder.next(destination);
+    t.is(typeof next.value, 'number');
+    const count = /** @type {number} */ (next.value);
+    chunks.push(destination.slice(0, count));
+    if (next.done) break;
   }
-
-  const full = Uint8Array.from(bufs.flatMap(b => Array.from(b)));
-  const s = new TextDecoder().decode(full);
-  t.is(s, 'hello world bobob');
+  const bytes = Uint8Array.from(chunks.flatMap(chunk => Array.from(chunk)));
+  t.is(new TextDecoder().decode(bytes), 'hello world bobob');
 });
 
 /** @import { Decoder } from '../src/helpers/sync-xfer.js'; */
@@ -165,6 +148,16 @@ for (const [
     'reusable destination buffer',
     [Uint8Array.of(1, 2, 3), Uint8Array.of(4, 5, 6), Uint8Array.of(7)],
     'in-place',
+  ],
+  [
+    'explicit byte counts for arbitrary binary data',
+    [
+      Uint8Array.of(0xff, 0),
+      new Uint8Array(0),
+      Uint8Array.of(0x80),
+      new Uint8Array(0),
+    ],
+    'counts',
   ],
 ])) {
   test(`general byte transfer supports ${name}`, async t => {
@@ -289,6 +282,20 @@ test('entry state checks reject unprepared operations and double preparation', t
   t.throws(() => server.prepareToWrite(() => {}), {
     message: /already prepared/,
   });
+});
+
+test('peer abort during writer registration keeps the peer-abort diagnostic', t => {
+  const buffer = makeTransferBuffer();
+  const { control } = partitionTransferBuffer(buffer);
+  Atomics.store(control, 0, TRANSFER_STATE.READER_READY);
+  const server = makeTransferServer(buffer);
+  t.throws(
+    () =>
+      server.prepareToWrite(() => {
+        Atomics.store(control, 0, TRANSFER_STATE.ABORTED);
+      }),
+    { message: /aborted by peer/ },
+  );
 });
 
 for (const [

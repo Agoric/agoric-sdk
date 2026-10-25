@@ -57,21 +57,20 @@ export const partitionTransferBuffer = buffer => {
  */
 
 /**
- * @typedef {Generator<Uint8Array | undefined, Uint8Array, Uint8Array>} Encoder
+ * @typedef {number | Uint8Array | undefined} EncoderChunk
+ * @typedef {Generator<EncoderChunk, number | Uint8Array, Uint8Array>} Encoder
  */
 
 /**
  * @returns {Decoder<string>}
  */
 export function* makeTextDecoder() {
-  // console.error('created decoder!');
-  const td = new TextDecoder('utf-8');
+  const td = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
   let s = '';
   for (;;) {
     const buf = yield;
-    // console.error('got buf', buf);
     if (buf === undefined) {
-      return s;
+      return s + td.decode();
     }
     s += td.decode(buf, { stream: true });
   }
@@ -84,12 +83,19 @@ harden(makeTextDecoder);
  */
 export function* makeTextEncoder(input) {
   const te = new TextEncoder();
-
   let buf = yield;
-
-  // TODO: Maybe encode partials directly into buf, not create a fresh one.
-  buf = te.encode(input);
-  return buf;
+  let offset = 0;
+  for (;;) {
+    const { read, written } = te.encodeInto(input.slice(offset), buf);
+    if (read === 0 && offset < input.length) {
+      throw Error(
+        `UTF-8 destination capacity ${buf.byteLength} cannot fit the next code point`,
+      );
+    }
+    offset += read;
+    if (offset === input.length) return written;
+    buf = yield written;
+  }
 }
 harden(makeTextEncoder);
 
@@ -114,6 +120,8 @@ const makeTransferControl = (buffer, lifecycle) => {
   const change = (previous, next) => {
     lifecycle?.check();
     const current = Atomics.compareExchange(control, 0, previous, next);
+    if (current === TRANSFER_STATE.ABORTED)
+      throw Error('Transfer aborted by peer');
     if (current !== previous)
       throw Error(`Unexpected transfer state ${current}, expected ${previous}`);
     Atomics.notify(control, 0);
@@ -239,7 +247,8 @@ harden(makeTransferClient);
  */
 export const makeTransferServer = (buffer, lifecycle) => {
   const protocol = makeTransferControl(buffer, lifecycle);
-  const { control, payload, expect, change, waitForChange, abort } = protocol;
+  const { control, payload, state, expect, change, waitForChange, abort } =
+    protocol;
   let prepared = false;
   let writing = false;
   return Far('TransferServer', {
@@ -270,13 +279,26 @@ export const makeTransferServer = (buffer, lifecycle) => {
         let next = encoder.next(payload);
         for (;;) {
           if (next.done && next.value === undefined)
-            throw Error('Encoder must return a final byte chunk');
-          const bytes = next.value === undefined ? payload : next.value;
+            throw Error('Encoder must return a final byte chunk or byte count');
+          const isByteCount = typeof next.value === 'number';
+          const bytes =
+            isByteCount || next.value === undefined ? payload : next.value;
           if (!(bytes instanceof Uint8Array))
-            throw Error('Encoder chunk must be a Uint8Array');
+            throw Error('Encoder chunk must be a byte count or Uint8Array');
+          const byteLength = isByteCount ? next.value : bytes.byteLength;
+          if (
+            typeof byteLength !== 'number' ||
+            !Number.isInteger(byteLength) ||
+            byteLength < 0 ||
+            (isByteCount && byteLength > payload.byteLength)
+          ) {
+            throw Error(
+              `Encoder byte count ${byteLength} must be an integer from 0 to ${payload.byteLength}`,
+            );
+          }
           let offset = 0;
           do {
-            const previous = Atomics.load(control, 0);
+            const previous = state();
             if (
               previous !== TRANSFER_STATE.WRITER_READY &&
               previous !== TRANSFER_STATE.READER_READY
@@ -285,13 +307,15 @@ export const makeTransferServer = (buffer, lifecycle) => {
                 `Unexpected transfer state ${previous} before writing`,
               );
             }
-            const length = Math.min(
-              bytes.byteLength - offset,
-              payload.byteLength,
-            );
-            payload.set(bytes.subarray(offset, offset + length));
+            const length = Math.min(byteLength - offset, payload.byteLength);
+            if (
+              bytes.buffer !== payload.buffer ||
+              bytes.byteOffset + offset !== payload.byteOffset
+            ) {
+              payload.set(bytes.subarray(offset, offset + length));
+            }
             offset += length;
-            const final = Boolean(next.done && offset === bytes.byteLength);
+            const final = Boolean(next.done && offset === byteLength);
             Atomics.store(control, 1, length);
             const published = final
               ? TRANSFER_STATE.FINAL_CHUNK_AVAILABLE
@@ -305,7 +329,7 @@ export const makeTransferServer = (buffer, lifecycle) => {
               return;
             }
             expect(TRANSFER_STATE.READER_READY);
-          } while (offset < bytes.byteLength);
+          } while (offset < byteLength);
           // The consumer acknowledged the last yield before the encoder may
           // reuse the supplied buffer or publish another chunk.
           next = encoder.next(payload);

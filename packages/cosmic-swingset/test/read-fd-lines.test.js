@@ -70,6 +70,25 @@ test('input errors reject the loop', async t => {
   t.true(input.destroyed);
 });
 
+test('line input rejects malformed UTF-8 instead of substituting replacement characters', async t => {
+  for (const bytes of [
+    [0xff, 10],
+    [0xe2, 0x82, 10],
+    [0xf0, 0x9f, 0x98],
+  ]) {
+    const input = Readable.from([Buffer.from(bytes)]);
+    await t.throwsAsync(
+      makeReadlineLoop(
+        input,
+        () => t.fail('invalid text reached dispatch'),
+        new AbortController().signal,
+      ),
+      { instanceOf: TypeError },
+    );
+    t.true(input.destroyed);
+  }
+});
+
 test('dispatch errors reject the loop and stop further lines', async t => {
   const input = Readable.from(['first\nsecond\n']);
   const failure = Error('dispatch failed');
