@@ -40,7 +40,7 @@ test('RPC input EOF is a transport failure rather than successful completion', a
 
 /** @import { Duplex } from 'node:stream'; */
 
-const runDriver = (t, mode) => {
+const runDriver = (t, mode, env = {}) => {
   const child = spawn(
     process.execPath,
     [
@@ -50,6 +50,7 @@ const runDriver = (t, mode) => {
     {
       stdio: ['ignore', 'pipe', 'pipe', 'ignore', 'pipe', 'pipe'],
       timeout: 10000,
+      env: { ...process.env, ...env },
     },
   );
   assert(child.stdout && child.stderr);
@@ -84,8 +85,10 @@ const runDriver = (t, mode) => {
         .trim()
         .split('\n')
         .filter(Boolean)
+        .filter(line => mode !== 'log-config' || line.startsWith('{"'))
         .map(line => JSON.parse(line));
     },
+    output: () => stdout,
   };
 };
 
@@ -176,6 +179,33 @@ test('overlapping calls are rejected without corrupting the active call', async 
   t.deepEqual(result[2], { finished: true });
 });
 
+test('transport diagnostics report correlation and lifecycle without payloads', async t => {
+  const driver = runDriver(t, 'diagnostics');
+  t.is((await driver.read()).id, 1);
+  driver.write({ id: 1, result: 'private-response-data', error: null });
+  const records = await driver.result();
+  const events = records
+    .filter(record => record.debug)
+    .map(record => record.debug);
+  t.deepEqual(
+    events.map(record => record.event),
+    [
+      'RPC service starting',
+      'RPC request sent',
+      'RPC response received',
+      'RPC shutdown starting',
+      'RPC service stopped',
+    ],
+  );
+  t.deepEqual(events[1].details, { id: 1, method: 'agd.ReceiveMessage' });
+  t.deepEqual(events[2].details, { id: 1, error: false });
+  t.notRegex(
+    JSON.stringify(events),
+    /private-request-data|private-response-data/,
+  );
+  t.true(records.some(record => record.finished));
+});
+
 for (const mode of [
   'unknown-worker-message',
   'unknown-parent-message',
@@ -227,4 +257,116 @@ test('inbound requests can settle out of order and leave no pending shutdown wor
   t.deepEqual(await driver.read(), { id: 1, result: 'handled', error: null });
   t.deepEqual(await driver.read(), { id: 0, result: 'handled', error: null });
   t.deepEqual(await driver.result(), [{ finished: true }]);
+});
+
+test('inbound diagnostic IDs follow out-of-order settlements', async t => {
+  const driver = runDriver(t, 'diagnostics-inbound');
+  driver.write({ method: 'action', id: 0, params: ['private-request-data'] });
+  driver.write({ method: 'action', id: 1, params: ['private-request-data'] });
+  t.deepEqual(await driver.read(), {
+    id: 1,
+    result: 'private-response-data',
+    error: null,
+  });
+  t.deepEqual(await driver.read(), {
+    id: 0,
+    result: 'private-response-data',
+    error: null,
+  });
+  const records = await driver.result();
+  const events = records
+    .filter(record => record.debug)
+    .map(record => record.debug);
+  t.deepEqual(
+    events
+      .filter(record => record.event === 'RPC request received')
+      .map(record => record.details.id),
+    [0, 1],
+  );
+  t.deepEqual(
+    events
+      .filter(record => record.event === 'RPC response sent')
+      .map(record => record.details.id),
+    [1, 0],
+  );
+  t.notRegex(
+    JSON.stringify(events),
+    /private-request-data|private-response-data/,
+  );
+});
+
+test('failure diagnostics retain active correlation context', async t => {
+  const driver = runDriver(t, 'diagnostics-failure');
+  t.is((await driver.read()).id, 1);
+  driver.input.end();
+  const records = await driver.result();
+  const events = records
+    .filter(record => record.debug)
+    .map(record => record.debug);
+  t.deepEqual(
+    events.find(record => record.event === 'RPC service failed')?.details,
+    { activeRequestId: 1, pendingReplies: 0 },
+  );
+  t.truthy(records.find(record => record.callError));
+  t.truthy(records.find(record => record.failure));
+  t.notRegex(JSON.stringify(events), /private-request-data/);
+});
+
+test('logger failures do not disrupt RPC framing or settlement', async t => {
+  const driver = runDriver(t, 'logger-error');
+  t.is((await driver.read()).id, 1);
+  driver.write({ id: 1, result: 'response', error: null });
+  t.deepEqual(await driver.result(), [
+    { reply: { id: 1, result: 'response', error: null } },
+    { finished: true },
+  ]);
+});
+
+for (const [debug, enabled] of /** @type {[string | undefined, boolean][]} */ ([
+  [undefined, false],
+  ['', false],
+  ['agoric:none', false],
+  ['agoric:debug', true],
+  ['agoric', true],
+])) {
+  test(`repository logging selector ${debug ?? 'unset'} controls transport diagnostics`, async t => {
+    const driver = runDriver(t, 'log-config', { DEBUG: debug });
+    t.is((await driver.read()).id, 1);
+    driver.write({ id: 1, result: 'private-response-data', error: null });
+    const records = await driver.result();
+    t.deepEqual(records, [
+      {
+        levels: {
+          error: debug !== 'agoric:none',
+          info: debug !== 'agoric:none',
+          log: debug === undefined || enabled,
+          debug: enabled,
+        },
+      },
+      { reply: { id: 1, result: 'private-response-data', error: null } },
+      { finished: true },
+    ]);
+    const output = await driver.output();
+    if (enabled) {
+      t.regex(output, /ag-chain-cosmos: rpc: RPC service starting/);
+      t.regex(output, /RPC request sent/);
+      t.regex(output, /RPC service stopped/);
+    } else
+      t.notRegex(output, /RPC service|RPC request|RPC response|RPC shutdown/);
+    const logLines = output
+      .split('\n')
+      .filter(line => !line.startsWith('{"'))
+      .join('\n');
+    t.notRegex(logLines, /private-response-data/);
+  });
+}
+
+test('pipe framing preserves a response larger than the transfer buffer', async t => {
+  const driver = runDriver(t, 'call');
+  const result = `${'x'.repeat(128 * 1024)}🦉`;
+  t.is((await driver.read()).id, 1);
+  driver.write({ id: 1, result, error: null });
+  const records = await driver.result();
+  t.is(records.find(record => record.reply)?.reply.result, result);
+  t.true(records.some(record => record.finished));
 });

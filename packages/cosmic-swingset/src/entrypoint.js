@@ -15,6 +15,7 @@ import { makeAgcc } from './agcc-agvm.js';
 import main from './chain-main.js';
 
 const log = anylogger('ag-chain-cosmos');
+const rpcLog = anylogger('ag-chain-cosmos:rpc');
 
 loadAgcc(
   {
@@ -22,22 +23,28 @@ loadAgcc(
     AGVM_OUTPUT_FD: process.env.AGVM_OUTPUT_FD,
   },
   {
-    loadNative: () => import('@agoric/cosmos').then(ns => ns.default),
-    makeExternal: (inputFd, outputFd) =>
-      makeAgcc(inputFd, outputFd, {
+    loadNative: () => {
+      rpcLog.debug('VM bridge selected', { mode: 'embedded' });
+      return import('@agoric/cosmos').then(ns => ns.default);
+    },
+    makeExternal: (inputFd, outputFd) => {
+      rpcLog.debug('VM bridge selected', { mode: 'split', inputFd, outputFd });
+      return makeAgcc(inputFd, outputFd, {
         write: (fd, text) => {
-          fs.writeSync(fd, text);
+          fs.writeFileSync(fd, text);
         },
         makeInputWorker: () =>
           new Worker(new URL('./agd-input-worker.js', import.meta.url)),
         makeMonitor: () =>
           new Worker(new URL('./rpc-monitor-worker.js', import.meta.url)),
+        logger: harden({ debug: rpcLog.debug }),
         onFinish: () => process.exit(0),
         onError: error => {
-          log.error('RPC service stopped', error);
+          rpcLog.error('RPC service stopped', error);
           process.exit(1);
         },
-      }),
+      });
+    },
   },
 )
   .then(agcc =>

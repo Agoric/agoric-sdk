@@ -85,11 +85,13 @@ test('external startup validates arguments and exposes only a sender after start
     { workerData: { inputPath } },
   );
   const finished = makePromiseKit();
+  const diagnosticEvents = [];
   t.teardown(async () => {
     await worker.terminate();
     fs.rmSync(dir, { recursive: true, force: true });
   });
   const io = {
+    logger: { debug: event => diagnosticEvents.push(event) },
     write: () => {
       throw Error('invalid calls must not write');
     },
@@ -125,6 +127,7 @@ test('external startup validates arguments and exposes only a sender after start
     message: /string/,
   });
   await t.throwsAsync(finished.promise, { message: /EOF/ });
+  t.deepEqual(diagnosticEvents, ['RPC service starting', 'RPC service failed']);
 });
 
 test('external bridge routes real pipe RPC replies independently of logical ports', async t => {
@@ -217,6 +220,11 @@ test('external bridge routes real pipe RPC replies independently of logical port
     result: 'successful result',
     error: null,
   });
+  const largeResult = `${'x'.repeat(128 * 1024)}🦉`;
+  action(10, 'call', 'large response');
+  t.is((await read()).id, 6);
+  write({ id: 6, result: largeResult, error: null });
+  t.deepEqual(await read(), { id: 10, result: largeResult, error: null });
   write({ method: VM_SHUTDOWN_METHOD, params: [], id: 5 });
   t.deepEqual(await read(), { id: 5, result: '<shutdown>', error: null });
   t.deepEqual(await exited, [0, null]);

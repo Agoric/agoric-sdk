@@ -107,3 +107,43 @@ test('dispatch errors reject the loop and stop further lines', async t => {
   t.is(calls, 1);
   t.true(input.destroyed);
 });
+
+for (const size of [0, 1, 64 * 1024, 1024 * 1024]) {
+  test(`buffer framing preserves a JSON message with ${size} payload bytes`, async t => {
+    const message = { id: size, data: 'x'.repeat(size), unicode: '🦉' };
+    const ending = size === 1024 * 1024 ? '' : '\r\n';
+    const bytes = Buffer.from(`${JSON.stringify(message)}${ending}`);
+    function* chunks() {
+      for (let offset = 0; offset < bytes.length; offset += 4093)
+        yield bytes.subarray(offset, offset + 4093);
+    }
+    const input = Readable.from(chunks());
+    const messages = [];
+    await makeReadlineLoop(
+      input,
+      line => messages.push(JSON.parse(line)),
+      new AbortController().signal,
+    );
+    t.deepEqual(messages, [message]);
+    t.true(input.destroyed);
+  });
+}
+
+test('buffer framing separates coalesced JSON messages in order', async t => {
+  const expected = Array.from({ length: 20 }, (_, id) => ({
+    id,
+    data: `message-${id}`,
+  }));
+  const input = Readable.from([
+    Buffer.from(
+      `${expected.map(message => JSON.stringify(message)).join('\n')}\n`,
+    ),
+  ]);
+  const messages = [];
+  await makeReadlineLoop(
+    input,
+    line => messages.push(JSON.parse(line)),
+    new AbortController().signal,
+  );
+  t.deepEqual(messages, expected);
+});

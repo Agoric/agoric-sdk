@@ -209,6 +209,40 @@ the unexpected-exit observer share that result. Existing interrupt/kill grace
 periods remain as a fallback and are cancelled when the VM exits. Expected exit
 during shutdown is not reported as premature VM exit.
 
+## Configurable transport diagnostics
+
+The JS runtime uses the repository's `anylogger` adapter with logger name
+`ag-chain-cosmos:rpc`. Transport detail is emitted at debug level. Enable it
+with the standard selector, for example from the SDK root:
+
+```sh
+DEBUG=agoric:debug bin/agd start --split-vm
+```
+
+`DEBUG=agoric` is an alias for the same level. Default settings omit debug events;
+`DEBUG=agoric:none` disables JS runtime logging. The existing adapter supplies
+timestamps and the stable logger label.
+
+Debug events identify bridge selection and descriptors, service startup,
+incoming/outgoing RPC method names and IDs, response IDs and error flags,
+shutdown, and completion. Failure context includes the active outbound ID and
+pending inbound reply count. These events omit application request/result
+payloads. Terminal failure reporting retains the underlying error diagnostic.
+
+The entrypoint creates the logger and passes only a debug facet through the
+adapter to the RPC service. Shared protocol modules acquire no logging or
+environment authority themselves. Logging is optional for other callers, and a
+logger exception cannot interrupt framing, settlement, or failure wakeups. The
+entrypoint owns terminal error reporting and process exit.
+
+Pipe input uses the `BufferLineTransform` pipeline with strict line decoding;
+the default output capability uses complete synchronous record writes on its
+inherited descriptor. Correctness coverage includes fragmented and coalesced
+records, LF/CRLF and final unterminated lines, input/dispatch errors and
+cancellation, JSON payloads through 1 MiB, and bidirectional RPC responses larger
+than the shared transfer buffer. No timing or throughput target is imposed by
+these tests.
+
 ## Transfer and codec details
 
 The [shared-memory transfer contract](shared-memory-transfer.md) documents F4's

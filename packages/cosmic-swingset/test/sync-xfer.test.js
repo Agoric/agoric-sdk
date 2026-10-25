@@ -38,11 +38,9 @@ test('text decoder', t => {
   let i = 0;
   while (i < buf.length) {
     const thisTransfer = Math.min(buf.length - i, 3);
-    const s = decoder.next(buf.subarray(i, i + thisTransfer));
-    t.log('partial decode', s);
+    decoder.next(buf.subarray(i, i + thisTransfer));
     i += thisTransfer;
   }
-  // t.log('last decode', decoder.next(buf.subarray(i, buf.length)));
   t.is(decoder.next().value, 'hello world bobob');
 });
 

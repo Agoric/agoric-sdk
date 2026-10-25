@@ -12,6 +12,8 @@ import {
 /**
  * Main-thread RPC service. Only the reader worker touches input and transfers.
  * @import { Worker, MessagePort } from 'node:worker_threads';
+ * @import { Logger } from '@agoric/internal/vendor/anylogger.js';
+ * @typedef {Pick<Logger, 'debug'>} RpcLogger
  * @typedef {{ type: 'INIT_LOOP', fd: number, lifecycle: SharedArrayBuffer, lease: MessagePort } |
  *   { type: 'INTERCEPT_ID', id: number, buf: SharedArrayBuffer } |
  *   { type: 'STOP_LOOP' }} RpcParentMessage
@@ -27,7 +29,7 @@ export const VM_SHUTDOWN_METHOD = 'agvm.Shutdown';
  * @param {Worker} worker
  * @param {number} fd
  * @param {(request: RpcRequest) => void} dispatch
- * @param {{ write: (text: string) => void, makeMonitor: () => Worker, bufferSize?: number }} io
+ * @param {{ write: (text: string) => void, makeMonitor: () => Worker, bufferSize?: number, logger?: RpcLogger }} io
  */
 export const makeJsonRpcService = (worker, fd, dispatch, io) => {
   const lifecycle = makeRpcLifecycle();
@@ -43,6 +45,17 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
   let settled = false;
   let activeCall = false;
   let lastRequestId = 0;
+  /**
+   * @param {string} event
+   * @param {Record<string, unknown>} details
+   */
+  const trace = (event, details) => {
+    try {
+      io.logger?.debug(event, details);
+    } catch {
+      // Diagnostics must not interrupt framing, settlement, or failure wakeups.
+    }
+  };
   /** @type {Worker | undefined} */
   let monitor;
   const terminateWorkers = async () => {
@@ -52,6 +65,10 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
     if (settled) return;
     settled = true;
     lifecycle.fail(reason);
+    trace('RPC service failed', {
+      activeRequestId: activeCall ? lastRequestId : null,
+      pendingReplies: pendingInbound.size,
+    });
     pendingInbound.clear();
     completion.reject(reason instanceof Error ? reason : Error(String(reason)));
     void terminateWorkers().catch(() => {});
@@ -70,6 +87,7 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
     if (activeCall || pendingInbound.size)
       throw Error('RPC shutdown with outstanding calls');
     if (!lifecycle.beginShutdown()) throw Error('RPC shutdown already started');
+    trace('RPC shutdown starting', {});
   };
   const requestStop = () => worker.postMessage({ type: 'STOP_LOOP' });
   /** @param {RpcWorkerMessage} message */
@@ -89,6 +107,10 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
           ) {
             throw Error(`Malformed RPC request ${stringify(request)}`);
           }
+          trace('RPC request received', {
+            id: request.id,
+            method: request.method,
+          });
           if (request.method === VM_SHUTDOWN_METHOD) {
             beginShutdown();
             writeRecord({ id: request.id, result: '<shutdown>', error: null });
@@ -106,10 +128,10 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
           if (!lifecycle.isClosed() || activeCall || pendingInbound.size)
             throw Error('Unexpected RPC worker completion');
           settled = true;
-          void terminateWorkers().then(
-            () => completion.resolve(undefined),
-            completion.reject,
-          );
+          void terminateWorkers().then(() => {
+            trace('RPC service stopped', {});
+            completion.resolve(undefined);
+          }, completion.reject);
           break;
         }
         default:
@@ -132,6 +154,7 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
           'RPC service may only be started once and cannot restart after failure',
         );
       started = true;
+      trace('RPC service starting', { inputFd: fd });
       try {
         monitor = io.makeMonitor();
         monitor.on('error', fail);
@@ -185,6 +208,7 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
           worker.postMessage({ type: 'INTERCEPT_ID', id, buf }),
         );
         writeRecord({ method, params, id });
+        trace('RPC request sent', { id, method });
         const reply = JSON.parse(transfer.read(makeTextDecoder()));
         if (
           !reply ||
@@ -200,6 +224,7 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
             `RPC reply ${id} must have the expected ID and a string result or string error`,
           );
         }
+        trace('RPC response received', { id, error: reply.error !== null });
         return reply;
       } catch (error) {
         fail(error);
@@ -217,6 +242,7 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
       if (settled || !pendingInbound.delete(id)) return false;
       try {
         writeRecord({ id, result, error });
+        trace('RPC response sent', { id, error: error !== null });
         return true;
       } catch (reason) {
         fail(reason);

@@ -1,7 +1,7 @@
 // This file is formatted with Alt-Shift-F in VSCode.
 #include <napi.h>
 #include <napi-thread-safe-callback.hpp>
-#include <iostream>
+#include <exception>
 #include <cmath>
 #include <limits>
 #include "../build/libagcosmosdaemon.h"
@@ -44,17 +44,14 @@ private:
         const int replyID = replyPort_;
         replyPort_ = 0; // Settle at most once, like a promise-kit replier.
         try {
-            // std::cerr << "Replying to Go with " << value << " " << isRejection << std::endl;
             if (replyID) {
                 ReplyToGo(replyID, isRejection, value.c_str());
             }
         } catch (std::exception& e) {
-            // std::cerr << "Exceptioning " << e.what() << std::endl;
             if (replyID) {
                 ReplyToGo(replyID, true, e.what());
             }
         }
-        // std::cerr << "Replier is finished" << std::endl;
     }
 
     void Resolve(const Napi::CallbackInfo& info) {
@@ -76,19 +73,16 @@ int SendToNode(int port, int replyPort, Body msg) {
     dispatcher->call(
         // Prepare arguments.
         [port, msgStr, replyPort](Napi::Env env, std::vector<napi_value>& args) {
-            // std::cerr << "Calling threadsafe callback with " << msgStr << std::endl;
             args = {
                 Napi::Number::New(env, port),
                 Napi::String::New(env, msgStr),
                 NodeReplier::New(env, replyPort),
             };
         });
-    // std::cerr << "Ending Send to Node " << msg << std::endl;
     return 0;
 }
 
 static Napi::Value send(const Napi::CallbackInfo& info) {
-    // std::cerr << "Send to Go" << std::endl;
     Napi::Env env = info.Env();
     if (info.Length() < 2 || info.Length() > 3 || !info[0].IsNumber() || !info[1].IsString()) {
         Napi::TypeError::New(env, "send expects a positive Go service port and a string").ThrowAsJavaScriptException();
@@ -126,7 +120,6 @@ static Napi::Value send(const Napi::CallbackInfo& info) {
 static Napi::Value start(const Napi::CallbackInfo& info) {
     static bool singleton = false;
     Napi::Env env = info.Env();
-    // std::cerr << "Starting Go agcosmosdaemon from ag-chain-cosmos Controller" << std::endl;
 
     if (singleton) {
         Napi::TypeError::New(env, "Cannot start multiple agcosmosdaemon instances").ThrowAsJavaScriptException();
@@ -167,7 +160,6 @@ static Napi::Value start(const Napi::CallbackInfo& info) {
         free(argv[i]);
     }
     delete[] argv;
-    // std::cerr << "End of starting agcosmosdaemon from Node ag-chain-cosmos" << std::endl;
     Napi::Object sender = Napi::Object::New(env);
     sender.Set("send", Napi::Function::New(env, send, "send"));
     return sender;

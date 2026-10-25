@@ -3,7 +3,6 @@ package vm_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/rpc"
 	"testing"
 	"time"
@@ -56,14 +55,12 @@ func NewFixture(t *testing.T) *Fixture {
 		switch str {
 		case "ping":
 			time.AfterFunc(100*time.Millisecond, func() {
-				fmt.Printf("sendFunc: reply=%d, str=%s\n", reply, str)
 				if reply != 0 {
 					f.ReplyToGo(reply, false, "pong")
 				}
 			})
 		case "wait":
 			time.AfterFunc(300*time.Millisecond, func() {
-				fmt.Printf("sendFunc: reply=%d, str=%s\n", reply, str)
 				if reply != 0 {
 					f.ReplyToGo(reply, false, "done-waiting")
 				}
@@ -80,7 +77,6 @@ func NewFixture(t *testing.T) *Fixture {
 
 	f.SendToNode = sendToNode
 	f.SendToGo = func(port int, msgStr string) string {
-		fmt.Println("Send to Go", msgStr)
 		var respStr string
 		message := &vm.Message{
 			Port:       int(port),
@@ -93,7 +89,6 @@ func NewFixture(t *testing.T) *Fixture {
 			return respStr
 		}
 
-		// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
 		errResp := errorWrapper{
 			Error: err.Error(),
 		}

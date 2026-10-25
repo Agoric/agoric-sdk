@@ -121,8 +121,11 @@ Thus a four-byte payload accommodates any encoding unit; smaller payloads can
 still transport text whose units fit. If a later code point does not fit after
 earlier chunks were sent, the transfer aborts instead of returning partial text.
 
-`makeTextDecoder` streams chunks through a fatal UTF-8 decoder and flushes it at
-end-of-input. Malformed bytes, overlong encodings, encoded surrogates, out-of-range
+`makeTextDecoder` streams chunks through a UTF-8 `TextDecoder` configured with
+`{ fatal: true }` and flushes it at end-of-input. Here, "fatal" means invalid
+UTF-8 throws a `TypeError` instead of inserting U+FFFD replacement characters.
+The option does not itself terminate the process; the transport's failure
+handling determines what happens next. Malformed bytes, overlong encodings, encoded surrogates, out-of-range
 code points, and incomplete final sequences fail instead of being replaced or
 dropped. A leading U+FEFF is preserved as string data. The input-line pipeline
 also decodes complete buffer lines strictly, including its final unterminated

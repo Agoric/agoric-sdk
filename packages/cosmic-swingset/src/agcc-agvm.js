@@ -8,6 +8,7 @@ import { makeJsonRpcService } from './helpers/rpc-service.js';
 /**
  * @import { AgoricBridge, AgoricSender } from './agcc-shim.js';
  * @import { Worker } from 'node:worker_threads';
+ * @import { RpcLogger } from './helpers/rpc-service.js';
  * @typedef {{ method: string, id: number, params: [{ port: number, data: string, needsReply: boolean }] }} RPCRequest
  */
 
@@ -26,6 +27,7 @@ const NO_REPLY_REQUESTED = '<no-reply-requested>';
  *   write: (fd: number, text: string) => void,
  *   makeInputWorker: () => Worker,
  *   makeMonitor: () => Worker,
+ *   logger?: RpcLogger,
  *   onFinish: () => void,
  *   onError: (error: unknown) => void,
  * }} io
@@ -105,6 +107,7 @@ export const makeAgcc = (inputFd, outputFd, io) => {
         {
           write: text => io.write(outputFd, text),
           makeMonitor: io.makeMonitor,
+          logger: io.logger,
         },
       );
       void rpcService.start().then(io.onFinish, io.onError);

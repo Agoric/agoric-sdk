@@ -6,7 +6,7 @@ import { makeAgcc } from '../../src/agcc-agvm.js';
 
 const bridge = makeAgcc(4, 5, {
   write: (fd, text) => {
-    fs.writeSync(fd, text);
+    fs.writeFileSync(fd, text);
   },
   makeInputWorker: () =>
     new Worker(new URL('../../src/agd-input-worker.js', import.meta.url)),
