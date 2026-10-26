@@ -116,12 +116,12 @@ test('multisig normalization checks the declared signer subset', t => {
     [
       [{ ...multi, bitarray: undefined }, /signer_infos\[0\].*bitarray/],
       [
-        { ...multi, bitarray: { extra_bits_stored: 2, elems: 'oA==' } },
-        'bitarray length 2 does not match 3 public key members (1 bytes, extra=2 from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)',
+        { ...multi, bitarray: { extra_bits_stored: 2, elems: 'wA==' } },
+        'bitarray length 2 does not match key count 3 (1 bytes, extra=2 from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)',
       ],
       [
         { ...multi, bitarray: { extra_bits_stored: 9, elems: 'oA==' } },
-        '(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be between 0 and 8; got 9',
+        '(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be a safe integer between 0 and 8; got 9',
       ],
       [
         {
@@ -131,7 +131,7 @@ test('multisig normalization checks the declared signer subset', t => {
             elems: 'oA==',
           },
         },
-        '(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be a safe integer; got 9007199254740992',
+        '(bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0) must be a safe integer between 0 and 8; got 9007199254740992',
       ],
       [
         { ...multi, bitarray: { extra_bits_stored: 3, elems: null } },
@@ -147,7 +147,7 @@ test('multisig normalization checks the declared signer subset', t => {
       ],
       [
         { ...multi, bitarray: { extra_bits_stored: 3, elems: 'oQ==' } },
-        'bitarray has nonzero unused padding bits in its final byte (0xa1, extra=3 from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)',
+        'bitarray has non-zero padding bits in its final byte (0xa1, extra=3 from bitarray.extra_bits_stored ?? bitarray.extraBitsStored ?? 0)',
       ],
       [
         {
@@ -155,20 +155,20 @@ test('multisig normalization checks the declared signer subset', t => {
           bitarray: { extra_bits_stored: 3, elems: 'gA==' },
           mode_infos: [mode],
         },
-        'bitarray selects 1 members, fewer than threshold 2',
+        'bitarray selects 1 keys, fewer than threshold 2',
       ],
       [{ ...multi, mode_infos: undefined }, /signer_infos\[0\].*mode_infos/],
       [
         { ...multi, mode_infos: [mode] },
-        'bitarray selects 2 members but mode_infos contains 1 entries',
+        'bitarray selects 2 keys but mode_infos contains 1',
       ],
       [
         { ...multi, mode_infos: [mode, mode, mode] },
-        'bitarray selects 2 members but mode_infos contains 3 entries',
+        'bitarray selects 2 keys but mode_infos contains 3',
       ],
       [
         { ...multi, mode_infos: [] },
-        'bitarray selects 2 members but mode_infos contains 0 entries',
+        'bitarray selects 2 keys but mode_infos contains 0',
       ],
       [
         {
@@ -208,19 +208,19 @@ test('multisig normalization checks the declared signer subset', t => {
     [{ public_keys: undefined }, /signer_infos\[0\].*public_key.*public_keys/],
     [
       { threshold: Number.MAX_SAFE_INTEGER + 1 },
-      'Number(public_key.threshold) must be a safe integer; got 9007199254740992 from 9007199254740992',
+      'Number(public_key.threshold) must be a safe integer between 1 and 3 keys; got 9007199254740992 from input 9007199254740992',
     ],
     [
       { threshold: 'invalid' },
-      'Number(public_key.threshold) must be a safe integer; got NaN from invalid',
+      'Number(public_key.threshold) must be a safe integer between 1 and 3 keys; got "[NaN]" from input "invalid"',
     ],
     [
       { threshold: 0 },
-      'Number(public_key.threshold) must be between 1 and 3 members; got 0',
+      'Number(public_key.threshold) must be a safe integer between 1 and 3 keys; got 0 from input 0',
     ],
     [
       { threshold: 4 },
-      'Number(public_key.threshold) must be between 1 and 3 members; got 4',
+      'Number(public_key.threshold) must be a safe integer between 1 and 3 keys; got 4 from input 4',
     ],
   ] as const) {
     const signer = unsigned.signer_infos[0]!;
