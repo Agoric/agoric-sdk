@@ -534,17 +534,17 @@ test('plan allocation checks exact ceiling arithmetic', t => {
     ],
   });
 
-  // 20_000_000 leaves Aave at 100_003_400, which is 550 above 50%.
+  // One micro-USDC beyond the 1 USDC allowance must fail.
   t.throws(
     () =>
-      vetPlanAllocation(targetAllocation, planFor(20_000_000n), observations),
+      vetPlanAllocation(targetAllocation, planFor(19_000_549n), observations),
     {
       message:
         /plan (final|intermediate) balance exceeds target allocation.*Aave_Arbitrum/,
     },
   );
   t.notThrows(() =>
-    vetPlanAllocation(targetAllocation, planFor(20_000_550n), observations),
+    vetPlanAllocation(targetAllocation, planFor(19_000_550n), observations),
   );
 });
 
@@ -1256,5 +1256,148 @@ test('global minimum TVL rejects a later applicable instrument', t => {
         }),
       ),
     { message: /mandate\.minVaultTvl.*Compound_Base/ },
+  );
+});
+
+// AGO-1521: unrelated dust must not force a cross-chain withdrawal.
+test('plan allocation permits unrelated zero-target dust', t => {
+  const observations: PlanObservations = {
+    balances: {
+      Aave_Optimism: 17n,
+      Compound_Base: 100_000_000n,
+      '@Base': 0n,
+      Aave_Base: 0n,
+    },
+    instrumentTvls: {},
+  };
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Compound_Base',
+        dest: '@Base',
+        amount: { brand: USDC, value: 2_000_000n },
+      },
+      {
+        src: '@Base',
+        dest: 'Aave_Base',
+        amount: { brand: USDC, value: 2_000_000n },
+      },
+    ],
+  };
+  t.notThrows(() =>
+    vetPlanAllocation(
+      { Aave_Optimism: 0n, Aave_Base: 2n, Compound_Base: 98n },
+      plan,
+      observations,
+    ),
+  );
+});
+
+for (const [name, aave, compound, optimism, accepted] of [
+  ['exact boundary', 1_000_000n, 0n, 0n, true],
+  ['over boundary', 1_000_001n, 0n, 0n, false],
+  ['shared budget', 500_000n, 500_000n, 0n, true],
+  ['shared overflow', 500_000n, 500_001n, 0n, false],
+  ['separate chains', 1_000_000n, 0n, 1_000_000n, true],
+  ['no cross-chain credit', 1_000_001n, 0n, 500_000n, false],
+] as const) {
+  test(`final allocation divergence: ${name}`, t => {
+    // Omitted instruments have zero target. Deficits cannot offset excess.
+    const check = () =>
+      vetPlanAllocation(
+        { '@Base': 1n },
+        { flow: [] },
+        {
+          balances: {
+            '@Base': 100_000_000n,
+            Aave_Base: aave,
+            Compound_Base: compound,
+            Aave_Optimism: optimism,
+          },
+          instrumentTvls: {},
+        },
+      );
+    if (accepted) t.notThrows(check);
+    else
+      t.throws(check, {
+        message: /plan final balance exceeds target allocation/,
+      });
+  });
+}
+
+test('divergence budget preserves fractional target ceilings', t => {
+  // Total 3,000,001 / 2 leaves a fractional micro-USDC ceiling.
+  const check = (balance: bigint) =>
+    vetPlanAllocation(
+      { Aave_Base: 1n, '@Base': 1n },
+      { flow: [] },
+      {
+        balances: { Aave_Base: balance, '@Base': 3_000_001n - balance },
+        instrumentTvls: {},
+      },
+    );
+  t.notThrows(() => check(2_500_000n));
+  t.throws(() => check(2_500_001n), {
+    message: /plan final balance exceeds target allocation/,
+  });
+});
+
+test('dust allowance does not admit a zero-total allocation', t => {
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        { Aave_Base: 0n },
+        { flow: [] },
+        { balances: { Aave_Base: 1n }, instrumentTvls: {} },
+      ),
+    { message: /plan target allocation has zero total/ },
+  );
+});
+
+for (const initialBalance of [0n, 1_000_000n, 2_000_000n]) {
+  test(`partial failures cannot ratchet zero-target exposure from ${initialBalance}`, t => {
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: '@Base', dest: 'Aave_Base', amount: { brand: USDC, value: 1n } },
+        {
+          src: 'Aave_Base',
+          dest: '@Base',
+          amount: { brand: USDC, value: initialBalance + 1n },
+        },
+      ],
+    };
+    // Full success drains the position. Failure after the supply would instead
+    // increase its observed initial balance, even when the increase is just 1 micro-USDC.
+    t.throws(
+      () =>
+        vetPlanAllocation({ '@Base': 1n, Aave_Base: 0n }, plan, {
+          balances: { '@Base': 10_000_000n, Aave_Base: initialBalance },
+          instrumentTvls: {},
+        }),
+      { message: /plan intermediate balance exceeds target allocation/ },
+    );
+  });
+}
+
+test('final dust allowance cannot authorize a new above-target supply', t => {
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        { Aave_Base: 1n, '@Base': 1n },
+        {
+          flow: [
+            {
+              src: '@Base',
+              dest: 'Aave_Base',
+              amount: { brand: USDC, value: 11_000_000n },
+            },
+          ],
+        },
+        {
+          balances: { '@Base': 20_000_000n, Aave_Base: 0n },
+          instrumentTvls: {},
+        },
+      ),
+    { message: /plan intermediate balance exceeds target allocation/ },
   );
 });
