@@ -14,7 +14,7 @@ import {
   isInterChainAccountRef,
   isPortfolioBalancePlaceRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
-import { Fail, q } from '@endo/errors';
+import { b, Fail, q } from '@endo/errors';
 import { maxWeightClosure } from './max-weight-closure.ts';
 import { fullOrder, makeDependencies, makeSchedule } from './schedule-order.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
@@ -221,25 +221,45 @@ export const vetObservationPlaces = (
 };
 harden(vetObservationPlaces);
 
-/** Reject a balance projection whose instrument shares exceed their target ceilings. */
+/**
+ * Target-allocation slack in micro-USDC, shared across all instruments on the
+ * same chain.
+ * Matches a historical 1 USDC cross-chain transfer minimum.
+ */
+const MAX_CHAIN_ALLOCATION_DIVERGENCE_UUSDC = 1_000_000n;
+const MAX_CHAIN_ALLOCATION_DIVERGENCE_LABEL = '1 USDC';
+
+/**
+ * Allow at most {@link MAX_CHAIN_ALLOCATION_DIVERGENCE_UUSDC} of total positive
+ * instrument excess per chain.
+ */
 const vetAllocationCeilings = (
   balances: Map<string, bigint>,
   targetAllocation: TargetAllocation,
 ) => {
   const totalBalance = sumOptionalBigints([...balances.values()]);
   const totalPortions = sumPortions(targetAllocation);
+  const excessByChain = new Map<string, bigint>();
   for (const [place, balance] of balances.entries()) {
     if (!isInstrumentId(place) || balance === 0n) continue;
     totalPortions > 0n || Fail`plan target allocation has zero total`;
     const ceiling = targetAllocation[place] ?? 0n;
-    balance * totalPortions <= totalBalance * ceiling ||
-      Fail`plan final balance exceeds target allocation at ${q(place)}: balance ${q(balance)} of total ${q(totalBalance)} vs target portion ${q(ceiling)} of ${q(totalPortions)}`;
+    // Scale by portions to preserve fractional ceilings; deficits give no credit.
+    const excess = balance * totalPortions - totalBalance * ceiling;
+    if (excess <= 0n) continue;
+    const chain = chainOf(place);
+    const chainExcess = (excessByChain.get(chain) ?? 0n) + excess;
+    excessByChain.set(chain, chainExcess);
+    chainExcess <= MAX_CHAIN_ALLOCATION_DIVERGENCE_UUSDC * totalPortions ||
+      Fail`plan final balance exceeds target allocation at ${q(place)}: balance ${q(balance)} of total ${q(totalBalance)} vs target portion ${q(ceiling)} of ${q(totalPortions)}; positive excess on ${q(chain)} exceeds the shared ${b(MAX_CHAIN_ALLOCATION_DIVERGENCE_LABEL)} divergence budget`;
   }
 };
 
 /**
  * Reject a plan when partial failure could increase a position balance above
- * both its target allocation ceiling and its initial balance.
+ * both its target allocation ceiling and its initial balance. No dust allowance
+ * applies here: adding slack to the observed initial balance would let repeated
+ * partial failures ratchet exposure upward.
  *
  * Let S be the number of plan steps, D the number of distinct dependency
  * edges, and I the number of referenced instruments. This runs one
@@ -372,7 +392,9 @@ const projectPlanBalances = (
 /**
  * Reject plans that claim rewards, add positions, finish above target ceilings,
  * or whose partial failure could increase a position balance above both its
- * target allocation ceiling and its initial balance.
+ * target allocation ceiling and its initial balance. Only the final-balance
+ * check allows a shared {@link MAX_CHAIN_ALLOCATION_DIVERGENCE_UUSDC} per chain. Partial-failure,
+ * mandate, and position checks remain exact.
  */
 export const vetPlanAllocation = (
   targetAllocation: TargetAllocation,
