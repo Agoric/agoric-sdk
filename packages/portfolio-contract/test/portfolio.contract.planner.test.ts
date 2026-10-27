@@ -384,3 +384,35 @@ test('create portfolio and deposit using planner (upgrade)', async t => {
   const runScenario = makeCreateAndDepositScenarioRunner(t, powers);
   await runScenario({ restartOverrides: {} });
 });
+
+test('legacy Rebalance without flow releases its reservation before another offer', async t => {
+  const { common, trader1 } = await setupTrader(t);
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
+
+  const offerArgs = { targetAllocation: { USDN: 100n } };
+  const before = await trader1.getPortfolioStatus();
+  t.deepEqual(before.flowsRunning, {});
+
+  // Use the continuing Rebalance invitation, which reserves the flow before
+  // invoking the legacy rebalance flow. No planner steps are supplied.
+  await trader1.rebalance(t, { give: {}, want: {} }, offerArgs);
+  const after = await trader1.getPortfolioStatus();
+  t.is(after.flowCount, before.flowCount + 1);
+  t.deepEqual(after.targetAllocation, offerArgs.targetAllocation);
+  t.deepEqual(
+    after.flowsRunning,
+    {},
+    'the completed offer must release its flow',
+  );
+
+  // The single-active-flow guard must admit the next offer without planner
+  // resolution or rejection of the previous reservation.
+  await trader1.rebalance(t, { give: {}, want: {} }, offerArgs);
+  const afterNext = await trader1.getPortfolioStatus();
+  t.is(afterNext.flowCount, after.flowCount + 1);
+  t.deepEqual(
+    afterNext.flowsRunning,
+    {},
+    'another offer must still be accepted even before the previous one is resolved',
+  );
+});

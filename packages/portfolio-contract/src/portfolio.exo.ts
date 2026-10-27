@@ -383,6 +383,15 @@ const makeFlowsRunningRecord = (
   return harden(fromEntries(statusEntries));
 };
 
+/**
+ * Gate delegated flows on the last allocated flow finishing (tolerating older
+ * stuck flows).
+ */
+const insistLatestFlowFinished = (state: PortfolioKitState) => {
+  !state.flowsRunning.has(state.nextFlowId - 1) ||
+    Fail`portfolio already has a running flow`;
+};
+
 const assertExternalDelegationTarget = (
   state: PortfolioKitState,
   agentId: number,
@@ -768,6 +777,9 @@ export const preparePortfolioKit = (
               observations,
             );
           }
+
+          // Check and reserve synchronously, after any observation verification.
+          insistLatestFlowFinished(this.state);
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
@@ -834,6 +846,8 @@ export const preparePortfolioKit = (
                 Fail`delegated rebalance requires target allocation`)
               : undefined;
 
+          // Check and reserve synchronously, after any observation verification.
+          insistLatestFlowFinished(this.state);
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
@@ -871,6 +885,8 @@ export const preparePortfolioKit = (
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
 
+          // Check and reserve synchronously, after any observation verification.
+          insistLatestFlowFinished(this.state);
           const flowDetail: FlowDetail = {
             type: 'claimRewards',
             agent: `agent${agentId}`,
@@ -2070,6 +2086,7 @@ export const preparePortfolioKit = (
           // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           const { manager } = this.facets;
+
           let initiatingOperation:
             | SetTargetAllocationInitiatingOperation
             | undefined;

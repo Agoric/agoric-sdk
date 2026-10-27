@@ -24,6 +24,7 @@ import type { ExecutionContext } from 'ava';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { deploy, makeEvmTraderKit } from './contract-setup.ts';
+import { makeDirectPlannerClient } from './contract-test-support.ts';
 import {
   contractsMock,
   evmTrader0PrivateKey,
@@ -221,6 +222,26 @@ const setupTest = async (t: ExecutionContext) => {
     portfolioRead,
     mcp,
     mcpPowers,
+    async cancelOpening() {
+      const planner = makeDirectPlannerClient(
+        zoe,
+        deployed.started.creatorFacet,
+      );
+      await planner.redeem();
+      const status = await portfolioRead.getPortfolioStatus();
+      // These tests supply synthetic balances in signed observations and test
+      // plan admission, not deposit execution. Explicitly cancel the opening
+      // deposit so that it no longer occupies the portfolio's flow slot.
+      await E(planner.stub).rejectPlan(
+        portfolioRead.getPortfolioId(),
+        1,
+        'opening deposit omitted in plan-admission fixture',
+        status.policyVersion,
+        status.rebalanceCount,
+      );
+      await pendingVstorageWrites();
+      t.deepEqual((await portfolioRead.getPortfolioStatus()).flowsRunning, {});
+    },
     usdc: common.brands.usdc,
     bld: common.brands.bld,
   });
@@ -300,8 +321,15 @@ test(
 );
 
 test('delegated attested plan supplies execution steps', async t => {
-  const { walletFactory, trader, portfolioRead, mcp, usdc, bld } =
-    await setupTest(t);
+  const {
+    walletFactory,
+    trader,
+    portfolioRead,
+    mcp,
+    usdc,
+    bld,
+    cancelOpening,
+  } = await setupTest(t);
   const agentWallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
   const amount = usdc.make(20_000_550n);
   const fee = bld.make(100n);
@@ -340,6 +368,7 @@ test('delegated attested plan supplies execution steps', async t => {
   });
   await pendingVstorageWrites();
 
+  await cancelOpening();
   await agent.redeem();
   const flowKey = await agent.wake();
   await pendingVstorageWrites();
@@ -355,7 +384,7 @@ test('delegated attested plan supplies execution steps', async t => {
 });
 
 test('agent redeems once and submits completed plans on successive wakes', async t => {
-  const { walletFactory, trader, portfolioRead, mcpPowers } =
+  const { walletFactory, trader, portfolioRead, mcpPowers, cancelOpening } =
     await setupTest(t);
   const agentWallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
   const mcp = makeMcp(
@@ -383,6 +412,7 @@ test('agent redeems once and submits completed plans on successive wakes', async
     },
   });
   await pendingVstorageWrites();
+  await cancelOpening();
   await agent.redeem();
 
   const portfolioPath = publishedPortfolioPath(portfolioRead);
@@ -409,8 +439,15 @@ test('agent redeems once and submits completed plans on successive wakes', async
 });
 
 test('delegated plan commits allocation after observation checks', async t => {
-  const { walletFactory, trader, portfolioRead, mcpPowers, usdc, bld } =
-    await setupTest(t);
+  const {
+    walletFactory,
+    trader,
+    portfolioRead,
+    mcpPowers,
+    usdc,
+    bld,
+    cancelOpening,
+  } = await setupTest(t);
   const agentWallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
   const mcp = makeMcp(
     mcpPowers,
@@ -457,6 +494,7 @@ test('delegated plan commits allocation after observation checks', async t => {
   });
   await pendingVstorageWrites();
 
+  await cancelOpening();
   await agent.redeem();
   await agent.wake();
   await pendingVstorageWrites();
@@ -464,5 +502,52 @@ test('delegated plan commits allocation after observation checks', async t => {
   t.deepEqual(
     (await portfolioRead.getPortfolioStatus()).targetAllocation,
     targetAllocation,
+  );
+});
+
+test('valid attested plan is rejected while the opening flow is active', async t => {
+  const { walletFactory, trader, portfolioRead, mcpPowers, cancelOpening } =
+    await setupTest(t);
+  const mcp = makeMcp(
+    mcpPowers,
+    harden({
+      balances: { '@agoric': 200_005_700n, '@Arbitrum': 0n },
+      instrumentTvls: {},
+    }),
+  );
+  const wallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
+  const agent = makeAgent(
+    { wallet, portfolioRead, mcp },
+    {
+      initialAllocation,
+      targetAllocation: {
+        Aave_Arbitrum: 60n,
+        Compound_Arbitrum: 40n,
+        Aave_Avalanche: 0n,
+      },
+      plan: { flow: [] },
+    },
+  );
+  await trader.openPortfolio(agent.proposeInitialAllocation(), 200_005_700n, {
+    grantee: {
+      address: AGENT_ADDRESS,
+      permissions: harden({ allocation: { maxWeightBps: 6_000n } }),
+    },
+  });
+  await pendingVstorageWrites();
+  await agent.redeem();
+  const before = await portfolioRead.getPortfolioStatus();
+  t.deepEqual(Object.keys(before.flowsRunning ?? {}), ['flow1']);
+  await t.throwsAsync(agent.wake(), {
+    message: 'portfolio already has a running flow',
+  });
+  await pendingVstorageWrites();
+  t.deepEqual(await portfolioRead.getPortfolioStatus(), before);
+
+  await cancelOpening();
+  t.is(
+    await agent.wake(),
+    'flow2',
+    'the same valid plan is admitted once idle',
   );
 });

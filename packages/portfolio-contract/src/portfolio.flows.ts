@@ -1796,7 +1796,8 @@ export const rebalance = (async (
   const { flow, targetAllocation } = offerArgs;
 
   await null;
-  let flowId: number | undefined;
+  // The handler may reserve a flow even when this offer omits steps.
+  let flowId: number | undefined = startedFlow?.flowId;
   try {
     if (targetAllocation) {
       kit.manager.setTargetAllocation(targetAllocation);
