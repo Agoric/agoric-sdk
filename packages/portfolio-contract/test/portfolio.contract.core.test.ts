@@ -660,3 +660,13 @@ test('open portfolio does not require Access token when Access issuer is present
     },
   });
 });
+
+test('public facet does not expose EVM portfolio powers', async t => {
+  const {
+    started: { publicFacet },
+  } = await deploy(t);
+  // These wire a verified `sourceAccountId`; only the EVM wallet handler may
+  // invoke them.
+  t.false('openPortfolioFromEVM' in publicFacet);
+  t.false('validateEVMMessageDomain' in publicFacet);
+});

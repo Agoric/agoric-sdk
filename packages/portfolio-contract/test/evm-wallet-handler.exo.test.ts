@@ -24,24 +24,22 @@ import {
   makeNonceManager,
   prepareEVMPortfolioOperationManager,
   prepareEVMWalletMessageHandler,
+  type EVMPortfolioPowers,
   type EVMWallet,
 } from '../src/evm-wallet-handler.exo.ts';
-import type { contract, PublishStatus } from '../src/portfolio.contract.ts';
+import type { PublishStatus } from '../src/portfolio.contract.ts';
 import type { PortfolioKit } from '../src/portfolio.exo.ts';
 import { evmTrader0PrivateKey } from './mocks.ts';
 
 // ==================== Test Mocking Helpers ====================
 
 type PortfolioEVMFacet = PortfolioKit['evmHandler'];
-type ContractPublicFacet = Awaited<ReturnType<typeof contract>>['publicFacet'];
 
 /** Tracks calls to mock portfolio methods */
-type OpenPortfolioArgs = Parameters<
-  ContractPublicFacet['openPortfolioFromEVM']
->;
+type OpenPortfolioArgs = Parameters<EVMPortfolioPowers['openPortfolioFromEVM']>;
 
 type ValidateEVMMessageDomainArgs = Parameters<
-  ContractPublicFacet['validateEVMMessageDomain']
+  EVMPortfolioPowers['validateEVMMessageDomain']
 >;
 
 type WithdrawArgs = Parameters<PortfolioEVMFacet['withdraw']>;
@@ -186,7 +184,7 @@ const makeMockStorageNode = (zone: Zone, namePrefix = '') => {
 };
 
 /**
- * Creates a mock public facet.
+ * Creates mock EVM portfolio powers.
  * @param opts
  * @param opts.zone - The zone to create exos in
  * @param opts.vowTools - Vow tools for async returns
@@ -194,7 +192,7 @@ const makeMockStorageNode = (zone: Zone, namePrefix = '') => {
  * @param opts.namePrefix - Unique prefix for exo names (to avoid collisions)
  * @param opts.getNextPortfolioId - Function to get the next portfolio ID
  */
-const makeMockPublicFacet = ({
+const makeMockEVMPortfolioPowers = ({
   zone,
   vowTools,
   calls,
@@ -207,36 +205,37 @@ const makeMockPublicFacet = ({
   namePrefix: string;
   getNextPortfolioId: () => number;
 }) => {
-  const publicFacet: Pick<
-    ContractPublicFacet,
-    'openPortfolioFromEVM' | 'validateEVMMessageDomain'
-  > = zone.exo(`${namePrefix}MockPublicFacet`, undefined, {
-    async openPortfolioFromEVM(...args: OpenPortfolioArgs) {
-      calls.openPortfolioFromEVM.push(args);
+  const evmPortfolioPowers: EVMPortfolioPowers = zone.exo(
+    `${namePrefix}MockEVMPortfolioPowers`,
+    undefined,
+    {
+      async openPortfolioFromEVM(...args: OpenPortfolioArgs) {
+        calls.openPortfolioFromEVM.push(args);
 
-      const id = getNextPortfolioId();
+        const id = getNextPortfolioId();
 
-      const evmHandler = makeMockPortfolioEvmHandler({
-        zone,
-        vowTools,
-        portfolioId: id,
-        calls,
-        namePrefix: `${namePrefix}${id}_`,
-      });
+        const evmHandler = makeMockPortfolioEvmHandler({
+          zone,
+          vowTools,
+          portfolioId: id,
+          calls,
+          namePrefix: `${namePrefix}${id}_`,
+        });
 
-      const storagePath: string = await vowTools.asPromise(
-        evmHandler.getReaderFacet().getStoragePath(),
-      );
-      return harden({
-        storagePath,
-        evmHandler,
-      });
+        const storagePath: string = await vowTools.asPromise(
+          evmHandler.getReaderFacet().getStoragePath(),
+        );
+        return harden({
+          storagePath,
+          evmHandler,
+        });
+      },
+      async validateEVMMessageDomain(...args: ValidateEVMMessageDomainArgs) {
+        calls.validateEVMMessageDomain.push(args);
+      },
     },
-    async validateEVMMessageDomain(...args: ValidateEVMMessageDomainArgs) {
-      calls.validateEVMMessageDomain.push(args);
-    },
-  });
-  return publicFacet as ContractPublicFacet;
+  );
+  return evmPortfolioPowers;
 };
 
 /** Published status entry */
@@ -306,7 +305,7 @@ const makeHandleOperationTestSetup = (
 
   const mockWallet = makeMockWallet(zone, portfolioEntries, namePrefix);
   const mockStorageNode = makeMockStorageNode(zone, namePrefix);
-  const mockPublicFacet = makeMockPublicFacet({
+  const mockEVMPortfolioPowers = makeMockEVMPortfolioPowers({
     zone,
     namePrefix,
     calls,
@@ -317,7 +316,7 @@ const makeHandleOperationTestSetup = (
 
   const { handleOperation } = prepareEVMPortfolioOperationManager(zone, {
     vowTools,
-    portfolioContractPublicFacet: mockPublicFacet,
+    evmPortfolioPowers: mockEVMPortfolioPowers,
     publishStatus,
   });
 
