@@ -125,8 +125,8 @@ export type OfferArgsFor = {
     evmAddress: `0x${string}`;
     /**
      * Last time the transfer can be accepted: an absolute time in seconds
-     * since the Unix epoch, as measured by Agoric chain time. Must be less
-     * than `MAX_YMAX_DEADLINE_OFFSET_SECONDS` into the future.
+     * since the Unix epoch, as measured by Agoric chain time. Must be at most
+     * `MAX_YMAX_DEADLINE_OFFSET_SECONDS` into the future.
      */
     deadlineTimestampSeconds: bigint;
   };

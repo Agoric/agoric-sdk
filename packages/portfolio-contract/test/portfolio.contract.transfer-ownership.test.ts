@@ -6,6 +6,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { MAX_YMAX_DEADLINE_OFFSET_SECONDS } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import { E } from '@endo/far';
 import { ackNFA, stripStoredPortfolioKit } from './contract-test-support.ts';
 import { makeEvmTraderKit, setupTrader } from './contract-setup.ts';
@@ -280,8 +281,7 @@ test('transfer deadline must be near future', async t => {
   await t.throwsAsync(
     trader1.transferOwnershipToEVM(t, {
       evmAddress: evmAccount.address,
-      // exclusive, like signed message deadlines
-      deadlineTimestampSeconds: now + 60n * 60n * 24n,
+      deadlineTimestampSeconds: now + MAX_YMAX_DEADLINE_OFFSET_SECONDS + 1n,
     }),
     { message: /is too far in the future/ },
   );
@@ -293,4 +293,11 @@ test('transfer deadline must be near future', async t => {
     { message: 'invalid EVM address "0x1234"' },
   );
   t.is((await trader1.getPortfolioStatus()).pendingOwnerTransfer, undefined);
+});
+
+test('transfer deadline may be exactly at the limit', async t => {
+  const { evmAccount, getNow, startTransfer } = await setupTransfer(t);
+  const deadline = (await getNow()) + MAX_YMAX_DEADLINE_OFFSET_SECONDS;
+  // startTransfer fails unless the transfer is recorded
+  await t.notThrowsAsync(startTransfer(evmAccount.address, deadline));
 });

@@ -2218,7 +2218,7 @@ export const preparePortfolioKit = (
           insistAgoricOwned(this.state);
           deadline >= now.absValue ||
             Fail`deadline ${q(deadline)} has already passed (now ${q(now.absValue)})`;
-          deadline < now.absValue + MAX_YMAX_DEADLINE_OFFSET_SECONDS ||
+          deadline <= now.absValue + MAX_YMAX_DEADLINE_OFFSET_SECONDS ||
             Fail`deadline ${q(deadline)} is too far in the future (now ${q(now.absValue)})`;
 
           const { pendingOwnerTransfer: superseded } = this.state;

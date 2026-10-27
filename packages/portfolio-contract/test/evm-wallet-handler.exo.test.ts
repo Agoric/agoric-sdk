@@ -10,6 +10,7 @@ import type {
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
+  MAX_YMAX_DEADLINE_OFFSET_SECONDS,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import { getPermitWitnessTransferFromData } from '@agoric/orchestration/src/utils/permit2.js';
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
@@ -1318,8 +1319,7 @@ test('handleMessage rejects deadline too far in the future', async t => {
     currentTime,
   });
 
-  // MAX_DEADLINE_OFFSET is 1 day = 86400 seconds
-  const tooFarDeadline = currentTime + 86_400n + 1n;
+  const tooFarDeadline = currentTime + MAX_YMAX_DEADLINE_OFFSET_SECONDS + 1n;
   const message = getYmaxStandaloneOperationData(
     {
       portfolio: 1n,
@@ -1343,6 +1343,30 @@ test('handleMessage rejects deadline too far in the future', async t => {
   await t.throwsAsync(() => vowTools.when(vow), {
     message: /Deadline too far in the future/,
   });
+});
+
+test('handleMessage accepts a deadline exactly at the limit', async t => {
+  const { zone } = t.context;
+  const currentTime = CURRENT_TIME;
+  const { vowTools, handler, getHandleOperationCalls } =
+    makeMessageHandlerTestSetup(zone, 'vowDeadlineLimit', {
+      namePrefix: 'testDeadlineLimit_',
+      currentTime,
+    });
+
+  const deadline = currentTime + MAX_YMAX_DEADLINE_OFFSET_SECONDS;
+  const message = getYmaxStandaloneOperationData(
+    { portfolio: 1n, nonce: 1n, deadline },
+    'Rebalance',
+    CHAIN_ID,
+    MOCK_VERIFYING_CONTRACT,
+  );
+  const signature = await ecdsaAccount.signTypedData(message);
+
+  await vowTools.when(
+    handler.handleMessage(harden({ ...message, signature }) as any),
+  );
+  t.like(getHandleOperationCalls(), [{ deadline }]);
 });
 
 test('handleMessage rejects replayed nonce', async t => {

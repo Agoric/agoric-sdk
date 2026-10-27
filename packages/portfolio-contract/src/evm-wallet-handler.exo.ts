@@ -713,7 +713,7 @@ export const prepareEVMWalletMessageHandler = (
             )}`;
           }
 
-          deadline < localChainTime + MAX_YMAX_DEADLINE_OFFSET_SECONDS ||
+          deadline <= localChainTime + MAX_YMAX_DEADLINE_OFFSET_SECONDS ||
             Fail`Deadline too far in the future: ${q(deadline)} vs ${q(localChainTime)}`;
           insertNonce({ walletOwner, nonce, deadline });
 
