@@ -76,6 +76,7 @@ import {
 
 const usage = `Usage:
   ymax-deploy-target.ts phase-pre-upgrade --target <target> --tag <tag> [--branch <branch>]
+  ymax-deploy-target.ts phase-upgrade-args --target <target> --tag <tag>
   ymax-deploy-target.ts phase-upgrade-generate --target <target> --tag <tag>
   ymax-deploy-target.ts phase-upgrade-submit --target <target> --tag <tag>
   ymax-deploy-target.ts phase-upgrade-confirm --target <target> --tag <tag>`;
@@ -152,7 +153,8 @@ type StepTools = {
   ) => Promise<
     { ref: ReleaseRW; info: Awaited<ReturnType<ReleaseRd['get']>> } | undefined
   >;
-  fetchChainMetadata: () => Promise<ChainTokenMetadata>;
+  /** Resolves to `undefined` when the target has no reliable YDS source. */
+  fetchChainMetadata: () => Promise<ChainTokenMetadata | undefined>;
   diff: CmdRunner;
   logger?: Logger;
   setTimeout: typeof globalThis.setTimeout;
@@ -243,6 +245,7 @@ type Cli =
     }
   | {
       subcommand:
+        | 'phase-upgrade-args'
         | 'phase-upgrade-generate'
         | 'phase-upgrade-submit'
         | 'phase-upgrade-confirm';
@@ -278,6 +281,7 @@ const parseCli = (argv: string[]): Cli => {
         tag,
         branch: typeof values.branch === 'string' ? values.branch : undefined,
       };
+    case 'phase-upgrade-args':
     case 'phase-upgrade-generate':
     case 'phase-upgrade-submit':
     case 'phase-upgrade-confirm':
@@ -499,12 +503,16 @@ const provideArgsFiles = async (
     return { assetName: existingAssetName, file: assetFile.readOnly() };
   }
 
-  // Inject a `chainMetadata` default from fresh YDS data.
+  // Inject a `chainMetadata` default from fresh YDS data, if available.
+  // Otherwise the builder falls back to its built-in defaults.
   let overridesJson = overridesText;
   const overrides = overridesJson ? JSON.parse(overridesJson) : {};
   if (!overrides.chainMetadata) {
-    overrides.chainMetadata = await fetchChainMetadata();
-    overridesJson = JSON.stringify(overrides);
+    const chainMetadata = await fetchChainMetadata();
+    if (chainMetadata) {
+      overrides.chainMetadata = chainMetadata;
+      overridesJson = JSON.stringify(overrides);
+    }
   }
 
   // A ${target}-upgrade.json release asset indicates upgrade completion.
@@ -2319,6 +2327,49 @@ export const makeGraph = (
       ]),
     ),
 
+    // phase-upgrade-args:ymax0-devnet, phase-upgrade-args:ymax0-main,
+    // phase-upgrade-args:ymax1-main
+    // Attaches privateArgsOverrides (and privateArgs/diff vs. the previous
+    // release) for review; later phases reuse the recorded overrides.
+    ...fromTypedEntries(
+      typedEntries({
+        'ymax0-devnet': {
+          install: 'ymax0-devnet-install.json',
+        },
+        'ymax0-main': {
+          devnetInstall: 'ymax0-devnet-install.json',
+          devnetUpgrade: 'ymax0-devnet-upgrade.json',
+          install: 'ymax0-main-install.json',
+        },
+        'ymax1-main': {
+          install: 'ymax0-main-install.json',
+          priorUpgrade: 'ymax0-main-upgrade.json',
+        },
+      }).map(([envName, extraDeps]) => [
+        `phase-upgrade-args:${envName}`,
+        {
+          deps: { release: 'release', ...extraDeps },
+          find: async () => Promise.reject(Error('synthetic')),
+          create: async ({ release: ensuredRelease }) => {
+            const { assetName } = await provideArgsFiles(envName, privateArgs, {
+              distDir: deployPackage.distDir,
+              release,
+              fetchReleaseByAsset,
+              fetchChainMetadata,
+              diff,
+              logger,
+            });
+            return {
+              target: envName,
+              phase: 'upgrade-args',
+              record: assetName,
+              detail: { url: (ensuredRelease as ReleaseInfo).url },
+            };
+          },
+        },
+      ]),
+    ),
+
     // ymax0-devnet-upgrade.json, ymax0-main-upgrade.json,
     // ymax1-main-upgrade.json,
     ...fromTypedEntries(
@@ -2711,13 +2762,20 @@ export const main = async (
       return undefined;
     };
   const fetchChainMetadata = async () => {
-    const networkData: Record<Target, [ClusterName, string]> = {
-      'ymax0-devnet': ['testnet', 'https://dev0.ymax.app'],
+    // YDS doesn't understand devnet (dev0 reports mainnet chains such as
+    // eip155:42161), so devnet relies on the builder's testnet defaults.
+    const networkData: Record<Target, [ClusterName, string] | undefined> = {
+      'ymax0-devnet': undefined,
       'ymax0-main': ['mainnet', 'https://main0.ymax.app'],
       'ymax1-main': ['mainnet', 'https://ymax.app'],
     };
-    const [cluster, yds] =
-      networkData[target] || Fail`missing network data for ${b(target)}`;
+    target in networkData || Fail`missing network data for ${b(target)}`;
+    const entry = networkData[target];
+    if (!entry) {
+      logger?.info(`skipping YDS chain metadata for ${target}`);
+      return undefined;
+    }
+    const [cluster, yds] = entry;
     const config: Partial<PortfolioDeployConfig> = { cluster };
     const updatedConfig = await updateConfigFromYds({
       config: config as PortfolioDeployConfig,
@@ -2811,6 +2869,10 @@ export const main = async (
   switch (subcommand) {
     case 'phase-pre-upgrade': {
       writeJson(stdout, await graph.ensureNode(`phase-pre-upgrade:${target}`));
+      break;
+    }
+    case 'phase-upgrade-args': {
+      writeJson(stdout, await graph.ensureNode(`phase-upgrade-args:${target}`));
       break;
     }
     case 'phase-upgrade-generate': {

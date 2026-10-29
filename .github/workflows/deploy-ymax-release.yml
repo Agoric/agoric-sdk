@@ -47,6 +47,13 @@ on:
           used, since its address has no on-chain public key yet).
         required: false
         type: string
+      stopBeforeSubmit:
+        description: >-
+          Stop before submitting the upgrade on chain, e.g. to audit the
+          privateArgs release assets. Rerun without it to submit them.
+        required: false
+        type: boolean
+        default: false
       ymax1Planner:
         description: 'Attest ymax1 planner state (must be "down" for ymax1-main upgrades). Operator is responsible for actually stopping the planner.'
         required: false
@@ -138,12 +145,12 @@ jobs:
           TARGET: ${{ inputs.target }}
           YMAX_INSTALL_BUNDLE_MNEMONIC: ${{ secrets.YMAX_INSTALL_BUNDLE_MNEMONIC }}
         run: |
-          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+          packages/portfolio-deploy/scripts/with-step-summary.sh \
+            packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
             phase-pre-upgrade \
             --target "$TARGET" \
             --tag "$RELEASE_TAG" \
-            --branch "$BRANCH" \
-            2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2)
+            --branch "$BRANCH"
 
   # Does everything short of actually broadcasting: validates inputs, generates
   # or re-validates the unsigned/detached artifacts, and reports whether a
@@ -203,15 +210,22 @@ jobs:
 
           case "$SIGNING_KEY" in
             ci-secret)
+              # Attach privateArgs for review before upgrade-submit (and
+              # its approval gate), which then reuses them.
+              packages/portfolio-deploy/scripts/with-step-summary.sh \
+                packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+                phase-upgrade-args \
+                --target "$TARGET" \
+                --tag "$RELEASE_TAG"
               echo "ready_to_broadcast=true" >> "$GITHUB_OUTPUT"
               ;;
             detached-control|detached-grantee)
               export GRANTEE="$AUTHZ_GRANTEE"
-              generate_output="$(packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+              generate_output="$(packages/portfolio-deploy/scripts/with-step-summary.sh \
+                packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
                 phase-upgrade-generate \
                 --target "$TARGET" \
-                --tag "$RELEASE_TAG" \
-                2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2))"
+                --tag "$RELEASE_TAG")"
               printf '%s\n' "$generate_output"
 
               ready="$(jq -r '.readyToBroadcast' <<<"$generate_output")"
@@ -247,6 +261,19 @@ jobs:
               ;;
           esac
 
+      - name: Report stop before submit
+        if: inputs.stopBeforeSubmit
+        env:
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          message="Stopped before submitting the $TARGET upgrade (stopBeforeSubmit). Review the $TARGET-privateArgsOverrides-* and $TARGET-allegedPrivateArgs-* assets (incl. .diff) on release $RELEASE_TAG, then rerun without stopBeforeSubmit to submit."
+          echo "::notice::$message"
+          {
+            echo '### :mag: Stopped before submit'
+            printf '\n%s\n' "$message"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       # Enforced here, once a signed tx is actually ready, rather than
       # earlier: this job can rerun freely while cosigners are still
       # collecting signatures without requiring the planner be down for
@@ -254,7 +281,7 @@ jobs:
       # gate so a human is never asked to approve a broadcast that this
       # step would immediately block anyway.
       - name: Require ymax1 planner down
-        if: steps.prepare.outputs.ready_to_broadcast == 'true' && inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
+        if: steps.prepare.outputs.ready_to_broadcast == 'true' && !inputs.stopBeforeSubmit && inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
         run: |
           echo '::error::ymax1Planner must be down for ymax1-main. Stop the planner, then rerun this workflow with ymax1Planner=down.'
           exit 1
@@ -274,7 +301,8 @@ jobs:
       needs.plan.outputs.need_upgrade_submit == 'true' &&
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
       needs.upgrade-prepare.result == 'success' &&
-      needs.upgrade-prepare.outputs.ready_to_broadcast == 'true'
+      needs.upgrade-prepare.outputs.ready_to_broadcast == 'true' &&
+      !inputs.stopBeforeSubmit
     runs-on: ubuntu-latest
     outputs:
       upgrade_submitted: ${{ steps.upgrade.outputs.upgrade_submitted }}
@@ -303,11 +331,11 @@ jobs:
           set -euo pipefail
 
           export GRANTEE="$AUTHZ_GRANTEE"
-          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+          packages/portfolio-deploy/scripts/with-step-summary.sh \
+            packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
             phase-upgrade-submit \
             --target "$TARGET" \
-            --tag "$RELEASE_TAG" \
-            2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2)
+            --tag "$RELEASE_TAG"
           echo "upgrade_submitted=true" >> "$GITHUB_OUTPUT"
 
   upgrade-confirm:
@@ -338,8 +366,8 @@ jobs:
           RELEASE_TAG: ${{ inputs.releaseTag }}
           TARGET: ${{ inputs.target }}
         run: |
-          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+          packages/portfolio-deploy/scripts/with-step-summary.sh \
+            packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
             phase-upgrade-confirm \
             --target "$TARGET" \
-            --tag "$RELEASE_TAG" \
-            2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2)
+            --tag "$RELEASE_TAG"

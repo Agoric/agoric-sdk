@@ -1151,6 +1151,7 @@ const runPhase = async (
   },
   phase:
     | 'phase-pre-upgrade'
+    | 'phase-upgrade-args'
     | 'phase-upgrade-generate'
     | 'phase-upgrade-submit'
     | 'phase-upgrade-confirm',
@@ -3002,9 +3003,10 @@ const makeAuthzGenerateChainMocks = (
 
 // Exercise the direct detached-signing path so assertions inspect the actual
 // privateArgsOverrides encoded for the contract, as well as the release asset.
-const makeChainMetadataScenario = () => {
+const makeChainMetadataScenario = (
+  target: 'ymax0-main' | 'ymax0-devnet' = 'ymax0-main',
+) => {
   const ctx = makeScenario();
-  const target = 'ymax0-main' as const;
   const releaseTag = happyPathReleaseTag;
   const unsignedTxName = `${target}-unsigned-tx.json`;
   seedRelease(ctx.releases, releaseTag, {
@@ -3053,6 +3055,13 @@ const makeChainMetadataScenario = () => {
     discardUnsignedTx: () => {
       assets.delete(unsignedTxName);
     },
+    args: (privateArgsOverrides: string | undefined) =>
+      runPhase(
+        { ...ctx, fetchFn },
+        'phase-upgrade-args',
+        { target, tag: releaseTag },
+        { ...ctx.env, PRIVATE_ARGS_OVERRIDES: privateArgsOverrides },
+      ),
     generate: (privateArgsOverrides: string | undefined) =>
       runPhase(
         { ...ctx, connectRpc, makeWalletKit, fetchFn },
@@ -3097,6 +3106,45 @@ for (const chainMetadata of [
     t.deepEqual(ctx.ydsRequests, []);
   });
 }
+
+test('chainMetadata: devnet skips YDS and keeps builder defaults', async t => {
+  const ctx = makeChainMetadataScenario('ymax0-devnet');
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.generate(overrides);
+
+  t.deepEqual(ctx.ydsRequests, []);
+  const assetName = expectedOverridesAssetName(ctx.target, overrides);
+  t.deepEqual(JSON.parse(ctx.assets.get(assetName)!), { oracle: 'value-a' });
+  t.deepEqual(ctx.readTxOverrides(), {
+    oracle: 'value-a',
+    postalServiceInstance: 'board0371',
+  });
+});
+
+test('phase-upgrade-args records overrides for review that later phases reuse', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.args(overrides);
+
+  const assetName = expectedOverridesAssetName(ctx.target, overrides);
+  const recordedText = ctx.assets.get(assetName)!;
+  t.like(JSON.parse(recordedText), {
+    oracle: 'value-a',
+    chainMetadata: { Arbitrum: { caipChainId: 'eip155:42161' } },
+  });
+  t.false(ctx.assets.has(`${ctx.target}-unsigned-tx.json`), 'no tx yet');
+
+  ctx.ydsRequests.length = 0;
+  ctx.setYdsUnavailable();
+  await ctx.generate('');
+
+  t.deepEqual(ctx.ydsRequests, []);
+  t.is(ctx.assets.get(assetName), recordedText);
+  t.deepEqual(ctx.readTxOverrides(), {
+    ...JSON.parse(recordedText),
+    postalServiceInstance: 'board0371',
+  });
+});
 
 test('chainMetadata: blank retry preserves recorded metadata without YDS', async t => {
   const ctx = makeChainMetadataScenario();
