@@ -138,12 +138,12 @@ jobs:
           TARGET: ${{ inputs.target }}
           YMAX_INSTALL_BUNDLE_MNEMONIC: ${{ secrets.YMAX_INSTALL_BUNDLE_MNEMONIC }}
         run: |
-          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+          packages/portfolio-deploy/scripts/with-step-summary.sh \
+            packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
             phase-pre-upgrade \
             --target "$TARGET" \
             --tag "$RELEASE_TAG" \
-            --branch "$BRANCH" \
-            2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2)
+            --branch "$BRANCH"
 
   # Does everything short of actually broadcasting: validates inputs, generates
   # or re-validates the unsigned/detached artifacts, and reports whether a
@@ -207,11 +207,11 @@ jobs:
               ;;
             detached-control|detached-grantee)
               export GRANTEE="$AUTHZ_GRANTEE"
-              generate_output="$(packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+              generate_output="$(packages/portfolio-deploy/scripts/with-step-summary.sh \
+                packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
                 phase-upgrade-generate \
                 --target "$TARGET" \
-                --tag "$RELEASE_TAG" \
-                2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2))"
+                --tag "$RELEASE_TAG")"
               printf '%s\n' "$generate_output"
 
               ready="$(jq -r '.readyToBroadcast' <<<"$generate_output")"
@@ -303,11 +303,11 @@ jobs:
           set -euo pipefail
 
           export GRANTEE="$AUTHZ_GRANTEE"
-          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+          packages/portfolio-deploy/scripts/with-step-summary.sh \
+            packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
             phase-upgrade-submit \
             --target "$TARGET" \
-            --tag "$RELEASE_TAG" \
-            2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2)
+            --tag "$RELEASE_TAG"
           echo "upgrade_submitted=true" >> "$GITHUB_OUTPUT"
 
   upgrade-confirm:
@@ -338,8 +338,8 @@ jobs:
           RELEASE_TAG: ${{ inputs.releaseTag }}
           TARGET: ${{ inputs.target }}
         run: |
-          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+          packages/portfolio-deploy/scripts/with-step-summary.sh \
+            packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
             phase-upgrade-confirm \
             --target "$TARGET" \
-            --tag "$RELEASE_TAG" \
-            2> >(tee -a "$GITHUB_STEP_SUMMARY" >&2)
+            --tag "$RELEASE_TAG"
