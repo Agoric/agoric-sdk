@@ -76,6 +76,7 @@ import {
 
 const usage = `Usage:
   ymax-deploy-target.ts phase-pre-upgrade --target <target> --tag <tag> [--branch <branch>]
+  ymax-deploy-target.ts phase-upgrade-args --target <target> --tag <tag>
   ymax-deploy-target.ts phase-upgrade-generate --target <target> --tag <tag>
   ymax-deploy-target.ts phase-upgrade-submit --target <target> --tag <tag>
   ymax-deploy-target.ts phase-upgrade-confirm --target <target> --tag <tag>`;
@@ -244,6 +245,7 @@ type Cli =
     }
   | {
       subcommand:
+        | 'phase-upgrade-args'
         | 'phase-upgrade-generate'
         | 'phase-upgrade-submit'
         | 'phase-upgrade-confirm';
@@ -279,6 +281,7 @@ const parseCli = (argv: string[]): Cli => {
         tag,
         branch: typeof values.branch === 'string' ? values.branch : undefined,
       };
+    case 'phase-upgrade-args':
     case 'phase-upgrade-generate':
     case 'phase-upgrade-submit':
     case 'phase-upgrade-confirm':
@@ -2324,6 +2327,49 @@ export const makeGraph = (
       ]),
     ),
 
+    // phase-upgrade-args:ymax0-devnet, phase-upgrade-args:ymax0-main,
+    // phase-upgrade-args:ymax1-main
+    // Attaches privateArgsOverrides (and privateArgs/diff vs. the previous
+    // release) for review; later phases reuse the recorded overrides.
+    ...fromTypedEntries(
+      typedEntries({
+        'ymax0-devnet': {
+          install: 'ymax0-devnet-install.json',
+        },
+        'ymax0-main': {
+          devnetInstall: 'ymax0-devnet-install.json',
+          devnetUpgrade: 'ymax0-devnet-upgrade.json',
+          install: 'ymax0-main-install.json',
+        },
+        'ymax1-main': {
+          install: 'ymax0-main-install.json',
+          priorUpgrade: 'ymax0-main-upgrade.json',
+        },
+      }).map(([envName, extraDeps]) => [
+        `phase-upgrade-args:${envName}`,
+        {
+          deps: { release: 'release', ...extraDeps },
+          find: async () => Promise.reject(Error('synthetic')),
+          create: async ({ release: ensuredRelease }) => {
+            const { assetName } = await provideArgsFiles(envName, privateArgs, {
+              distDir: deployPackage.distDir,
+              release,
+              fetchReleaseByAsset,
+              fetchChainMetadata,
+              diff,
+              logger,
+            });
+            return {
+              target: envName,
+              phase: 'upgrade-args',
+              record: assetName,
+              detail: { url: (ensuredRelease as ReleaseInfo).url },
+            };
+          },
+        },
+      ]),
+    ),
+
     // ymax0-devnet-upgrade.json, ymax0-main-upgrade.json,
     // ymax1-main-upgrade.json,
     ...fromTypedEntries(
@@ -2823,6 +2869,10 @@ export const main = async (
   switch (subcommand) {
     case 'phase-pre-upgrade': {
       writeJson(stdout, await graph.ensureNode(`phase-pre-upgrade:${target}`));
+      break;
+    }
+    case 'phase-upgrade-args': {
+      writeJson(stdout, await graph.ensureNode(`phase-upgrade-args:${target}`));
       break;
     }
     case 'phase-upgrade-generate': {

@@ -1151,6 +1151,7 @@ const runPhase = async (
   },
   phase:
     | 'phase-pre-upgrade'
+    | 'phase-upgrade-args'
     | 'phase-upgrade-generate'
     | 'phase-upgrade-submit'
     | 'phase-upgrade-confirm',
@@ -3054,6 +3055,13 @@ const makeChainMetadataScenario = (
     discardUnsignedTx: () => {
       assets.delete(unsignedTxName);
     },
+    args: (privateArgsOverrides: string | undefined) =>
+      runPhase(
+        { ...ctx, fetchFn },
+        'phase-upgrade-args',
+        { target, tag: releaseTag },
+        { ...ctx.env, PRIVATE_ARGS_OVERRIDES: privateArgsOverrides },
+      ),
     generate: (privateArgsOverrides: string | undefined) =>
       runPhase(
         { ...ctx, connectRpc, makeWalletKit, fetchFn },
@@ -3109,6 +3117,31 @@ test('chainMetadata: devnet skips YDS and keeps builder defaults', async t => {
   t.deepEqual(JSON.parse(ctx.assets.get(assetName)!), { oracle: 'value-a' });
   t.deepEqual(ctx.readTxOverrides(), {
     oracle: 'value-a',
+    postalServiceInstance: 'board0371',
+  });
+});
+
+test('phase-upgrade-args records overrides for review that later phases reuse', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.args(overrides);
+
+  const assetName = expectedOverridesAssetName(ctx.target, overrides);
+  const recordedText = ctx.assets.get(assetName)!;
+  t.like(JSON.parse(recordedText), {
+    oracle: 'value-a',
+    chainMetadata: { Arbitrum: { caipChainId: 'eip155:42161' } },
+  });
+  t.false(ctx.assets.has(`${ctx.target}-unsigned-tx.json`), 'no tx yet');
+
+  ctx.ydsRequests.length = 0;
+  ctx.setYdsUnavailable();
+  await ctx.generate('');
+
+  t.deepEqual(ctx.ydsRequests, []);
+  t.is(ctx.assets.get(assetName), recordedText);
+  t.deepEqual(ctx.readTxOverrides(), {
+    ...JSON.parse(recordedText),
     postalServiceInstance: 'board0371',
   });
 });
