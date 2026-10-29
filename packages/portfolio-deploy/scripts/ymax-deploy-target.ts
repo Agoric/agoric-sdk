@@ -152,7 +152,8 @@ type StepTools = {
   ) => Promise<
     { ref: ReleaseRW; info: Awaited<ReturnType<ReleaseRd['get']>> } | undefined
   >;
-  fetchChainMetadata: () => Promise<ChainTokenMetadata>;
+  /** Resolves to `undefined` when the target has no reliable YDS source. */
+  fetchChainMetadata: () => Promise<ChainTokenMetadata | undefined>;
   diff: CmdRunner;
   logger?: Logger;
   setTimeout: typeof globalThis.setTimeout;
@@ -499,12 +500,16 @@ const provideArgsFiles = async (
     return { assetName: existingAssetName, file: assetFile.readOnly() };
   }
 
-  // Inject a `chainMetadata` default from fresh YDS data.
+  // Inject a `chainMetadata` default from fresh YDS data, if available.
+  // Otherwise the builder falls back to its built-in defaults.
   let overridesJson = overridesText;
   const overrides = overridesJson ? JSON.parse(overridesJson) : {};
   if (!overrides.chainMetadata) {
-    overrides.chainMetadata = await fetchChainMetadata();
-    overridesJson = JSON.stringify(overrides);
+    const chainMetadata = await fetchChainMetadata();
+    if (chainMetadata) {
+      overrides.chainMetadata = chainMetadata;
+      overridesJson = JSON.stringify(overrides);
+    }
   }
 
   // A ${target}-upgrade.json release asset indicates upgrade completion.
@@ -2711,13 +2716,20 @@ export const main = async (
       return undefined;
     };
   const fetchChainMetadata = async () => {
-    const networkData: Record<Target, [ClusterName, string]> = {
-      'ymax0-devnet': ['testnet', 'https://dev0.ymax.app'],
+    // YDS doesn't understand devnet (dev0 reports mainnet chains such as
+    // eip155:42161), so devnet relies on the builder's testnet defaults.
+    const networkData: Record<Target, [ClusterName, string] | undefined> = {
+      'ymax0-devnet': undefined,
       'ymax0-main': ['mainnet', 'https://main0.ymax.app'],
       'ymax1-main': ['mainnet', 'https://ymax.app'],
     };
-    const [cluster, yds] =
-      networkData[target] || Fail`missing network data for ${b(target)}`;
+    target in networkData || Fail`missing network data for ${b(target)}`;
+    const entry = networkData[target];
+    if (!entry) {
+      logger?.info(`skipping YDS chain metadata for ${target}`);
+      return undefined;
+    }
+    const [cluster, yds] = entry;
     const config: Partial<PortfolioDeployConfig> = { cluster };
     const updatedConfig = await updateConfigFromYds({
       config: config as PortfolioDeployConfig,

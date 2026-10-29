@@ -3002,9 +3002,10 @@ const makeAuthzGenerateChainMocks = (
 
 // Exercise the direct detached-signing path so assertions inspect the actual
 // privateArgsOverrides encoded for the contract, as well as the release asset.
-const makeChainMetadataScenario = () => {
+const makeChainMetadataScenario = (
+  target: 'ymax0-main' | 'ymax0-devnet' = 'ymax0-main',
+) => {
   const ctx = makeScenario();
-  const target = 'ymax0-main' as const;
   const releaseTag = happyPathReleaseTag;
   const unsignedTxName = `${target}-unsigned-tx.json`;
   seedRelease(ctx.releases, releaseTag, {
@@ -3097,6 +3098,20 @@ for (const chainMetadata of [
     t.deepEqual(ctx.ydsRequests, []);
   });
 }
+
+test('chainMetadata: devnet skips YDS and keeps builder defaults', async t => {
+  const ctx = makeChainMetadataScenario('ymax0-devnet');
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.generate(overrides);
+
+  t.deepEqual(ctx.ydsRequests, []);
+  const assetName = expectedOverridesAssetName(ctx.target, overrides);
+  t.deepEqual(JSON.parse(ctx.assets.get(assetName)!), { oracle: 'value-a' });
+  t.deepEqual(ctx.readTxOverrides(), {
+    oracle: 'value-a',
+    postalServiceInstance: 'board0371',
+  });
+});
 
 test('chainMetadata: blank retry preserves recorded metadata without YDS', async t => {
   const ctx = makeChainMetadataScenario();
