@@ -627,7 +627,7 @@ const mainnetTokenMessengerV2 = (rows =>
   ]),
 );
 
-const cctpRelayer = '0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f';
+const cctpRelayer = '0x797680C6C74303564Fd55a45e86bc32a9712b537';
 
 /**
  * 1inch AggregationRouterV6, deployed at the same address on all supported EVM
