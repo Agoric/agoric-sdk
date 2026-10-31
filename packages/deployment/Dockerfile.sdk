@@ -97,6 +97,11 @@ RUN yarn lerna run build
 # The install container.
 FROM node:24-bookworm AS install
 
+# Reduce exposure to CVE-2026-98432's demonstrated MPTCP exploit. This does
+# not fix the underlying kernel vulnerability; update and reboot the host.
+# Runtime GODEBUG overrides must retain multipathtcp=0.
+ENV GODEBUG="${GODEBUG:-},multipathtcp=0"
+
 # Install some conveniences.
 RUN apt-get --allow-releaseinfo-change update && apt-get install -y vim jq less && apt-get clean -y
 
