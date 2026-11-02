@@ -502,6 +502,21 @@ const provideArgsFiles = async (
     await release.join(existingAssetName).copyTo(assetFile);
     return { assetName: existingAssetName, file: assetFile.readOnly() };
   }
+  // Without an overrides asset, any review assets are left over from a
+  // partial attempt. Reject those for different privateArgsOverrides (e.g. a
+  // retry that forgot to re-supply them) rather than orphaning them.
+  const leftovers = assets
+    .map(({ name }) => name)
+    .filter(name =>
+      [privateArgsAssetPrefix(target), previousPrivateArgsAssetPrefix(target)]
+        .filter(reviewPrefix => name.startsWith(reviewPrefix))
+        .some(
+          reviewPrefix =>
+            !name.slice(reviewPrefix.length).startsWith(`${discriminator}.`),
+        ),
+    );
+  leftovers.length === 0 ||
+    Fail`${q(leftovers)} on the release are left over from different privateArgsOverrides for ${b(target)}; remove them (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides`;
 
   // Inject a `chainMetadata` default from fresh YDS data, if available.
   // Otherwise the builder falls back to its built-in defaults.
@@ -567,9 +582,13 @@ const provideArgsFiles = async (
   const diffFile =
     privateArgsFile &&
     distDir.join(`${privateArgsAssetPrefix(target)}${discriminator}.diff`);
+  // Label by asset name rather than local path and mtime, so the diff is
+  // reproducible (and comparable on retry).
   const diffResult = await (prevPrivateArgsFile &&
     diff.exec([
       '-u',
+      ...['--label', prevPrivateArgsFile.basename()],
+      ...['--label', privateArgsFile!.readOnly().basename()],
       prevPrivateArgsFile.toString(),
       privateArgsFile!.toString(),
     ]));
@@ -583,13 +602,10 @@ const provideArgsFiles = async (
   }
   await diffFile?.writeText(diffText);
 
-  // Attach the privateArgsOverrides release asset first, then the rest.
-  const assetFile = distDir.join(assetName);
-  await assetFile.writeText(canonicalizePrivateArgs(overridesJson));
-  const asset = release.join(assetName);
-  if (!(await asset.exists())) {
-    await asset.copyFrom(assetFile.readOnly());
-  }
+  // Attach the review assets first and the privateArgsOverrides release asset
+  // last, since its presence short-circuits regeneration above. A retry
+  // after a partial upload reuses matching review assets but rejects stale
+  // ones (e.g. from since-changed YDS data) rather than mixing them.
   await Promise.all(
     [
       prevPrivateArgsFile,
@@ -597,14 +613,19 @@ const provideArgsFiles = async (
       diffFile?.readOnly(),
     ].map(async fileRd => {
       if (!fileRd) return;
-      const subAsset = release.join(fileRd.basename());
+      const name = fileRd.basename();
+      const subAsset = release.join(name);
       if (await subAsset.exists()) {
-        logger?.warn('release asset already exists', fileRd.basename());
+        (await subAsset.readText()) === (await fileRd.readText()) ||
+          Fail`stale release asset ${q(name)} does not match regenerated content; remove it (e.g. \`gh release delete-asset\`) and retry`;
         return;
       }
       await subAsset.copyFrom(fileRd);
     }),
   );
+  const assetFile = distDir.join(assetName);
+  await assetFile.writeText(canonicalizePrivateArgs(overridesJson));
+  await release.join(assetName).copyFrom(assetFile.readOnly());
   return { assetName, file: assetFile.readOnly() };
 };
 
