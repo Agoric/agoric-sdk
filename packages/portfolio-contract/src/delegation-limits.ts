@@ -23,8 +23,8 @@ import type { MovementDesc } from './type-guards-steps.ts';
 
 const { entries, keys, values } = Object;
 
-/** Validation can analyze MAX before execution and its public Shapes support it. */
-export type AllocationPlan = FundsFlowPlan<NatAmount | 'MAX'>;
+/** Validation can analyze withdrawAll before execution and its public Shapes support it. */
+export type AllocationPlan = FundsFlowPlan<'withdrawAll' | undefined>;
 
 /** Whether allocation permissions include limits that require portfolio observations. */
 export const needsObservations = (
@@ -117,7 +117,7 @@ harden(assertMandateForPlanObservations);
 /** Reject plans that send funds to positions absent from the target allocation. */
 export const vetNoNewPositions = (
   targetAllocation: TargetAllocation = {},
-  planOrSteps: AllocationPlan | MovementDesc<NatAmount | 'MAX'>[],
+  planOrSteps: AllocationPlan | MovementDesc<'withdrawAll' | undefined>[],
 ) => {
   const allowedPositions = keys(targetAllocation);
   const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
@@ -131,7 +131,7 @@ harden(vetNoNewPositions);
 
 /** Reject plans whose swap outputs cannot be valued by mandate checks. */
 export const vetNoSwaps = (
-  planOrSteps: AllocationPlan | MovementDesc<NatAmount | 'MAX'>[],
+  planOrSteps: AllocationPlan | MovementDesc<'withdrawAll' | undefined>[],
 ): void => {
   const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
   for (const { swap } of steps) {
@@ -175,7 +175,10 @@ const decodePlan = (
   // Swap output values are not yet available to mandate analysis.
   vetNoSwaps(plan);
   const flow = plan.flow.map((movement, index): PlanOperation => {
-    const { src, dest, amount, claimRewards } = movement;
+    const { src, dest, amount, claimRewards, op } = movement;
+    if (Object.hasOwn(movement, 'op') && op !== 'withdrawAll') {
+      throw Fail`unsupported movement op: ${q(op)}`;
+    }
     if (!isPortfolioBalancePlaceRef(src)) {
       throw Fail`allocation plan does not support deposit or withdrawal place ${q(src)}`;
     }
@@ -184,9 +187,11 @@ const decodePlan = (
     }
     src !== dest ||
       Fail`allocation plan does not support self-movement at ${q(src)}`;
-    if (amount === 'MAX') {
+    if (op === 'withdrawAll') {
+      !Object.hasOwn(movement, 'amount') ||
+        Fail`withdrawAll must not specify amount`;
       isInstrumentId(src) ||
-        Fail`MAX requires a protocol withdrawal to its chain account`;
+        Fail`withdrawAll requires a protocol withdrawal to its chain account`;
       const { protocol } = PoolPlaces[src];
       // These routes have native full exits: Aave/Compound's maximum asset
       // amount and Morpho's redemption of all owned shares. Do not substitute
@@ -194,22 +199,25 @@ const decodePlan = (
       protocol === 'Aave' ||
         protocol === 'Compound' ||
         isERC4626MorphoInstrumentId(src) ||
-        Fail`MAX withdrawal is not supported for ${q(src)}`;
+        Fail`withdrawAll is not supported for ${q(src)}`;
       (dest === `@${chainOf(src)}` && !claimRewards) ||
-        Fail`MAX requires a protocol withdrawal to its chain account`;
+        Fail`withdrawAll requires a protocol withdrawal to its chain account`;
       plan.flow.every(
         (other, ix) =>
           ix === index || (other.src !== src && other.dest !== src),
       ) ||
-        Fail`MAX withdrawal source must not be used by another movement: ${q(src)}`;
+        Fail`withdrawAll source must not be used by another movement: ${q(src)}`;
       const balance = observations.balances[src];
       if (typeof balance !== 'bigint' || balance < 0n) {
-        throw Fail`MAX withdrawal requires an observed balance for ${q(src)}`;
+        throw Fail`withdrawAll requires an observed balance for ${q(src)}`;
       }
       // Project at the attested valuation, just as numeric movements are
       // checked against that snapshot. This is not the execution amount:
-      // leave the submitted MAX intact for protocol-native redemption.
+      // leave the submitted operation intact for protocol-native redemption.
       return { kind: 'move', src, dest, amount: { value: balance } };
+    }
+    if (typeof amount?.value !== 'bigint' || amount.value < 0n) {
+      throw Fail`movement requires a numeric amount`;
     }
     if (!claimRewards) return { kind: 'move', src, dest, amount };
 

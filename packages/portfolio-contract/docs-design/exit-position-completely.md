@@ -26,7 +26,7 @@ sequenceDiagram
 
   Note over A,P: Andrew has delegated allocation authority
   A->>A: wake()
-  A-->>A: withdrawal = { src: 'MorphoV2', dest: '@Base', amount: 'MAX' }
+  A-->>A: withdrawal = { src: 'MorphoV2', dest: '@Base', op: 'withdrawAll' }
   A-->>O: observeAndAttest(portfolio351)
   O-->>P: getPortfolioStatus(portfolio351)
   P-->>O: { positionKeys: ['MorphoV2'], ... }
@@ -34,7 +34,7 @@ sequenceDiagram
   O-->>A: signedObservations<br/>includes balances: { 'MorphoV2': 100_000_000n, '@Base': 0n },<br/>ownedShares: { 'MorphoV2': ownedShares }, ...
   A-->>P: setTargetAllocation({<br/>plan: { flow: [withdrawal] },<br/>signedObservations, ...<br/>})
   P-->>P: observations = verifyPortfolioObservations(signedObservations)
-  Note over P: Check context and mandate<br/>MAX support is proposed
+  Note over P: Check context and mandate<br/>Full-exit support is proposed
   P-->>A: flowKey
   Note over P: Proposed: carry verified ownedShares into execution
   P-->>E: vault.redeem(ownedShares,<br/>remoteAddress, remoteAddress)
@@ -50,10 +50,10 @@ sequenceDiagram
    messages arise from actor behavior.
 
 2. **Construct the withdrawal.** `MorphoV2` abbreviates
-   `ERC4626_morphoGauntletUsdcPrimeV2_Base`. The movement requests a best effort
-   full withdrawal into `@Base`; `'MAX'` permits residuals. It does not close
-   the portfolio, remove its target, or withdraw to Andrew's wallet. Expand the
-   alias to the real instrument ID when serializing the plan.
+   `ERC4626_morphoGauntletUsdcPrimeV2_Base`. The movement's `op` requests a
+   full withdrawal into `@Base`. It does not close the portfolio, remove its
+   target, or withdraw to Andrew's wallet. Expand the alias to the real
+   instrument ID when serializing the plan.
 
 3. **Collect observations.** The agent calls the existing
    `observeAndAttest(portfolio351)` path from the
@@ -89,8 +89,10 @@ sequenceDiagram
    those other fields; the movement itself is wrapped in `plan.flow`.
 
    Existing numeric amounts remain ERTP `NatAmount` records such as
-   `{ brand: usdcBrand, value: 100_000_000n }`. Accepting `'MAX'` only for
-   protocol withdrawals is proposed behavior; transfers, bridges, deposits,
+   `{ brand: usdcBrand, value: 100_000_000n }`. Accepting `op: 'withdrawAll'`
+   only for protocol withdrawals is proposed behavior. Numeric movements retain
+   `amount` and omit `op`; `withdrawAll` movements omit `amount`. Supplying
+   both, neither, or an unknown `op` is rejected. Transfers, bridges, deposits,
    and downstream steps retain existing amount semantics.
 
 8. **Verify and validate.** The contract verifies the signed observations,
@@ -158,9 +160,9 @@ position cannot be fully closed. This design proposes assigning liquidity
 assessment and recovery to the planning agent instead. The proposal is pending;
 it differs from the issue's current requirements.
 
-The agent chooses `'MAX'` when a full exit appears feasible or a numeric amount
-when liquidity is limited. If execution fails because conditions changed, the
-agent can refresh observations and submit a revised plan. Wrappers execute the
+The agent chooses `op: 'withdrawAll'` when a full exit appears feasible, or a
+numeric amount when liquidity is limited. If execution fails because conditions
+changed, the agent can refresh observations and submit a revised plan. Wrappers execute the
 requested operation without discovering liquidity, silently reducing the
 withdrawal, or converting a revert into success. Existing numeric behavior,
 empty-position no-op behavior, and failure/recovery reporting remain in scope.
