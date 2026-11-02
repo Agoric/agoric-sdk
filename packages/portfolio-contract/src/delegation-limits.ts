@@ -8,9 +8,11 @@ import {
   type PortfolioPermissions,
   type TargetAllocation,
 } from '@agoric/portfolio-api';
-import { chainOf } from '@agoric/portfolio-api/src/places.js';
+import type { NatAmount } from '@agoric/ertp';
+import { chainOf, PoolPlaces } from '@agoric/portfolio-api/src/places.js';
 import {
   isInstrumentId,
+  isERC4626MorphoInstrumentId,
   isInterChainAccountRef,
   isPortfolioBalancePlaceRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
@@ -20,6 +22,9 @@ import { fullOrder, makeDependencies, makeSchedule } from './schedule-order.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
 
 const { entries, keys, values } = Object;
+
+/** Validation can analyze MAX before execution and its public Shapes support it. */
+export type AllocationPlan = FundsFlowPlan<NatAmount | 'MAX'>;
 
 /** Whether allocation permissions include limits that require portfolio observations. */
 export const needsObservations = (
@@ -112,7 +117,7 @@ harden(assertMandateForPlanObservations);
 /** Reject plans that send funds to positions absent from the target allocation. */
 export const vetNoNewPositions = (
   targetAllocation: TargetAllocation = {},
-  planOrSteps: FundsFlowPlan | MovementDesc[],
+  planOrSteps: AllocationPlan | MovementDesc<NatAmount | 'MAX'>[],
 ) => {
   const allowedPositions = keys(targetAllocation);
   const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
@@ -126,7 +131,7 @@ harden(vetNoNewPositions);
 
 /** Reject plans whose swap outputs cannot be valued by mandate checks. */
 export const vetNoSwaps = (
-  planOrSteps: FundsFlowPlan | MovementDesc[],
+  planOrSteps: AllocationPlan | MovementDesc<NatAmount | 'MAX'>[],
 ): void => {
   const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
   for (const { swap } of steps) {
@@ -151,7 +156,7 @@ type PlanOperation =
       kind: 'move';
       src: PortfolioBalancePlaceRef;
       dest: PortfolioBalancePlaceRef;
-      amount: MovementDesc['amount'];
+      amount: Pick<NatAmount, 'value'>;
     }
   | {
       kind: 'claimRewards';
@@ -163,10 +168,13 @@ type PlanOperation =
 type DecodedPlan = Omit<FundsFlowPlan, 'flow'> & { flow: PlanOperation[] };
 
 /** Decode once so every balance check uses the same operation semantics. */
-const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
+const decodePlan = (
+  plan: AllocationPlan,
+  observations: PlanObservations,
+): DecodedPlan => {
   // Swap output values are not yet available to mandate analysis.
   vetNoSwaps(plan);
-  const flow = plan.flow.map((movement): PlanOperation => {
+  const flow = plan.flow.map((movement, index): PlanOperation => {
     const { src, dest, amount, claimRewards } = movement;
     if (!isPortfolioBalancePlaceRef(src)) {
       throw Fail`allocation plan does not support deposit or withdrawal place ${q(src)}`;
@@ -176,6 +184,33 @@ const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
     }
     src !== dest ||
       Fail`allocation plan does not support self-movement at ${q(src)}`;
+    if (amount === 'MAX') {
+      isInstrumentId(src) ||
+        Fail`MAX requires a protocol withdrawal to its chain account`;
+      const { protocol } = PoolPlaces[src];
+      // These routes have native full exits: Aave/Compound's maximum asset
+      // amount and Morpho's redemption of all owned shares. Do not substitute
+      // a numeric withdrawal for other protocols merely because a balance is known.
+      protocol === 'Aave' ||
+        protocol === 'Compound' ||
+        isERC4626MorphoInstrumentId(src) ||
+        Fail`MAX withdrawal is not supported for ${q(src)}`;
+      (dest === `@${chainOf(src)}` && !claimRewards) ||
+        Fail`MAX requires a protocol withdrawal to its chain account`;
+      plan.flow.every(
+        (other, ix) =>
+          ix === index || (other.src !== src && other.dest !== src),
+      ) ||
+        Fail`MAX withdrawal source must not be used by another movement: ${q(src)}`;
+      const balance = observations.balances[src];
+      if (typeof balance !== 'bigint' || balance < 0n) {
+        throw Fail`MAX withdrawal requires an observed balance for ${q(src)}`;
+      }
+      // Project at the attested valuation, just as numeric movements are
+      // checked against that snapshot. This is not the execution amount:
+      // leave the submitted MAX intact for protocol-native redemption.
+      return { kind: 'move', src, dest, amount: { value: balance } };
+    }
     if (!claimRewards) return { kind: 'move', src, dest, amount };
 
     if (
@@ -196,7 +231,7 @@ const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
 /** Require every current or plan-referenced balance; allow only zero-balance extras. */
 export const vetObservationPlaces = (
   currentPlaces: Iterable<PortfolioBalancePlaceRef>,
-  plan: FundsFlowPlan,
+  plan: AllocationPlan,
   observations: PlanObservations,
 ): void => {
   const expected = new Set(currentPlaces);
@@ -398,10 +433,10 @@ const projectPlanBalances = (
  */
 export const vetPlanAllocation = (
   targetAllocation: TargetAllocation,
-  plan: FundsFlowPlan,
+  plan: AllocationPlan,
   observations: PlanObservations,
 ): void => {
-  const decodedPlan = decodePlan(plan);
+  const decodedPlan = decodePlan(plan, observations);
   for (const { kind } of decodedPlan.flow) {
     kind !== 'claimRewards' ||
       Fail`allocation plan does not support claimRewards`;
@@ -430,7 +465,7 @@ harden(vetPlanAllocation);
 export const vetAllocationPlan = (
   permissions: PortfolioPermissions,
   targetAllocation: TargetAllocation,
-  plan: FundsFlowPlan | undefined,
+  plan: AllocationPlan | undefined,
   observations: PlanObservations | undefined,
 ): boolean => {
   assertMandateForAllocation(permissions, targetAllocation);

@@ -1,7 +1,7 @@
 /** @file Tests for delegated portfolio mandates and plan evidence. */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit, type NatValue } from '@agoric/ertp';
+import { makeIssuerKit, type NatAmount, type NatValue } from '@agoric/ertp';
 import { fc, testProp } from '@fast-check/ava';
 import type {
   AssetPlaceRef,
@@ -1399,5 +1399,266 @@ test('final dust allowance cannot authorize a new above-target supply', t => {
         },
       ),
     { message: /plan intermediate balance exceeds target allocation/ },
+  );
+});
+
+const maxExitPlan = (
+  src: InstrumentId = 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
+  dest: AssetPlaceRef = '@Base',
+): FundsFlowPlan<NatAmount | 'MAX'> => ({
+  flow: [{ src, dest, amount: 'MAX' }],
+});
+
+for (const src of [
+  'ERC4626_morphoGauntletUsdcPrimeV2_Base',
+  'Aave_Base',
+  'Compound_Base',
+] as const) {
+  test(`MAX withdrawal projects the observed balance: ${src}`, t => {
+    const plan = harden(maxExitPlan(src));
+    t.notThrows(() =>
+      vetAllocationPlan(
+        { allocation: { maxWeightBps: 1n } },
+        { [src]: 0n, '@Base': 1n },
+        plan,
+        {
+          balances: { [src]: 100_000_000n, '@Base': 5_000_000n },
+          instrumentTvls: {},
+        },
+      ),
+    );
+    t.is(plan.flow[0]!.amount, 'MAX', 'execution keeps the original sentinel');
+  });
+}
+
+test('MAX withdrawal accepts an observed empty position', t => {
+  t.notThrows(() =>
+    vetPlanAllocation({ '@Base': 1n }, maxExitPlan(), {
+      balances: { ERC4626_morphoGauntletUsdcPrimeV2_Base: 0n, '@Base': 1n },
+      instrumentTvls: {},
+    }),
+  );
+});
+
+test('MAX withdrawal requires a source balance observation', t => {
+  t.throws(
+    () =>
+      vetPlanAllocation({ '@Base': 1n }, maxExitPlan(), {
+        balances: { '@Base': 1n },
+        instrumentTvls: {},
+      }),
+    { message: /MAX withdrawal requires an observed balance/ },
+  );
+});
+
+for (const src of [
+  'USDN',
+  'USDNVault',
+  'Beefy_morphoSeamlessUsdc_Base',
+  'ERC4626_vaultU2_Ethereum',
+] as const) {
+  test(`MAX rejects a protocol without an admitted full-exit route: ${src}`, t => {
+    t.throws(
+      () =>
+        vetPlanAllocation({ '@Base': 1n }, maxExitPlan(src), {
+          balances: { [src]: 100n },
+          instrumentTvls: {},
+        }),
+      { message: /MAX withdrawal is not supported/ },
+    );
+  });
+}
+
+for (const [src, dest] of [
+  ['@Base', 'Aave_Base'],
+  ['@Base', '@Arbitrum'],
+  ['Aave_Base', '@Arbitrum'],
+  ['Aave_Base', 'Compound_Base'],
+] as const) {
+  test(`MAX rejects a route other than withdrawal to its chain account: ${src} -> ${dest}`, t => {
+    t.throws(
+      () =>
+        vetPlanAllocation(
+          { [dest]: 1n },
+          {
+            flow: [{ src, dest, amount: 'MAX' }],
+          },
+          { balances: { [src]: 100n, [dest]: 0n }, instrumentTvls: {} },
+        ),
+      {
+        message: /MAX requires a protocol withdrawal to its chain account/,
+      },
+    );
+  });
+}
+
+for (const direction of ['supply', 'withdraw', 'MAX'] as const) {
+  for (const before of [true, false]) {
+    test(`MAX rejects another ${direction} touching its source (${before ? 'before' : 'after'})`, t => {
+      const src = 'Aave_Base';
+      const other: MovementDesc<NatAmount | 'MAX'> =
+        direction === 'MAX'
+          ? { src, dest: '@Base', amount: 'MAX' as const }
+          : {
+              src: direction === 'supply' ? ('@Base' as const) : src,
+              dest: direction === 'supply' ? src : ('@Base' as const),
+              amount: { brand: USDC, value: 1n },
+            };
+      const max = maxExitPlan(src).flow[0]!;
+      t.throws(
+        () =>
+          vetPlanAllocation(
+            { '@Base': 1n, Aave_Base: 0n },
+            {
+              flow: before ? [other, max] : [max, other],
+            },
+            { balances: { Aave_Base: 100n, '@Base': 1n }, instrumentTvls: {} },
+          ),
+        {
+          message: /MAX withdrawal source must not be used by another movement/,
+        },
+      );
+    });
+  }
+}
+
+for (const ordered of [true, false]) {
+  test(`MAX preserves downstream funding and dependencies (${ordered ? 'ordered' : 'concurrent'})`, t => {
+    const plan = {
+      flow: [
+        ...maxExitPlan('Aave_Base').flow,
+        {
+          src: '@Base' as const,
+          dest: 'Compound_Base' as const,
+          amount: { brand: USDC, value: 50_000_000n },
+        },
+      ],
+      ...(ordered ? {} : { order: [] }),
+    };
+    const check = () =>
+      vetPlanAllocation(
+        { Aave_Base: 0n, '@Base': 1n, Compound_Base: 1n },
+        plan,
+        {
+          balances: { Aave_Base: 100_000_000n, '@Base': 0n, Compound_Base: 0n },
+          instrumentTvls: {},
+        },
+      );
+    if (ordered) t.notThrows(check);
+    else t.throws(check, { message: /unfunded plan movement/ });
+  });
+}
+
+test('MAX preserves partial-failure exposure limits on downstream supplies', t => {
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        { Aave_Base: 0n, Compound_Base: 50n, '@Base': 50n },
+        {
+          flow: [
+            ...maxExitPlan('Aave_Base').flow,
+            {
+              src: '@Base',
+              dest: 'Compound_Base',
+              amount: { brand: USDC, value: 60_000_000n },
+            },
+            {
+              src: 'Compound_Base',
+              dest: '@Base',
+              amount: { brand: USDC, value: 10_000_000n },
+            },
+          ],
+        },
+        {
+          balances: { Aave_Base: 100_000_000n, '@Base': 0n, Compound_Base: 0n },
+          instrumentTvls: {},
+        },
+      ),
+    { message: /plan intermediate balance exceeds target allocation/ },
+  );
+});
+
+test('MAX does not fund a downstream movement above the observed proceeds', t => {
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        { Compound_Base: 1n },
+        {
+          flow: [
+            ...maxExitPlan('Aave_Base').flow,
+            {
+              src: '@Base',
+              dest: 'Compound_Base',
+              amount: { brand: USDC, value: 101n },
+            },
+          ],
+        },
+        {
+          balances: { Aave_Base: 100n, '@Base': 0n, Compound_Base: 0n },
+          instrumentTvls: {},
+        },
+      ),
+    {
+      message: /unfunded plan movement/,
+    },
+  );
+});
+
+test('MAX preserves final allocation ceilings', t => {
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        { Compound_Base: 1n, '@Base': 1n },
+        {
+          flow: [
+            ...maxExitPlan('Aave_Base').flow,
+            {
+              src: '@Base',
+              dest: 'Compound_Base',
+              amount: { brand: USDC, value: 60_000_000n },
+            },
+          ],
+        },
+        {
+          balances: { Aave_Base: 100_000_000n, '@Base': 0n, Compound_Base: 0n },
+          instrumentTvls: {},
+        },
+      ),
+    {
+      message: /plan final balance exceeds target allocation/,
+    },
+  );
+});
+
+test('MAX cannot disguise a reward claim as a withdrawal', t => {
+  const plan = maxExitPlan('Aave_Base');
+  plan.flow[0]!.claimRewards = { tokens: [], minAmounts: [] };
+  t.throws(
+    () =>
+      vetPlanAllocation({ '@Base': 1n }, plan, {
+        balances: { Aave_Base: 100n, '@Base': 0n },
+        instrumentTvls: {},
+      }),
+    { message: /MAX requires a protocol withdrawal to its chain account/ },
+  );
+});
+
+test('MAX allows independent full exits without mutating their amounts', t => {
+  const plan = harden({
+    flow: [
+      ...maxExitPlan('Aave_Base').flow,
+      ...maxExitPlan('Compound_Base').flow,
+    ],
+    order: [],
+  });
+  t.notThrows(() =>
+    vetPlanAllocation({ '@Base': 1n }, plan, {
+      balances: { Aave_Base: 100n, Compound_Base: 200n, '@Base': 0n },
+      instrumentTvls: {},
+    }),
+  );
+  t.deepEqual(
+    plan.flow.map(step => step.amount),
+    ['MAX', 'MAX'],
   );
 });
