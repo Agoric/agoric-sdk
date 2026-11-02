@@ -1,0 +1,6 @@
+packages/internal/src/testing-utils.js:62: * @typedef {readonly [
+packages/internal/src/priority-senders.js:58:    /** @type {readonly [node: StorageNode, namespaces: Set<string>]} */
+packages/internal/src/keyMirror.js:7: * @typedef {{ readonly [K in keyof Init]: K }} KeyMirrorResult
+packages/vats/src/core/demoIssuers.js:106: * @typedef {readonly [bigint, bigint]} Rational
+packages/governance/src/contractGovernance/typedParamManager.js:43: * @typedef {ParamManagerBase & Getters<M> & Updaters<M> & {readonly: () => Getters<M>} & {updateParams: UpdateParams}} TypedParamManager
+packages/swing-store/src/exporter.js:24: * @typedef {readonly [
