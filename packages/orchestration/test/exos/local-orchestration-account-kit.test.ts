@@ -686,3 +686,50 @@ test('parseInboundTransfer', async t => {
     },
   });
 });
+
+test('progressTracker finish without transfers', async t => {
+  const common = await commonSetup(t);
+  common.utils.populateChainHub();
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
+  const account = await makeTestLOAKit();
+
+  // Create a progress tracker
+  const progressTracker = await VE(account).makeProgressTracker();
+
+  // Finish without doing any transfer
+  // This should not fail even though there are no traffic entries
+  const meta = await VE(progressTracker).finish();
+
+  // Should return empty object when no transfers occurred (traffic is undefined)
+  t.deepEqual(meta, {});
+});
+
+test('progressTracker finish after failed transfer setup', async t => {
+  const common = await commonSetup(t);
+  common.utils.populateChainHub();
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
+  const account = await makeTestLOAKit();
+
+  // Create a progress tracker
+  const progressTracker = await VE(account).makeProgressTracker();
+
+  // Try to transfer to an unknown destination (will fail before traffic entries are added)
+  const unknownDestination: CosmosChainAddress = {
+    chainId: 'fakenet',
+    value: 'fakenet1pleab',
+    encoding: 'bech32',
+  };
+
+  await t.throwsAsync(
+    VE(account).transfer(
+      unknownDestination,
+      { denom: 'ubld', value: 1n },
+      { progressTracker },
+    ),
+    { message: 'no connection info found for "agoric-3"<->"fakenet"' },
+  );
+
+  // Finish should not fail even though transfer setup failed
+  const meta = await VE(progressTracker).finish();
+  t.deepEqual(meta, {});
+});
