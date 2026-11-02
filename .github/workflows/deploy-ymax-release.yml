@@ -145,12 +145,17 @@ jobs:
           TARGET: ${{ inputs.target }}
           YMAX_INSTALL_BUNDLE_MNEMONIC: ${{ secrets.YMAX_INSTALL_BUNDLE_MNEMONIC }}
         run: |
-          packages/portfolio-deploy/scripts/with-step-summary.sh \
+          set -o pipefail
+          # Pipe stderr through the summary filter; stdout goes to FD 3.
+          {
             packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-            phase-pre-upgrade \
-            --target "$TARGET" \
-            --tag "$RELEASE_TAG" \
-            --branch "$BRANCH"
+              phase-pre-upgrade \
+              --target "$TARGET" \
+              --tag "$RELEASE_TAG" \
+              --branch "$BRANCH" \
+              2>&1 >&3 \
+              | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
+          } 3>&1
 
   # Does everything short of actually broadcasting: validates inputs, generates
   # or re-validates the unsigned/detached artifacts, and reports whether a
@@ -212,20 +217,28 @@ jobs:
             ci-secret)
               # Attach privateArgs for review before upgrade-submit (and
               # its approval gate), which then reuses them.
-              packages/portfolio-deploy/scripts/with-step-summary.sh \
+              {
                 packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-                phase-upgrade-args \
-                --target "$TARGET" \
-                --tag "$RELEASE_TAG"
+                  phase-upgrade-args \
+                  --target "$TARGET" \
+                  --tag "$RELEASE_TAG" \
+                  2>&1 >&3 \
+                  | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
+              } 3>&1
               echo "ready_to_broadcast=true" >> "$GITHUB_OUTPUT"
               ;;
             detached-control|detached-grantee)
               export GRANTEE="$AUTHZ_GRANTEE"
-              generate_output="$(packages/portfolio-deploy/scripts/with-step-summary.sh \
-                packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-                phase-upgrade-generate \
-                --target "$TARGET" \
-                --tag "$RELEASE_TAG")"
+              generate_output="$(
+                {
+                  packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+                    phase-upgrade-generate \
+                    --target "$TARGET" \
+                    --tag "$RELEASE_TAG" \
+                    2>&1 >&3 \
+                    | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
+                } 3>&1
+              )"
               printf '%s\n' "$generate_output"
 
               ready="$(jq -r '.readyToBroadcast' <<<"$generate_output")"
@@ -331,11 +344,14 @@ jobs:
           set -euo pipefail
 
           export GRANTEE="$AUTHZ_GRANTEE"
-          packages/portfolio-deploy/scripts/with-step-summary.sh \
+          {
             packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-            phase-upgrade-submit \
-            --target "$TARGET" \
-            --tag "$RELEASE_TAG"
+              phase-upgrade-submit \
+              --target "$TARGET" \
+              --tag "$RELEASE_TAG" \
+              2>&1 >&3 \
+              | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
+          } 3>&1
           echo "upgrade_submitted=true" >> "$GITHUB_OUTPUT"
 
   upgrade-confirm:
@@ -366,8 +382,12 @@ jobs:
           RELEASE_TAG: ${{ inputs.releaseTag }}
           TARGET: ${{ inputs.target }}
         run: |
-          packages/portfolio-deploy/scripts/with-step-summary.sh \
+          set -o pipefail
+          {
             packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-            phase-upgrade-confirm \
-            --target "$TARGET" \
-            --tag "$RELEASE_TAG"
+              phase-upgrade-confirm \
+              --target "$TARGET" \
+              --tag "$RELEASE_TAG" \
+              2>&1 >&3 \
+              | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
+          } 3>&1
