@@ -1,7 +1,7 @@
 /** @file Tests for delegated portfolio mandates and plan evidence. */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit, type NatAmount, type NatValue } from '@agoric/ertp';
+import { makeIssuerKit, type NatValue } from '@agoric/ertp';
 import { fc, testProp } from '@fast-check/ava';
 import type {
   AssetPlaceRef,
@@ -13,6 +13,7 @@ import type {
 } from '@agoric/portfolio-api';
 import { chainOf, isInstrumentId } from '@agoric/portfolio-api/src/places.js';
 import {
+  type AllocationPlan,
   assertMandateForAllocation,
   assertMandateForPlanObservations,
   vetAllocationPlan,
@@ -1402,11 +1403,11 @@ test('final dust allowance cannot authorize a new above-target supply', t => {
   );
 });
 
-const maxExitPlan = (
+const fullExitPlan = (
   src: InstrumentId = 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
   dest: AssetPlaceRef = '@Base',
-): FundsFlowPlan<NatAmount | 'MAX'> => ({
-  flow: [{ src, dest, amount: 'MAX' }],
+): FundsFlowPlan<'withdrawAll' | undefined> => ({
+  flow: [{ src, dest, op: 'withdrawAll' }],
 });
 
 for (const src of [
@@ -1414,8 +1415,8 @@ for (const src of [
   'Aave_Base',
   'Compound_Base',
 ] as const) {
-  test(`MAX withdrawal projects the observed balance: ${src}`, t => {
-    const plan = harden(maxExitPlan(src));
+  test(`withdrawAll projects the observed balance: ${src}`, t => {
+    const plan = harden(fullExitPlan(src));
     t.notThrows(() =>
       vetAllocationPlan(
         { allocation: { maxWeightBps: 1n } },
@@ -1427,27 +1428,32 @@ for (const src of [
         },
       ),
     );
-    t.is(plan.flow[0]!.amount, 'MAX', 'execution keeps the original sentinel');
+    t.is(
+      plan.flow[0]!.op,
+      'withdrawAll',
+      'execution keeps the original operation',
+    );
+    t.false(Object.hasOwn(plan.flow[0]!, 'amount'));
   });
 }
 
-test('MAX withdrawal accepts an observed empty position', t => {
+test('withdrawAll accepts an observed empty position', t => {
   t.notThrows(() =>
-    vetPlanAllocation({ '@Base': 1n }, maxExitPlan(), {
+    vetPlanAllocation({ '@Base': 1n }, fullExitPlan(), {
       balances: { ERC4626_morphoGauntletUsdcPrimeV2_Base: 0n, '@Base': 1n },
       instrumentTvls: {},
     }),
   );
 });
 
-test('MAX withdrawal requires a source balance observation', t => {
+test('withdrawAll requires a source balance observation', t => {
   t.throws(
     () =>
-      vetPlanAllocation({ '@Base': 1n }, maxExitPlan(), {
+      vetPlanAllocation({ '@Base': 1n }, fullExitPlan(), {
         balances: { '@Base': 1n },
         instrumentTvls: {},
       }),
-    { message: /MAX withdrawal requires an observed balance/ },
+    { message: /withdrawAll requires an observed balance/ },
   );
 });
 
@@ -1457,14 +1463,14 @@ for (const src of [
   'Beefy_morphoSeamlessUsdc_Base',
   'ERC4626_vaultU2_Ethereum',
 ] as const) {
-  test(`MAX rejects a protocol without an admitted full-exit route: ${src}`, t => {
+  test(`withdrawAll rejects a protocol without an admitted full-exit route: ${src}`, t => {
     t.throws(
       () =>
-        vetPlanAllocation({ '@Base': 1n }, maxExitPlan(src), {
+        vetPlanAllocation({ '@Base': 1n }, fullExitPlan(src), {
           balances: { [src]: 100n },
           instrumentTvls: {},
         }),
-      { message: /MAX withdrawal is not supported/ },
+      { message: /withdrawAll is not supported/ },
     );
   });
 }
@@ -1475,36 +1481,37 @@ for (const [src, dest] of [
   ['Aave_Base', '@Arbitrum'],
   ['Aave_Base', 'Compound_Base'],
 ] as const) {
-  test(`MAX rejects a route other than withdrawal to its chain account: ${src} -> ${dest}`, t => {
+  test(`withdrawAll rejects a route other than withdrawal to its chain account: ${src} -> ${dest}`, t => {
     t.throws(
       () =>
         vetPlanAllocation(
           { [dest]: 1n },
           {
-            flow: [{ src, dest, amount: 'MAX' }],
+            flow: [{ src, dest, op: 'withdrawAll' }],
           },
           { balances: { [src]: 100n, [dest]: 0n }, instrumentTvls: {} },
         ),
       {
-        message: /MAX requires a protocol withdrawal to its chain account/,
+        message:
+          /withdrawAll requires a protocol withdrawal to its chain account/,
       },
     );
   });
 }
 
-for (const direction of ['supply', 'withdraw', 'MAX'] as const) {
+for (const direction of ['supply', 'withdraw', 'withdrawAll'] as const) {
   for (const before of [true, false]) {
-    test(`MAX rejects another ${direction} touching its source (${before ? 'before' : 'after'})`, t => {
+    test(`withdrawAll rejects another ${direction} touching its source (${before ? 'before' : 'after'})`, t => {
       const src = 'Aave_Base';
-      const other: MovementDesc<NatAmount | 'MAX'> =
-        direction === 'MAX'
-          ? { src, dest: '@Base', amount: 'MAX' as const }
+      const other: MovementDesc<'withdrawAll' | undefined> =
+        direction === 'withdrawAll'
+          ? { src, dest: '@Base', op: 'withdrawAll' as const }
           : {
               src: direction === 'supply' ? ('@Base' as const) : src,
               dest: direction === 'supply' ? src : ('@Base' as const),
               amount: { brand: USDC, value: 1n },
             };
-      const max = maxExitPlan(src).flow[0]!;
+      const max = fullExitPlan(src).flow[0]!;
       t.throws(
         () =>
           vetPlanAllocation(
@@ -1515,7 +1522,7 @@ for (const direction of ['supply', 'withdraw', 'MAX'] as const) {
             { balances: { Aave_Base: 100n, '@Base': 1n }, instrumentTvls: {} },
           ),
         {
-          message: /MAX withdrawal source must not be used by another movement/,
+          message: /withdrawAll source must not be used by another movement/,
         },
       );
     });
@@ -1523,10 +1530,10 @@ for (const direction of ['supply', 'withdraw', 'MAX'] as const) {
 }
 
 for (const ordered of [true, false]) {
-  test(`MAX preserves downstream funding and dependencies (${ordered ? 'ordered' : 'concurrent'})`, t => {
+  test(`withdrawAll preserves downstream funding and dependencies (${ordered ? 'ordered' : 'concurrent'})`, t => {
     const plan = {
       flow: [
-        ...maxExitPlan('Aave_Base').flow,
+        ...fullExitPlan('Aave_Base').flow,
         {
           src: '@Base' as const,
           dest: 'Compound_Base' as const,
@@ -1549,14 +1556,14 @@ for (const ordered of [true, false]) {
   });
 }
 
-test('MAX preserves partial-failure exposure limits on downstream supplies', t => {
+test('withdrawAll preserves partial-failure exposure limits on downstream supplies', t => {
   t.throws(
     () =>
       vetPlanAllocation(
         { Aave_Base: 0n, Compound_Base: 50n, '@Base': 50n },
         {
           flow: [
-            ...maxExitPlan('Aave_Base').flow,
+            ...fullExitPlan('Aave_Base').flow,
             {
               src: '@Base',
               dest: 'Compound_Base',
@@ -1578,14 +1585,14 @@ test('MAX preserves partial-failure exposure limits on downstream supplies', t =
   );
 });
 
-test('MAX does not fund a downstream movement above the observed proceeds', t => {
+test('withdrawAll does not fund a downstream movement above the observed proceeds', t => {
   t.throws(
     () =>
       vetPlanAllocation(
         { Compound_Base: 1n },
         {
           flow: [
-            ...maxExitPlan('Aave_Base').flow,
+            ...fullExitPlan('Aave_Base').flow,
             {
               src: '@Base',
               dest: 'Compound_Base',
@@ -1604,14 +1611,14 @@ test('MAX does not fund a downstream movement above the observed proceeds', t =>
   );
 });
 
-test('MAX preserves final allocation ceilings', t => {
+test('withdrawAll preserves final allocation ceilings', t => {
   t.throws(
     () =>
       vetPlanAllocation(
         { Compound_Base: 1n, '@Base': 1n },
         {
           flow: [
-            ...maxExitPlan('Aave_Base').flow,
+            ...fullExitPlan('Aave_Base').flow,
             {
               src: '@Base',
               dest: 'Compound_Base',
@@ -1630,8 +1637,8 @@ test('MAX preserves final allocation ceilings', t => {
   );
 });
 
-test('MAX cannot disguise a reward claim as a withdrawal', t => {
-  const plan = maxExitPlan('Aave_Base');
+test('withdrawAll cannot disguise a reward claim as a withdrawal', t => {
+  const plan = fullExitPlan('Aave_Base');
   plan.flow[0]!.claimRewards = { tokens: [], minAmounts: [] };
   t.throws(
     () =>
@@ -1639,15 +1646,18 @@ test('MAX cannot disguise a reward claim as a withdrawal', t => {
         balances: { Aave_Base: 100n, '@Base': 0n },
         instrumentTvls: {},
       }),
-    { message: /MAX requires a protocol withdrawal to its chain account/ },
+    {
+      message:
+        /withdrawAll requires a protocol withdrawal to its chain account/,
+    },
   );
 });
 
-test('MAX allows independent full exits without mutating their amounts', t => {
+test('withdrawAll allows independent full exits without mutating their operations', t => {
   const plan = harden({
     flow: [
-      ...maxExitPlan('Aave_Base').flow,
-      ...maxExitPlan('Compound_Base').flow,
+      ...fullExitPlan('Aave_Base').flow,
+      ...fullExitPlan('Compound_Base').flow,
     ],
     order: [],
   });
@@ -1658,7 +1668,51 @@ test('MAX allows independent full exits without mutating their amounts', t => {
     }),
   );
   t.deepEqual(
-    plan.flow.map(step => step.amount),
-    ['MAX', 'MAX'],
+    plan.flow.map(step => step.op),
+    ['withdrawAll', 'withdrawAll'],
   );
 });
+
+for (const amount of [undefined, { brand: USDC, value: 100n }]) {
+  test(`withdrawAll rejects an amount property (${amount ? 'numeric' : 'undefined'})`, t => {
+    const movement = { ...fullExitPlan('Aave_Base').flow[0]!, amount };
+    t.throws(
+      () =>
+        vetPlanAllocation(
+          { '@Base': 1n },
+          {
+            flow: [movement],
+          } as unknown as AllocationPlan,
+          {
+            balances: { Aave_Base: 100n, '@Base': 0n },
+            instrumentTvls: {},
+          },
+        ),
+      { message: /withdrawAll must not specify amount/ },
+    );
+  });
+}
+
+for (const fields of [
+  { op: 'transferAll' },
+  { op: undefined },
+  { amount: 'MAX' },
+  {},
+]) {
+  test(`movement rejects invalid operation or missing numeric amount: ${Object.keys(fields)} ${String(fields.op ?? fields.amount)}`, t => {
+    t.throws(
+      () =>
+        vetPlanAllocation(
+          { '@Base': 1n },
+          {
+            flow: [{ src: 'Aave_Base', dest: '@Base', ...fields }],
+          } as unknown as AllocationPlan,
+          {
+            balances: { Aave_Base: 100n, '@Base': 0n },
+            instrumentTvls: {},
+          },
+        ),
+      { message: /unsupported movement op|movement requires a numeric amount/ },
+    );
+  });
+}
