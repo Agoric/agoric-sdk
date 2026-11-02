@@ -314,8 +314,7 @@ export type ClaimRewardsParams = {
 };
 
 /** Numeric by default; validation may opt into full-withdrawal analysis. */
-export type MovementDesc<Amount extends NatAmount | 'MAX' = NatAmount> = {
-  amount: Amount;
+export type MovementDesc<Op extends 'withdrawAll' | undefined = undefined> = {
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
   /** for example: GMP fee */
@@ -326,7 +325,9 @@ export type MovementDesc<Amount extends NatAmount | 'MAX' = NatAmount> = {
   claimRewards?: ClaimRewardsParams;
   /** Present only for reward-token -> stable-token swaps. */
   swap?: SwapDesc;
-};
+} & (Op extends 'withdrawAll'
+  ? { op: 'withdrawAll'; amount?: never }
+  : { op?: never; amount: NatAmount });
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
 
@@ -363,8 +364,8 @@ export type FlowStep = Pick<
  */
 type FlowStepDependency = [stepIndex: number, prerequisiteIndexes: number[]];
 
-export type FundsFlowPlan<Amount extends NatAmount | 'MAX' = NatAmount> = {
-  flow: MovementDesc<Amount>[];
+export type FundsFlowPlan<Op extends 'withdrawAll' | undefined = undefined> = {
+  flow: MovementDesc<Op>[];
   /** When `order` is absent, default to fully sequential dependencies. */
   order?: FlowStepDependency[];
 };
