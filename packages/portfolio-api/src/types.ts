@@ -313,8 +313,9 @@ export type ClaimRewardsParams = {
   };
 };
 
-export type MovementDesc = {
-  amount: NatAmount;
+/** Numeric by default; validation may opt into full-withdrawal analysis. */
+export type MovementDesc<Amount extends NatAmount | 'MAX' = NatAmount> = {
+  amount: Amount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
   /** for example: GMP fee */
@@ -362,8 +363,8 @@ export type FlowStep = Pick<
  */
 type FlowStepDependency = [stepIndex: number, prerequisiteIndexes: number[]];
 
-export type FundsFlowPlan = {
-  flow: MovementDesc[];
+export type FundsFlowPlan<Amount extends NatAmount | 'MAX' = NatAmount> = {
+  flow: MovementDesc<Amount>[];
   /** When `order` is absent, default to fully sequential dependencies. */
   order?: FlowStepDependency[];
 };
