@@ -71,8 +71,12 @@ test('generated gogoproto annotations', t => {
   t.deepEqual(SwingSetQueryParamsResponse.typedJson({}), {
     '@type': '/agoric.swingset.QueryParamsResponse',
     params: {
+      beanFeeBurnFraction: [],
       beansPerUnit: [],
       feeUnitPrice: [],
+      feeUnitPriceAlternatives: [],
+      minGasPrice: [],
+      msgTypeBeansPerUnit: [],
       powerFlagFees: [],
       queueMax: [],
       vatCleanupBudget: [],

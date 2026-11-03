@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	sdkioerrors "cosmossdk.io/errors"
-	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/x/tx/signing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -138,30 +137,6 @@ func MaxArtifactChunksCount(bundleUncompressedSizeLimitBytes int64, chunkSizeLim
 	return (bundleUncompressedSizeLimitBytes + chunkSizeLimitBytes - 1) / chunkSizeLimitBytes
 }
 
-// Charge an account address for the beans associated with given messages and storage.
-// See list of bean charges in default-params.go
-func chargeAdmission(
-	ctx sdk.Context,
-	keeper SwingSetKeeper,
-	beansPerUnit map[string]sdkmath.Uint,
-	addr sdk.AccAddress,
-	msgs []string,
-	storageLen uint64,
-) error {
-	// A flat charge for each transaction.
-	beans := beansPerUnit[BeansPerInboundTx]
-	// A charge for each message in the transaction.
-	beans = beans.Add(beansPerUnit[BeansPerMessage].MulUint64((uint64(len(msgs)))))
-	// A charge for the total byte length of all messages.
-	for _, msg := range msgs {
-		beans = beans.Add(beansPerUnit[BeansPerMessageByte].MulUint64(uint64(len(msg))))
-	}
-	// A charge for persistent storage.
-	beans = beans.Add(beansPerUnit[BeansPerStorageByte].MulUint64(storageLen))
-
-	return keeper.ChargeBeans(ctx, beansPerUnit, addr, beans)
-}
-
 // checkSmartWalletProvisioned verifies if a smart wallet message (MsgWalletAction
 // and MsgWalletSpendAction) can be delivered for the owner's address. A message
 // is allowed if a smart wallet is already provisioned for the address, or if the
@@ -171,7 +146,6 @@ func chargeAdmission(
 func checkSmartWalletProvisioned(
 	ctx sdk.Context,
 	keeper SwingSetKeeper,
-	beansPerUnit map[string]sdkmath.Uint,
 	addr sdk.AccAddress,
 ) error {
 	walletState := keeper.GetSmartWalletState(ctx, addr)
@@ -186,11 +160,7 @@ func checkSmartWalletProvisioned(
 		// transaction, a previous message may have provisioned the wallet.
 		return nil
 	default:
-		// Charge for the smart wallet.
-		// This is a separate charge from the smart wallet action which triggered the check
-		// TODO: Currently this call does not mark the smart wallet provisioning as
-		// pending, resulting in multiple provisioning charges for the owner.
-		return keeper.ChargeForSmartWallet(ctx, beansPerUnit, addr)
+		return nil
 	}
 }
 
@@ -205,10 +175,7 @@ func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverI
 
 // CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
 func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
-	keeper, ok := data.(SwingSetKeeper)
-	if !ok {
-		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
-	}
+	_, _ = ctx, data
 
 	/*
 		// The nondeterministic torture test.  Mark every third message as not inadmissible.
@@ -217,8 +184,7 @@ func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{
 		}
 	*/
 
-	beansPerUnit := keeper.GetBeansPerUnit(ctx)
-	return chargeAdmission(ctx, keeper, beansPerUnit, msg.Submitter, msg.Messages, 0)
+	return nil
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -272,13 +238,12 @@ func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{})
 		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
-	beansPerUnit := keeper.GetBeansPerUnit(ctx)
-	err := checkSmartWalletProvisioned(ctx, keeper, beansPerUnit, msg.Owner)
+	err := checkSmartWalletProvisioned(ctx, keeper, msg.Owner)
 	if err != nil {
 		return err
 	}
 
-	return chargeAdmission(ctx, keeper, beansPerUnit, msg.Owner, []string{msg.Action}, 0)
+	return nil
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -330,13 +295,12 @@ func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interfa
 		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
-	beansPerUnit := keeper.GetBeansPerUnit(ctx)
-	err := checkSmartWalletProvisioned(ctx, keeper, beansPerUnit, msg.Owner)
+	err := checkSmartWalletProvisioned(ctx, keeper, msg.Owner)
 	if err != nil {
 		return err
 	}
 
-	return chargeAdmission(ctx, keeper, beansPerUnit, msg.Owner, []string{msg.SpendAction}, 0)
+	return nil
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -443,12 +407,8 @@ func NewMsgInstallBundle(bundleJson string, submitter sdk.AccAddress) *MsgInstal
 
 // CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
 func (msg MsgInstallBundle) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
-	keeper, ok := data.(SwingSetKeeper)
-	if !ok {
-		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
-	}
-	beansPerUnit := keeper.GetBeansPerUnit(ctx)
-	return chargeAdmission(ctx, keeper, beansPerUnit, msg.Submitter, []string{msg.Bundle}, msg.ExpectedUncompressedSize())
+	_, _ = ctx, data
+	return nil
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -609,12 +569,8 @@ func NewMsgSendChunk(chunkedArtifactId uint64, submitter sdk.AccAddress, chunkIn
 
 // CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
 func (msg MsgSendChunk) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
-	keeper, ok := data.(SwingSetKeeper)
-	if !ok {
-		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
-	}
-	beansPerUnit := keeper.GetBeansPerUnit(ctx)
-	return chargeAdmission(ctx, keeper, beansPerUnit, msg.Submitter, []string{string(msg.ChunkData)}, uint64(len(msg.ChunkData)))
+	_, _ = ctx, data
+	return nil
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.

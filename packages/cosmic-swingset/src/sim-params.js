@@ -11,6 +11,10 @@ import { Nat } from '@endo/nat';
 
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
 const makeCoin = (denom, amount) => ({ denom, amount: `${Nat(amount)}` });
+const makeMsgTypeBeans = (msgTypeUrl, beans = []) => ({
+  msg_type_url: msgTypeUrl,
+  beans,
+});
 /**
  * @param {string} key
  * @param {number} size
@@ -49,6 +53,7 @@ export const defaultBeansPerVatCreation =
 
 // Fees are denominated in this unit.
 export const defaultFeeUnitPrice = [makeCoin('ubld', 1_000_000n)]; // 1 BLD
+export const defaultFeeUnitPriceAlternatives = [];
 
 // TODO: create the cost model we want, and update these to be more principled.
 export const defaultBeansPerFeeUnit = 1_000_000_000_000n; // 1e12
@@ -76,6 +81,14 @@ export const defaultBeansPerUnit = [
   ),
 ];
 
+export const defaultMsgTypeBeansPerUnit = [
+  makeMsgTypeBeans('/agoric.swingset.MsgDeliverInbound'),
+  makeMsgTypeBeans('/agoric.swingset.MsgWalletAction'),
+  makeMsgTypeBeans('/agoric.swingset.MsgWalletSpendAction'),
+  makeMsgTypeBeans('/agoric.swingset.MsgInstallBundle'),
+  makeMsgTypeBeans('/agoric.swingset.MsgSendChunk'),
+];
+
 export const defaultInstallationDeadlineBlocks = -1n; // no deadline
 export const defaultInstallationDeadlineSeconds = 24n * 60n * 60n; // 24 hours
 export const defaultBundleUncompressedSizeLimitBytes = 10_000_000n;
@@ -88,6 +101,10 @@ const defaultBootstrapVatConfig =
 export const defaultPowerFlagFees = [
   { power_flag: 'SMART_WALLET', fee: [makeCoin('ubld', 10_000_000n)] },
 ];
+
+export const defaultBeanFeeBurnFraction = [];
+export const defaultBeanFeeCollector = 'vbank/reserve';
+export const defaultMinGasPrice = [];
 
 export const QueueInbound = 'inbound';
 export const defaultInboundQueueMax = 1_000;
@@ -141,6 +158,11 @@ export const defaultVatCleanupBudget =
 export const DEFAULT_SIM_SWINGSET_PARAMS = {
   beans_per_unit: defaultBeansPerUnit,
   fee_unit_price: defaultFeeUnitPrice,
+  msg_type_beans_per_unit: defaultMsgTypeBeansPerUnit,
+  bean_fee_burn_fraction: defaultBeanFeeBurnFraction,
+  bean_fee_collector: defaultBeanFeeCollector,
+  min_gas_price: defaultMinGasPrice,
+  fee_unit_price_alternatives: defaultFeeUnitPriceAlternatives,
   bootstrap_vat_config: defaultBootstrapVatConfig,
   power_flag_fees: defaultPowerFlagFees,
   queue_max: defaultQueueMax,
