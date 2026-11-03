@@ -17,9 +17,13 @@ import type {
   FlowKey,
   FlowStatus,
   FlowStep,
+  FundsFlowPlan,
+  FundsFlowPlanExt,
   InterChainAccountRef,
   PortfolioAgentKey,
   LocalChainAccountRef,
+  MovementDesc,
+  MovementDescExt,
   PlanObservations,
   PortfolioBalancePlaceRef,
   PortfolioKey,
@@ -31,6 +35,49 @@ import type {
 } from '../src/types.js';
 
 declare const natAmount: NatAmount;
+
+const numericMovement = {
+  src: 'Aave_Base',
+  dest: '@Base',
+  amount: natAmount,
+} as const;
+const fullWithdrawal = {
+  src: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
+  dest: '@Base',
+  op: 'withdrawAll',
+} as const;
+expectAssignable<MovementDesc>(numericMovement);
+expectNotAssignable<MovementDesc>(fullWithdrawal);
+expectAssignable<MovementDesc<'withdrawAll'>>(fullWithdrawal);
+expectNotAssignable<MovementDesc<'withdrawAll'>>(numericMovement);
+expectNotAssignable<MovementDesc<'withdrawAll' | undefined>>({
+  ...numericMovement,
+  op: 'withdrawAll',
+});
+expectNotAssignable<MovementDesc<'withdrawAll' | undefined>>({
+  src: 'Aave_Base',
+  dest: '@Base',
+});
+expectNotAssignable<MovementDesc<'withdrawAll' | undefined>>({
+  ...fullWithdrawal,
+  op: 'futureOp',
+});
+expectAssignable<FundsFlowPlan<'withdrawAll' | undefined>>({
+  flow: [numericMovement, fullWithdrawal],
+});
+expectAssignable<MovementDescExt>({
+  src: 'FutureVault_FutureChain',
+  dest: '@FutureChain',
+  op: 'futureOp',
+  futureField: true,
+});
+expectAssignable<MovementDescExt>({ ...numericMovement, ...fullWithdrawal });
+expectNotAssignable<MovementDescExt>({ ...fullWithdrawal, op: true });
+expectNotAssignable<MovementDescExt>({ ...fullWithdrawal, amount: 'MAX' });
+expectAssignable<FundsFlowPlanExt>({
+  flow: [numericMovement, fullWithdrawal],
+  futureField: true,
+});
 declare const chainId: CaipChainId;
 declare const accountId: AccountId;
 declare const address: EvmAddress;
