@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { NatAmount } from '@agoric/ertp';
+import type { CopyRecord } from '@endo/pass-style';
 import {
   type AccountId,
   type Bech32Address,
@@ -313,8 +314,7 @@ export type ClaimRewardsParams = {
   };
 };
 
-/** Numeric by default; validation may opt into full-withdrawal analysis. */
-export type MovementDesc<Op extends 'withdrawAll' | undefined = undefined> = {
+type MovementDescFields = {
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
   /** for example: GMP fee */
@@ -325,9 +325,26 @@ export type MovementDesc<Op extends 'withdrawAll' | undefined = undefined> = {
   claimRewards?: ClaimRewardsParams;
   /** Present only for reward-token -> stable-token swaps. */
   swap?: SwapDesc;
-} & (Op extends 'withdrawAll'
-  ? { op: 'withdrawAll'; amount?: never }
-  : { op?: never; amount: NatAmount });
+};
+
+/** Numeric by default; validation may opt into full-withdrawal analysis. */
+export type MovementDesc<Op extends 'withdrawAll' | undefined = undefined> =
+  MovementDescFields &
+    (Op extends 'withdrawAll'
+      ? { op: 'withdrawAll'; amount?: never }
+      : { op?: never; amount: NatAmount });
+
+/**
+ * Extensible structural input, not a decoded movement. Known fields keep
+ * their types, but future places, operations and fields can be represented.
+ * The decoder must check the operation/amount relationship before execution.
+ */
+export type MovementDescExt = Omit<MovementDescFields, 'src' | 'dest'> & {
+  src: string;
+  dest: string;
+  amount?: NatAmount;
+  op?: string;
+} & CopyRecord<any>;
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
 
@@ -369,6 +386,12 @@ export type FundsFlowPlan<Op extends 'withdrawAll' | undefined = undefined> = {
   /** When `order` is absent, default to fully sequential dependencies. */
   order?: FlowStepDependency[];
 };
+
+/** Forward-compatible plan input; its movements still require decoding. */
+export type FundsFlowPlanExt = {
+  flow: MovementDescExt[];
+  order?: FlowStepDependency[];
+} & CopyRecord<any>;
 
 export type FundsFlow = MovementDesc[] | FundsFlowPlan;
 
