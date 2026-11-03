@@ -49,7 +49,7 @@ test('calculateInstrumentBlocks ignores instruments without supply/liquidity dat
   t.deepEqual([...noWithdrawInstruments].sort(), []);
 });
 
-test('calculateInstrumentBlocks blocks deposits if liquidity < $10k or < 10% of total supply', t => {
+test('calculateInstrumentBlocks blocks deposits if liquidity < $10k', t => {
   const instruments = [
     missingDataInstrument,
     instrument('liquidity < $10k but = 10%', 9999.99, 9999.99 * 10),
@@ -62,11 +62,7 @@ test('calculateInstrumentBlocks blocks deposits if liquidity < $10k or < 10% of 
 
   t.deepEqual(
     [...noDepositInstruments].sort(),
-    [
-      'liquidity < $10k but = 10%',
-      'liquidity = $10k but < 10%',
-      'liquidity < $10k and < 10%',
-    ].sort(),
+    ['liquidity < $10k but = 10%', 'liquidity < $10k and < 10%'].sort(),
   );
   t.deepEqual([...noWithdrawInstruments].sort(), []);
 });
