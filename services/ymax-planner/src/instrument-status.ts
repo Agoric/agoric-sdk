@@ -42,14 +42,20 @@ export const calculateInstrumentBlocks = (
     const { id, totalSupplyUsd, liquidityUsd } = instrument;
     if (totalSupplyUsd === undefined || liquidityUsd === undefined) continue;
 
-    // Block deposits if liquidity < $10k or liquidity < 10% of total supply.
-    if (liquidityUsd < 10_000 || liquidityUsd < 0.1 * totalSupplyUsd) {
-      noDepositInstruments.add(id);
-    }
-
-    // Block withdrawals if liquidity < $1k and liquidity < 5% of total supply.
     if (liquidityUsd < 1000 && liquidityUsd < 0.05 * totalSupplyUsd) {
+      // Where liquidity is critically low in both absolute terms (< $1k) and
+      // relative terms (< 5% of total supply), block withdrawals (and for
+      // consistency, also deposits).
       noWithdrawInstruments.add(id);
+      noDepositInstruments.add(id);
+    } else if (
+      liquidityUsd < 10_000 ||
+      (liquidityUsd < 100e6 && liquidityUsd < 0.1 * totalSupplyUsd)
+    ) {
+      // Where liquidity is dangerously low in absolute terms (< $10k), or low
+      // in both absolute terms (< $100M) and relative terms (< 10% of total
+      // supply), block deposits while still allowing withdrawals.
+      noDepositInstruments.add(id);
     }
   }
   return { noDepositInstruments, noWithdrawInstruments };
