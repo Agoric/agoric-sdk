@@ -1151,6 +1151,7 @@ const runPhase = async (
   },
   phase:
     | 'phase-pre-upgrade'
+    | 'phase-upgrade-args'
     | 'phase-upgrade-generate'
     | 'phase-upgrade-submit'
     | 'phase-upgrade-confirm',
@@ -3002,9 +3003,10 @@ const makeAuthzGenerateChainMocks = (
 
 // Exercise the direct detached-signing path so assertions inspect the actual
 // privateArgsOverrides encoded for the contract, as well as the release asset.
-const makeChainMetadataScenario = () => {
+const makeChainMetadataScenario = (
+  target: 'ymax0-main' | 'ymax0-devnet' = 'ymax0-main',
+) => {
   const ctx = makeScenario();
-  const target = 'ymax0-main' as const;
   const releaseTag = happyPathReleaseTag;
   const unsignedTxName = `${target}-unsigned-tx.json`;
   seedRelease(ctx.releases, releaseTag, {
@@ -3028,10 +3030,20 @@ const makeChainMetadataScenario = () => {
     }
     return ctx.fetchFn(url);
   };
+  // Lets a test intercept commands (returning undefined defers to ctx).
+  let execHook:
+    | ((cmd: string, args: string[]) => Promise<unknown> | undefined)
+    | undefined;
+  const execFile = (async (cmd: string, args: string[], ...rest: any[]) =>
+    (await execHook?.(cmd, args)) ??
+    (ctx.execFile as any)(cmd, args, ...rest)) as typeof ctx.execFile;
   const { connectRpc, makeWalletKit } = makeAuthzGenerateChainMocks();
   return {
     ...ctx,
     assets,
+    setExecHook: (hook: typeof execHook) => {
+      execHook = hook;
+    },
     target,
     ydsRequests,
     setYdsUnavailable: () => {
@@ -3053,9 +3065,16 @@ const makeChainMetadataScenario = () => {
     discardUnsignedTx: () => {
       assets.delete(unsignedTxName);
     },
+    args: (privateArgsOverrides: string | undefined) =>
+      runPhase(
+        { ...ctx, execFile, fetchFn },
+        'phase-upgrade-args',
+        { target, tag: releaseTag },
+        { ...ctx.env, PRIVATE_ARGS_OVERRIDES: privateArgsOverrides },
+      ),
     generate: (privateArgsOverrides: string | undefined) =>
       runPhase(
-        { ...ctx, connectRpc, makeWalletKit, fetchFn },
+        { ...ctx, execFile, connectRpc, makeWalletKit, fetchFn },
         'phase-upgrade-generate',
         { target, tag: releaseTag },
         {
@@ -3097,6 +3116,186 @@ for (const chainMetadata of [
     t.deepEqual(ctx.ydsRequests, []);
   });
 }
+
+test('chainMetadata: devnet skips YDS and keeps builder defaults', async t => {
+  const ctx = makeChainMetadataScenario('ymax0-devnet');
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.generate(overrides);
+
+  t.deepEqual(ctx.ydsRequests, []);
+  const assetName = expectedOverridesAssetName(ctx.target, overrides);
+  t.deepEqual(JSON.parse(ctx.assets.get(assetName)!), { oracle: 'value-a' });
+  t.deepEqual(ctx.readTxOverrides(), {
+    oracle: 'value-a',
+    postalServiceInstance: 'board0371',
+  });
+});
+
+test('phase-upgrade-args records overrides for review that later phases reuse', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  await ctx.args(overrides);
+
+  const assetName = expectedOverridesAssetName(ctx.target, overrides);
+  const recordedText = ctx.assets.get(assetName)!;
+  t.like(JSON.parse(recordedText), {
+    oracle: 'value-a',
+    chainMetadata: { Arbitrum: { caipChainId: 'eip155:42161' } },
+  });
+  t.false(ctx.assets.has(`${ctx.target}-unsigned-tx.json`), 'no tx yet');
+
+  ctx.ydsRequests.length = 0;
+  ctx.setYdsUnavailable();
+  await ctx.generate('');
+
+  t.deepEqual(ctx.ydsRequests, []);
+  t.is(ctx.assets.get(assetName), recordedText);
+  t.deepEqual(ctx.readTxOverrides(), {
+    ...JSON.parse(recordedText),
+    postalServiceInstance: 'board0371',
+  });
+});
+
+/**
+ * Seed a previous release with a privateArgs baseline, and serve it (plus a
+ * deterministic `diff`) through the scenario's exec hook. `failUpload`
+ * selects release asset names whose upload should fail.
+ */
+const withPreviousBaseline = (
+  ctx: ReturnType<typeof makeChainMetadataScenario>,
+  failUpload: (assetName: string) => boolean = () => false,
+) => {
+  const prevTag = 'ymax-v0.3.2609-beta1';
+  const prevDiscriminator = 'aaaaaaaaaaaa';
+  seedRelease(ctx.releases, prevTag, {
+    [`${ctx.target}-upgrade.json`]: '{}\n',
+    [`${ctx.target}-privateArgsOverrides-${prevDiscriminator}.json`]: '{}\n',
+    [`${ctx.target}-allegedPrivateArgs-${prevDiscriminator}.json`]: jsonText({
+      releaseUrl: `https://example.invalid/releases/${prevTag}`,
+      allegedPrivateArgs: { oracle: 'old', kept: true },
+    }),
+  });
+  ctx.setExecHook(async (cmd, args) => {
+    if (cmd === 'gh' && args[0] === 'release' && args[1] === 'list') {
+      return { stdout: JSON.stringify([{ tagName: prevTag }]) };
+    }
+    if (cmd === 'gh' && args[0] === 'release' && args[1] === 'upload') {
+      const assetName = args[3].split('#')[1];
+      if (failUpload(assetName)) throw Error(`upload failed: ${assetName}`);
+    }
+    if (cmd === 'diff') {
+      const [labelA, labelB, , newPath] = args.filter(
+        arg => arg !== '-u' && arg !== '--label',
+      );
+      const newText = ctx.files.get(newPath);
+      return {
+        stdout: `--- ${labelA}\n+++ ${labelB}\n${newText}`,
+        exitCode: 1,
+      };
+    }
+    return undefined;
+  });
+};
+
+const reviewAssetNames = (target: string, overridesAssetName: string) => {
+  const discriminator = overridesAssetName.slice(
+    `${target}-privateArgsOverrides-`.length,
+    -'.json'.length,
+  );
+  return {
+    privateArgs: `${target}-allegedPrivateArgs-${discriminator}.json`,
+    diff: `${target}-allegedPrivateArgs-${discriminator}.diff`,
+    previous: `${target}-allegedPreviousPrivateArgs-${discriminator}.json`,
+  };
+};
+
+test('phase-upgrade-args attaches review assets before overrides, so a retry completes them', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  const overridesName = expectedOverridesAssetName(ctx.target, overrides);
+  const names = reviewAssetNames(ctx.target, overridesName);
+  let failDiff = true;
+  withPreviousBaseline(ctx, name => failDiff && name === names.diff);
+
+  await t.throwsAsync(ctx.args(overrides), { message: /upload failed/ });
+  t.false(ctx.assets.has(overridesName), 'overrides attached last');
+  t.false(ctx.assets.has(names.diff));
+
+  failDiff = false;
+  await ctx.args(overrides);
+  t.true(ctx.assets.has(overridesName));
+  t.like(JSON.parse(ctx.assets.get(names.privateArgs)!), {
+    allegedPrivateArgs: {
+      oracle: 'value-a',
+      kept: true,
+      chainMetadata: { Arbitrum: { caipChainId: 'eip155:42161' } },
+    },
+  });
+  t.true(
+    ctx.assets
+      .get(names.diff)!
+      .startsWith(`--- ${names.previous}\n+++ ${names.privateArgs}\n`),
+    'diff is labeled by asset name',
+  );
+  t.like(JSON.parse(ctx.assets.get(names.previous)!), {
+    allegedPrivateArgs: { oracle: 'old', kept: true },
+  });
+});
+
+test('phase-upgrade-args rejects stale review assets on retry', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  const overridesName = expectedOverridesAssetName(ctx.target, overrides);
+  const names = reviewAssetNames(ctx.target, overridesName);
+  let failDiff = true;
+  withPreviousBaseline(ctx, name => failDiff && name === names.diff);
+
+  await t.throwsAsync(ctx.args(overrides), { message: /upload failed/ });
+  t.true(ctx.assets.has(names.privateArgs));
+  const staleText = ctx.assets.get(names.privateArgs);
+
+  failDiff = false;
+  ctx.changeYds();
+  await t.throwsAsync(ctx.args(overrides), {
+    message: new RegExp(`stale release asset "${names.privateArgs}"`),
+  });
+  t.false(ctx.assets.has(overridesName));
+  t.is(ctx.assets.get(names.privateArgs), staleText);
+});
+
+test('phase-upgrade-args rejects leftover review assets from different overrides', async t => {
+  const ctx = makeChainMetadataScenario();
+  const overrides = '{"oracle":"value-a"}';
+  const names = reviewAssetNames(
+    ctx.target,
+    expectedOverridesAssetName(ctx.target, overrides),
+  );
+  let failDiff = true;
+  withPreviousBaseline(ctx, name => failDiff && name === names.diff);
+  await t.throwsAsync(ctx.args(overrides), { message: /upload failed/ });
+  failDiff = false;
+
+  // Both different and forgotten (blank) overrides are rejected.
+  for (const otherOverrides of ['{"oracle":"value-b"}', '']) {
+    await t.throwsAsync(ctx.args(otherOverrides), {
+      message: new RegExp(
+        `"${names.privateArgs}".* left over from different privateArgsOverrides`,
+      ),
+    });
+  }
+  t.deepEqual(
+    [...ctx.assets.keys()].filter(name =>
+      name.startsWith(`${ctx.target}-privateArgsOverrides-`),
+    ),
+    [],
+  );
+
+  await ctx.args(overrides);
+  t.true(
+    ctx.assets.has(expectedOverridesAssetName(ctx.target, overrides)),
+    'the matching retry still completes',
+  );
+});
 
 test('chainMetadata: blank retry preserves recorded metadata without YDS', async t => {
   const ctx = makeChainMetadataScenario();
