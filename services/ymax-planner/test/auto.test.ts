@@ -117,9 +117,10 @@ const makeYdsTokenBalance = (
     symbol === 'USDC'
       ? mustGetOwn(UsdcTokenIds.mainnet, chainName)
       : mustGetOwn(rewardTokensByChain[chainName], symbol);
+  const evmChainId = `${mustGetOwn(Eip155ChainIds.mainnet, chainName)}`;
   return {
     chainName,
-    caipChainId: `eip155:${mustGetOwn(Eip155ChainIds.mainnet, chainName)}`,
+    caipChainId: `eip155:${evmChainId}`,
     instrumentName: isInstrumentId(placeRef) ? placeRef : null,
     symbol,
     tokenId,
@@ -282,6 +283,7 @@ test('pickAutoClaimSources obeys autoClaimConfig', t => {
   t.deepEqual(picks, [
     {
       ...makeYdsTokenBalance('@Ethereum', uusdValue, 'reward1'),
+      evmChainId: '1',
       uusdcValue: uusdValue,
       usdcTokenId: mustGetOwn(UsdcTokenIds.mainnet, 'Ethereum'),
     },
