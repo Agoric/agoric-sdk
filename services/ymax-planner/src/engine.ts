@@ -844,7 +844,8 @@ export const processPortfolioEvents = async (
     await null;
 
     try {
-      if (shouldClaim(portfolioKey, status)) {
+      // TODO(AGO-562): auto-claim
+      if (false && shouldClaim(portfolioKey, status)) {
         const txHash = await maybeMakeFlow(
           portfolioKey,
           status,
