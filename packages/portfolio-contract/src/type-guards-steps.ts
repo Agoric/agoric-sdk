@@ -144,6 +144,7 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   const amountShape = makeNatAmountShape(usdcBrand);
   const places = harden({ src: AssetPlaceRefShape, dest: AssetPlaceRefShape });
   const optionalFields = harden({
+    // Structural acceptance only; execution does not yet interpret these options.
     withdraw: WithdrawParamsShape,
     fee: AnyNatAmountShape,
     detail: M.recordOf(M.string(), M.nat()),

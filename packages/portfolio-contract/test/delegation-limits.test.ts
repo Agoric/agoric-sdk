@@ -1408,11 +1408,66 @@ const additiveWithdrawCases: [string, WithdrawParams | undefined][] = [
   ['empty', {}],
   ['false max', { max: false }],
   ['true max', { max: true }],
-  ['source token', { srcToken: `0x${'1'.repeat(40)}` }],
-  ['source quantity', { srcAmount: 10n ** 24n }],
   [
-    'source quantity minimum',
-    { max: true, srcToken: `0x${'1'.repeat(40)}`, srcAmount: 10n ** 24n },
+    'source shares',
+    {
+      select: [{ kind: 'shares', token: `0x${'1'.repeat(40)}`, amount: 123n }],
+    },
+  ],
+  [
+    'source reward',
+    { select: [{ kind: 'reward', token: `0x${'2'.repeat(40)}`, amount: 0n }] },
+  ],
+  [
+    'native source',
+    {
+      select: [
+        {
+          kind: '$ETH',
+          token: '0x0000000000000000000000000000000000000000',
+          amount: 0n,
+        },
+      ],
+    },
+  ],
+  [
+    'source denom',
+    { select: [{ kind: 'token', token: 'uusdc', amount: 123n }] },
+  ],
+  [
+    'source ERTP brand',
+    { select: [{ kind: 'principal', token: USDC, amount: 123n }] },
+  ],
+  [
+    'large source quantity',
+    { select: [{ kind: 'token', token: 'ibc/ABC123', amount: 10n ** 24n }] },
+  ],
+  [
+    'inherited maximum',
+    { max: true, select: [{ kind: 'principal', token: USDC, amount: 0n }] },
+  ],
+  [
+    'overridden maximum',
+    {
+      max: true,
+      select: [{ kind: 'principal', token: USDC, amount: 123n, max: false }],
+    },
+  ],
+  [
+    'selector maximum',
+    {
+      max: false,
+      select: [{ kind: 'principal', token: USDC, amount: 0n, max: true }],
+    },
+  ],
+  [
+    'multiple overlapping selections',
+    {
+      select: [
+        { kind: 'principal', token: USDC, amount: 123n },
+        { kind: 'principal', token: USDC, amount: 0n, max: true },
+      ],
+    },
   ],
 ];
 
@@ -1476,7 +1531,7 @@ test('withdraw options do not reserve the source or change exact downstream fund
         src: 'Aave_Base',
         dest: '@Base',
         amount: { brand: USDC, value: 50_000_000n },
-        withdraw: { srcAmount: 1n },
+        withdraw: { select: [{ kind: 'principal', token: USDC, amount: 1n }] },
       },
     ],
   };
