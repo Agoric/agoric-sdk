@@ -5,12 +5,11 @@ import { assert } from '@endo/errors';
 import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
-import type {
-  AssetPlaceRef,
-  FundsFlowPlan,
-  FundsFlowPlanExt,
-  MovementDesc,
-  MovementDescExt,
+import {
+  WithdrawParamsShape,
+  type AssetPlaceRef,
+  type FundsFlowPlan,
+  type MovementDesc,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -145,6 +144,7 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   const amountShape = makeNatAmountShape(usdcBrand);
   const places = harden({ src: AssetPlaceRefShape, dest: AssetPlaceRefShape });
   const optionalFields = harden({
+    withdraw: WithdrawParamsShape,
     fee: AnyNatAmountShape,
     detail: M.recordOf(M.string(), M.nat()),
     swap: M.splitRecord(
@@ -173,25 +173,10 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       },
     ),
   });
-  // Exclude the competing field by name while retaining unknown extensions.
-  // This avoids whole-record M.or/absence checks on numeric movement traffic.
-  const movementDescShape: TypedPattern<MovementDesc> = M.splitRecord(
+  const movementDescShape = M.splitRecord(
     { ...places, amount: amountShape },
     optionalFields,
-    M.recordOf(M.neq('op'), M.any()),
-  );
-  const withdrawAllMovementDescShape: TypedPattern<
-    MovementDesc<'withdrawAll'>
-  > = M.splitRecord(
-    { ...places, op: 'withdrawAll' },
-    optionalFields,
-    M.recordOf(M.neq('amount'), M.any()),
-  );
-  // Structural input only: both fields, neither field, and future operations
-  // remain representable until a decoder checks their semantics.
-  const movementDescShapeExt: TypedPattern<MovementDescExt> = M.splitRecord(
-    { src: M.string(), dest: M.string() },
-    { ...optionalFields, amount: amountShape, op: M.string() },
+    // Be robust in the face of additional properties.
     M.record(),
   );
   const flowShape = M.arrayOf(movementDescShape, {
@@ -203,15 +188,6 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       M.arrayOf(M.number(), { arrayLengthLimit: MAX_PLAN_STEPS - 1 }),
     ],
     { arrayLengthLimit: MAX_PLAN_STEPS },
-  );
-  const planShapeExt: TypedPattern<FundsFlowPlanExt> = M.splitRecord(
-    {
-      flow: M.arrayOf(movementDescShapeExt, {
-        arrayLengthLimit: MAX_PLAN_STEPS,
-      }),
-    },
-    { order: orderShape },
-    M.record(),
   );
 
   return {
@@ -244,18 +220,12 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       {},
       {},
     ) as TypedPattern<OfferArgsFor['transferOwnershipToEVM']>,
-    // TODO(AGO-1614): Admit withdrawAll through operation-aware validation once
-    // execution receives verified shares and supports full-exit operations.
-    // This public execution boundary remains numeric-only until then.
     plan: M.splitRecord(
       { flow: flowShape },
       { order: orderShape },
       {},
     ) as TypedPattern<FundsFlowPlan>,
-    movementDescShape,
-    withdrawAllMovementDescShape,
-    movementDescShapeExt,
-    planShapeExt,
+    movementDescShape: movementDescShape as TypedPattern<MovementDesc>,
   };
 };
 harden(makeOfferArgsShapes);

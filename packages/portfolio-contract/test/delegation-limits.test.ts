@@ -10,10 +10,10 @@ import type {
   PlanObservations,
   PortfolioBalancePlaceRef,
   TargetAllocation,
+  WithdrawParams,
 } from '@agoric/portfolio-api';
 import { chainOf, isInstrumentId } from '@agoric/portfolio-api/src/places.js';
 import {
-  type AllocationPlan,
   assertMandateForAllocation,
   assertMandateForPlanObservations,
   vetAllocationPlan,
@@ -1403,316 +1403,154 @@ test('final dust allowance cannot authorize a new above-target supply', t => {
   );
 });
 
-const fullExitPlan = (
-  src: InstrumentId = 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
-  dest: AssetPlaceRef = '@Base',
-): FundsFlowPlan<'withdrawAll' | undefined> => ({
-  flow: [{ src, dest, op: 'withdrawAll' }],
-});
+const additiveWithdrawCases: [string, WithdrawParams | undefined][] = [
+  ['absent', undefined],
+  ['empty', {}],
+  ['false max', { max: false }],
+  ['true max', { max: true }],
+  ['source token', { srcToken: `0x${'1'.repeat(40)}` }],
+  ['source quantity', { srcAmount: 10n ** 24n }],
+  [
+    'source quantity minimum',
+    { max: true, srcToken: `0x${'1'.repeat(40)}`, srcAmount: 10n ** 24n },
+  ],
+];
 
-for (const src of [
-  'ERC4626_morphoGauntletUsdcPrimeV2_Base',
-  'Aave_Base',
-  'Compound_Base',
-] as const) {
-  test(`withdrawAll projects the observed balance: ${src}`, t => {
-    const plan = harden(fullExitPlan(src));
-    t.notThrows(() =>
-      vetAllocationPlan(
-        { allocation: { maxWeightBps: 1n } },
-        { [src]: 0n, '@Base': 1n },
-        plan,
-        {
-          balances: { [src]: 100_000_000n, '@Base': 5_000_000n },
-          instrumentTvls: {},
-        },
-      ),
-    );
-    t.is(
-      plan.flow[0]!.op,
-      'withdrawAll',
-      'execution keeps the original operation',
-    );
-    t.false(Object.hasOwn(plan.flow[0]!, 'amount'));
-  });
-}
-
-test('withdrawAll accepts an observed empty position', t => {
-  t.notThrows(() =>
-    vetPlanAllocation({ '@Base': 1n }, fullExitPlan(), {
-      balances: { ERC4626_morphoGauntletUsdcPrimeV2_Base: 0n, '@Base': 1n },
-      instrumentTvls: {},
-    }),
-  );
-});
-
-test('withdrawAll requires a source balance observation', t => {
-  t.throws(
-    () =>
-      vetPlanAllocation({ '@Base': 1n }, fullExitPlan(), {
-        balances: { '@Base': 1n },
-        instrumentTvls: {},
-      }),
-    { message: /withdrawAll requires an observed balance/ },
-  );
-});
-
-for (const src of [
-  'USDN',
-  'USDNVault',
-  'Beefy_morphoSeamlessUsdc_Base',
-  'ERC4626_vaultU2_Ethereum',
-] as const) {
-  test(`withdrawAll rejects a protocol without an admitted full-exit route: ${src}`, t => {
-    t.throws(
-      () =>
-        vetPlanAllocation({ '@Base': 1n }, fullExitPlan(src), {
-          balances: { [src]: 100n },
-          instrumentTvls: {},
-        }),
-      { message: /withdrawAll is not supported/ },
-    );
-  });
-}
-
-for (const [src, dest] of [
-  ['@Base', 'Aave_Base'],
-  ['@Base', '@Arbitrum'],
-  ['Aave_Base', '@Arbitrum'],
-  ['Aave_Base', 'Compound_Base'],
-] as const) {
-  test(`withdrawAll rejects a route other than withdrawal to its chain account: ${src} -> ${dest}`, t => {
-    t.throws(
-      () =>
-        vetPlanAllocation(
-          { [dest]: 1n },
-          {
-            flow: [{ src, dest, op: 'withdrawAll' }],
-          },
-          { balances: { [src]: 100n, [dest]: 0n }, instrumentTvls: {} },
-        ),
-      {
-        message:
-          /withdrawAll requires a protocol withdrawal to its chain account/,
-      },
-    );
-  });
-}
-
-for (const direction of ['supply', 'withdraw', 'withdrawAll'] as const) {
-  for (const before of [true, false]) {
-    test(`withdrawAll rejects another ${direction} touching its source (${before ? 'before' : 'after'})`, t => {
-      const src = 'Aave_Base';
-      const other: MovementDesc<'withdrawAll' | undefined> =
-        direction === 'withdrawAll'
-          ? { src, dest: '@Base', op: 'withdrawAll' as const }
-          : {
-              src: direction === 'supply' ? ('@Base' as const) : src,
-              dest: direction === 'supply' ? src : ('@Base' as const),
-              amount: { brand: USDC, value: 1n },
-            };
-      const max = fullExitPlan(src).flow[0]!;
-      t.throws(
-        () =>
-          vetPlanAllocation(
-            { '@Base': 1n, Aave_Base: 0n },
-            {
-              flow: before ? [other, max] : [max, other],
-            },
-            { balances: { Aave_Base: 100n, '@Base': 1n }, instrumentTvls: {} },
-          ),
-        {
-          message: /withdrawAll source must not be used by another movement/,
-        },
-      );
-    });
-  }
-}
-
-for (const ordered of [true, false]) {
-  test(`withdrawAll preserves downstream funding and dependencies (${ordered ? 'ordered' : 'concurrent'})`, t => {
-    const plan = {
+for (const [label, withdraw] of additiveWithdrawCases) {
+  test(`withdraw is additive to exact-amount allocation validation: ${label}`, t => {
+    const plan: FundsFlowPlan = harden({
       flow: [
-        ...fullExitPlan('Aave_Base').flow,
         {
-          src: '@Base' as const,
-          dest: 'Compound_Base' as const,
-          amount: { brand: USDC, value: 50_000_000n },
+          src: 'Aave_Base',
+          dest: '@Base',
+          amount: { brand: USDC, value: 100_000_000n },
+          ...(withdraw === undefined ? {} : { withdraw }),
         },
       ],
-      ...(ordered ? {} : { order: [] }),
-    };
-    const check = () =>
-      vetPlanAllocation(
-        { Aave_Base: 0n, '@Base': 1n, Compound_Base: 1n },
-        plan,
-        {
-          balances: { Aave_Base: 100_000_000n, '@Base': 0n, Compound_Base: 0n },
-          instrumentTvls: {},
-        },
-      );
-    if (ordered) t.notThrows(check);
-    else t.throws(check, { message: /unfunded plan movement/ });
+    });
+    t.notThrows(() =>
+      vetPlanAllocation({ '@Base': 1n }, plan, {
+        balances: { Aave_Base: 100_000_000n, '@Base': 0n },
+        instrumentTvls: {},
+      }),
+    );
+    t.deepEqual(
+      plan.flow[0]!.withdraw,
+      withdraw,
+      'validation leaves the options intact',
+    );
   });
 }
 
-test('withdrawAll preserves partial-failure exposure limits on downstream supplies', t => {
-  t.throws(
-    () =>
-      vetPlanAllocation(
-        { Aave_Base: 0n, Compound_Base: 50n, '@Base': 50n },
-        {
-          flow: [
-            ...fullExitPlan('Aave_Base').flow,
-            {
-              src: '@Base',
-              dest: 'Compound_Base',
-              amount: { brand: USDC, value: 60_000_000n },
-            },
-            {
-              src: 'Compound_Base',
-              dest: '@Base',
-              amount: { brand: USDC, value: 10_000_000n },
-            },
-          ],
-        },
-        {
-          balances: { Aave_Base: 100_000_000n, '@Base': 0n, Compound_Base: 0n },
-          instrumentTvls: {},
-        },
-      ),
-    { message: /plan intermediate balance exceeds target allocation/ },
-  );
-});
-
-test('withdrawAll does not fund a downstream movement above the observed proceeds', t => {
-  t.throws(
-    () =>
-      vetPlanAllocation(
-        { Compound_Base: 1n },
-        {
-          flow: [
-            ...fullExitPlan('Aave_Base').flow,
-            {
-              src: '@Base',
-              dest: 'Compound_Base',
-              amount: { brand: USDC, value: 101n },
-            },
-          ],
-        },
-        {
-          balances: { Aave_Base: 100n, '@Base': 0n, Compound_Base: 0n },
-          instrumentTvls: {},
-        },
-      ),
-    {
-      message: /unfunded plan movement/,
-    },
-  );
-});
-
-test('withdrawAll preserves final allocation ceilings', t => {
-  t.throws(
-    () =>
-      vetPlanAllocation(
-        { Compound_Base: 1n, '@Base': 1n },
-        {
-          flow: [
-            ...fullExitPlan('Aave_Base').flow,
-            {
-              src: '@Base',
-              dest: 'Compound_Base',
-              amount: { brand: USDC, value: 60_000_000n },
-            },
-          ],
-        },
-        {
-          balances: { Aave_Base: 100_000_000n, '@Base': 0n, Compound_Base: 0n },
-          instrumentTvls: {},
-        },
-      ),
-    {
-      message: /plan final balance exceeds target allocation/,
-    },
-  );
-});
-
-test('withdrawAll cannot disguise a reward claim as a withdrawal', t => {
-  const plan = fullExitPlan('Aave_Base');
-  plan.flow[0]!.claimRewards = { tokens: [], minAmounts: [] };
+test('max metadata does not project a full exit before contract support', t => {
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Aave_Base',
+        dest: '@Base',
+        amount: { brand: USDC, value: 50_000_000n },
+        withdraw: { max: true },
+      },
+    ],
+  };
   t.throws(
     () =>
       vetPlanAllocation({ '@Base': 1n }, plan, {
-        balances: { Aave_Base: 100n, '@Base': 0n },
+        balances: { Aave_Base: 100_000_000n, '@Base': 0n },
         instrumentTvls: {},
       }),
-    {
-      message:
-        /withdrawAll requires a protocol withdrawal to its chain account/,
-    },
+    { message: /plan final balance exceeds target allocation/ },
   );
 });
 
-test('withdrawAll allows independent full exits without mutating their operations', t => {
-  const plan = harden({
+test('withdraw options do not reserve the source or change exact downstream funding', t => {
+  const plan: FundsFlowPlan = {
     flow: [
-      ...fullExitPlan('Aave_Base').flow,
-      ...fullExitPlan('Compound_Base').flow,
+      {
+        src: 'Aave_Base',
+        dest: '@Base',
+        amount: { brand: USDC, value: 50_000_000n },
+        withdraw: { max: true },
+      },
+      {
+        src: 'Aave_Base',
+        dest: '@Base',
+        amount: { brand: USDC, value: 50_000_000n },
+        withdraw: { srcAmount: 1n },
+      },
     ],
-    order: [],
-  });
+  };
   t.notThrows(() =>
     vetPlanAllocation({ '@Base': 1n }, plan, {
-      balances: { Aave_Base: 100n, Compound_Base: 200n, '@Base': 0n },
+      balances: { Aave_Base: 100_000_000n, '@Base': 0n },
       instrumentTvls: {},
     }),
   );
-  t.deepEqual(
-    plan.flow.map(step => step.op),
-    ['withdrawAll', 'withdrawAll'],
+  const unfunded: FundsFlowPlan = {
+    flow: [
+      plan.flow[0]!,
+      {
+        src: '@Base',
+        dest: 'Compound_Base',
+        amount: { brand: USDC, value: 60_000_000n },
+      },
+    ],
+  };
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        { Aave_Base: 1n, Compound_Base: 1n, '@Base': 1n },
+        unfunded,
+        {
+          balances: { Aave_Base: 100_000_000n, '@Base': 0n, Compound_Base: 0n },
+          instrumentTvls: {},
+        },
+      ),
+    { message: /unfunded plan movement/ },
   );
 });
 
-for (const amount of [undefined, { brand: USDC, value: 100n }]) {
-  test(`withdrawAll rejects an amount property (${amount ? 'numeric' : 'undefined'})`, t => {
-    const movement = { ...fullExitPlan('Aave_Base').flow[0]!, amount };
-    t.throws(
-      () =>
-        vetPlanAllocation(
-          { '@Base': 1n },
+test('withdraw options introduce no protocol-specific admission rule', t => {
+  t.notThrows(() =>
+    vetPlanAllocation(
+      { '@Ethereum': 1n },
+      {
+        flow: [
           {
-            flow: [movement],
-          } as unknown as AllocationPlan,
-          {
-            balances: { Aave_Base: 100n, '@Base': 0n },
-            instrumentTvls: {},
+            src: 'ERC4626_vaultU2_Ethereum',
+            dest: '@Ethereum',
+            amount: { brand: USDC, value: 100n },
+            withdraw: { max: true },
           },
-        ),
-      { message: /withdrawAll must not specify amount/ },
-    );
-  });
-}
+        ],
+      },
+      {
+        balances: { ERC4626_vaultU2_Ethereum: 100n, '@Ethereum': 0n },
+        instrumentTvls: {},
+      },
+    ),
+  );
+});
 
-for (const fields of [
-  { op: 'transferAll' },
-  { op: undefined },
-  { amount: 'MAX' },
-  {},
-]) {
-  test(`movement rejects invalid operation or missing numeric amount: ${Object.keys(fields)} ${String(fields.op ?? fields.amount)}`, t => {
+for (const amount of [undefined, { brand: USDC, value: -1n }]) {
+  test(`withdraw options do not bypass ordinary amount validation: ${String(amount?.value)}`, t => {
     t.throws(
       () =>
         vetPlanAllocation(
           { '@Base': 1n },
           {
-            flow: [{ src: 'Aave_Base', dest: '@Base', ...fields }],
-          } as unknown as AllocationPlan,
-          {
-            balances: { Aave_Base: 100n, '@Base': 0n },
-            instrumentTvls: {},
-          },
+            flow: [
+              {
+                src: 'Aave_Base',
+                dest: '@Base',
+                amount,
+                withdraw: { max: true },
+              },
+            ],
+          } as unknown as FundsFlowPlan,
+          { balances: { Aave_Base: 100n, '@Base': 0n }, instrumentTvls: {} },
         ),
-      { message: /unsupported movement op|movement requires a numeric amount/ },
+      { message: /movement requires a numeric amount/ },
     );
   });
 }

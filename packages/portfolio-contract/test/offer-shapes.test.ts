@@ -947,99 +947,57 @@ test('TargetAllocation to USDC expressed as @Chain', t => {
   }
 });
 
-test('withdrawAll movement Shape matches its type and preserves extensions', t => {
-  const { withdrawAllMovementDescShape: shape } = makeOfferArgsShapes(USDC);
-  t.truthy(shape, 'full withdrawals have their own precise Shape');
+test('movement Shape accepts additive withdraw params and requires an amount', t => {
+  const { movementDescShape: shape } = makeOfferArgsShapes(USDC);
   const base = {
     src: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
     dest: '@Base',
-    op: 'withdrawAll',
+    withdraw: { max: true },
+    amount: usdc(0n),
   };
   for (const specimen of [
     base,
-    { ...base, fee: bld.make(100n), detail: { evmGas: 1n }, futureField: true },
-  ]) {
+    { ...base, withdraw: {} },
+    { ...base, withdraw: { srcAmount: 0n } },
+    {
+      ...base,
+      withdraw: { max: true, srcToken: `0x${'1'.repeat(40)}`, srcAmount: 123n },
+    },
+    { ...base, withdraw: { max: false } },
+    { ...base, withdraw: { srcToken: `0x${'1'.repeat(40)}` } },
+    { ...base, withdraw: { max: true, srcToken: `0x${'1'.repeat(40)}` } },
+    {
+      ...base,
+      amount: usdc(100n),
+      fee: bld.make(100n),
+      detail: { evmGas: 1n },
+      futureField: true,
+    },
+  ])
     t.notThrows(() => mustMatch(harden(specimen), shape));
-  }
   for (const [name, specimen] of Object.entries({
-    numericAmount: { ...base, amount: usdc(1n) },
-    undefinedAmount: { ...base, amount: undefined },
-    unknownOp: { ...base, op: 'futureOp' },
-    missingOp: { src: base.src, dest: base.dest },
+    missingAmount: { ...base, amount: undefined },
+    badAmount: { ...base, amount: 'MAX' },
+    invalidMax: { ...base, withdraw: { max: 'yes' } },
+    negativeSrcAmount: { ...base, withdraw: { srcAmount: -1n } },
+    invalidSrcAmount: { ...base, withdraw: { srcAmount: 123 } },
+    invalidToken: { ...base, withdraw: { srcToken: 123n } },
+    unknownOption: { ...base, withdraw: { max: true, force: true } },
     badFee: { ...base, fee: '100' },
     badDetail: { ...base, detail: { evmGas: -1n } },
   }))
     t.false(matches(harden(specimen), shape), name);
 });
 
-test('numeric movement Shape rejects every explicit op property', t => {
-  const { movementDescShape } = makeOfferArgsShapes(USDC);
-  const base = { src: 'Aave_Base', dest: '@Base', amount: usdc(1n) };
-  for (const op of ['withdrawAll', 'futureOp', undefined]) {
-    t.false(matches(harden({ ...base, op }), movementDescShape), String(op));
-  }
-});
-
-test('movement Ext Shape validates fields without claiming a decoded operation', t => {
-  const { movementDescShapeExt: shape } = makeOfferArgsShapes(USDC);
-  t.truthy(shape);
-  const base = { src: 'FutureVault_FutureChain', dest: '@FutureChain' };
-  for (const fields of [
-    {},
-    { amount: usdc(1n) },
-    { op: 'withdrawAll' },
-    { op: 'futureOp' },
-    { op: 'withdrawAll', amount: usdc(1n) },
-    { op: 'withdrawAll', amount: undefined },
-    { futureField: { version: 2 } },
-  ])
-    t.notThrows(() => mustMatch(harden({ ...base, ...fields }), shape));
-  for (const [name, fields] of Object.entries({
-    badSource: { src: 5 },
-    badOp: { op: true },
-    badAmount: { amount: 'MAX' },
-    wrongBrand: { amount: bld.make(1n) },
-    badFee: { fee: -1n },
-    badDetail: { detail: { gas: '1' } },
-  }))
-    t.false(matches(harden({ ...base, ...fields }), shape), name);
-});
-
-test('plan Ext Shape covers mixed operations and preserves plan limits', t => {
-  const { planShapeExt: shape } = makeOfferArgsShapes(USDC);
-  t.truthy(shape);
-  const numeric = { src: '@Base', dest: 'Aave_Base', amount: usdc(1n) };
-  const full = {
-    src: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
-    dest: '@Base',
-    op: 'withdrawAll',
-  };
-  t.notThrows(() =>
-    mustMatch(
-      harden({
-        flow: [full, numeric],
-        order: [[1, [0]]],
-        futurePlanField: true,
-      }),
-      shape,
-    ),
-  );
-  t.notThrows(() => mustMatch(harden({ flow: Array(30).fill(full) }), shape));
-  t.false(matches(harden({ flow: Array(31).fill(full) }), shape));
-  t.false(matches(harden({ flow: [], order: Array(31).fill([0, []]) }), shape));
-  t.false(
-    matches(harden({ flow: [], order: [[0, Array(30).fill(0)]] }), shape),
-  );
-});
-
-test('existing execution plan Shapes do not admit withdrawAll before execution support', t => {
+test('plan and offer Shapes accept additive withdraw params', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const specimen = harden({
     flow: [
       {
         src: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
         dest: '@Base',
-        op: 'withdrawAll',
+        withdraw: { max: true },
+        amount: usdc(0n),
       },
     ],
   });
@@ -1049,6 +1007,6 @@ test('existing execution plan Shapes do not admit withdrawAll before execution s
     shapes.openPortfolio,
     shapes.rebalance,
   ]) {
-    t.false(matches(specimen, shape));
+    t.true(matches(specimen, shape));
   }
 });

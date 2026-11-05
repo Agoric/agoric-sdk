@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { NatAmount } from '@agoric/ertp';
-import type { CopyRecord } from '@endo/pass-style';
 import {
   type AccountId,
   type Bech32Address,
@@ -180,6 +179,32 @@ export type PlanObservations = {
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
 };
 
+export type HoldingKind =
+  | 'shares'
+  | 'principal'
+  | 'reward'
+  | 'token'
+  | `$${string}`;
+
+/** One raw holding; quantities and valuations must not be added together. */
+export type HoldingDetail = {
+  place: PortfolioBalancePlaceRef;
+  kind: HoldingKind;
+  tokenAddress: EvmAddress;
+  /** Native token units, independent of USD valuation. Zero is observed zero. */
+  amount: bigint;
+  /** Valuation in micro-USD, -1 means unknown. */
+  valueUsd: bigint;
+  /** @deprecated Compatibility valuation in micro-USDC; OPT_UINT_UNDEFINED if unobserved. */
+  balanceUsdc?: bigint;
+};
+
+/** Version 2 evidence. Multiple distinct holdings may belong to one place. */
+export type PlanObservationsV2 = {
+  holdings: HoldingDetail[];
+  instrumentTvls: PlanObservations['instrumentTvls'];
+};
+
 export type FlowDetail =
   | {
       type: 'withdraw';
@@ -284,6 +309,15 @@ export type SwapDesc = OneInchSwapDesc;
  */
 export type SwapProvider = SwapDesc['provider'];
 
+export type WithdrawParams = {
+  /** When true, any MovementDesc['amount'] and/or WithdrawParams['srcAmount'] are minima, not exact. */
+  max?: boolean;
+  /** Omit to withdraw the default kind from this place, otherwise must correspond to a 'shares' or 'principal' kind. */
+  srcToken?: EvmAddress;
+  /** Units of srcToken to withdraw. When specified, MovementDesc['amount'] is a minimum. */
+  srcAmount?: bigint;
+};
+
 /**
  * Parameters for claiming external rewards.
  *
@@ -314,37 +348,22 @@ export type ClaimRewardsParams = {
   };
 };
 
-type MovementDescFields = {
+export type MovementDesc = {
+  /** Default-token units (micro-USDC) received at dest; a minimum when withdraw.max is true or withdraw.srcAmount is specified, otherwise exact. */
+  amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
   /** for example: GMP fee */
   fee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
+  /** Present only for withdrawing from a position to an account. */
+  withdraw?: WithdrawParams;
   /** Present only for reward-token claims. */
   claimRewards?: ClaimRewardsParams;
   /** Present only for reward-token -> stable-token swaps. */
   swap?: SwapDesc;
 };
-
-/** Numeric by default; validation may opt into full-withdrawal analysis. */
-export type MovementDesc<Op extends 'withdrawAll' | undefined = undefined> =
-  MovementDescFields &
-    (Op extends 'withdrawAll'
-      ? { op: 'withdrawAll'; amount?: never }
-      : { op?: never; amount: NatAmount });
-
-/**
- * Extensible structural input, not a decoded movement. Known fields keep
- * their types, but future places, operations and fields can be represented.
- * The decoder must check the operation/amount relationship before execution.
- */
-export type MovementDescExt = Omit<MovementDescFields, 'src' | 'dest'> & {
-  src: string;
-  dest: string;
-  amount?: NatAmount;
-  op?: string;
-} & CopyRecord<any>;
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
 
@@ -381,17 +400,11 @@ export type FlowStep = Pick<
  */
 type FlowStepDependency = [stepIndex: number, prerequisiteIndexes: number[]];
 
-export type FundsFlowPlan<Op extends 'withdrawAll' | undefined = undefined> = {
-  flow: MovementDesc<Op>[];
+export type FundsFlowPlan = {
+  flow: MovementDesc[];
   /** When `order` is absent, default to fully sequential dependencies. */
   order?: FlowStepDependency[];
 };
-
-/** Forward-compatible plan input; its movements still require decoding. */
-export type FundsFlowPlanExt = {
-  flow: MovementDescExt[];
-  order?: FlowStepDependency[];
-} & CopyRecord<any>;
 
 export type FundsFlow = MovementDesc[] | FundsFlowPlan;
 
