@@ -44,6 +44,8 @@ import type {
   PortfolioSyncState,
 } from './types.ts';
 
+export * from './observation-messages-v2.ts';
+
 // A param to designate the portfolio by its `portfolioId`
 const PortfolioIdParam = {
   name: 'portfolio',

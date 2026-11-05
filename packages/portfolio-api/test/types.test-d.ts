@@ -1,3 +1,4 @@
+import { OPT_UINT_UNDEFINED } from '../src/opt-uint-core.js';
 import type { NatAmount } from '@agoric/ertp';
 import type {
   AccountId,
@@ -18,13 +19,15 @@ import type {
   FlowStatus,
   FlowStep,
   FundsFlowPlan,
-  FundsFlowPlanExt,
   InterChainAccountRef,
   PortfolioAgentKey,
   LocalChainAccountRef,
   MovementDesc,
-  MovementDescExt,
+  WithdrawParams,
   PlanObservations,
+  PlanObservationsV2,
+  HoldingDetail,
+  HoldingKind,
   PortfolioBalancePlaceRef,
   PortfolioKey,
   PortfolioPublishedPathTypes,
@@ -35,49 +38,72 @@ import type {
 } from '../src/types.js';
 
 declare const natAmount: NatAmount;
-
 const numericMovement = {
   src: 'Aave_Base',
   dest: '@Base',
   amount: natAmount,
 } as const;
-const fullWithdrawal = {
-  src: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
-  dest: '@Base',
-  op: 'withdrawAll',
-} as const;
-expectAssignable<MovementDesc>(numericMovement);
-expectNotAssignable<MovementDesc>(fullWithdrawal);
-expectAssignable<MovementDesc<'withdrawAll'>>(fullWithdrawal);
-expectNotAssignable<MovementDesc<'withdrawAll'>>(numericMovement);
-expectNotAssignable<MovementDesc<'withdrawAll' | undefined>>({
-  ...numericMovement,
-  op: 'withdrawAll',
+const fullWithdrawal = { ...numericMovement, withdraw: { max: true } } as const;
+expectAssignable<WithdrawParams>({});
+expectAssignable<WithdrawParams>({ max: false });
+expectAssignable<WithdrawParams>({ max: true });
+expectAssignable<WithdrawParams>({ srcToken: '0x1234' });
+expectAssignable<WithdrawParams>({ max: true, srcToken: '0x1234' });
+expectNotAssignable<WithdrawParams>({ max: 'yes' });
+expectNotAssignable<WithdrawParams>({ srcToken: 123n });
+expectNotAssignable<WithdrawParams>({ srcToken: 'not-an-evm-address' });
+expectAssignable<WithdrawParams>({ srcAmount: 0n });
+expectAssignable<WithdrawParams>({
+  max: true,
+  srcToken: '0x1234',
+  srcAmount: 123n,
 });
-expectNotAssignable<MovementDesc<'withdrawAll' | undefined>>({
+expectNotAssignable<WithdrawParams>({ srcAmount: 123 });
+expectAssignable<MovementDesc>(numericMovement);
+expectAssignable<MovementDesc>(fullWithdrawal);
+expectAssignable<MovementDesc>({ ...numericMovement, withdraw: {} });
+expectAssignable<MovementDesc>({
+  ...numericMovement,
+  withdraw: { max: false },
+});
+expectNotAssignable<MovementDesc>({
   src: 'Aave_Base',
   dest: '@Base',
+  withdraw: { max: true },
 });
-expectNotAssignable<MovementDesc<'withdrawAll' | undefined>>({
-  ...fullWithdrawal,
-  op: 'futureOp',
+expectNotAssignable<MovementDesc>({
+  ...numericMovement,
+  withdraw: { max: 'yes' },
 });
-expectAssignable<FundsFlowPlan<'withdrawAll' | undefined>>({
-  flow: [numericMovement, fullWithdrawal],
+expectNotAssignable<MovementDesc>({ ...fullWithdrawal, amount: 'MAX' });
+expectAssignable<FundsFlowPlan>({ flow: [numericMovement, fullWithdrawal] });
+expectAssignable<HoldingKind>('shares');
+expectAssignable<HoldingKind>('$ETH');
+expectNotAssignable<HoldingKind>('share');
+const rawHolding = {
+  place: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
+  kind: 'shares',
+  tokenAddress: '0x1234',
+  amount: 0n,
+  valueUsd: OPT_UINT_UNDEFINED,
+  balanceUsdc: OPT_UINT_UNDEFINED,
+} as const;
+expectAssignable<HoldingDetail>(rawHolding);
+expectAssignable<HoldingDetail>({ ...rawHolding, valueUsd: 0n });
+expectNotAssignable<HoldingDetail>({ ...rawHolding, valueUsd: undefined });
+expectNotAssignable<HoldingDetail>({ ...rawHolding, valueUsd: 1 });
+expectAssignable<HoldingDetail>({ ...rawHolding, balanceUsdc: undefined });
+expectNotAssignable<HoldingDetail>({ ...rawHolding, balanceUsdc: 1 });
+expectNotAssignable<HoldingDetail>({ ...rawHolding, amount: 123 });
+expectNotAssignable<HoldingDetail>({
+  ...rawHolding,
+  tokenAddress: 'not-an-address',
 });
-expectAssignable<MovementDescExt>({
-  src: 'FutureVault_FutureChain',
-  dest: '@FutureChain',
-  op: 'futureOp',
-  futureField: true,
+expectAssignable<PlanObservationsV2>({
+  holdings: [rawHolding],
+  instrumentTvls: {},
 });
-expectAssignable<MovementDescExt>({ ...numericMovement, ...fullWithdrawal });
-expectNotAssignable<MovementDescExt>({ ...fullWithdrawal, op: true });
-expectNotAssignable<MovementDescExt>({ ...fullWithdrawal, amount: 'MAX' });
-expectAssignable<FundsFlowPlanExt>({
-  flow: [numericMovement, fullWithdrawal],
-  futureField: true,
-});
+expectNotAssignable<PlanObservationsV2>({ balances: {}, instrumentTvls: {} });
 declare const chainId: CaipChainId;
 declare const accountId: AccountId;
 declare const address: EvmAddress;
