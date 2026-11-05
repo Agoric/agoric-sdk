@@ -1,5 +1,5 @@
 import { OPT_UINT_UNDEFINED } from '../src/opt-uint-core.js';
-import type { NatAmount } from '@agoric/ertp';
+import type { Brand, NatAmount } from '@agoric/ertp';
 import type {
   AccountId,
   Bech32Address,
@@ -24,6 +24,7 @@ import type {
   LocalChainAccountRef,
   MovementDesc,
   WithdrawParams,
+  AmountSelector,
   PlanObservations,
   PlanObservationsV2,
   HoldingDetail,
@@ -44,27 +45,66 @@ const numericMovement = {
   amount: natAmount,
 } as const;
 const fullWithdrawal = { ...numericMovement, withdraw: { max: true } } as const;
+declare const natBrand: Brand<'nat'>;
+declare const setBrand: Brand<'set'>;
+declare const copySetBrand: Brand<'copySet'>;
+declare const copyBagBrand: Brand<'copyBag'>;
+const selector = { kind: 'shares', token: '0x1234', amount: 123n } as const;
+expectAssignable<AmountSelector>(selector);
+expectAssignable<AmountSelector>({ ...selector, token: 'uusdc', amount: 0n });
+expectAssignable<AmountSelector>({ ...selector, token: natBrand });
+expectAssignable<AmountSelector>({ ...selector, max: false });
+expectAssignable<AmountSelector>({ ...selector, max: true });
+expectNotAssignable<AmountSelector>({ token: 'uusdc', amount: 123n });
+expectNotAssignable<AmountSelector>({ kind: 'token', amount: 123n });
+expectNotAssignable<AmountSelector>({ kind: 'token', token: 'uusdc' });
+expectNotAssignable<AmountSelector>({ ...selector, kind: 'share' });
+expectNotAssignable<AmountSelector>({ ...selector, kind: 123n });
+expectNotAssignable<AmountSelector>({ ...selector, token: 123n });
+expectNotAssignable<AmountSelector>({ ...selector, token: {} });
+expectNotAssignable<AmountSelector>({ ...selector, token: setBrand });
+expectNotAssignable<AmountSelector>({ ...selector, token: copySetBrand });
+expectNotAssignable<AmountSelector>({ ...selector, token: copyBagBrand });
+expectNotAssignable<AmountSelector>({ ...selector, amount: 123 });
+expectNotAssignable<AmountSelector>({ ...selector, max: 'yes' });
 expectAssignable<WithdrawParams>({});
 expectAssignable<WithdrawParams>({ max: false });
 expectAssignable<WithdrawParams>({ max: true });
-expectAssignable<WithdrawParams>({ srcToken: '0x1234' });
-expectAssignable<WithdrawParams>({ max: true, srcToken: '0x1234' });
-expectNotAssignable<WithdrawParams>({ max: 'yes' });
-expectNotAssignable<WithdrawParams>({ srcToken: 123n });
-expectNotAssignable<WithdrawParams>({ srcToken: 'not-an-evm-address' });
-expectAssignable<WithdrawParams>({ srcAmount: 0n });
+expectAssignable<WithdrawParams>({ select: [selector] });
 expectAssignable<WithdrawParams>({
   max: true,
-  srcToken: '0x1234',
-  srcAmount: 123n,
+  select: [selector, { ...selector, token: natBrand, max: false }],
 });
-expectNotAssignable<WithdrawParams>({ srcAmount: 123 });
+expectNotAssignable<WithdrawParams>({ select: [] });
+expectNotAssignable<WithdrawParams>({ select: selector });
+expectNotAssignable<WithdrawParams>({ select: [{}] });
+expectNotAssignable<WithdrawParams>({ select: [selector, {}] });
+expectNotAssignable<WithdrawParams>({ max: 'yes' });
+expectNotAssignable<WithdrawParams>({ srcKind: 'shares' });
+expectNotAssignable<WithdrawParams>({ srcToken: natBrand });
+expectNotAssignable<WithdrawParams>({ srcAmount: 123n });
+expectNotAssignable<WithdrawParams>({ selection: [selector] });
 expectAssignable<MovementDesc>(numericMovement);
 expectAssignable<MovementDesc>(fullWithdrawal);
 expectAssignable<MovementDesc>({ ...numericMovement, withdraw: {} });
 expectAssignable<MovementDesc>({
   ...numericMovement,
   withdraw: { max: false },
+});
+expectAssignable<MovementDesc>({
+  ...numericMovement,
+  withdraw: { select: [selector] },
+});
+expectNotAssignable<MovementDesc>({ src: 'Aave_Base', dest: '@Base' });
+expectNotAssignable<MovementDesc>({
+  src: 'Aave_Base',
+  dest: '@Base',
+  withdraw: {},
+});
+expectNotAssignable<MovementDesc>({
+  src: 'Aave_Base',
+  dest: '@Base',
+  withdraw: { select: [selector] },
 });
 expectNotAssignable<MovementDesc>({
   src: 'Aave_Base',
@@ -76,7 +116,13 @@ expectNotAssignable<MovementDesc>({
   withdraw: { max: 'yes' },
 });
 expectNotAssignable<MovementDesc>({ ...fullWithdrawal, amount: 'MAX' });
-expectAssignable<FundsFlowPlan>({ flow: [numericMovement, fullWithdrawal] });
+expectAssignable<FundsFlowPlan>({
+  flow: [
+    numericMovement,
+    fullWithdrawal,
+    { ...numericMovement, withdraw: { select: [selector] } },
+  ],
+});
 expectAssignable<HoldingKind>('shares');
 expectAssignable<HoldingKind>('$ETH');
 expectNotAssignable<HoldingKind>('share');

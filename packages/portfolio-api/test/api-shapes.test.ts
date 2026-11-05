@@ -2,6 +2,7 @@ import '@endo/init/debug.js';
 
 import test from 'ava';
 import { matches } from '@endo/patterns';
+import { Far } from '@endo/far';
 import {
   OPT_UINT_UNDEFINED,
   optUint255Shape,
@@ -33,27 +34,89 @@ test('optUint255 accepts the unused marker and bounds wire values by field name'
   }
 });
 
-test('withdraw parameters preserve omitted, false and zero values', t => {
-  for (const params of [
-    {},
-    { max: false },
-    { max: true },
-    { srcAmount: 0n },
-    { srcToken: address },
-    { srcToken: address, srcAmount: 123n },
-    { max: true, srcToken: address, srcAmount: 0n },
-  ])
+const selector = { kind: 'shares', token: address, amount: 123n };
+
+for (const [name, params] of Object.entries({
+  omittedSelect: {},
+  falseMax: { max: false },
+  trueMax: { max: true },
+  single: { select: [selector] },
+  zero: { select: [{ ...selector, amount: 0n }] },
+  large: { select: [{ ...selector, amount: 10n ** 30n }] },
+  denom: { select: [{ ...selector, token: 'uusdc' }] },
+  ibcDenom: { select: [{ ...selector, token: 'ibc/ABC123' }] },
+  multiple: {
+    select: [selector, { kind: 'principal', token: 'uusdc', amount: 0n }],
+  },
+  inheritedMax: { max: true, select: [selector] },
+  overrideFalse: { max: true, select: [{ ...selector, max: false }] },
+  overrideTrue: { max: false, select: [{ ...selector, max: true }] },
+  mixedFlags: {
+    select: [
+      { ...selector, max: false },
+      { ...selector, max: true },
+    ],
+  },
+  overlap: { select: [selector, selector] },
+})) {
+  test(`withdraw Shape accepts ${name}`, t => {
     t.true(matches(harden(params), WithdrawParamsShape));
-  for (const params of [
-    { max: 'true' },
-    { srcAmount: 1 },
-    { srcAmount: -1n },
-    { srcToken: 1n },
-    { amount: 1n },
-    { kind: 'shares' },
-    { force: true },
-  ])
+  });
+}
+
+for (const kind of ['shares', 'principal', 'reward', 'token', '$ETH']) {
+  test(`withdraw Shape accepts selector kind ${kind}`, t => {
+    t.true(
+      matches(harden({ select: [{ ...selector, kind }] }), WithdrawParamsShape),
+    );
+  });
+}
+
+for (const [name, params] of Object.entries({
+  emptySelect: { select: [] },
+  nonArray: { select: selector },
+  nullSelect: { select: null },
+  emptySelector: { select: [{}] },
+  missingKind: { select: [{ token: address, amount: 0n }] },
+  missingToken: { select: [{ kind: 'shares', amount: 0n }] },
+  missingAmount: { select: [{ kind: 'shares', token: address }] },
+  invalidLaterSelector: { select: [selector, {}] },
+  negativeAmount: { select: [{ ...selector, amount: -1n }] },
+  numericAmount: { select: [{ ...selector, amount: 123 }] },
+  stringAmount: { select: [{ ...selector, amount: '123' }] },
+  invalidToken: { select: [{ ...selector, token: 1n }] },
+  recordToken: { select: [{ ...selector, token: { allegedName: 'USDC' } }] },
+  nullToken: { select: [{ ...selector, token: null }] },
+  invalidKind: { select: [{ ...selector, kind: 'share' }] },
+  unknownKind: { select: [{ ...selector, kind: 'unknown' }] },
+  bareNativeKind: { select: [{ ...selector, kind: '$' }] },
+  invalidMax: { max: 'true' },
+  invalidSelectorMax: { select: [{ ...selector, max: 'true' }] },
+  unknownSelectorField: { select: [{ ...selector, force: true }] },
+  unknownField: { force: true },
+  obsoleteKind: { srcKind: 'shares' },
+  obsoleteToken: { srcToken: address },
+  obsoleteAmount: { srcAmount: 123n },
+  obsoleteFieldsWithSelect: { select: [selector], srcAmount: 123n },
+  wrongSelectName: { selection: [selector] },
+})) {
+  test(`withdraw Shape rejects ${name}`, t => {
     t.false(matches(harden(params), WithdrawParamsShape));
+  });
+}
+
+test('withdraw Shape accepts fake nat brands in multiple selectors', t => {
+  const tokens = [Far('fake USDC brand'), Far('fake shares brand')];
+  const select = tokens.map(token => ({ ...selector, token }));
+  for (const max of [false, true]) {
+    t.true(matches(harden({ max, select }), WithdrawParamsShape));
+  }
+  t.false(
+    matches(
+      harden({ select: [{ ...select[0], amount: -1n }] }),
+      WithdrawParamsShape,
+    ),
+  );
 });
 
 test('holding kinds cover typed and native holdings', t => {
