@@ -151,6 +151,7 @@ type AutoClaimSource = YdsTokenBalance & {
   uusdcValue: bigint;
   usdcTokenId: string;
   evmChainId: string | undefined;
+  isUsdc: boolean;
 };
 export const pickAutoClaimSources = (
   tokenBalances: YdsTokenBalance[],
@@ -174,7 +175,7 @@ export const pickAutoClaimSources = (
   uusdcThreshold?: bigint,
   pickLimit = Infinity,
 ): null | AutoClaimSource[] => {
-  if (!exchangeRates || !gasCosts) return null;
+  if (!gasCosts) return null;
   const picks: Exclude<ReturnType<typeof pickAutoClaimSources>, null> = [];
 
   // Evaluate each reward token independently.
@@ -183,22 +184,28 @@ export const pickAutoClaimSources = (
     ({ caipChainId, tokenId }) => `${caipChainId}:${tokenId}` as AccountId,
   );
   const gasCostByChain = new Map<CaipChainId, number>();
-  for (const [_caipTokenId, rewardBalances] of tokenLocations) {
-    const { chainName, caipChainId, tokenId } = rewardBalances[0];
+  for (const [_caipTokenId, sameTokenBalances] of tokenLocations) {
+    const { chainName, caipChainId, tokenId } = sameTokenBalances[0];
 
     // Require USDC exchangability.
     const usdcTokenId = getOwn(usdcTokensByChain, chainName);
     if (!usdcTokenId) continue;
+    const isUsdc = ieq(tokenId, usdcTokenId);
+    const rewardBalances = isUsdc
+      ? sameTokenBalances.filter(balance => balance.kind === 'reward')
+      : sameTokenBalances;
+    if (!rewardBalances.length) continue;
     const [, evmChainId] = caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
-    const usdcFromTokenRates = exchangeRates.filter(
+    const usdcFromTokenRates = (isUsdc ? [] : (exchangeRates ?? [])).filter(
       rate =>
         `${rate.evmChainId}` === evmChainId &&
         rate.sourceToken === tokenId &&
         rate.targetDenom === 'USDC',
     );
-    if (!usdcFromTokenRates.length) continue;
+    if (!isUsdc && !usdcFromTokenRates.length) continue;
     const getUusdcValue = (rewardTokenCount: bigint): bigint => {
       if (!rewardTokenCount) return 0n;
+      if (isUsdc) return rewardTokenCount;
       // Per https://ymax.app/docs , rates are sorted by descending amount. Take
       // the first one whose amount is not too big, falling back on the lowest
       // amount (which is presumably the worst rate).
@@ -226,15 +233,15 @@ export const pickAutoClaimSources = (
     // $value * (1 - maxSlippage) >= $gasUnits * costPerGasUnit * minRewardPerGas
     //   => $value / $gasUnits >= costPerGasUnit * minRewardPerGas / (1 - maxSlippage)
     // Remember also that a swap (along with its gas cost) is always necessary
-    // but covers any number of claims, so individually-justified claims that
-    // can't cover the additional gas for swapping on their own can still be
-    // picked as part of a batch (once we're swapping, we include every
+    // with non-USDC claims, but covers any number of them, so
+    // individually-justified claims that can't cover swap gas on their own can
+    // still be picked as part of a batch (once we're swapping, we include every
     // justified claim).
     // TODO(AGO-625): Extend `GasEstimator`?
-    let estimatedGasUnits = Number(GAS_UNITS_PER_SWAP);
+    let estimatedGasUnits = isUsdc ? 0 : Number(GAS_UNITS_PER_SWAP);
     const threshold =
       (uusdPerGasUnit * autoClaimConfig.minRewardPerGas) /
-      (1 - autoClaimConfig.maxSlippageBps / 10_000);
+      (isUsdc ? 1 : 1 - autoClaimConfig.maxSlippageBps / 10_000);
     const holds: typeof picks = [];
 
     // First, check for already-claimed tokens.
@@ -246,6 +253,7 @@ export const pickAutoClaimSources = (
         uusdcValue: claimedUusdc,
         usdcTokenId,
         evmChainId,
+        isUsdc,
       });
       if (
         Number(claimedUusdc) / estimatedGasUnits >= threshold ||
@@ -273,7 +281,7 @@ export const pickAutoClaimSources = (
         : undefined;
     }).sort((a, b) => naiveCompare(b.uusdcPerGasUnit, a.uusdcPerGasUnit));
     for (const { balance, uusdcValue, gasUnits } of bestRewardBalances) {
-      holds.push({ ...balance, uusdcValue, usdcTokenId, evmChainId });
+      holds.push({ ...balance, uusdcValue, usdcTokenId, evmChainId, isUsdc });
       estimatedGasUnits += gasUnits;
       claimedUusdc += uusdcValue;
       if (
@@ -408,8 +416,6 @@ export const maybeAutoClaim = async (
     GAS_UNITS_PER_SWAP,
   } = powers;
 
-  if (!oneInchClient) return undefined;
-
   const path = `${portfoliosPathPrefix}.${portfolioKey}`;
   const portfolioId = portfolioIdFromKey(portfolioKey);
   const logPrefix = `[${portfolioKey}.autoClaim]`;
@@ -430,16 +436,17 @@ export const maybeAutoClaim = async (
       tokenBalances,
       powers,
       getOwn(powers.autoClaimUusdcThresholds || {}, portfolioKey),
-    );
+    )?.filter(source => source.isUsdc || oneInchClient);
     if (!sources?.length) {
       console.log(logPrefix, 'skip', inspectForStdout(logContext));
       return;
     }
 
     // Build a FundsFlowPlan in which the only dependencies are that each
-    // swap step depends upon all claim steps for the same chain.
+    // swap step depends upon all non-USDC claim steps for the same chain.
     const swapPlaceholders = new Map<SupportedChain, null | AutoClaimSource>();
     for (const source of sources) {
+      if (source.isUsdc) continue;
       const { chainName } = source;
       // A placeholder is needed iff we lack an already-swappable balance.
       if (source.instrumentName === null) {
@@ -448,6 +455,7 @@ export const maybeAutoClaim = async (
         swapPlaceholders.set(chainName, {
           ...source,
           instrumentName: null,
+          kind: 'token',
           amount: '0',
           uusdcValue: 0n,
         });
@@ -542,11 +550,13 @@ export const maybeAutoClaim = async (
               minAmounts: [BigInt(amount)],
             };
 
-            swapInputs.push({
-              stepIndex,
-              tokenCount: BigInt(amount),
-              uusdcValue: source.uusdcValue,
-            });
+            if (!source.isUsdc) {
+              swapInputs.push({
+                stepIndex,
+                tokenCount: BigInt(amount),
+                uusdcValue: source.uusdcValue,
+              });
+            }
 
             const feeValue = await gasEstimator.getWalletEstimate(
               chainName as AxelarChain,

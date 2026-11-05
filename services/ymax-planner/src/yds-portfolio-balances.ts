@@ -43,6 +43,7 @@ export type YdsPortfolioSummary = {
       chainName: SupportedChain;
       caipChainId: CaipChainId;
       instrumentName: null | PoolKey;
+      kind?: 'reward' | 'token';
       symbol: string;
       tokenId: string;
       amount: `${bigint}`;

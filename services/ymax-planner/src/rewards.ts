@@ -1,5 +1,6 @@
 /// <reference types="ses" />
 import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
+import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
 
 // TODO(AGO-1030): This shouldn't be hard-coded
 export const GAS_UNITS_PER_SWAP = 60_000_000n;
@@ -8,6 +9,11 @@ export const GAS_UNITS_PER_SWAP = 60_000_000n;
 // These addresses just came from https://ymax.app/reward-token-rates
 export const GAS_UNITS_PER_CLAIM: Record<string, bigint> = fromUniqueEntries(
   [
+    // USDC on every supported chain
+    ...Object.values(UsdcTokenIds.mainnet)
+      .filter(tokenId => tokenId.startsWith('0x'))
+      .map(tokenId => [tokenId, 1_000_000n]),
+
     // COMP on Arbitrum
     ['0x354a6da3fcde098f8389cad84b0182725c6c91de', 1_000_000n],
     // COMP on Base

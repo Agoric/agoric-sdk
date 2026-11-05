@@ -1,5 +1,8 @@
 import test from 'ava';
 
+import type { KyInstance } from 'ky';
+import { encodeFunctionData } from 'viem';
+
 import { AmountMath } from '@agoric/ertp';
 import {
   fromTypedEntries,
@@ -12,10 +15,12 @@ import type { Brand } from '@agoric/ertp/src/types.js';
 import type { EvmAddress } from '@agoric/fast-usdc';
 import { Far, isPrimitive } from '@endo/pass-style';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
+import { oneInchRouterABI } from '@aglocal/portfolio-contract/src/interfaces/one-inch.js';
 import type {
   PoolKey,
   StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   Eip155ChainIds,
@@ -26,6 +31,7 @@ import {
   checkAutoRebalance,
   maybeAutoRebalance,
   pickAutoClaimSources,
+  maybeAutoClaim,
   type AutoClaimConfig,
   type AutoRebalanceConfig,
   type AutoPowers,
@@ -111,6 +117,7 @@ const makeYdsTokenBalance = (
   placeRef: `@${AxelarChain}` | PoolKey,
   amount: bigint,
   symbol: 'USDC' | MockRewardTokenSymbol,
+  kind?: YdsTokenBalance['kind'],
 ): YdsTokenBalance => {
   const chainName = chainOf(placeRef);
   const tokenId: string =
@@ -122,6 +129,7 @@ const makeYdsTokenBalance = (
     chainName,
     caipChainId: `eip155:${evmChainId}`,
     instrumentName: isInstrumentId(placeRef) ? placeRef : null,
+    ...(kind && { kind }),
     symbol,
     tokenId,
     amount: `${amount}`,
@@ -284,6 +292,7 @@ test('pickAutoClaimSources obeys autoClaimConfig', t => {
     {
       ...makeYdsTokenBalance('@Ethereum', uusdValue, 'reward1'),
       evmChainId: '1',
+      isUsdc: false,
       uusdcValue: uusdValue,
       usdcTokenId: mustGetOwn(UsdcTokenIds.mainnet, 'Ethereum'),
     },
@@ -428,6 +437,53 @@ test('pickAutoClaimSources amortizes swap gas across profitable claims', t => {
       'reward2',
     ),
   ]);
+});
+
+test('pickAutoClaimSources values USDC rewards without rates, swap gas, or slippage', t => {
+  const powers = makeAutoClaimPowers({ defaultUusdPerGasUnit: 1 });
+  powers.GAS_UNITS_PER_CLAIM = { ...GAS_UNITS_PER_CLAIM };
+  powers.autoClaimConfig.minRewardPerGas = 2;
+  powers.autoClaimConfig.maxSlippageBps = 10_000;
+  const reward = makeYdsTokenBalance(
+    'Aave_Ethereum',
+    2_000_000n,
+    'USDC',
+    'reward',
+  );
+  const balances = [
+    makeYdsTokenBalance('@Ethereum', 1_000_000_000n, 'USDC'),
+    makeYdsTokenBalance('Compound_Ethereum', 1_000_000_000n, 'USDC', 'token'),
+    makeYdsTokenBalance('Aave_Ethereum', 2_000_000_000n, 'reward1', 'token'),
+    reward,
+  ];
+  const noRates = { ...powers, exchangeRates: undefined };
+  t.deepEqual(pickAutoClaimSources(balances, noRates), [
+    {
+      ...reward,
+      evmChainId: '1',
+      isUsdc: true,
+      uusdcValue: 2_000_000n,
+      usdcTokenId: UsdcTokenIds.mainnet.Ethereum,
+    },
+  ]);
+  t.is(
+    pickAutoClaimSources([{ ...reward, amount: '1999999' }], noRates),
+    null,
+    'claim below the gas profitability threshold is skipped',
+  );
+  t.is(
+    pickAutoClaimSources([reward], { ...noRates, gasCosts: undefined }),
+    null,
+    'USDC claims still require gas data',
+  );
+  t.is(
+    pickAutoClaimSources([reward], {
+      ...noRates,
+      gasCosts: [makeGasCost('Ethereum', 2, 1, { P30D: { p50Uusd: 1 } })],
+    }),
+    null,
+    'USDC claims still respect gas spikes',
+  );
 });
 
 test('checkAutoRebalance trigger: Position Drift', t => {
@@ -601,6 +657,7 @@ const makeMaybeAutoPowers = (overrides: Partial<AutoPowers> = {}) => {
   const warns: unknown[][] = [];
   const errors: unknown[][] = [];
   const rebalanceCalls: unknown[][] = [];
+  const claimCalls: unknown[][] = [];
   const ydsTransactionCalls: unknown[] = [];
   const transactionHash = `0x${'b'.repeat(64)}`;
   const powers: AutoPowers = {
@@ -637,6 +694,10 @@ const makeMaybeAutoPowers = (overrides: Partial<AutoPowers> = {}) => {
     walletStore: {
       get: () =>
         ({
+          claimRewards: (...args: unknown[]) => {
+            claimCalls.push(args);
+            return { tx: { transactionHash }, id: 'mock-id' };
+          },
           rebalance: (...args: unknown[]) => {
             rebalanceCalls.push(args);
             return { tx: { transactionHash }, id: 'mock-id' };
@@ -655,11 +716,185 @@ const makeMaybeAutoPowers = (overrides: Partial<AutoPowers> = {}) => {
     logs,
     powers,
     rebalanceCalls,
+    claimCalls,
     txHash: transactionHash,
     ydsTransactionCalls,
     warns,
   };
 };
+
+test('maybeAutoClaim submits USDC claims without rates or a swap client', async t => {
+  const claimPowers = makeAutoClaimPowers();
+  const { powers, claimCalls, txHash } = makeMaybeAutoPowers({
+    ...claimPowers,
+    exchangeRates: undefined,
+    GAS_UNITS_PER_CLAIM,
+    gasEstimator: { getWalletEstimate: async () => 1n } as any,
+  });
+  const reward = makeYdsTokenBalance(
+    'Aave_Ethereum',
+    10_000_000n,
+    'USDC',
+    'reward',
+  );
+  const portfolioId = 7;
+  const result = await maybeAutoClaim(
+    makeAutoPortfolioStatus({ enabledAutoFeatures: { claimRewards: true } }),
+    `portfolio${portfolioId}`,
+    [reward],
+    powers,
+  );
+  t.is(result, txHash);
+  const expectClaimCall = [
+    portfolioId,
+    {
+      syncState: { policyVersion: 3, rebalanceCount: 4 },
+      agentMemo: 'memo-123',
+    },
+    {
+      flow: [
+        {
+          src: 'Aave_Ethereum',
+          dest: '@Ethereum',
+          amount: makeAmount(1n),
+          fee: makeAmount(5_000_000n),
+          claimRewards: {
+            tokens: [reward.tokenId],
+            minAmounts: [10_000_000n],
+          },
+        },
+      ],
+      order: [],
+    },
+  ];
+  t.deepEqual(claimCalls, [expectClaimCall]);
+
+  t.is(
+    await maybeAutoClaim(
+      makeAutoPortfolioStatus(),
+      `portfolio${portfolioId}`,
+      [reward],
+      powers,
+    ),
+    undefined,
+    'claim feature must still be enabled',
+  );
+  t.deepEqual(claimCalls, [expectClaimCall]);
+});
+
+test('maybeAutoClaim keeps USDC out of swaps and their dependencies', async t => {
+  const claimPowers = makeAutoClaimPowers();
+  const rewardTokenId = `0x${'1'.repeat(40)}` as EvmAddress;
+  const walletAddr = `0x${'2'.repeat(40)}` as EvmAddress;
+  const swapRequests: Record<string, string>[] = [];
+  const oneInchClient = {
+    get: (_path: string, options?: any) => ({
+      json: async () => {
+        const params = (options?.searchParams || {}) as Record<string, string>;
+        swapRequests.push(params);
+        const data = encodeFunctionData({
+          abi: oneInchRouterABI,
+          functionName: 'swap',
+          args: [
+            walletAddr,
+            {
+              srcToken: rewardTokenId,
+              dstToken: mustGetOwn(
+                UsdcTokenIds.mainnet,
+                'Ethereum',
+              ) as EvmAddress,
+              srcReceiver: walletAddr,
+              dstReceiver: walletAddr,
+              amount: BigInt(params.amount),
+              minReturnAmount: BigInt(params.minReturn),
+              flags: 0n,
+            },
+            '0x',
+          ],
+        });
+        return { tx: { from: walletAddr, data } };
+      },
+    }),
+  } as unknown as KyInstance;
+  const { powers, claimCalls } = makeMaybeAutoPowers({
+    ...claimPowers,
+    exchangeRates: [
+      {
+        ...makeYdsExchangeRate('Ethereum', { source: [1n, 'reward1'] }),
+        sourceToken: rewardTokenId,
+      },
+    ],
+    GAS_UNITS_PER_CLAIM: {
+      ...GAS_UNITS_PER_CLAIM,
+      [rewardTokenId]: 1_000_000n,
+    },
+    gasEstimator: { getWalletEstimate: async () => 1n } as any,
+    oneInchClient,
+  });
+
+  const reward = {
+    ...makeYdsTokenBalance(
+      'Compound_Ethereum',
+      100_000_000n,
+      'reward1',
+      'reward',
+    ),
+    tokenId: rewardTokenId,
+  };
+  const usdcReward = makeYdsTokenBalance(
+    'Aave_Ethereum',
+    50_000_000n,
+    'USDC',
+    'reward',
+  );
+  await maybeAutoClaim(
+    makeAutoPortfolioStatus({
+      enabledAutoFeatures: { claimRewards: true },
+      accountIdByChain: { Ethereum: `eip155:1:${walletAddr}` },
+    }),
+    'portfolio7',
+    [usdcReward, reward],
+    powers,
+  );
+
+  arrayIsLike(t, swapRequests, [{ amount: reward.amount }]);
+  const plan = claimCalls[0][2] as FundsFlowPlan;
+  arrayIsLike(t, plan.flow, [
+    { dest: '@Ethereum' },
+    { dest: '@Ethereum' },
+    {
+      src: '@Ethereum',
+      dest: '@Ethereum',
+      amount: {
+        brand,
+        value: (BigInt(reward.amount) * (10_000n - 200n)) / 10_000n,
+      },
+      swap: {
+        tokenIn: rewardTokenId,
+        amountIn: BigInt(reward.amount),
+        srcReceiver: walletAddr,
+      },
+    },
+  ]);
+  const claimRewardIndex = plan.flow.findIndex(step =>
+    step.claimRewards?.tokens.includes(rewardTokenId),
+  );
+  t.like(plan.flow[claimRewardIndex], {
+    src: reward.instrumentName,
+    claimRewards: {
+      tokens: [rewardTokenId],
+      minAmounts: [BigInt(reward.amount)],
+    },
+  });
+  t.like(plan.flow[1 - claimRewardIndex], {
+    src: usdcReward.instrumentName,
+    claimRewards: {
+      tokens: [mustGetOwn(UsdcTokenIds.mainnet, 'Ethereum')],
+      minAmounts: [BigInt(usdcReward.amount)],
+    },
+  });
+  t.deepEqual(plan.order, [[2, [claimRewardIndex]]]);
+});
 
 test('maybeAutoRebalance submits planner rebalance when criteria fire', async t => {
   const { powers, rebalanceCalls } = makeMaybeAutoPowers();
