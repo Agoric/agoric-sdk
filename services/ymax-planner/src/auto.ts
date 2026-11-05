@@ -148,6 +148,7 @@ const isGasAcceptable = (
 type AutoClaimSource = YdsTokenBalance & {
   uusdcValue: bigint;
   usdcTokenId: string;
+  evmChainId: string | undefined;
 };
 export const pickAutoClaimSources = (
   tokenBalances: YdsTokenBalance[],
@@ -238,7 +239,12 @@ export const pickAutoClaimSources = (
     const claimedBalance = rewardBalances.find(b => b.instrumentName === null);
     let claimedUusdc = getUusdcValue(BigInt(claimedBalance?.amount || 0n));
     if (claimedUusdc > 0n) {
-      holds.push({ ...claimedBalance!, uusdcValue: claimedUusdc, usdcTokenId });
+      holds.push({
+        ...claimedBalance!,
+        uusdcValue: claimedUusdc,
+        usdcTokenId,
+        evmChainId,
+      });
       if (
         Number(claimedUusdc) / estimatedGasUnits >= threshold ||
         (uusdcThreshold !== undefined && claimedUusdc >= uusdcThreshold)
@@ -265,7 +271,7 @@ export const pickAutoClaimSources = (
         : undefined;
     }).sort((a, b) => naiveCompare(b.uusdcPerGasUnit, a.uusdcPerGasUnit));
     for (const { balance, uusdcValue, gasUnits } of bestRewardBalances) {
-      holds.push({ ...balance, uusdcValue, usdcTokenId });
+      holds.push({ ...balance, uusdcValue, usdcTokenId, evmChainId });
       estimatedGasUnits += gasUnits;
       claimedUusdc += uusdcValue;
       if (
@@ -464,9 +470,7 @@ export const maybeAutoClaim = async (
     const merklProofsByToken = new Map<AccountId, `0x${string}`[]>();
     const merklChains = new Set(
       partialMap(sources, source => {
-        const { chainName, caipChainId, instrumentName } = source;
-        const [, evmChainId] =
-          caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
+        const { chainName, instrumentName, evmChainId } = source;
         if (!instrumentName || !evmChainId) return;
         if (!isERC4626InstrumentId(instrumentName)) return;
         return JSON.stringify({ chainId: evmChainId, chainName });
@@ -556,13 +560,11 @@ export const maybeAutoClaim = async (
           const minReturnNum =
             Number(uusdcValue) * (1 - autoClaimConfig.maxSlippageBps / 10_000);
           const minReturn = BigInt(Math.ceil(minReturnNum));
-          const [, evmChainId] =
-            caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
           const caip10 = parseAccountId(
             portfolioStatus.accountIdByChain[source.chainName]!,
           );
           const swapInfo = await fetchOneInchSwapInfo(oneInchClient, {
-            chainId: Number(evmChainId),
+            chainId: Number(source.evmChainId),
             src: tokenId as EvmAddress,
             dst: source.usdcTokenId as EvmAddress,
             amount: `${rewardTokenCount}`,
