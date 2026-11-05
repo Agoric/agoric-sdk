@@ -252,7 +252,9 @@ export const pickAutoClaimSources = (
     const bestRewardBalances = partialMap(rewardBalances, balance => {
       if (balance.instrumentName === null) return undefined;
       // TODO(AGO-625): Extend `GasEstimator`?
-      const gasUnits = Number(getOwn(GAS_UNITS_PER_CLAIM, balance.tokenId));
+      const gasUnits = Number(
+        getOwn(GAS_UNITS_PER_CLAIM, balance.tokenId.toLowerCase()),
+      );
       if (!gasUnits) return undefined;
       const uusdcValue = getUusdcValue(BigInt(balance.amount));
       const uusdcPerGasUnit = Number(uusdcValue) / gasUnits;
