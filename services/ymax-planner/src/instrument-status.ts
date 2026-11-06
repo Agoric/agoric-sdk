@@ -1,7 +1,11 @@
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import { partialMap } from '@agoric/internal/src/js-utils.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { PlanObservations } from '@agoric/portfolio-api';
 import type { ComputeTargetBalancesOptions } from '@agoric/portfolio-api/src/target-balances.js';
+
+const isMagnitude = (x: unknown): x is number =>
+  Number.isFinite(x) && (x as number) >= 0;
 
 /** cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/api-schemas.ts: Instrument */
 export type YdsInstrument = {
@@ -17,19 +21,38 @@ export type InstrumentBlocks = Required<
   ComputeTargetBalancesOptions<any, any>
 >['instrumentBlocks'];
 
+export type InstrumentLiquidity = NonNullable<
+  ComputeTargetBalancesOptions<any, any>['instrumentLiquidity']
+>;
+
+export const WITHDRAWAL_LIQUIDITY_LIMIT_BPS = 9_000n;
+
 export type InstrumentSnapshot = {
   blocks?: InstrumentBlocks;
+  liquidity?: InstrumentLiquidity;
   tvls: PlanObservations['instrumentTvls'];
 };
+
+/** Convert available USD liquidity to micro-USD, rounding down. */
+export const extractInstrumentLiquidity = (
+  instruments: YdsInstrument[],
+): InstrumentLiquidity =>
+  Object.fromEntries(
+    partialMap(
+      instruments,
+      ({ id, liquidityUsd: usd }) =>
+        isMagnitude(usd) && [id, BigInt(Math.floor(usd * 1e6))],
+    ),
+  );
 
 export const extractInstrumentTvls = (
   instruments: YdsInstrument[],
 ): PlanObservations['instrumentTvls'] =>
   Object.fromEntries(
-    instruments.flatMap(({ id, tvl }) =>
-      tvl !== undefined && Number.isFinite(tvl) && tvl >= 0
-        ? [[id, { tvlUsd: BigInt(Math.round(tvl)) }]]
-        : [],
+    partialMap(
+      instruments,
+      ({ id, tvl }) =>
+        isMagnitude(tvl) && [id, { tvlUsd: BigInt(Math.round(tvl)) }],
     ),
   );
 
