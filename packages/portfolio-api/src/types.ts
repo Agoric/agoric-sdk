@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
-import type { NatAmount } from '@agoric/ertp';
+import type { Brand, NatAmount } from '@agoric/ertp';
 import {
   type AccountId,
   type Bech32Address,
@@ -179,6 +179,32 @@ export type PlanObservations = {
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
 };
 
+export type HoldingKind =
+  | 'shares'
+  | 'principal'
+  | 'reward'
+  | 'token'
+  | `$${string}`;
+
+/** One raw holding; quantities and valuations must not be added together. */
+export type HoldingDetail = {
+  place: PortfolioBalancePlaceRef;
+  kind: HoldingKind;
+  tokenAddress: EvmAddress;
+  /** Native token units, independent of USD valuation. Zero is observed zero. */
+  amount: bigint;
+  /** Valuation in micro-USD, -1 means unknown. */
+  valueUsd: bigint;
+  /** @deprecated Compatibility valuation in micro-USDC; OPT_UINT_UNDEFINED if unobserved. */
+  balanceUsdc?: bigint;
+};
+
+/** Version 2 evidence. Multiple distinct holdings may belong to one place. */
+export type PlanObservationsV2 = {
+  holdings: HoldingDetail[];
+  instrumentTvls: PlanObservations['instrumentTvls'];
+};
+
 export type FlowDetail =
   | {
       type: 'withdraw';
@@ -283,6 +309,42 @@ export type SwapDesc = OneInchSwapDesc;
  */
 export type SwapProvider = SwapDesc['provider'];
 
+/** One explicit source holding and quantity to withdraw. */
+export type AmountSelector = {
+  /** Kind of holding to withdraw from the src place. */
+  kind: HoldingKind;
+  /** ERTP nat brand, token address, or denom identifying the holding. */
+  token: Brand<'nat'> | string;
+  /** Raw token units to withdraw; a minimum when effective max is true. */
+  amount: bigint;
+  /**
+   * Attempt to withdraw all remaining units of this holding,
+   * treating amount as a minimum rather than an exact quantity.
+   * Default: WithdrawParams['max'], or false if both are omitted.
+   */
+  max?: boolean;
+};
+
+/** Parameters for withdrawing holdings into the destination's base token. */
+export type WithdrawParams = {
+  /** Default for each AmountSelector['max']. Default: false. */
+  max?: boolean;
+  /**
+   * Holdings and quantities to withdraw from the src place.
+   * When omitted, select an amount of that place's default kind and token
+   * that delivers at least MovementDesc['amount'] of base token (USDC) to dest.
+   * When max is false or omitted, attempt to minimize the excess delivered
+   * above MovementDesc['amount'].
+   * When max is true, attempt to withdraw all units of the default holding.
+   *
+   * Explicit selections are nonempty and apply in array order to remaining
+   * quantities. Process every selector, even after the destination minimum
+   * is met. Partial completion uses the existing flow failure/recovery path.
+   * Unsupported selections fail; swaps require separate plan movements.
+   */
+  select?: [AmountSelector, ...AmountSelector[]];
+};
+
 /**
  * Parameters for claiming external rewards.
  *
@@ -314,6 +376,7 @@ export type ClaimRewardsParams = {
 };
 
 export type MovementDesc = {
+  /** Base-token units (micro-USDC) received at dest; a minimum whenever withdraw is supplied, otherwise exact. */
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
@@ -321,6 +384,8 @@ export type MovementDesc = {
   fee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
+  /** Present only for withdrawing from a position to an account. */
+  withdraw?: WithdrawParams;
   /** Present only for reward-token claims. */
   claimRewards?: ClaimRewardsParams;
   /** Present only for reward-token -> stable-token swaps. */

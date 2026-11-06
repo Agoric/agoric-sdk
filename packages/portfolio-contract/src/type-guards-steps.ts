@@ -5,10 +5,11 @@ import { assert } from '@endo/errors';
 import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
-import type {
-  AssetPlaceRef,
-  FundsFlowPlan,
-  MovementDesc,
+import {
+  WithdrawParamsShape,
+  type AssetPlaceRef,
+  type FundsFlowPlan,
+  type MovementDesc,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -140,44 +141,43 @@ export type OfferArgsFor = {
  * reusable movement and plan shapes as well as offer-argument shapes.
  */
 export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
+  const amountShape = makeNatAmountShape(usdcBrand);
+  const places = harden({ src: AssetPlaceRefShape, dest: AssetPlaceRefShape });
+  const optionalFields = harden({
+    // Structural acceptance only; execution does not yet interpret these options.
+    withdraw: WithdrawParamsShape,
+    fee: AnyNatAmountShape,
+    detail: M.recordOf(M.string(), M.nat()),
+    swap: M.splitRecord(
+      {
+        provider: '1inch',
+        tokenIn: M.string(),
+        amountIn: M.nat(),
+        flags: M.nat(),
+        executor: M.string(),
+        srcReceiver: M.string(),
+        data: M.string(),
+      },
+      {
+        tokenOut: M.string(),
+      },
+    ),
+    claimRewards: M.splitRecord(
+      {
+        tokens: M.arrayOf(M.string()),
+        minAmounts: M.arrayOf(M.nat()),
+      },
+      {
+        morpho: M.splitRecord({
+          proofs: M.arrayOf(M.arrayOf(M.string())),
+        }),
+      },
+    ),
+  });
   const movementDescShape = M.splitRecord(
-    {
-      // amount should be 0 for claimRewards (but is ignored) and positive
-      // otherwise.
-      amount: makeNatAmountShape(usdcBrand),
-      src: AssetPlaceRefShape,
-      dest: AssetPlaceRefShape,
-    },
-    {
-      fee: AnyNatAmountShape,
-      detail: M.recordOf(M.string(), M.nat()),
-      swap: M.splitRecord(
-        {
-          provider: '1inch',
-          tokenIn: M.string(),
-          amountIn: M.nat(),
-          flags: M.nat(),
-          executor: M.string(),
-          srcReceiver: M.string(),
-          data: M.string(),
-        },
-        {
-          tokenOut: M.string(),
-        },
-      ),
-      claimRewards: M.splitRecord(
-        {
-          tokens: M.arrayOf(M.string()),
-          minAmounts: M.arrayOf(M.nat()),
-        },
-        {
-          morpho: M.splitRecord({
-            proofs: M.arrayOf(M.arrayOf(M.string())),
-          }),
-        },
-      ),
-    },
-    // Be robust in the face of additional properties
+    { ...places, amount: amountShape },
+    optionalFields,
+    // Be robust in the face of additional properties.
     M.record(),
   );
   const flowShape = M.arrayOf(movementDescShape, {

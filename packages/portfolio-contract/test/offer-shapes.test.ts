@@ -946,3 +946,158 @@ test('TargetAllocation to USDC expressed as @Chain', t => {
     t.false(matches(targetAllocation, TargetAllocationShape), `fail: ${name}`);
   }
 });
+
+test('movement Shape accepts additive withdraw selections and requires an amount', t => {
+  const { movementDescShape: shape } = makeOfferArgsShapes(USDC);
+  const selector = {
+    kind: 'shares',
+    token: `0x${'1'.repeat(40)}`,
+    amount: 123n,
+  };
+  const base = {
+    src: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
+    dest: '@Base',
+    amount: usdc(0n),
+  };
+  for (const withdraw of [
+    {},
+    { max: false },
+    { max: true },
+    { select: [selector] },
+    { select: [{ ...selector, amount: 0n }] },
+    { select: [{ ...selector, amount: 10n ** 30n }] },
+    { select: [{ kind: 'principal', token: USDC, amount: 123n }] },
+    { select: [{ kind: 'token', token: 'uusdc', amount: 123n }] },
+    { select: [{ kind: 'reward', token: bld.brand, amount: 0n }] },
+    {
+      select: [
+        {
+          kind: '$ETH',
+          token: '0x0000000000000000000000000000000000000000',
+          amount: 0n,
+        },
+      ],
+    },
+    { select: [selector, { kind: 'token', token: 'ibc/ABC123', amount: 0n }] },
+    { max: true, select: [{ ...selector, max: false }] },
+    { max: false, select: [{ ...selector, max: true }] },
+    { select: [selector, selector] },
+  ]) {
+    t.notThrows(() => mustMatch(harden({ ...base, withdraw }), shape));
+  }
+  t.notThrows(() => mustMatch(harden(base), shape));
+  t.notThrows(() =>
+    mustMatch(
+      harden({
+        ...base,
+        withdraw: { select: [selector] },
+        amount: usdc(100n),
+        fee: bld.make(100n),
+        detail: { evmGas: 1n },
+        futureField: true,
+      }),
+      shape,
+    ),
+  );
+  for (const [name, specimen] of Object.entries({
+    missingAmount: { ...base, amount: undefined, withdraw: { max: true } },
+    badAmount: { ...base, amount: 'MAX', withdraw: {} },
+    missingAmountWithSelect: {
+      ...base,
+      amount: undefined,
+      withdraw: { select: [selector] },
+    },
+    badFee: { ...base, fee: '100' },
+    badDetail: { ...base, detail: { evmGas: -1n } },
+  })) {
+    t.false(matches(harden(specimen), shape), name);
+  }
+});
+
+test('movement, plan and offer Shapes reject malformed withdraw selections', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const selector = {
+    kind: 'shares',
+    token: `0x${'1'.repeat(40)}`,
+    amount: 123n,
+  };
+  for (const [name, withdraw] of Object.entries({
+    invalidMax: { max: 'yes' },
+    emptySelect: { select: [] },
+    nonArraySelect: { select: selector },
+    missingKind: { select: [{ token: selector.token, amount: 0n }] },
+    missingToken: { select: [{ kind: 'shares', amount: 0n }] },
+    missingAmount: { select: [{ kind: 'shares', token: selector.token }] },
+    invalidLaterSelector: { select: [selector, {}] },
+    negativeAmount: { select: [{ ...selector, amount: -1n }] },
+    numericAmount: { select: [{ ...selector, amount: 123 }] },
+    invalidToken: { select: [{ ...selector, token: 123n }] },
+    recordToken: { select: [{ ...selector, token: { allegedName: 'USDC' } }] },
+    invalidKind: { select: [{ ...selector, kind: 'share' }] },
+    invalidSelectorMax: { select: [{ ...selector, max: 'yes' }] },
+    unknownSelectorOption: { select: [{ ...selector, force: true }] },
+    unknownOption: { force: true },
+    obsoleteKind: { srcKind: 'shares' },
+    obsoleteToken: { srcToken: USDC },
+    obsoleteAmount: { srcAmount: 123n },
+    obsoleteFieldWithSelect: { select: [selector], srcAmount: 123n },
+    wrongSelectName: { selection: [selector] },
+  })) {
+    const movement = harden({
+      src: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
+      dest: '@Base',
+      amount: usdc(0n),
+      withdraw,
+    });
+    t.false(matches(movement, shapes.movementDescShape), name);
+    const plan = harden({ flow: [movement] });
+    for (const [boundary, shape] of Object.entries({
+      plan: shapes.plan,
+      deposit: shapes.deposit,
+      openPortfolio: shapes.openPortfolio,
+      rebalance: shapes.rebalance,
+    })) {
+      t.false(matches(plan, shape), `${boundary}: ${name}`);
+    }
+  }
+});
+
+test('plan and offer Shapes accept additive withdraw selections', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  for (const withdraw of [
+    {},
+    { max: true },
+    { select: [{ kind: 'principal', token: USDC, amount: 0n }] },
+    {
+      max: true,
+      select: [
+        {
+          kind: 'shares',
+          token: `0x${'1'.repeat(40)}`,
+          amount: 123n,
+          max: false,
+        },
+        { kind: 'token', token: 'uusdc', amount: 0n },
+      ],
+    },
+  ]) {
+    const specimen = harden({
+      flow: [
+        {
+          src: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
+          dest: '@Base',
+          withdraw,
+          amount: usdc(0n),
+        },
+      ],
+    });
+    for (const shape of [
+      shapes.plan,
+      shapes.deposit,
+      shapes.openPortfolio,
+      shapes.rebalance,
+    ]) {
+      t.true(matches(specimen, shape));
+    }
+  }
+});
