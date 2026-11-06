@@ -106,6 +106,7 @@ import {
   makePortfolioAgentsPath,
   makePortfolioPath,
   PoolKeyShapeExt,
+  PoolPlaces,
   PortfolioAgentStatusShape,
   type EVMContractAddressesMap,
   type FlowDetail,
@@ -271,6 +272,26 @@ export const makeValidateOpenMessageRepresentativeInfo =
       Fail`${q(representativeContract)} does not match any supported representative address ${q([addresses.remoteAccountRouter, addresses.depositFactory].filter(address => address && address.length > 2))} for chain ${q(fromChain)}`;
   };
 
+/** The accountId of one entry of the accounts collection. */
+const accountIdOf = (info: AccountInfo): AccountId | undefined => {
+  switch (info.namespace) {
+    case 'cosmos':
+      switch (info.chainName) {
+        case 'agoric':
+          return coerceAccountId(info.lca.getAddress());
+        case 'noble':
+          return coerceAccountId(info.ica.getAddress());
+        default:
+          trace('skipping: unexpected chainName', info);
+          return undefined;
+      }
+    case 'eip155':
+      return `${info.chainId}:${info.remoteAddress}`;
+    default:
+      throw assert.fail(X`no such type: ${info}`);
+  }
+};
+
 /**
  * For publishing, represent accounts collection using accountId values
  */
@@ -279,25 +300,8 @@ const accountIdByChain = (
 ): StatusFor['portfolio']['accountIdByChain'] => {
   const byChain: Partial<Record<SupportedChain, AccountId>> = {};
   for (const [n, info] of accounts.entries()) {
-    switch (info.namespace) {
-      case 'cosmos':
-        switch (info.chainName) {
-          case 'agoric':
-            byChain[n] = coerceAccountId(info.lca.getAddress());
-            break;
-          case 'noble':
-            byChain[n] = coerceAccountId(info.ica.getAddress());
-            break;
-          default:
-            trace('skipping: unexpected chainName', info);
-        }
-        break;
-      case 'eip155':
-        byChain[n] = `${info.chainId}:${info.remoteAddress}`;
-        break;
-      default:
-        assert.fail(X`no such type: ${info}`);
-    }
+    const accountId = accountIdOf(info);
+    if (accountId) byChain[n] = accountId;
   }
   return harden(byChain);
 };
@@ -1380,12 +1384,25 @@ export const preparePortfolioKit = (
           }
           return { stepsP: sync.vow, flowId };
         },
+        /**
+         * A position is held by the portfolio's account on its pool's chain.
+         * Refuse any other account, so a routing bug cannot record funds
+         * under an instrument other than the one they actually reached.
+         */
         providePosition(
           poolKey: PoolKey,
           protocol: YieldProtocol,
           accountId: AccountId,
         ): Position {
-          const { positions } = this.state;
+          const { accounts, positions } = this.state;
+          const { chainName } = PoolPlaces[poolKey];
+          const expected = accounts.has(chainName)
+            ? accountIdOf(accounts.get(chainName))
+            : undefined;
+          expected ||
+            Fail`position ${q(poolKey)} needs a ${q(chainName)} account, not ${q(accountId)}`;
+          accountId === expected ||
+            Fail`position ${q(poolKey)} must be held by the ${q(chainName)} account ${q(expected)}, not ${q(accountId)}`;
           if (positions.has(poolKey)) {
             return positions.get(poolKey);
           }

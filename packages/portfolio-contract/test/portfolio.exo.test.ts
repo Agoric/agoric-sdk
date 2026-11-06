@@ -225,12 +225,51 @@ test('portfolio exo caches storage nodes', async t => {
   await eventLoopIteration();
   t.is(nodeQty, 4, 'root, portfolio, flows, flow1');
 
+  const ica = Far('NobleICA', {
+    getAddress: () => ({
+      chainId: 'noble-1',
+      value: 'noble1xyz',
+      encoding: 'bech32',
+    }),
+  }) as unknown as AccountInfoFor['noble']['ica'];
+  manager.resolveAccount({ namespace: 'cosmos', chainName: 'noble', ica });
   const acctId = 'cosmos:noble-1:noble1xyz';
   const pos = manager.providePosition('USDN', 'USDN', acctId);
   pos.publishStatus();
   pos.publishStatus();
   await eventLoopIteration();
   t.is(nodeQty, 6, 'root, portfolio, flows, flow1, positions, position1');
+});
+
+test('providePosition requires the account on the pool chain', t => {
+  const { makePortfolioKit } = makeTestSetup();
+  const { manager } = makePortfolioKit({ portfolioId: 1656 });
+
+  const baseInfo: AccountInfoFor['Base'] = {
+    namespace: 'eip155',
+    chainName: 'Base',
+    chainId: 'eip155:8453',
+    remoteAddress: '0x1111111111111111111111111111111111111111',
+  };
+  manager.resolveAccount(baseInfo);
+  const baseAcct = `${baseInfo.chainId}:${baseInfo.remoteAddress}` as const;
+
+  t.throws(() => manager.providePosition('Aave_Arbitrum', 'Aave', baseAcct), {
+    message:
+      /position "Aave_Arbitrum" needs a "Arbitrum" account, not "eip155:8453:0x1{40}"/,
+  });
+  t.throws(
+    () =>
+      manager.providePosition(
+        'Aave_Base',
+        'Aave',
+        'eip155:8453:0x2222222222222222222222222222222222222222',
+      ),
+    { message: /must be held by the "Base" account "eip155:8453:0x1{40}"/ },
+    'another address on the right chain',
+  );
+
+  t.notThrows(() => manager.providePosition('Aave_Base', 'Aave', baseAcct));
 });
 
 test('releaseAccount clears pending account reservation', async t => {
