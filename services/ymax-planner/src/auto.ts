@@ -499,6 +499,8 @@ export const maybeAutoClaim = async (
               const tokenId = token.address.toLowerCase() as EvmAddress;
               const isMatchingSource = (source: AutoClaimSource) =>
                 source.evmChainId === evmChainId &&
+                source.instrumentName !== null &&
+                isERC4626InstrumentId(source.instrumentName) &&
                 ieq(source.tokenId, tokenId);
               let claimRewards: ClaimRewardsParams | null = {
                 tokens: [tokenId] as EvmAddress[],
