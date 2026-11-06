@@ -73,9 +73,10 @@ export const main = async (
     setTimeout,
     log: trace,
     makeNonce: fresh,
-    // use generous gas limit for portfolio-contract,
+    // use generous gas limit for portfolio-contract (an upgrade carrying full
+    // privateArgsOverrides is ~60KB and costs ~2.5M gas),
     // and a gas price as observed on the RPC node we use on this network.
-    fee: makeFee({ gas: 2_500_000 }),
+    fee: makeFee({ gas: 5_000_000 }),
   } as const;
 
   const makeAccount = async (
