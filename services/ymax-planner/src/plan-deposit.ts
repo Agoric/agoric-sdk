@@ -34,6 +34,7 @@ import type {
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { EvmChain } from './pending-tx-manager.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
+import { WITHDRAWAL_LIQUIDITY_LIMIT_BPS } from './instrument-status.ts';
 
 const scale6 = (x: number) => {
   assert.typeof(x, 'number');
@@ -257,6 +258,7 @@ export type PlannerContext<
   | 'targetAllocation'
   | 'network'
   | 'instrumentBlocks'
+  | 'instrumentLiquidity'
 > & {
   feeBrand: Brand<'nat'>;
   gasEstimator: GasEstimator;
@@ -291,6 +293,8 @@ export const planDepositToAllocations: PlanMaker<{
     targetAllocation,
     depositFromChain: fromChain,
     instrumentBlocks: details.instrumentBlocks,
+    instrumentLiquidity: details.instrumentLiquidity,
+    withdrawalLiquidityLimitBps: WITHDRAWAL_LIQUIDITY_LIMIT_BPS,
   });
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
@@ -322,6 +326,8 @@ export const planRebalanceToAllocations: PlanMaker = async details => {
     network,
     targetAllocation,
     instrumentBlocks: details.instrumentBlocks,
+    instrumentLiquidity: details.instrumentLiquidity,
+    withdrawalLiquidityLimitBps: WITHDRAWAL_LIQUIDITY_LIMIT_BPS,
   });
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
@@ -350,6 +356,8 @@ export const planWithdrawFromAllocations: PlanMaker<{
     balanceDelta: -amount.value,
     targetAllocation,
     instrumentBlocks: details.instrumentBlocks,
+    instrumentLiquidity: details.instrumentLiquidity,
+    withdrawalLiquidityLimitBps: WITHDRAWAL_LIQUIDITY_LIMIT_BPS,
   });
 
   const { feeBrand, gasEstimator, toChain = 'agoric' } = details;

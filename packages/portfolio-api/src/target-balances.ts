@@ -47,10 +47,21 @@ export type ComputeTargetBalancesOptions<
    * target sink is unavailable or suppressed.
    */
   depositFromChain?: SupportedChain;
+  /** Instruments for which deposit and/or withdraw is unavailable. */
   instrumentBlocks?: {
     noDepositInstruments: Set<AssetPlaceRef>;
     noWithdrawInstruments: Set<AssetPlaceRef>;
   };
+  /**
+   * Available instrument liquidity, in the same units as currentBalances.
+   * Hubs and missing entries default to unlimited liquidity.
+   */
+  instrumentLiquidity?: Partial<Record<AssetPlaceRef, NatValue>>;
+  /**
+   * Maximum fraction of each instrument's available liquidity to be considered
+   * for withdrawal, in basis points (defaults to no limit).
+   */
+  withdrawalLiquidityLimitBps?: NatValue;
 };
 
 type PlaceRecord = {
@@ -161,7 +172,17 @@ export const computeTargetBalances = <
   network,
   depositFromChain,
   instrumentBlocks,
+  instrumentLiquidity,
+  withdrawalLiquidityLimitBps = 10_000n,
 }: ComputeTargetBalancesOptions<C, T>): Partial<Record<C | T, NatAmount>> => {
+  const computeWithdrawLimit = (place: AssetPlaceRef, current: NatValue) => {
+    const liquidity = isInstrumentId(place)
+      ? getOwn(instrumentLiquidity ?? {}, place)
+      : undefined;
+    if (liquidity === undefined) return current;
+    const limit = (liquidity * withdrawalLiquidityLimitBps) / 10_000n;
+    return limit <= 0n ? 0n : bigintMin(current, limit);
+  };
   const { noDepositInstruments, noWithdrawInstruments } =
     instrumentBlocks ?? {};
   const currentValues = objectMap(
@@ -249,11 +270,14 @@ export const computeTargetBalances = <
   // at current 52, and then 52/15/15/18 from the originally-a-sink D being
   // withdraw-blocked at current 18.
   const suppressions = new Map<AssetPlaceRef, NatValue>();
-  for (;;) {
+  const limitedSources = new Set<AssetPlaceRef>();
+  let done = false;
+  while (!done) {
     const badSources: [DraftRecord, gap: NatValue][] = [];
     const needsSuppress: [DraftRecord, gap: NatValue][] = [];
+    const newlyLimited: DraftRecord[] = [];
     for (const [place, draftRecord] of typedEntries(draft)) {
-      if (suppressions.has(place)) continue;
+      if (suppressions.has(place) || limitedSources.has(place)) continue;
       const { weight, current, blockDeposit, blockWithdraw } = draftRecord;
       const target = (liquidTotal * weight) / sumW; // rounds down
       /** positive delta is a sink, negative delta is a source */
@@ -263,15 +287,28 @@ export const computeTargetBalances = <
       const isBlocked =
         (delta > 0n && blockDeposit) || (delta < 0n && blockWithdraw);
       const isSuppressed = delta !== 0n && absDelta < draftRecord.deltaSoftMin;
+      const limit = computeWithdrawLimit(place, current);
       if (isBlocked && delta < 0n) {
         badSources.push([draftRecord, 0n]);
       } else if (isSuppressed && delta < 0n) {
         needsSuppress.push([draftRecord, draftRecord.deltaSoftMin - absDelta]);
+      } else if (delta < -limit) {
+        // Limit this source, then recompute the other targets.
+        if (limit && limit < draftRecord.deltaSoftMin) {
+          needsSuppress.push([draftRecord, draftRecord.deltaSoftMin - limit]);
+          draftRecord.resolvedDelta = 0n;
+          continue;
+        }
+        draftRecord.target = current - limit;
+        draftRecord.delta = -limit;
+        draftRecord.resolvedDelta = -limit;
+        newlyLimited.push(draftRecord);
+        continue;
       }
       draftRecord.resolvedDelta = isBlocked || isSuppressed ? 0n : delta;
     }
 
-    if (badSources.length === 0) {
+    if (badSources.length === 0 && newlyLimited.length === 0) {
       // No sources to block, but there still might be suppressions.
       // Cement those with the largest gap.
       sortEntriesDesc(needsSuppress);
@@ -280,6 +317,11 @@ export const computeTargetBalances = <
         if (i > 0 && gap !== needsSuppress[i - 1][1]) break;
         badSources.push(needsSuppress[i]);
       }
+    }
+    for (const source of newlyLimited) {
+      limitedSources.add(source.place);
+      liquidTotal -= source.target;
+      sumW -= source.weight;
     }
     for (const [source, gap] of badSources) {
       const { place, current, weight, blockWithdraw } = source;
@@ -290,7 +332,7 @@ export const computeTargetBalances = <
       liquidTotal -= current;
       sumW -= weight;
     }
-    if (badSources.length === 0 || liquidTotal < 0n) break;
+    done = liquidTotal < 0n || (!badSources.length && !newlyLimited.length);
   }
 
   // If all sources are suppressed for a deposit or rebalance, we're done.
@@ -307,7 +349,8 @@ export const computeTargetBalances = <
     )) {
       if (isDust(value)) break;
       if (draft[place]?.blockWithdraw !== false) continue;
-      const take = bigintMin(unsatisfied, value);
+      const take = bigintMin(unsatisfied, computeWithdrawLimit(place, value));
+      if (take === 0n) continue;
       fallback[place] = makeNatAmount(brand, value - take);
       unsatisfied -= take;
       if (unsatisfied === 0n) return { ...fallback };
@@ -343,7 +386,7 @@ export const computeTargetBalances = <
   for (const draftRecord of pending) {
     pending.delete(draftRecord);
     const { place, current, delta, resolvedDelta } = draftRecord;
-    if (suppressions.has(place)) continue;
+    if (suppressions.has(place) || limitedSources.has(place)) continue;
     // No adjustment is necessary for a source and/or satisfied delta.
     if (delta <= 0n || resolvedDelta !== 0n) {
       const newBalance = current + resolvedDelta;
