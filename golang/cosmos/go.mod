@@ -2,6 +2,9 @@ module github.com/Agoric/agoric-sdk/golang/cosmos
 
 go 1.24.1
 
+// Reduce exposure to CVE-2026-98432; hosts still need a patched kernel.
+godebug multipathtcp=0
+
 tool (
 	github.com/bufbuild/buf/cmd/buf
 	github.com/cosmos/cosmos-proto/cmd/protoc-gen-go-pulsar
