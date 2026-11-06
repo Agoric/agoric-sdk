@@ -494,8 +494,8 @@ export const maybeAutoClaim = async (
           for (const { chain, rewards } of infos) {
             const evmChainId = `${chain.id}`;
             for (const { token, amount, claimed, proofs } of rewards) {
-              const claimable = BigInt(amount) - BigInt(claimed);
-              if (!claimable) continue;
+              const totalAmount = BigInt(amount);
+              if (BigInt(claimed) === totalAmount) continue;
               const tokenId = token.address.toLowerCase() as EvmAddress;
               const isMatchingSource = (source: AutoClaimSource) =>
                 source.evmChainId === evmChainId &&
@@ -504,7 +504,7 @@ export const maybeAutoClaim = async (
                 ieq(source.tokenId, tokenId);
               let claimRewards: ClaimRewardsParams | null = {
                 tokens: [tokenId] as EvmAddress[],
-                minAmounts: [BigInt(claimable)],
+                minAmounts: [totalAmount],
                 morpho: { proofs: [proofs] },
               };
               for (const [i, source] of resolvedSources.entries()) {
