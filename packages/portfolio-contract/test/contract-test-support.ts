@@ -29,6 +29,7 @@ import {
   type PortfolioAutoFeatures,
 } from '@agoric/portfolio-api';
 import { type TargetAllocation as PermittedAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { chainOf } from '@agoric/portfolio-api/src/places.js';
 import type { MapStore } from '@agoric/store';
 import type { Baggage } from '@agoric/vat-data';
 import type { ZoeService } from '@agoric/zoe';
@@ -582,6 +583,8 @@ const beefyTestMacro = test.macro({
     const amount = usdc.units(3_333.33);
     const feeAcct = bld.make(100n);
     const feeCall = bld.make(100n);
+    // Reach the vault through the account on its own chain.
+    const account = `@${chainOf(vaultKey)}` as const;
 
     const actualP = trader1.openPortfolio(
       t,
@@ -590,8 +593,8 @@ const beefyTestMacro = test.macro({
         flow: [
           { src: '<Deposit>', dest: '@agoric', amount },
           { src: '@agoric', dest: '@noble', amount },
-          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-          { src: '@Arbitrum', dest: vaultKey, amount, fee: feeCall },
+          { src: '@noble', dest: account, amount, fee: feeAcct },
+          { src: account, dest: vaultKey, amount, fee: feeCall },
         ],
       },
     );
