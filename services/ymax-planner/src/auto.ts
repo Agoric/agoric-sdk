@@ -148,6 +148,7 @@ const isGasAcceptable = (
 type AutoClaimSource = YdsTokenBalance & {
   uusdcValue: bigint;
   usdcTokenId: string;
+  evmChainId: string | undefined;
 };
 export const pickAutoClaimSources = (
   tokenBalances: YdsTokenBalance[],
@@ -238,7 +239,12 @@ export const pickAutoClaimSources = (
     const claimedBalance = rewardBalances.find(b => b.instrumentName === null);
     let claimedUusdc = getUusdcValue(BigInt(claimedBalance?.amount || 0n));
     if (claimedUusdc > 0n) {
-      holds.push({ ...claimedBalance!, uusdcValue: claimedUusdc, usdcTokenId });
+      holds.push({
+        ...claimedBalance!,
+        uusdcValue: claimedUusdc,
+        usdcTokenId,
+        evmChainId,
+      });
       if (
         Number(claimedUusdc) / estimatedGasUnits >= threshold ||
         (uusdcThreshold !== undefined && claimedUusdc >= uusdcThreshold)
@@ -252,7 +258,9 @@ export const pickAutoClaimSources = (
     const bestRewardBalances = partialMap(rewardBalances, balance => {
       if (balance.instrumentName === null) return undefined;
       // TODO(AGO-625): Extend `GasEstimator`?
-      const gasUnits = Number(getOwn(GAS_UNITS_PER_CLAIM, balance.tokenId));
+      const gasUnits = Number(
+        getOwn(GAS_UNITS_PER_CLAIM, balance.tokenId.toLowerCase()),
+      );
       if (!gasUnits) return undefined;
       const uusdcValue = getUusdcValue(BigInt(balance.amount));
       const uusdcPerGasUnit = Number(uusdcValue) / gasUnits;
@@ -263,7 +271,7 @@ export const pickAutoClaimSources = (
         : undefined;
     }).sort((a, b) => naiveCompare(b.uusdcPerGasUnit, a.uusdcPerGasUnit));
     for (const { balance, uusdcValue, gasUnits } of bestRewardBalances) {
-      holds.push({ ...balance, uusdcValue, usdcTokenId });
+      holds.push({ ...balance, uusdcValue, usdcTokenId, evmChainId });
       estimatedGasUnits += gasUnits;
       claimedUusdc += uusdcValue;
       if (
@@ -431,11 +439,10 @@ export const maybeAutoClaim = async (
     const swapPlaceholders = new Map<SupportedChain, null | AutoClaimSource>();
     for (const source of sources) {
       const { chainName } = source;
+      // A placeholder is needed iff we lack an already-swappable balance.
       if (source.instrumentName === null) {
-        // This chain is a real source.
         swapPlaceholders.set(chainName, null);
       } else if (!swapPlaceholders.has(chainName)) {
-        // Create a dummy source for this chain.
         swapPlaceholders.set(chainName, {
           ...source,
           instrumentName: null,
@@ -457,20 +464,23 @@ export const maybeAutoClaim = async (
       return 0;
     });
 
-    // Morpho reward claims require proofs from Merkl:
+    // Morpho reward claims require proofs from Merkl, and get consolidated by
+    // token (potentially across instruments):
     // https://docs.morpho.org/developers/rewards/tutorials/claim-rewards/
-    const merklProofsByToken = new Map<AccountId, `0x${string}`[]>();
+    const resolvedSources: (
+      | (AutoClaimSource & { claimRewards?: ClaimRewardsParams })
+      | null
+    )[] = [...sources];
     const merklChains = new Set(
       partialMap(sources, source => {
-        const { chainName, caipChainId, instrumentName } = source;
-        const [, evmChainId] =
-          caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
-        if (!instrumentName || !evmChainId) return;
+        const { chainName, instrumentName, evmChainId } = source;
+        if (!evmChainId || !instrumentName) return;
         if (!isERC4626InstrumentId(instrumentName)) return;
         return JSON.stringify({ chainId: evmChainId, chainName });
       }),
     );
     if (merklClient && merklChains.size > 0) {
+      const merklClaimsByToken = new Map<string, ClaimRewardsParams>();
       await Promise.all(
         [...merklChains].map(async chainJson => {
           const { chainName, chainId } = JSON.parse(chainJson);
@@ -482,118 +492,128 @@ export const maybeAutoClaim = async (
           });
           for (const { chain, rewards } of infos) {
             for (const { token, amount, claimed, proofs } of rewards) {
-              const claimable = BigInt(amount) - BigInt(claimed);
-              if (!claimable) continue;
+              const totalAmount = BigInt(amount);
+              if (BigInt(claimed) === totalAmount) continue;
+
               const tokenCaip10 =
-                `eip155:${chain.id}:${token.address}`.toLowerCase() as AccountId;
-              merklProofsByToken.set(tokenCaip10, proofs);
+                `eip155:${chain.id}:${token.address}`.toLowerCase();
+              merklClaimsByToken.set(tokenCaip10, {
+                tokens: [token.address],
+                minAmounts: [totalAmount],
+                morpho: { proofs: [proofs] },
+              });
             }
           }
         }),
       );
+      for (const [i, source] of sources.entries()) {
+        const { caipChainId, evmChainId, instrumentName, tokenId } = source;
+        if (!evmChainId || !instrumentName) continue;
+        if (!isERC4626InstrumentId(instrumentName)) continue;
+
+        const tokenCaip10 = `${caipChainId}:${tokenId}`.toLowerCase();
+        const claimRewards = merklClaimsByToken.get(tokenCaip10);
+        merklClaimsByToken.delete(tokenCaip10);
+        resolvedSources[i] = claimRewards ? { ...source, claimRewards } : null;
+      }
     }
 
     // TODO(#12869): Replace with 0n
     const dummyAmount = AmountMath.make(depositBrand, 1n);
-    const swapInputs: { tokenCount: bigint; uusdcValue: bigint }[] = [];
+    const swapInputs: {
+      stepIndex: number;
+      tokenCount: bigint;
+      uusdcValue: bigint;
+    }[] = [];
     const order: FundsFlowPlan['order'] = [];
-    const flow: (MovementDesc | null)[] = await Promise.all(
-      sources.map(async (source, stepIndex) => {
-        const { chainName, caipChainId, instrumentName, tokenId, amount } =
-          source;
-        const dest = `@${chainName}` as AssetPlaceRef;
-        await null;
-        if (instrumentName !== null) {
-          const claimRewards: ClaimRewardsParams = {
-            tokens: [tokenId] as EvmAddress[],
-            minAmounts: [BigInt(amount)],
-          };
-          if (isERC4626InstrumentId(instrumentName)) {
-            const tokenCaip10 =
-              `${caipChainId}:${tokenId}`.toLowerCase() as AccountId;
-            const proofs = merklProofsByToken.get(tokenCaip10);
-            // Already claimed?
-            if (!proofs) return null;
+    const flow: MovementDesc[] = await Promise.all(
+      resolvedSources
+        .filter(x => !!x)
+        .map(async (source, stepIndex) => {
+          const { chainName, evmChainId, instrumentName, tokenId, amount } =
+            source;
+          const dest = `@${chainName}` as AssetPlaceRef;
+          await null;
+          if (instrumentName !== null) {
+            const claimRewards: ClaimRewardsParams = source.claimRewards ?? {
+              tokens: [tokenId] as EvmAddress[],
+              minAmounts: [BigInt(amount)],
+            };
 
-            merklProofsByToken.delete(tokenCaip10);
-            claimRewards.morpho = { proofs: [proofs] };
-          }
-
-          swapInputs.push({
-            tokenCount: BigInt(source.amount),
-            uusdcValue: source.uusdcValue,
-          });
-
-          const feeValue = await gasEstimator.getWalletEstimate(
-            chainName as AxelarChain,
-            EvmWalletOperationType.Claim,
-            PoolPlaces[instrumentName]?.protocol,
-          );
-          const src = instrumentName;
-          const fee = makeGmpFeeAmount(feeBrand, feeValue);
-          return { src, dest, amount: dummyAmount, fee, claimRewards };
-        } else {
-          // Record and consume from input steps.
-          let rewardTokenCount = BigInt(source.amount);
-          let uusdcValue = source.uusdcValue;
-          if (swapInputs.length > 0) {
-            const firstClaimIndex = stepIndex - swapInputs.length;
-            const prerequisiteIndexes = swapInputs.map((input, i) => {
-              rewardTokenCount += input.tokenCount;
-              uusdcValue += input.uusdcValue;
-              return firstClaimIndex + i;
+            swapInputs.push({
+              stepIndex,
+              tokenCount: BigInt(amount),
+              uusdcValue: source.uusdcValue,
             });
-            order.push([stepIndex, prerequisiteIndexes]);
-            swapInputs.splice(0);
-          }
-          // These values are sufficiently low to justify non-bigint arithmetic.
-          // Revisit if we start swapping into tokens with more than 6 decimals
-          // of precision (at which point we'll also need to consider
-          // constraining maxSlippageBps to be an integer).
-          // cf. https://github.com/Agoric/agoric-sdk/pull/12819#discussion_r3735468384
-          const minReturnNum =
-            Number(uusdcValue) * (1 - autoClaimConfig.maxSlippageBps / 10_000);
-          const minReturn = BigInt(Math.ceil(minReturnNum));
-          const [, evmChainId] =
-            caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
-          const caip10 = parseAccountId(
-            portfolioStatus.accountIdByChain[source.chainName]!,
-          );
-          const swapInfo = await fetchOneInchSwapInfo(oneInchClient, {
-            chainId: Number(evmChainId),
-            src: tokenId as EvmAddress,
-            dst: source.usdcTokenId as EvmAddress,
-            amount: `${rewardTokenCount}`,
-            from: caip10.accountAddress as EvmAddress,
-            origin: caip10.accountAddress as EvmAddress,
-            minReturn: `${minReturn}`,
-            includeGas: true,
-          });
-          const uusdcAmount = AmountMath.make(depositBrand, minReturn);
 
-          const src = `@${chainName}` as AssetPlaceRef;
-          const swap: SwapDesc = {
-            tokenIn: tokenId as any,
-            amountIn: rewardTokenCount,
-            provider: '1inch',
-            // Disallow partial fill etc.
-            flags: 0n,
-            executor: swapInfo.executor,
-            srcReceiver: swapInfo.desc.srcReceiver,
-            data: swapInfo.data,
-          };
-          const feeValue = await gasEstimator.getWalletEstimate(
-            chainName as AxelarChain,
-            EvmWalletOperationType.Swap,
-            undefined,
-            swapInfo.gas ?? GAS_UNITS_PER_SWAP,
-          );
-          const fee = makeGmpFeeAmount(feeBrand, feeValue);
-          return { src, dest, amount: uusdcAmount, fee, swap };
-        }
-      }),
+            const feeValue = await gasEstimator.getWalletEstimate(
+              chainName as AxelarChain,
+              EvmWalletOperationType.Claim,
+              PoolPlaces[instrumentName]?.protocol,
+            );
+            const src = instrumentName;
+            const fee = makeGmpFeeAmount(feeBrand, feeValue);
+            return { src, dest, amount: dummyAmount, fee, claimRewards };
+          } else {
+            // Record and consume from input steps.
+            let rewardTokenCount = BigInt(amount);
+            let uusdcValue = source.uusdcValue;
+            if (swapInputs.length > 0) {
+              const prerequisiteIndexes = swapInputs.map(input => {
+                rewardTokenCount += input.tokenCount;
+                uusdcValue += input.uusdcValue;
+                return input.stepIndex;
+              });
+              order.push([stepIndex, prerequisiteIndexes]);
+              swapInputs.splice(0);
+            }
+            // These values are sufficiently low to justify non-bigint arithmetic.
+            // Revisit if we start swapping into tokens with more than 6 decimals
+            // of precision (at which point we'll also need to consider
+            // constraining maxSlippageBps to be an integer).
+            // cf. https://github.com/Agoric/agoric-sdk/pull/12819#discussion_r3735468384
+            const minReturnNum =
+              Number(uusdcValue) *
+              (1 - autoClaimConfig.maxSlippageBps / 10_000);
+            const minReturn = BigInt(Math.ceil(minReturnNum));
+            const caip10 = parseAccountId(
+              portfolioStatus.accountIdByChain[chainName]!,
+            );
+            const swapInfo = await fetchOneInchSwapInfo(oneInchClient!, {
+              chainId: Number(evmChainId),
+              src: tokenId as EvmAddress,
+              dst: source.usdcTokenId as EvmAddress,
+              amount: `${rewardTokenCount}`,
+              from: caip10.accountAddress as EvmAddress,
+              origin: caip10.accountAddress as EvmAddress,
+              minReturn: `${minReturn}`,
+              includeGas: true,
+            });
+            const uusdcAmount = AmountMath.make(depositBrand, minReturn);
+
+            const src = `@${chainName}` as AssetPlaceRef;
+            const swap: SwapDesc = {
+              tokenIn: tokenId as any,
+              amountIn: rewardTokenCount,
+              provider: '1inch',
+              // Disallow partial fill etc.
+              flags: 0n,
+              executor: swapInfo.executor,
+              srcReceiver: swapInfo.desc.srcReceiver,
+              data: swapInfo.data,
+            };
+            const feeValue = await gasEstimator.getWalletEstimate(
+              chainName as AxelarChain,
+              EvmWalletOperationType.Swap,
+              undefined,
+              swapInfo.gas ?? GAS_UNITS_PER_SWAP,
+            );
+            const fee = makeGmpFeeAmount(feeBrand, feeValue);
+            return { src, dest, amount: uusdcAmount, fee, swap };
+          }
+        }),
     );
-    const plan: FundsFlowPlan = { flow: flow.filter(f => !!f), order };
+    const plan: FundsFlowPlan = { flow, order };
 
     const txOpts = { sendOnly: true } as const;
     const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
