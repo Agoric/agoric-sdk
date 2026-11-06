@@ -22,7 +22,8 @@ import {
   simulateAckTransferToAxelar,
   simulateCCTPAck,
 } from './contract-setup.ts';
-import { portfolio0lcaOrch } from './mocks.ts';
+import { assertPoolAddressesOnOwnChain } from '../src/portfolio.contract.ts';
+import { contractsMock, portfolio0lcaOrch } from './mocks.ts';
 import {
   pendingTxOpts,
   snapshotTimed,
@@ -750,4 +751,23 @@ test('offers can no longer carry a plan', async t => {
     .getDeserialized(`${ROOT_STORAGE_PATH}.portfolios.portfolio0`)
     .at(-1) as { flowCount?: number };
   t.falsy(status.flowCount, 'no offer started a flow');
+});
+
+test('contracts must list each pool address under its own chain', t => {
+  // AGO-1656: steps look up pool addresses on the chain where they run.
+  t.notThrows(() => assertPoolAddressesOnOwnChain(contractsMock));
+  t.throws(
+    () =>
+      assertPoolAddressesOnOwnChain({
+        ...contractsMock,
+        Arbitrum: {
+          ...contractsMock.Arbitrum,
+          Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+        },
+      }),
+    {
+      message:
+        'contracts for "Arbitrum" list pools of other chains: ["Beefy_re7_Avalanche"]',
+    },
+  );
 });

@@ -97,6 +97,7 @@ import {
   BeefyPoolPlaces,
   ERC4626PoolPlaces,
   makeProposalShapes,
+  PoolPlaces,
   type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
@@ -159,6 +160,27 @@ const extractContractAddresses = <T extends keyof EVMContractAddresses>(
     ),
   ) satisfies Partial<Record<AxelarChain, AccountId>>;
   return addresses;
+};
+
+/**
+ * Reject pool addresses listed under a chain other than the pool's own.
+ *
+ * Steps look up pool addresses on the chain where they run. A pool listed under
+ * another chain would let a step that reaches the pool from the wrong chain
+ * call that address there, where it may be an unrelated contract.
+ */
+export const assertPoolAddressesOnOwnChain = (
+  contracts: EVMContractAddressesMap,
+): void => {
+  for (const [chain, addresses] of Object.entries(contracts)) {
+    const misplaced = keys(addresses).filter(
+      key =>
+        Object.hasOwn(PoolPlaces, key) &&
+        PoolPlaces[key as keyof typeof PoolPlaces].chainName !== chain,
+    );
+    misplaced.length === 0 ||
+      Fail`contracts for ${q(chain)} list pools of other chains: ${q(misplaced)}`;
+  }
 };
 
 /**
@@ -506,6 +528,7 @@ export const contract = async (
 
   assert(brands.USDC, 'USDC missing from brands in terms');
   assert(brands.Fee, 'Fee missing from brands in terms');
+  assertPoolAddressesOnOwnChain(contracts);
 
   // Only register chains and assets if chainHub is empty to avoid conflicts on restart
   if (chainHub.isEmpty()) {
