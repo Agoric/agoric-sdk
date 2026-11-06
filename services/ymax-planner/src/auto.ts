@@ -59,8 +59,6 @@ import type {
 
 const { keys } = Object;
 
-const ieq = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-
 export type AutoClaimConfig = {
   /**
    * Gas cost is only considered favorable when less than or equal to the
@@ -476,50 +474,50 @@ export const maybeAutoClaim = async (
     const merklChains = new Set(
       partialMap(sources, source => {
         const { chainName, instrumentName, evmChainId } = source;
-        if (!instrumentName || !evmChainId) return;
+        if (!evmChainId || !instrumentName) return;
         if (!isERC4626InstrumentId(instrumentName)) return;
         return JSON.stringify({ chainId: evmChainId, chainName });
       }),
     );
-    if (merklClient && merklChains.size > 0) {
-      await Promise.all(
-        [...merklChains].map(async chainJson => {
-          const { chainName, chainId } = JSON.parse(chainJson);
-          const infos = await fetchMerklRewardsInfo(merklClient, {
-            chainId,
-            address: parseAccountId(
-              portfolioStatus.accountIdByChain[chainName]!,
-            ).accountAddress as `0x${string}`,
-          });
-          for (const { chain, rewards } of infos) {
-            const evmChainId = `${chain.id}`;
-            for (const { token, amount, claimed, proofs } of rewards) {
-              const totalAmount = BigInt(amount);
-              if (BigInt(claimed) === totalAmount) continue;
-              const tokenId = token.address.toLowerCase() as EvmAddress;
-              const isMatchingSource = (source: AutoClaimSource) =>
-                source.evmChainId === evmChainId &&
-                source.instrumentName !== null &&
-                isERC4626InstrumentId(source.instrumentName) &&
-                ieq(source.tokenId, tokenId);
-              let claimRewards: ClaimRewardsParams | null = {
-                tokens: [tokenId] as EvmAddress[],
-                minAmounts: [totalAmount],
-                morpho: { proofs: [proofs] },
-              };
-              for (const [i, source] of resolvedSources.entries()) {
-                if (!source || !isMatchingSource(source)) continue;
-                if (claimRewards) {
-                  resolvedSources[i] = { ...source, claimRewards };
-                  claimRewards = null;
-                  continue;
-                }
-                resolvedSources[i] = null;
+    if (merklChains.size > 0) {
+      const merklClaimsByToken = new Map<string, ClaimRewardsParams>();
+      if (merklClient) {
+        await Promise.all(
+          [...merklChains].map(async chainJson => {
+            const { chainName, chainId } = JSON.parse(chainJson);
+            const infos = await fetchMerklRewardsInfo(merklClient, {
+              chainId,
+              address: parseAccountId(
+                portfolioStatus.accountIdByChain[chainName]!,
+              ).accountAddress as `0x${string}`,
+            });
+            for (const { chain, rewards } of infos) {
+              for (const { token, amount, claimed, proofs } of rewards) {
+                const totalAmount = BigInt(amount);
+                if (BigInt(claimed) === totalAmount) continue;
+
+                const tokenCaip10 =
+                  `eip155:${chain.id}:${token.address}`.toLowerCase();
+                merklClaimsByToken.set(tokenCaip10, {
+                  tokens: [token.address],
+                  minAmounts: [totalAmount],
+                  morpho: { proofs: [proofs] },
+                });
               }
             }
-          }
-        }),
-      );
+          }),
+        );
+      }
+      for (const [i, source] of sources.entries()) {
+        const { caipChainId, evmChainId, instrumentName, tokenId } = source;
+        if (!evmChainId || !instrumentName) continue;
+        if (!isERC4626InstrumentId(instrumentName)) continue;
+
+        const tokenCaip10 = `${caipChainId}:${tokenId}`.toLowerCase();
+        const claimRewards = merklClaimsByToken.get(tokenCaip10);
+        merklClaimsByToken.delete(tokenCaip10);
+        resolvedSources[i] = claimRewards ? { ...source, claimRewards } : null;
+      }
     }
 
     // TODO(#12869): Replace with 0n
