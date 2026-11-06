@@ -93,6 +93,7 @@ import { provideEVMAccountWithPermit as provideEVMLegacyAccountWithPermit } from
 import { provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit } from './axelar-gmp-router.flows.ts';
 
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
+import { vetInstrumentAccountChain } from './flow-plan-places.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import {
   agoricToNoble,
@@ -839,9 +840,8 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
         getChainNameOfPlaceRef(dest) ||
         Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
-      const { protocol, chainName: srcChain } = PoolPlaces[poolKey];
-      destChain === srcChain ||
-        Fail`pool ${q(poolKey)} lives on ${q(srcChain)}, not ${q(destChain)}`;
+      vetInstrumentAccountChain(moveDesc);
+      const { protocol } = PoolPlaces[poolKey];
       // TODO move this into metadata
       const feeRequired = ['Compound', 'Aave', 'Beefy', 'ERC4626'];
       moveDesc.fee ||
@@ -947,6 +947,8 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
 
         case 'pos': {
           const poolKey = dest as PoolKey;
+          // The step runs on srcChain, so the pool must live there too.
+          vetInstrumentAccountChain(moveDesc);
           const { protocol } = PoolPlaces[poolKey];
           return { how: protocol, poolKey, src: srcChain };
         }
@@ -1060,8 +1062,12 @@ const stepFlow = async (
     way: Way & { how: P },
     move: MovementDesc,
   ): AssetMovement => {
-    // XXX move this check up to wayFromSrcToDest
-    const chainName = 'src' in way ? way.src : way.dest;
+    // The pool determines where the step runs. The account side of the way
+    // must agree; wayFromSrcToDest already checked, so this guards its bugs.
+    const { chainName } = PoolPlaces[way.poolKey];
+    const accountChain = 'src' in way ? way.src : way.dest;
+    accountChain === chainName ||
+      Fail`bug in wayFromSrcToDest: pool ${q(way.poolKey)} lives on ${q(chainName)}, not ${q(accountChain)}`;
     assert(keys(AxelarChain).includes(chainName));
     const evmChain = chainName as AxelarChain;
 

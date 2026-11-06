@@ -31,6 +31,7 @@ import {
 import {
   DEFAULT_FLOW_CONFIG,
   RebalanceStrategy,
+  SupportedChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
@@ -80,7 +81,11 @@ import {
   type MovementDesc,
   type OfferArgsFor,
 } from '../src/type-guards-steps.ts';
-import { makeProposalShapes } from '../src/type-guards.ts';
+import {
+  makeProposalShapes,
+  PoolPlaces,
+  type PoolKey,
+} from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { makePortfolioSteps } from '../tools/plan-transfers.ts';
 import {
@@ -2871,6 +2876,38 @@ test('the inert seat refuses a payout before the LCA is debited', async t => {
 });
 
 // #region wayFromSrcToDest withdraw tests
+
+test('wayFromSrcToDest reaches an instrument only from its own chain', t => {
+  // AGO-1656: a step runs on its account's chain, so a mismatch would act on
+  // a different instrument than the one named and recorded.
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  const fee = make(BLD, 100n);
+  for (const [poolKey, { chainName: poolChain }] of Object.entries(
+    PoolPlaces,
+  ) as [PoolKey, (typeof PoolPlaces)[PoolKey]][]) {
+    for (const chain of Object.keys(SupportedChain) as SupportedChain[]) {
+      const account = `@${chain}` as const;
+      const moves = [
+        { src: account, dest: poolKey, amount, fee },
+        { src: poolKey, dest: account, amount, fee },
+      ];
+      for (const move of moves) {
+        const label = `${move.src} -> ${move.dest}`;
+        if (chain === poolChain) {
+          t.notThrows(() => wayFromSrcToDest(move), label);
+        } else {
+          t.throws(
+            () => wayFromSrcToDest(move),
+            {
+              message: `pool ${JSON.stringify(poolKey)} lives on ${JSON.stringify(poolChain)}, not ${JSON.stringify(chain)}`,
+            },
+            label,
+          );
+        }
+      }
+    }
+  }
+});
 
 test('wayFromSrcToDest handles @Arbitrum -> -Arbitrum (same-chain withdraw)', t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
