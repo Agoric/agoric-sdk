@@ -22,7 +22,8 @@ import {
   simulateAckTransferToAxelar,
   simulateCCTPAck,
 } from './contract-setup.ts';
-import { portfolio0lcaOrch } from './mocks.ts';
+import { assertPoolAddressesOnOwnChain } from '../src/portfolio.contract.ts';
+import { contractsMock, portfolio0lcaOrch } from './mocks.ts';
 import {
   pendingTxOpts,
   snapshotTimed,
@@ -669,4 +670,23 @@ test('public facet does not expose EVM portfolio powers', async t => {
   // invoke them.
   t.false('openPortfolioFromEVM' in publicFacet);
   t.false('validateEVMMessageDomain' in publicFacet);
+});
+
+test('contracts must list each pool address under its own chain', t => {
+  // AGO-1656: steps look up pool addresses on the chain where they run.
+  t.notThrows(() => assertPoolAddressesOnOwnChain(contractsMock));
+  t.throws(
+    () =>
+      assertPoolAddressesOnOwnChain({
+        ...contractsMock,
+        Arbitrum: {
+          ...contractsMock.Arbitrum,
+          Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+        },
+      }),
+    {
+      message:
+        'contracts for "Arbitrum" list pools of other chains: ["Beefy_re7_Avalanche"]',
+    },
+  );
 });
