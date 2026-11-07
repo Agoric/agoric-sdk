@@ -15,6 +15,7 @@ import {
   isPortfolioBalancePlaceRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
 import { b, Fail, q } from '@endo/errors';
+import { vetInstrumentAccountChain } from './flow-plan-places.ts';
 import { maxWeightClosure } from './max-weight-closure.ts';
 import { fullOrder, makeDependencies, makeSchedule } from './schedule-order.ts';
 import type { MovementDesc } from './type-guards-steps.ts';
@@ -176,6 +177,10 @@ const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
     }
     src !== dest ||
       Fail`allocation plan does not support self-movement at ${q(src)}`;
+    // The mandate checks below apply to the instrument named in the plan.
+    // Execution would use the instrument on the account's chain, so the two
+    // chains must match for those checks to cover what actually happens.
+    vetInstrumentAccountChain(movement);
     if (!claimRewards) return { kind: 'move', src, dest, amount };
 
     if (

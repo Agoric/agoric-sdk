@@ -38,9 +38,10 @@ check, the agent sees that Andrew's deposit is still in progress, records a
 decision to wait, and does nothing.
 
 On a later check, the agent records its decision and submits a plan with two
-independent movements:
+independent sequences of movements:
 
-- Move 120 USDC from `@Base` to Morpho-XYZ on Ethereum.
+- Move 120 USDC from `@Base` to `@Ethereum`, then from `@Ethereum` to
+  Morpho-XYZ on Ethereum.
 - Move 80 USDC from `@Base` to Morpho-ABC on Base.
 
 The contract verifies the attestation and mandate, then creates a flow. The
@@ -78,6 +79,13 @@ accounts, even when the plan does not touch them. The contract accepts such
 extra places only with a zero balance. It rejects missing required places and
 nonzero extras: a nonzero extra would inflate the portfolio total and loosen
 allocation ceilings and partial-failure exposure limits.
+
+A movement between an instrument and an account must use the portfolio's
+account on the instrument's chain. The mandate checks apply to the instrument
+named in the plan, but the movement runs on the account's chain and reaches
+that chain's instrument. So the contract rejects, for example, `@Base` to Aave
+on Arbitrum: that movement would supply Aave on Base, which the mandate checks
+never considered.
 
 `verifyPortfolioObservations` rejects observations that are not signed by the
 attestor account, are for another domain or verifying contract, have expired,
