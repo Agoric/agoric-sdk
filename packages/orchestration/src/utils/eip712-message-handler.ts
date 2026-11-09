@@ -500,14 +500,7 @@ export const makeEIP712MessageHandlerUtils = <
       normalizeAndValidateEIP712Data(
         {
           message: otherData.message as Record<string, unknown>,
-          // Codec metadata is local, not part of the signed type.
-          // Never let an untrusted declaration fill undefined wire values.
-          types: Object.fromEntries(
-            Object.entries(otherData.types).map(([typeName, fields]) => [
-              typeName,
-              fields.map(({ name, type }) => ({ name, type })),
-            ]),
-          ),
+          types: otherData.types,
           primaryType: otherData.primaryType,
         },
         { onExtraField: 'throw' },

@@ -465,7 +465,7 @@ export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
     const { message, types } = normalizeAndValidateEIP712Data({
       message: data as Record<string, unknown>,
       types: getWitnessTypes(operation),
-      primaryType: getWitnessTypeName(operation),
+      primaryType: witnessTypeParam.type,
     });
     return makeWitness<WitnessTypedData<S, T>, WitnessTypedDataParam<S, T>>(
       message as OperationWitness<S, T>['witness'],

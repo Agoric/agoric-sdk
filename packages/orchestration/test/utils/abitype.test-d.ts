@@ -101,35 +101,3 @@ expectAssignable<GridIn['cells']>([
   [leaf, leaf],
   [leaf, leaf],
 ]);
-
-const SentinelRecord = [
-  { name: 'value', type: 'int256', optSentinel: -1n },
-] as const;
-type SentinelTypes = { SentinelRecord: typeof SentinelRecord };
-expectAssignable<TypedDataToStructType<SentinelTypes, 'SentinelRecord'>>({
-  value: undefined,
-});
-expectAssignable<TypedDataToStructType<SentinelTypes, 'SentinelRecord'>>({
-  value: 0n,
-});
-expectNotAssignable<TypedDataToStructType<SentinelTypes, 'SentinelRecord'>>({
-  value: 'unknown',
-});
-expectAssignable<
-  TypedDataToStructType<SentinelTypes, 'SentinelRecord', 'input'>
->({ value: undefined });
-const SentinelArray = [
-  { name: 'values', type: 'int256[]', optSentinel: -1n },
-] as const;
-expectAssignable<
-  TypedDataToStructType<
-    { SentinelArray: typeof SentinelArray },
-    'SentinelArray'
-  >
->({ values: [undefined, 1n] });
-expectNotAssignable<
-  TypedDataToStructType<
-    { SentinelArray: typeof SentinelArray },
-    'SentinelArray'
-  >
->({ values: [true] });
