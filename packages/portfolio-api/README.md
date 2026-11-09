@@ -21,6 +21,15 @@ accept the structure and execute the movement's `amount` exactly, ignoring the
 options. This is the current contract's fallback; `amount: 0` may fail
 validation. API acceptance does not imply full-exit or source-token support.
 
+`MovementDescExt` and `FundsFlowPlanExt` provide forward-compatible structural
+input types. They allow future source/destination place strings and additional
+movement/plan fields, while preserving the required ERTP `amount`, known
+withdrawal options, and other declared field types. The contract's
+`makeOfferArgsShapes` exposes matching `movementDescShapeExt` and `planShapeExt`,
+with the same flow/dependency size limits as ordinary plans. Ext acceptance
+alone does not establish that a place or withdrawal operation is supported;
+existing offer boundaries and execution behavior remain unchanged.
+
 `PlanObservations` retains legacy aggregate `balances` and optionally carries
 `holdings: TypedHoldingDetail[]`. Each raw holding identifies `place`, `kind`,
 `tokenAddress`, and native-unit `amount`; `valueUsd` is optional micro-USD.

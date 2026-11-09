@@ -9,7 +9,9 @@ import {
   WithdrawParamsShape,
   type AssetPlaceRef,
   type FundsFlowPlan,
+  type FundsFlowPlanExt,
   type MovementDesc,
+  type MovementDescExt,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -179,6 +181,13 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     // Be robust in the face of additional properties.
     M.record(),
   );
+  // Structural compatibility does not establish support for a future place.
+  // Known amounts and withdrawal parameters use the same checks as movements.
+  const movementDescShapeExt: TypedPattern<MovementDescExt> = M.splitRecord(
+    { src: M.string(), dest: M.string(), amount: amountShape },
+    optionalFields,
+    M.record(),
+  );
   const flowShape = M.arrayOf(movementDescShape, {
     arrayLengthLimit: MAX_PLAN_STEPS,
   });
@@ -188,6 +197,15 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       M.arrayOf(M.number(), { arrayLengthLimit: MAX_PLAN_STEPS - 1 }),
     ],
     { arrayLengthLimit: MAX_PLAN_STEPS },
+  );
+  const planShapeExt: TypedPattern<FundsFlowPlanExt> = M.splitRecord(
+    {
+      flow: M.arrayOf(movementDescShapeExt, {
+        arrayLengthLimit: MAX_PLAN_STEPS,
+      }),
+    },
+    { order: orderShape },
+    M.record(),
   );
 
   return {
@@ -226,6 +244,8 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       {},
     ) as TypedPattern<FundsFlowPlan>,
     movementDescShape: movementDescShape as TypedPattern<MovementDesc>,
+    movementDescShapeExt,
+    planShapeExt,
   };
 };
 harden(makeOfferArgsShapes);

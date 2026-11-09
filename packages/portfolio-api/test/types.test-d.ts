@@ -18,10 +18,12 @@ import type {
   FlowStatus,
   FlowStep,
   FundsFlowPlan,
+  FundsFlowPlanExt,
   InterChainAccountRef,
   PortfolioAgentKey,
   LocalChainAccountRef,
   MovementDesc,
+  MovementDescExt,
   WithdrawParams,
   PlanObservations,
   HoldingDetail,
@@ -79,6 +81,52 @@ expectNotAssignable<MovementDesc>({
 });
 expectNotAssignable<MovementDesc>({ ...fullWithdrawal, amount: 'MAX' });
 expectAssignable<FundsFlowPlan>({ flow: [numericMovement, fullWithdrawal] });
+const futureMovement = {
+  src: 'FutureVault_FutureChain',
+  dest: '@FutureChain',
+  amount: natAmount,
+  withdraw: { max: true, srcKind: 'shares', srcAmount: 0n },
+  futureField: { version: 2 },
+} as const;
+expectAssignable<MovementDescExt>(numericMovement);
+expectAssignable<MovementDescExt>(fullWithdrawal);
+expectAssignable<MovementDescExt>(futureMovement);
+expectNotAssignable<MovementDesc>(futureMovement);
+expectNotAssignable<MovementDescExt>({
+  src: 'FutureVault_FutureChain',
+  dest: '@FutureChain',
+  withdraw: { max: true },
+});
+expectNotAssignable<MovementDescExt>({ ...futureMovement, amount: undefined });
+expectNotAssignable<MovementDescExt>({ ...futureMovement, amount: 'MAX' });
+expectNotAssignable<MovementDescExt>({ ...futureMovement, src: 1 });
+expectNotAssignable<MovementDescExt>({ ...futureMovement, dest: 1 });
+expectNotAssignable<MovementDescExt>({ ...futureMovement, fee: 1n });
+expectNotAssignable<MovementDescExt>({
+  ...futureMovement,
+  withdraw: { max: 'yes' },
+});
+expectNotAssignable<MovementDescExt>({
+  ...futureMovement,
+  withdraw: { srcKind: 'reward' },
+});
+expectNotAssignable<MovementDescExt>({
+  ...futureMovement,
+  withdraw: { srcAmount: 1 },
+});
+expectAssignable<FundsFlowPlanExt>({
+  flow: [numericMovement, fullWithdrawal, futureMovement],
+  order: [
+    [1, [0]],
+    [2, [1]],
+  ],
+  futurePlanField: true,
+});
+expectAssignable<FundsFlowPlanExt>({ flow: [] });
+expectNotAssignable<FundsFlowPlanExt>({
+  flow: [{ src: 'future', dest: 'future' }],
+});
+expectNotAssignable<FundsFlowPlanExt>({ flow: [], order: [[0, ['1']]] });
 expectAssignable<HoldingKind>('shares');
 expectAssignable<HoldingKind>('$ETH');
 expectNotAssignable<HoldingKind>('share');

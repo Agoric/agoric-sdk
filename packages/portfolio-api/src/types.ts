@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { NatAmount } from '@agoric/ertp';
+import type { CopyRecord } from '@endo/pass-style';
 import {
   type AccountId,
   type Bech32Address,
@@ -375,6 +376,17 @@ export type MovementDesc = {
   swap?: SwapDesc;
 };
 
+/**
+ * Extensible structural input, not a validated movement. Known fields retain
+ * their types, including the required amount and optional withdrawal parameters;
+ * future source/destination places and additional fields remain representable.
+ * Consumers must validate place support and semantics before execution.
+ */
+export type MovementDescExt = Omit<MovementDesc, 'src' | 'dest'> & {
+  src: string;
+  dest: string;
+} & CopyRecord<any>;
+
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
 
 export type FlowStep = Pick<
@@ -415,6 +427,11 @@ export type FundsFlowPlan = {
   /** When `order` is absent, default to fully sequential dependencies. */
   order?: FlowStepDependency[];
 };
+
+/** Forward-compatible structural plan input; its movements still need validation. */
+export type FundsFlowPlanExt = Omit<FundsFlowPlan, 'flow'> & {
+  flow: MovementDescExt[];
+} & CopyRecord<any>;
 
 export type FundsFlow = MovementDesc[] | FundsFlowPlan;
 

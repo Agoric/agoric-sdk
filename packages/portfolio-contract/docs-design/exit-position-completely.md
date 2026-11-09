@@ -155,6 +155,13 @@ sequenceDiagram
    `MovementDesc` and `FundsFlowPlan` are non-generic; a single plan can mix
    exact and maximum withdrawals.
 
+   `MovementDescExt` and `FundsFlowPlanExt` represent forward-compatible
+   structural inputs. Their `movementDescShapeExt` and `planShapeExt` Shapes
+   accept future place strings and extra movement/plan fields while preserving
+   known field types, required amounts, withdrawal option checks, and plan
+   size limits. These inputs still need validation against supported places
+   before execution; the existing offer Shapes keep their admission rules.
+
 8. **Verify and validate.** The contract verifies the signed observations,
    checks their portfolio and sync-state context, and enforces the delegation
    and mandate. The attestor is trusted to provide observations for mandate
