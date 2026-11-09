@@ -203,7 +203,10 @@ export type TypedHoldingDetail = {
   tokenAddress: EvmAddress;
   /** Native token units, independent of USD valuation. Zero is observed zero. */
   amount: bigint;
-  /** Valuation in micro-USD; undefined if not observed. */
+  /**
+   * Valuation in micro-USD; absent if not observed. (The signed observation
+   * encodes an absent valuation as a sentinel, which its converters strip.)
+   */
   valueUsd?: bigint;
   /** @deprecated Compatibility valuation in micro-USDC, when observed. */
   balanceUsdc?: bigint;

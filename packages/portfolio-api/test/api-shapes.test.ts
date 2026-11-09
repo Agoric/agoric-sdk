@@ -2,7 +2,6 @@ import '@endo/init/debug.js';
 
 import test from 'ava';
 import { matches } from '@endo/patterns';
-import { maxSignedBigInt } from '@agoric/orchestration/src/utils/abitype.ts';
 import {
   WithdrawParamsShape,
   HoldingKindShape,
@@ -77,13 +76,12 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
     kind: 'principal',
     tokenAddress: address,
     amount: 0n,
-    valueUsd: -1n,
   };
   for (const specimen of [
     holding,
     { ...holding, valueUsd: 0n },
     { ...holding, valueUsd: undefined },
-    { ...holding, valueUsd: maxSignedBigInt(256n) },
+    { ...holding, valueUsd: 2n ** 255n - 1n },
     { ...holding, balanceUsdc: 0n },
     { ...holding, balanceUsdc: 1n },
   ]) {
@@ -99,9 +97,10 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
     { amount: undefined },
     { amount: -1n },
     { amount: 123 },
+    { valueUsd: -1n }, // the wire sentinel is not an application value
     { valueUsd: -2n },
     { valueUsd: -(2n ** 255n) },
-    { valueUsd: maxSignedBigInt(256n) + 1n },
+    { valueUsd: 2n ** 255n },
     { valueUsd: 0 },
     { balanceUsdc: -2n },
     { balanceUsdc: '123' },

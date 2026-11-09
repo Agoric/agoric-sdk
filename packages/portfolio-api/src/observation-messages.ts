@@ -23,10 +23,9 @@
  * particular, the values it returns are not hardened.
  */
 
-import {
-  maxSignedBigInt,
-  type TypedDataParameter,
-  type TypedDataToStructType,
+import type {
+  TypedDataParameter,
+  TypedDataToStructType,
 } from '@agoric/orchestration/src/utils/abitype.js';
 import {
   makeEIP712MessageKit,
@@ -79,12 +78,11 @@ const holdingDetailV2 = [
   { name: 'kind', type: 'string' },
   { name: 'tokenAddress', type: 'address' },
   { name: 'amount', type: 'uint256' },
-  /** Valuation in micro-USD, `undefined` if not observed. */
-  {
-    name: 'valueUsd',
-    type: 'int256',
-    optSentinel: -1n, // how to encode the `undefined` value
-  },
+  /**
+   * Valuation in micro-USD, or {@link VALUE_USD_UNKNOWN} if not observed.
+   * Signed only to make room for that sentinel.
+   */
+  { name: 'valueUsd', type: 'int256' },
 ] as const satisfies TypedDataParameter[];
 
 const ObservationSubTypes = {
@@ -154,6 +152,58 @@ export type PortfolioObservationsContent = {
   observations: PlanObservations;
 };
 
+/**
+ * EIP-712 cannot omit a field from only some instances of a struct type, so
+ * typed holdings always carry `valueUsd` on the wire, using this sentinel for
+ * an unknown valuation. The converters below translate it to and from an
+ * absent `valueUsd` in {@link TypedHoldingDetail}; it never reaches
+ * application data.
+ */
+export const VALUE_USD_UNKNOWN = -1n;
+
+/** Largest valuation representable in the signed `int256` wire field. */
+export const MAX_VALUE_USD = 2n ** 255n - 1n;
+
+/** A `HoldingDetail` entry as it appears on the wire. */
+type HoldingDetailEIP712Input =
+  PortfolioObservationsEIP712Input['holdings'][number];
+
+/** A typed holding as it appears on the (normalized) wire. */
+type TypedHoldingDetailEIP712 = Omit<TypedHoldingDetail, 'valueUsd'> & {
+  /** non-negative, or {@link VALUE_USD_UNKNOWN} */
+  valueUsd: bigint;
+};
+
+/** Application -> wire: an absent valuation becomes the sentinel. */
+const typedHoldingToEIP712 = ({
+  place,
+  kind,
+  tokenAddress,
+  amount,
+  valueUsd,
+  ...rest
+}: TypedHoldingDetail): TypedHoldingDetailEIP712 => ({
+  place,
+  kind,
+  tokenAddress,
+  amount,
+  valueUsd: valueUsd ?? VALUE_USD_UNKNOWN,
+  // deprecated, and must be uniformly present or absent
+  ...('balanceUsdc' in rest ? { balanceUsdc: rest.balanceUsdc } : {}),
+});
+
+/** Wire -> application: the sentinel (or an absent field) becomes absent. */
+const typedHoldingFromEIP712 = ({
+  valueUsd,
+  ...rest
+}: PortfolioObservationsEIP712['holdings'][number]): TypedHoldingDetail =>
+  ({
+    ...rest,
+    ...(valueUsd === undefined || valueUsd === VALUE_USD_UNKNOWN
+      ? {}
+      : { valueUsd }),
+  }) as TypedHoldingDetail;
+
 const assertUint256 = (value: bigint, field: string): void => {
   if (typeof value !== 'bigint' || value < 0n || value >= 2n ** 256n) {
     throw RangeError(`invalid uint256 ${field}: ${String(value)}`);
@@ -216,7 +266,7 @@ const assertHoldings: (
       valueUsd !== undefined &&
       (typeof valueUsd !== 'bigint' ||
         valueUsd < 0n ||
-        valueUsd > maxSignedBigInt(256n))
+        valueUsd > MAX_VALUE_USD)
     ) {
       throw RangeError(`invalid valuation valueUsd: ${String(valueUsd)}`);
     }
@@ -224,7 +274,11 @@ const assertHoldings: (
   }
 };
 
-/** Author either legacy balances or typed holdings using the shared schema. */
+/**
+ * Author either legacy balances or typed holdings using the shared schema.
+ * Typed holdings always carry `valueUsd`, with {@link VALUE_USD_UNKNOWN}
+ * standing for an absent valuation.
+ */
 export const portfolioObservationsToEIP712 = ({
   portfolioId,
   syncState,
@@ -244,13 +298,15 @@ export const portfolioObservationsToEIP712 = ({
     throw TypeError('cannot combine aggregate balances with typed holdings');
   }
   if (holdings !== undefined) assertHoldings(holdings);
-  const legacy = Object.entries(balances).flatMap(([place, balanceUsdc]) => {
-    if (balanceUsdc === undefined) return [];
-    if (!isPortfolioBalancePlaceRef(place))
-      throw TypeError(`invalid holding place ${JSON.stringify(place)}`);
-    assertUint256(balanceUsdc, 'balanceUsdc');
-    return [{ place, balanceUsdc }];
-  });
+  const legacy: HoldingDetailEIP712Input[] = Object.entries(balances).flatMap(
+    ([place, balanceUsdc]) => {
+      if (balanceUsdc === undefined) return [];
+      if (!isPortfolioBalancePlaceRef(place))
+        throw TypeError(`invalid holding place ${JSON.stringify(place)}`);
+      assertUint256(balanceUsdc, 'balanceUsdc');
+      return [{ place, balanceUsdc }];
+    },
+  );
   const instruments = Object.entries(instrumentTvls).flatMap(
     ([instrumentId, tvl]) => {
       if (tvl === undefined) return [];
@@ -263,7 +319,8 @@ export const portfolioObservationsToEIP712 = ({
   return {
     portfolio: portfolioId,
     syncState: { ...syncState },
-    holdings: holdings === undefined ? legacy : holdings,
+    holdings:
+      holdings === undefined ? legacy : holdings.map(typedHoldingToEIP712),
     instruments,
   };
 };
@@ -271,7 +328,8 @@ export const portfolioObservationsToEIP712 = ({
 /**
  * Decode normalized authenticated observations. The handler must use
  * onUnknownSignedField: 'throw'. This converter does not verify signatures.
- * Raw holding valuations never imply aggregate balances.
+ * Raw holding valuations never imply aggregate balances. A typed holding's
+ * {@link VALUE_USD_UNKNOWN} valuation decodes to an absent `valueUsd`.
  */
 export const portfolioObservationsFromEIP712 = ({
   portfolio,
@@ -290,7 +348,7 @@ export const portfolioObservationsFromEIP712 = ({
       tokenAddress !== undefined ||
       amount !== undefined
     ) {
-      rawHoldings.push(holding as TypedHoldingDetail);
+      rawHoldings.push(typedHoldingFromEIP712(holding));
     } else {
       if (Object.hasOwn(balances, place))
         throw TypeError(`duplicate holding place ${JSON.stringify(place)}`);

@@ -80,7 +80,7 @@ sequenceDiagram
      { name: 'kind', type: 'string', optional: true },
      { name: 'tokenAddress', type: 'address', optional: true },
      { name: 'amount', type: 'uint256', optional: true }, // native units
-     { name: 'valueUsd', type: 'int256', optional: true, optSentinel: -1n }, // undefined means unknown
+     { name: 'valueUsd', type: 'int256', optional: true }, // -1 means unknown
    ],
    ```
 
@@ -98,17 +98,15 @@ sequenceDiagram
    Morpho uses `kind: 'shares'`, the vault address, and its raw share count as
    `amount`. An observed zero is an explicit entry with `amount: 0n`; missing
    entries mean unobserved holdings and must never be treated as zero. A raw
-   holding with unknown USD valuation uses `valueUsd: undefined`, distinct
+   holding with unknown USD valuation omits `valueUsd`, distinct
    from a known zero valuation. Do not infer shares from `valueUsd` or
    deprecated `balanceUsdc`, nor add both valuations together.
 
-   Unknown `valueUsd` is encoded as `-1n`
-   in the signed `int256` field and decoded to JavaScript `undefined`.
-   Known valuations range from zero through `maxSignedBigInt(256n)`.
-   Optional-field presence remains uniform per signed struct type; typed
-   authors supply a `valueUsd` property for every raw entry, using explicit
-   `undefined` for independently unknown valuations. Validation does not add
-   fields. Deprecated `balanceUsdc` is unsigned
+   Optional-field presence must be uniform per signed struct type, so the
+   observation converters always put `valueUsd` on typed holdings, encoding an
+   absent valuation as `-1n` in the signed `int256` field and stripping it
+   again when decoding. Known valuations range from zero through
+   `2n ** 255n - 1n`. Deprecated `balanceUsdc` is unsigned
    `uint256`, with uniform presence and no valuation sentinel.
 
    Reuse the existing Morpho collector. YDS's

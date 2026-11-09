@@ -48,20 +48,18 @@ Use the existing observation schema, kit, and converters from
 which optional fields were included. Legacy balance-only messages retain their
 original signed field definitions. There are no separate v2 schema exports.
 
-In JavaScript, unknown valuation is `undefined`, distinct from known zero.
-The `valueUsd` field uses `int256` and `optSentinel: -1n` to encode unknown
-valuations. Known valuations must satisfy
-`0n <= value <= maxSignedBigInt(256n)`. Authoring encodes explicit `undefined`
-values as the sentinel; trusted-schema extraction decodes them without mutating
-the signed wire data. Integer normalization works without Endo initialization.
+In application data, an unknown valuation is an absent `valueUsd`, distinct
+from a known zero. EIP-712 cannot omit a field from only some instances of a
+struct type, so on the wire every typed holding carries `valueUsd` as an
+`int256`, with `VALUE_USD_UNKNOWN` (`-1n`) standing for an unknown valuation.
+`portfolioObservationsToEIP712` encodes an absent valuation as the sentinel and
+`portfolioObservationsFromEIP712` strips it; the sentinel never appears in
+`TypedHoldingDetail`. Known valuations must satisfy
+`0n <= value <= MAX_VALUE_USD` (`2n ** 255n - 1n`). Integer normalization works
+without Endo initialization.
 
-Optional-field presence must be uniform per signed struct type. To mix known,
-zero, and unknown valuations, supply a `valueUsd` property on
-every raw holding, using explicit `undefined` for unknown values. The converter
-validates holdings without adding or rewriting fields. Deprecated
-`balanceUsdc` remains
-optional unsigned `uint256`: include it on every raw holding or omit it from
-all of them. It does not use the valuation sentinel.
+Deprecated `balanceUsdc` remains optional unsigned `uint256` without a
+sentinel: include it on every raw holding or omit it from all of them.
 
 A raw zero is an explicit `amount: 0n`; an absent holding is unobserved. Typed
 valuations do not imply aggregate balances. Supply either legacy `balances` or

@@ -16,6 +16,7 @@ import {
   ymaxObservationMessageKit,
   portfolioObservationsToEIP712,
   portfolioObservationsFromEIP712,
+  VALUE_USD_UNKNOWN,
   type PortfolioObservationsContent,
   type PortfolioObservationsEIP712,
 } from '../src/observation-messages.ts';
@@ -30,7 +31,6 @@ const holding: HoldingDetail = {
   kind: 'shares',
   tokenAddress: address,
   amount: 10n ** 24n,
-  valueUsd: undefined,
 };
 const content: PortfolioObservationsContent = {
   portfolioId: 12,
@@ -124,7 +124,6 @@ test('multiple kinds and reward tokens can share one instrument place', t => {
       kind: '$ETH',
       tokenAddress: zeroAddress,
       amount: 0n,
-      valueUsd: undefined,
     },
   ];
   t.deepEqual(decode(entries).observations.holdings, entries);
@@ -158,11 +157,6 @@ for (const [label, fields, error] of [
     'claimable reward on account',
     { place: '@Base', kind: 'claimable-reward' },
     /incompatible with place/,
-  ],
-  [
-    'wire sentinel as application valuation',
-    { valueUsd: -1n },
-    /invalid valuation valueUsd/,
   ],
   ['invalid place', { place: '?FutureVault' }, /invalid holding place/],
   ['seat', { place: '<Cash>' }, /invalid holding place/],
@@ -208,6 +202,12 @@ for (const [label, fields, error] of [
     t.throws(() => portfolioObservationsFromEIP712(data), { message: error });
   });
 }
+
+test('the wire sentinel is not an application valuation', t => {
+  t.throws(() => messageFor([{ ...holding, valueUsd: -1n }]), {
+    message: /invalid valuation valueUsd/,
+  });
+});
 
 test('syntactically valid future instruments retain their raw evidence', t => {
   const future: HoldingDetail = {
@@ -350,7 +350,7 @@ test('typed holdings is usable without lockdown', async t => {
     runWithoutLockdown(`
     const m = await import('@agoric/portfolio-api/src/observation-messages.js');
     const content = ${JSON.stringify({ portfolioId: 1, syncState: { policyVersion: 1, rebalanceCount: 0 } })};
-    content.observations = { balances: {}, holdings: [{ place: '${morpho}', kind: 'shares', tokenAddress: '${address}', amount: 0n, valueUsd: undefined }], instrumentTvls: {} };
+    content.observations = { balances: {}, holdings: [{ place: '${morpho}', kind: 'shares', tokenAddress: '${address}', amount: 0n }], instrumentTvls: {} };
     const data = m.portfolioObservationsToEIP712(content);
     const signedData = m.ymaxObservationMessageKit.getStandaloneOperationData({ ...data, nonce: 1n, deadline: 2n }, 'PortfolioObservations', 1n, '${address}');
     const { normalizeAndValidateEIP712Data } = await import('@agoric/orchestration/src/utils/viem-utils/eip712-normalize.ts');
@@ -368,7 +368,7 @@ test('one signed message can mix known, unknown and zero valuations', t => {
   ];
   t.deepEqual(decode(entries).observations.holdings, entries);
   const message = messageFor(entries);
-  t.is(message.message.holdings[0]!.valueUsd, -1n);
+  t.is(message.message.holdings[0]!.valueUsd, VALUE_USD_UNKNOWN);
   t.deepEqual(
     message.types.HoldingDetail.find(field => field.name === 'valueUsd'),
     { name: 'valueUsd', type: 'int256' },
@@ -425,7 +425,7 @@ test('typed observations do not fabricate aggregate balances or silently drop th
   );
 });
 
-test('handler decodes trusted sentinels without changing the signed message', t => {
+test('handler leaves the sentinel on the wire for the converter to decode', t => {
   for (const onUnknownSignedField of ['throw', 'keep'] as const) {
     const handler = makeEIP712MessageHandlerUtils(
       {
@@ -446,9 +446,8 @@ test('handler decodes trusted sentinels without changing the signed message', t 
       { ...message, address, signature: `0x${'ab'.repeat(65)}` } as any,
       { verifyingContract: { '1': address } },
     );
-    t.is(details.data.holdings[0]!.valueUsd, undefined);
+    t.is(details.data.holdings[0]!.valueUsd, VALUE_USD_UNKNOWN);
     t.is(details.data.holdings[1]!.valueUsd, 0n);
-    t.is(message.message.holdings[0]!.valueUsd, -1n);
     t.deepEqual(
       portfolioObservationsFromEIP712(details.data).observations.holdings,
       [holding, { ...holding, kind: 'claimable-reward', valueUsd: 0n }],
@@ -456,17 +455,21 @@ test('handler decodes trusted sentinels without changing the signed message', t 
   }
 });
 
-test('holding validation preserves input identity and omitted fields', t => {
-  const { valueUsd: _valueUsd, ...unvalued } = holding;
-  const holdings = harden([unvalued]);
-  const data = portfolioObservationsToEIP712({
-    ...content,
-    observations: { ...content.observations, holdings },
-  });
-  t.is(data.holdings, holdings);
-  t.is(data.holdings[0], unvalued);
-  t.false(Object.hasOwn(unvalued, 'valueUsd'));
-  t.deepEqual(decode([unvalued]).observations.holdings, [unvalued]);
+test('typed holdings always carry valueUsd on the wire', t => {
+  const data = portfolioObservationsToEIP712(content);
+  t.is(data.holdings[0]!.valueUsd, VALUE_USD_UNKNOWN);
+  const decoded = decode([holding]).observations.holdings![0]!;
+  t.false(Object.hasOwn(decoded, 'valueUsd'));
+  // A typed holding signed without the field also decodes as unknown.
+  const { valueUsd: _, ...wire } = readMessage(messageFor().message)
+    .holdings[0]!;
+  t.deepEqual(
+    portfolioObservationsFromEIP712({
+      ...readMessage(messageFor().message),
+      holdings: [wire],
+    }).observations.holdings,
+    [holding],
+  );
 });
 
 test('observation context rejects non-bigint and unsafe wire numbers', t => {
