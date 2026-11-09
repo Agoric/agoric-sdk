@@ -123,8 +123,8 @@ export const getKeywordOfPlaceRef = (
  * Offers no longer carry a plan (`flow`): steps come only from the planner or
  * from a delegated agent.
  *
- * Flows still accept this property only so that activations started before
- * the change replay the same way.
+ * `openPortfolio` still accepts this property only so that activations
+ * started before the change replay as far as the `rebalance` tombstone.
  */
 export type LegacyOfferPlan = {
   /** @deprecated offers can no longer supply a plan */

@@ -2,7 +2,7 @@
  * @file Portfolio orchestration flows for lifecycle and plan execution.
  *
  * @see {openPortfolio}
- * @see {rebalance}
+ * @see {executePlan}
  */
 
 import type { GuestInterface } from '@agoric/async-flow';
@@ -1762,79 +1762,38 @@ const stepFlow = async (
 };
 
 /**
- * Rebalance portfolio positions between yield protocols.
- * More generally: move assets as instructed by client.
- *
- * **Non-Atomic Operations**: Cross-chain flows are not atomic. If operations
- * fail partway through, assets may be left in intermediate accounts and must
- * be reconciled manually.
- *
- * **Client Recovery**: If rebalancing fails, check flow status in vstorage
- * and call rebalance() again (or another corrective flow) to move assets to
- * desired destinations.
- *
- * **Input Validation**: ASSUME caller validates args
- *
- * @param orch
- * @param ctx
- * @param seat - proposal guarded as per {@link makeProposalShapes}
- * @param offerArgs - guarded as per {@link makeOfferArgsShapes}
- * @param kit
+ * Historical flow that ran client-supplied steps from a Rebalance offer.
+ * Offers can no longer carry a plan and the Rebalance invitation
+ * now waits for the planner like SimpleRebalance, so nothing starts this flow.
+ * It stays registered because async-flow requires it across upgrades.
  */
 export const rebalance = (async (
-  orch: Orchestrator,
-  ctx: PortfolioInstanceContext,
-  seat: ZCFSeat,
+  _orch: Orchestrator,
+  _ctx: PortfolioInstanceContext,
+  _seat: ZCFSeat,
   // `flow` only for activations replaying from before AGO-1662
   offerArgs: OfferArgsFor['rebalance'] & LegacyOfferPlan,
   kit: GuestInterface<PortfolioKit>,
   startedFlow?: PortfolioStartedFlow,
-  config?: FlowConfig,
+  _config?: FlowConfig,
 ) => {
+  // Tombstone. Supported clients never sent a plan, so no activation is
+  // expected to still be in progress. Any that is stays stuck: none should
+  // need to keep running. Replay runs this on each restart, so the log line
+  // shows whether any remain.
+  //
+  // The legacy body's first host call was this same `getPortfolioId()`, and
+  // every replay since it was added has made that call first. So it matches
+  // the log of any activation that still replays.
   const id = kit.reader.getPortfolioId();
   const traceP = makeTracer('rebalance').sub(`portfolio${id}`);
-  const proposal = seat.getProposal();
-  traceP('proposal', proposal.give, proposal.want, offerArgs);
-  const { flow, targetAllocation } = offerArgs;
-
-  await null;
-  // The handler may reserve a flow even when this offer omits steps.
-  let flowId: number | undefined = startedFlow?.flowId;
-  try {
-    if (targetAllocation) {
-      kit.manager.setTargetAllocation(targetAllocation);
-    } else if (flow?.some(step => step.dest === '+agoric')) {
-      // flow includes a deposit that the planner should respond to
-      kit.manager.incrPolicyVersion();
-    }
-
-    if (flow) {
-      ({ flowId } =
-        startedFlow ?? kit.manager.startFlow({ type: 'rebalance' }, flow));
-      await stepFlow(
-        orch,
-        ctx,
-        seat,
-        flow,
-        kit,
-        traceP,
-        flowId,
-        makeFlowReporter(kit.reporter, flowId, { type: 'rebalance' }),
-        config,
-      );
-    }
-
-    if (!seat.hasExited()) {
-      seat.exit();
-    }
-  } catch (err) {
-    if (!seat.hasExited()) {
-      seat.fail(err);
-    }
-  } finally {
-    if (flowId) kit.reporter.finishFlow(flowId);
-  }
+  traceP('stuck legacy activation', {
+    flowId: startedFlow?.flowId,
+    steps: offerArgs.flow?.length,
+  });
+  return new Promise(() => {});
 }) satisfies OrchestrationFlow;
+harden(rebalance);
 
 export const parseInboundTransfer = (async (
   _orch: Orchestrator,
@@ -2030,8 +1989,10 @@ export const openPortfolio = (async (
       .give as ProposalType['openPortfolio']['give'];
     try {
       if (offerArgs.flow) {
-        // Unreachable for new offers, which can't carry a plan (AGO-1662).
-        // Kept so that activations started before then replay unchanged.
+        // Only activations from before AGO-1662 get here. The tombstone never
+        // settles, so they stay stuck rather than diverge on replay. Replay
+        // logs this on each restart, so we can tell whether this branch can go.
+        traceP('legacy open with a plan in the offer');
         await rebalance(orch, ctxI, seat, offerArgs, kit, undefined, config);
       } else if (offerArgs.targetAllocation) {
         let depositFlowDetail: FlowDetail | undefined;

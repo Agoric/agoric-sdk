@@ -26,7 +26,9 @@ import {
 import {
   type AxelarChain,
   type FlowDetail,
+  type FlowConfig,
   type FundsFlowPlan,
+  type TargetAllocation,
 } from '@agoric/portfolio-api';
 import {
   DEFAULT_FLOW_CONFIG,
@@ -36,7 +38,7 @@ import {
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeTokenIdKey } from '@agoric/portfolio-api/src/type-guards.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import type { ZCF } from '@agoric/zoe';
+import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import { Far } from '@endo/far';
 import { passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -64,7 +66,6 @@ import {
   provideNobleAccount,
   executePlan as rawExecutePlan,
   openPortfolio as rawOpenPortfolio,
-  rebalance as rawRebalance,
   wayFromSrcToDest,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
@@ -76,11 +77,7 @@ import {
   nobleToAgoric,
   protocolUSDN,
 } from '../src/pos-usdn.flows.ts';
-import {
-  type MovementDesc,
-  type LegacyOfferPlan,
-  type OfferArgsFor,
-} from '../src/type-guards-steps.ts';
+import { type MovementDesc } from '../src/type-guards-steps.ts';
 import { makeProposalShapes } from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { makePortfolioSteps } from '../tools/plan-transfers.ts';
@@ -150,17 +147,78 @@ const openPortfolio: typeof rawOpenPortfolio = (
   ...args
 ) => rawOpenPortfolio(orch, ctx, seat, offerArgs, madeKit, config, ...args);
 
-const rebalance: typeof rawRebalance = (
-  orch,
-  ctx,
-  seat,
-  offerArgs,
-  kit,
-  startedFlow,
-  config = DEFAULT_FLOW_CONFIG,
-) => rawRebalance(orch, ctx, seat, offerArgs, kit, startedFlow, config);
+/**
+ * Run steps the way the planner supplies them, but given up front.
+ * Unlike the tombstoned `rebalance` flow, `executePlan` rejects when a step
+ * fails.
+ */
+const executeSteps = (
+  orch: Orchestrator,
+  ctx: PortfolioInstanceContext,
+  seat: ZCFSeat,
+  offerArgs: { flow: MovementDesc[] },
+  pKit: GuestInterface<PortfolioKit>,
+  config?: FlowConfig,
+) =>
+  executePlan(
+    orch,
+    ctx,
+    seat,
+    offerArgs,
+    pKit,
+    { type: 'rebalance' },
+    undefined,
+    config,
+  );
+
+/**
+ * Open a portfolio the way production does: the offer names a target
+ * allocation, then the planner supplies `flow` for the opening deposit.
+ */
+const openWithPlan = async (
+  { orch, ctx, storage }: Pick<Mocks, 'orch' | 'ctx' | 'storage'>,
+  seat: ZCFSeat,
+  flow: MovementDesc[],
+) => {
+  const targetAllocation: TargetAllocation = {};
+  for (const { dest, amount } of flow) {
+    if (/^[@<+-]/.test(dest)) continue;
+    const key = dest as keyof TargetAllocation;
+    targetAllocation[key] = (targetAllocation[key] ?? 0n) + amount.value;
+  }
+  const kit = await ctx.makePortfolioKit();
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  let settled = false;
+  const openP = openPortfolio(
+    orch,
+    ctx,
+    seat,
+    {
+      targetAllocation: keys(targetAllocation).length
+        ? targetAllocation
+        : { USDN: 1n },
+    },
+    kit,
+  ).finally(() => {
+    settled = true;
+  });
+  while (!settled) {
+    await eventLoopIteration();
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId).catch(
+      () => ({ flowsRunning: {} }),
+    );
+    const [flowKey] = keys(flowsRunning);
+    if (flowKey) {
+      kit.planner.resolveFlowPlan(Number(flowKey.replace('flow', '')), flow);
+      break;
+    }
+  }
+  return openP;
+};
 
 const { make } = AmountMath;
+const { keys } = Object;
 /* eslint-disable no-underscore-dangle */
 /* We use _method to get it to sort before other properties. */
 
@@ -267,7 +325,7 @@ test('open portfolio with USDN position', async t => {
   const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
-  const actual = await openPortfolio(orch, ctx, seat, { flow: steps });
+  const actual = await openWithPlan({ orch, ctx, storage }, seat, steps);
   t.log(log.map(msg => msg._method).join(', '));
 
   t.like(log, [
@@ -300,7 +358,7 @@ const openAndTransfer = test.macro(
     const { log, seat } = offer;
 
     const [actual] = await Promise.all([
-      openPortfolio(orch, ctx, seat, { flow: steps }),
+      openWithPlan({ orch, ctx, storage }, seat, steps),
       Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
         async ([tap, _]) => {
           for (const event of makeEvents()) {
@@ -336,14 +394,12 @@ test('open portfolio with Aave position', async t => {
   );
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, ctx, offer.seat, {
-      flow: [
-        { src: '<Deposit>', dest: '@agoric', amount },
-        { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
-      ],
-    }),
+    openWithPlan({ orch, ctx, storage }, offer.seat, [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+      { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+    ]),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       // Complete transactions.
       await txResolver.drainPending();
@@ -393,9 +449,7 @@ test('open portfolio with Compound position', async t => {
   );
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, { ...ctx }, offer.seat, {
-      flow: steps,
-    }),
+    openWithPlan({ orch, ctx: { ...ctx }, storage }, offer.seat, steps),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       await txResolver.drainPending();
     }),
@@ -429,9 +483,9 @@ test.skip('handle failure in localTransfer from seat to local account', async t 
   );
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
-  });
+  const actual = await openWithPlan({ orch, ctx: { ...ctx }, storage }, seat, [
+    { src: '<Deposit>', dest: '@agoric', amount },
+  ]);
   t.log(log.map(msg => msg._method).join(', '));
   t.snapshot(log, 'call log');
 
@@ -456,9 +510,11 @@ test.skip('handle failure in IBC transfer', async t => {
   );
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    flow: steps,
-  });
+  const actual = await openWithPlan(
+    { orch, ctx: { ...ctx }, storage },
+    seat,
+    steps,
+  );
   t.log(log.map(msg => msg._method).join(', '));
   const nobleId = await cosmosId('noble');
   t.like(log, [
@@ -482,9 +538,11 @@ test.skip('handle failure in executeEncodedTx', async t => {
   );
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    flow: steps,
-  });
+  const actual = await openWithPlan(
+    { orch, ctx: { ...ctx }, storage },
+    seat,
+    steps,
+  );
   t.log(log.map(msg => msg._method).join(', '));
   const nobleId = await cosmosId('noble');
   const agoricId = await cosmosId('agoric');
@@ -516,13 +574,11 @@ test.skip('handle failure in recovery from executeEncodedTx', async t => {
   const { log, seat } = offer;
 
   const detail = { usdnOut: 100n };
-  const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    flow: [
-      { src: '<Deposit>', dest: '@agoric', amount },
-      { src: '@agoric', dest: '@noble', amount },
-      { src: '@noble', dest: 'USDNVault', amount, detail },
-    ],
-  });
+  const actual = await openWithPlan({ orch, ctx: { ...ctx }, storage }, seat, [
+    { src: '<Deposit>', dest: '@agoric', amount },
+    { src: '@agoric', dest: '@noble', amount },
+    { src: '@noble', dest: 'USDNVault', amount, detail },
+  ]);
   t.log(log.map(msg => msg._method).join(', '));
   const nobleId = await cosmosId('noble');
   const agoricId = await cosmosId('agoric');
@@ -550,14 +606,16 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   );
 
   // Start the openPortfolio flow
-  const portfolioPromise = openPortfolio(orch, { ...ctx }, offer.seat, {
-    flow: [
+  const portfolioPromise = openWithPlan(
+    { orch, ctx: { ...ctx }, storage },
+    offer.seat,
+    [
       { src: '<Deposit>', dest: '@agoric', amount },
       { src: '@agoric', dest: '@noble', amount },
       { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
       { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
     ],
-  });
+  );
 
   const actual = await portfolioPromise;
   const { log } = offer;
@@ -599,7 +657,7 @@ test.skip('rebalance handles stepFlow failure correctly', async t => {
 
   const { log, seat } = offer;
 
-  const badOfferArgs: OfferArgsFor['rebalance'] & LegacyOfferPlan = {
+  const badOfferArgs: { flow: MovementDesc[] } = {
     flow: [
       { src: '<Deposit>', dest: '@agoric', amount: make(USDC, 500n) },
       { src: '@agoric', dest: '@noble', amount: make(USDC, 500n) },
@@ -608,9 +666,8 @@ test.skip('rebalance handles stepFlow failure correctly', async t => {
     ],
   };
 
-  await t.throwsAsync(() =>
-    rebalance(orch, ctx, seat, badOfferArgs, ctx.makePortfolioKit()),
-  );
+  const kit = await ctx.makePortfolioKit();
+  await t.throwsAsync(() => executeSteps(orch, ctx, seat, badOfferArgs, kit));
 
   // Check that seat.fail() was called, not seat.exit()
   const seatCalls = log.filter(entry => entry._cap === 'seat');
@@ -637,7 +694,7 @@ test.skip('claim rewards on Aave position', async t => {
     minAmounts: [1_234_567n],
   };
   await Promise.all([
-    rebalance(
+    executeSteps(
       orch,
       ctx,
       offer.seat,
@@ -698,19 +755,17 @@ test('open portfolio with Beefy position', async t => {
   const axelarId = await cosmosId('axelar');
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, ctx, offer.seat, {
-      flow: [
-        { src: '<Deposit>', dest: '@agoric', amount },
-        { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
-        {
-          src: '@Avalanche',
-          dest: 'Beefy_re7_Avalanche',
-          amount,
-          fee: feeCall,
-        },
-      ],
-    }),
+    openWithPlan({ orch, ctx, storage }, offer.seat, [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
+      {
+        src: '@Avalanche',
+        dest: 'Beefy_re7_Avalanche',
+        amount,
+        fee: feeCall,
+      },
+    ]),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       await txResolver.drainPending();
     }),
@@ -757,7 +812,7 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   const kit = await ctx.makePortfolioKit();
 
-  await rebalance(
+  await executeSteps(
     orch,
     ctx,
     offer.seat,
@@ -790,7 +845,7 @@ test('client can move to deposit LCA', async t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   const kit = await ctx.makePortfolioKit();
 
-  await rebalance(
+  await executeSteps(
     orch,
     ctx,
     offer.seat,
@@ -819,9 +874,9 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
   // First attempt - will fail creating noble account
   const seat1 = makeMockSeat({ Deposit: amount }, undefined, log);
 
-  const attempt1 = rebalance(orch, ctx, seat1, { flow: steps }, kit);
+  const attempt1 = executeSteps(orch, ctx, seat1, { flow: steps }, kit);
 
-  t.is(await attempt1, undefined);
+  await t.throwsAsync(attempt1, { message: /timeout creating ICA/ });
 
   // Check failure evidence
   const failCall = log.find(entry => entry._method === 'fail');
@@ -852,7 +907,7 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
 
   const seat2 = makeMockSeat({ Deposit: amount }, undefined, log);
 
-  await rebalance(orch, ctx, seat2, { flow: steps }, kit);
+  await executeSteps(orch, ctx, seat2, { flow: steps }, kit);
 
   const exitCall = log.find(entry => entry._method === 'exit');
   t.truthy(exitCall, 'seat.exit() should be called on successful recovery');
@@ -891,10 +946,10 @@ test(
     // First attempt - will fail when trying to send 13n BLD (unlucky amount)
     const seat1 = makeMockSeat(give, undefined, log);
 
-    const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
+    const attempt1P = executeSteps(orch, ctx, seat1, { flow: steps }, pKit);
     const testDonePK = makePromiseKit();
     void txResolver.settleUntil(testDonePK.promise);
-    t.is(await attempt1P, undefined);
+    await t.throwsAsync(attempt1P, { message: /Insufficient funds/ });
 
     const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
     t.like(
@@ -940,7 +995,7 @@ test(
       },
     );
     const seat2 = makeMockSeat(giveGood, undefined, log);
-    const attempt2P = rebalance(orch, ctx, seat2, { flow: stepsGood }, pKit);
+    const attempt2P = executeSteps(orch, ctx, seat2, { flow: stepsGood }, pKit);
 
     await Promise.all([
       attempt2P,
@@ -977,7 +1032,7 @@ test('withdraw in coordination with planner', async t => {
     const seat = makeMockSeat({ Deposit: amount }, {}, offer.log);
     const feeAcct = AmountMath.make(BLD, 50n);
     const feeCall = AmountMath.make(BLD, 100n);
-    const depositP = rebalance(
+    const depositP = executeSteps(
       orch,
       ctx,
       seat,
@@ -1126,7 +1181,7 @@ test('simple rebalance in coordination with planner', async t => {
   {
     const depositAmount = make(USDC, 10_000n);
     const depositSeat = makeMockSeat({ Deposit: depositAmount }, {}, offer.log);
-    await rebalance(
+    await executeSteps(
       orch,
       ctx,
       depositSeat,
@@ -1142,17 +1197,7 @@ test('simple rebalance in coordination with planner', async t => {
   }
 
   // Set initial allocation (100% USDN in basis points)
-  {
-    const initialAllocation = { USDN: 10000n }; // 100% = 10000 basis points
-    const seat = makeMockSeat({}, {}, offer.log);
-    await rebalance(
-      orch,
-      ctx,
-      seat,
-      { targetAllocation: initialAllocation },
-      initialKit,
-    );
-  }
+  initialKit.manager.setTargetAllocation({ USDN: 10000n }); // 100% = 10000 basis points
 
   // Now test simpleRebalance flow with different allocation
   const webUiDone = (async () => {
@@ -2059,7 +2104,7 @@ test('CCTP from EVM waits for source wallet readiness before sending GMP call', 
   const seat = makeMockSeat({}, {}, log);
   const axelarId = await cosmosId('axelar');
 
-  const flowP = rebalance(
+  const flowP = executeSteps(
     orch,
     ctx,
     seat,
@@ -2103,7 +2148,7 @@ test('asking to relay less than 1 USDC over CCTP is refused by contract', async 
   const nobleId = await cosmosId('noble');
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, ctx, offer.seat, { flow: steps }),
+    openWithPlan({ orch, ctx, storage }, offer.seat, steps),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       await txResolver.drainPending();
     }),
@@ -2208,19 +2253,17 @@ test('open portfolio with ERC4626 position', async t => {
   );
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, ctx, offer.seat, {
-      flow: [
-        { src: '<Deposit>', dest: '@agoric', amount },
-        { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
-        {
-          src: '@Ethereum',
-          dest: 'ERC4626_vaultU2_Ethereum',
-          amount,
-          fee: feeCall,
-        },
-      ],
-    }),
+    openWithPlan({ orch, ctx, storage }, offer.seat, [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
+      {
+        src: '@Ethereum',
+        dest: 'ERC4626_vaultU2_Ethereum',
+        amount,
+        fee: feeCall,
+      },
+    ]),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       await txResolver.drainPending();
     }),
@@ -2320,7 +2363,7 @@ test('withdraw from Beefy position', async t => {
   const kit = await ctx.makePortfolioKit();
 
   await Promise.all([
-    rebalance(
+    executeSteps(
       orch,
       ctx,
       offer.seat,
@@ -2379,7 +2422,7 @@ test('swap reward token to stable token via 1inch', async t => {
   // Phase 1: provision the Avalanche remote account so we know the address the
   // swap proceeds must return to (`dstReceiver`).
   await Promise.all([
-    rebalance(
+    executeSteps(
       orch,
       ctx,
       offer.seat,
@@ -2440,7 +2483,7 @@ test('swap reward token to stable token via 1inch', async t => {
   };
 
   const seat2 = makeMockSeat({ Deposit: amount }, undefined, log);
-  const swapP = rebalance(
+  const swapP = executeSteps(
     orch,
     ctx,
     seat2,
@@ -2456,7 +2499,6 @@ test('swap reward token to stable token via 1inch', async t => {
       ],
     },
     kit,
-    undefined,
     {
       ...DEFAULT_FLOW_CONFIG,
       features: {
@@ -2555,24 +2597,25 @@ test('swap fails when experimentalSwap feature is disabled', async t => {
   const seat = makeMockSeat({ Deposit: amount }, undefined, log);
   // DEFAULT_FLOW_CONFIG has no `experimentalSwap` feature flag set, so the
   // swap step must be rejected before any GMP calls are made.
-  await rebalance(
-    orch,
-    ctx,
-    seat,
-    {
-      flow: [
-        {
-          src: '@Avalanche',
-          dest: '@Avalanche',
-          amount,
-          fee: feeCall,
-          swap: swapParams,
-        },
-      ],
-    },
-    kit,
-    undefined,
-    DEFAULT_FLOW_CONFIG,
+  await t.throwsAsync(() =>
+    executeSteps(
+      orch,
+      ctx,
+      seat,
+      {
+        flow: [
+          {
+            src: '@Avalanche',
+            dest: '@Avalanche',
+            amount,
+            fee: feeCall,
+            swap: swapParams,
+          },
+        ],
+      },
+      kit,
+      DEFAULT_FLOW_CONFIG,
+    ),
   );
 
   t.falsy(
@@ -3659,7 +3702,7 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
     const seat = makeMockSeat({ Deposit: amount }, {}, offer.log);
     const feeAcct = AmountMath.make(BLD, 50n);
     const feeCall = AmountMath.make(BLD, 100n);
-    const depositP = rebalance(
+    const depositP = executeSteps(
       orch,
       ctx,
       seat,
@@ -4079,7 +4122,7 @@ test('claim rewards from ERC4626 position', async t => {
   };
 
   await Promise.all([
-    rebalance(
+    executeSteps(
       orch,
       ctx,
       offer.seat,
@@ -4149,7 +4192,7 @@ test('claim rewards from Compound position', async t => {
   const emptyAmount = AmountMath.make(USDC, 0n);
 
   await Promise.all([
-    rebalance(
+    executeSteps(
       orch,
       ctx,
       offer.seat,
@@ -4509,7 +4552,7 @@ test('EVM-to-Agoric CCTP provisions the Noble forwarding account', async t => {
   const portfolioId = kit.reader.getPortfolioId();
   const { getPortfolioStatus } = makeStorageTools(storage);
 
-  const flowP = rebalance(
+  const flowP = executeSteps(
     orch,
     ctx,
     offer.seat,
@@ -4558,7 +4601,7 @@ test('EVM-to-EVM CCTP does not provision a Noble forwarding account', async t =>
   const { orch, ctx, offer, tapPK, txResolver, cosmosId } = mocks();
   const kit = await ctx.makePortfolioKit();
 
-  const flowP = rebalance(
+  const flowP = executeSteps(
     orch,
     ctx,
     offer.seat,
