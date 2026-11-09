@@ -343,7 +343,7 @@ export const planRebalanceToAllocations: PlanMaker = async details => {
   return flowDetail.plan;
 };
 
-/** Plan a rebalancing withdrawal from current balances and target weights. */
+/** Plan a rebalancing withdrawal, clamped to the available funds. */
 export const planWithdrawFromAllocations: PlanMaker<{
   amount: NatAmount;
   toChain?: SupportedChain;
@@ -365,8 +365,22 @@ export const planWithdrawFromAllocations: PlanMaker<{
     // TODO(#12309): Remove the `<Cash>` special case in favor of `-agoric`.
     (toChain === 'agoric' ? '<Cash>' : `-${toChain}`) as AssetPlaceRef;
   const zeroAmount = AmountMath.make(brand, 0n);
+  // Target updates omit unchanged places. Their net balance decrease is the
+  // amount available to withdraw, which may be less than the request.
+  const withdrawalValue = typedEntries(target).reduce(
+    (total, [place, targetAmount]) => {
+      if (targetAmount) {
+        total +=
+          (getOwn(currentBalances, place)?.value ?? 0n) - targetAmount.value;
+      }
+      return total;
+    },
+    0n,
+  );
+  const withdrawalAmount = AmountMath.make(brand, withdrawalValue);
+
   const resolvedCurrent = { ...currentBalances, [withdrawTo]: zeroAmount };
-  const resolvedTarget = { ...target, [withdrawTo]: amount };
+  const resolvedTarget = { ...target, [withdrawTo]: withdrawalAmount };
   const flowDetail = await planRebalanceFlow({
     network,
     current: resolvedCurrent,

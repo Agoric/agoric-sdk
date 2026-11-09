@@ -156,7 +156,8 @@ const isNonemptyPositionEntry = (entry: [AssetPlaceRef, NatValue]): boolean => {
  * When target allocations cannot be satisfied, strive for proportionality and
  * bend the rules for a withdrawal, but do not increase any position beyond its
  * target allocation (opting instead to leave the excess at a non-instrument
- * hub).
+ * hub). If blocked or liquidity-limited sources prevent a full withdrawal,
+ * withdraw as much as possible from the remaining available funds.
  *
  * Returns only entries whose values change by at least ACCOUNT_DUST_EPSILON
  * compared to current.
@@ -355,9 +356,9 @@ export const computeTargetBalances = <
       unsatisfied -= take;
       if (unsatisfied === 0n) return { ...fallback };
     }
-    // TODO(AGO-535): Effect a partial withdrawal here if necessary (e.g., when
-    // some requested funds are in a low-liquidity position).
-    return {};
+    // Preserve any available withdrawal even when blocked or liquidity-limited
+    // positions prevent satisfying the full request.
+    return { ...fallback };
   }
 
   // Blocked/suppressed *sinks* just leave funds in a source chain account.
