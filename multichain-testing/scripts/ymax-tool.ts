@@ -11,7 +11,6 @@
  */
 import '@endo/init';
 
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
 import {
   TargetAllocationShape,
   type OfferArgsFor,
@@ -203,16 +202,16 @@ const openPositions = async (
     },
   };
 
-  // planner will supply remaining steps
-  const steps: MovementDesc[] = [
-    { src: '<Deposit>', dest: '+agoric', amount: give.Deposit },
-  ];
+  // Offers can't carry a plan: the planner supplies the deposit's steps, but
+  // only once a target allocation says where the deposit should go.
+  if (give.Deposit && !targetAllocation) {
+    throw Error('a target allocation is required to open with a deposit');
+  }
   const offerArgs: OfferArgsFor['openPortfolio'] = {
-    flow: steps,
     ...(targetAllocation && { targetAllocation }),
   };
 
-  trace(id, 'opening portfolio', proposal.give, steps);
+  trace(id, 'opening portfolio', proposal.give, offerArgs);
   const tx = await sig.sendBridgeAction(
     harden({
       method: 'executeOffer',

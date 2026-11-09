@@ -147,17 +147,20 @@ export const makeTrader = (
       };
       const proposal = { give: { Access, ...give } };
       openId = `openP-${(nonce += 1)}`;
-      const doneP = wallet.executePublicOffer({
-        id: openId,
-        invitationSpec,
-        proposal,
-        offerArgs,
-      });
-      return doneP.then(({ result, payouts }) => {
+      // Learn the portfolio as soon as the offer result arrives, before any
+      // flow the offer started (which a planner may need to resolve) is done.
+      const notePortfolio = result => {
         const { portfolio: topic } = result.publicSubscribers;
         if (topic.description === 'Portfolio') {
           portfolioPath = topic.storagePath!;
         }
+      };
+      const doneP = wallet.executePublicOffer(
+        { id: openId, invitationSpec, proposal, offerArgs },
+        { onResult: notePortfolio },
+      );
+      return doneP.then(({ result, payouts }) => {
+        notePortfolio(result);
         return { result, payouts };
       });
     },

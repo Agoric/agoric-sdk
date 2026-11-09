@@ -31,6 +31,9 @@ import {
 import { type TargetAllocation as PermittedAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { MapStore } from '@agoric/store';
 import type { Baggage } from '@agoric/vat-data';
+import type { ZoeService } from '@agoric/zoe';
+import { Fail } from '@endo/errors';
+import { makePromiseKit } from '@endo/promise-kit';
 import { E, passStyleOf } from '@endo/far';
 import { type ExecutionContext } from 'ava';
 import {
@@ -38,8 +41,16 @@ import {
   type EVMContractAddresses,
   type PortfolioPrivateArgs,
 } from '../src/portfolio.contract.ts';
-import { type AssetPlaceRef } from '../src/type-guards-steps.ts';
-import { type StatusFor, type TargetAllocation } from '../src/type-guards.ts';
+import {
+  type AssetPlaceRef,
+  type MovementDesc,
+  type OfferArgsFor,
+} from '../src/type-guards-steps.ts';
+import {
+  type ProposalType,
+  type StatusFor,
+  type TargetAllocation,
+} from '../src/type-guards.ts';
 import {
   makeEvmTraderKit,
   provideMakePrivateArgs,
@@ -164,6 +175,268 @@ const makeDirectPlannerClient = (zoe, creatorFacet) => {
       return planner;
     },
   });
+};
+
+type Trader = Awaited<ReturnType<typeof setupTrader>>['trader1'];
+
+/**
+ * Offer args as tests used to write them, with the steps in the offer. The
+ * contract no longer accepts them there; see makePlannedTrader.
+ */
+type PlannedOfferArgs<K extends 'openPortfolio' | 'rebalance'> =
+  OfferArgsFor[K] & { flow?: MovementDesc[] };
+
+const isAccountOrSeatRef = (ref: string) => /^[@<+]/.test(ref);
+
+/** A target allocation weighted by how much a flow moves into each instrument. */
+const allocationOfFlow = (flow: MovementDesc[]): TargetAllocation => {
+  const weights = new Map<string, bigint>();
+  for (const { dest, amount } of flow) {
+    if (isAccountOrSeatRef(dest)) continue;
+    weights.set(dest, (weights.get(dest) ?? 0n) + amount.value);
+  }
+  // Any instrument will do when the flow only reaches accounts.
+  if (weights.size === 0) return harden({ USDN: 1n });
+  return harden(fromEntries(weights)) as TargetAllocation;
+};
+
+/**
+ * Offers can't carry a plan: only the planner supplies a flow's steps.
+ * This wraps a trader so a test can still say which steps a flow
+ * runs, as tests used to do through the offer. Each offer goes out without
+ * the steps, and the test's planner resolves the flow it starts with them.
+ *
+ * - `openPortfolio` with a `Deposit` sends a `targetAllocation` (derived from
+ *   the steps unless given) so that the open starts a deposit flow.
+ *   Without a `Deposit`, the open starts no flow, so the steps run in a
+ *   `SimpleRebalance` once the portfolio is open.
+ * - `rebalance` uses `SimpleRebalance`. Without steps, the planner resolves
+ *   the flow with none.
+ */
+const makePlannedTrader = (
+  trader: Trader,
+  providePlanner: () => Promise<DirectPlannerClient['stub']>,
+) => {
+  /** The plan of the latest call, which may only be requested later on. */
+  let lastPlanned: Promise<number> = Promise.resolve(0);
+  /** Note the start of a call that plans a flow, so whenPlanned waits for it. */
+  const notePlanning = () => {
+    const kit = makePromiseKit<number>();
+    // Callers see failures through the offer; don't also report them here.
+    kit.promise.catch(() => {});
+    lastPlanned = kit.promise;
+    return kit;
+  };
+
+  /** Resolve the portfolio's next flow awaiting steps with `flow`. */
+  const resolveNextFlow = async (flow: MovementDesc[]) => {
+    const stub = await providePlanner();
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      await eventLoopIteration();
+      let status: PortfolioStatus;
+      try {
+        status = await trader.getPortfolioStatus();
+      } catch {
+        continue; // portfolio not known or published yet
+      }
+      const { flowsRunning, policyVersion, rebalanceCount } = status;
+      const awaiting = getRunningFlowEntries(flowsRunning).find(
+        ([, detail]) => detail.awaitingSteps,
+      );
+      if (!awaiting) continue;
+      const flowId = Number(awaiting[0].replace('flow', ''));
+      const plan: FundsFlowPlan = { flow };
+      await E(stub).resolvePlan(
+        trader.getPortfolioId(),
+        flowId,
+        plan,
+        policyVersion,
+        rebalanceCount,
+      );
+      return flowId;
+    }
+    throw Error('no flow awaiting steps');
+  };
+
+  /** Make an offer, and concurrently resolve the flow it starts with `flow`. */
+  const offerAndPlan = async <T>(
+    planning: ReturnType<typeof notePlanning>,
+    offer: () => Promise<T>,
+    flow: MovementDesc[],
+  ) => {
+    const plannedP = resolveNextFlow(flow);
+    planning.resolve(plannedP);
+    const [result] = await Promise.all([offer(), plannedP]);
+    return result;
+  };
+
+  /**
+   * The planner rejects plans that reach instruments outside the target
+   * allocation, so add any such instrument, weighted by what the steps move.
+   */
+  const allocationCovering = async (
+    flow: MovementDesc[],
+  ): Promise<TargetAllocation | undefined> => {
+    const { targetAllocation: current = {} } =
+      await trader.getPortfolioStatus();
+    const added = typedEntries(allocationOfFlow(flow)).filter(
+      ([key]) => !(key in current) && flow.some(({ dest }) => dest === key),
+    );
+    if (added.length === 0) return undefined;
+    return harden({ ...current, ...fromTypedEntries(added) });
+  };
+
+  const rebalanceWith = async (
+    planning: ReturnType<typeof notePlanning>,
+    t: ExecutionContext,
+    proposal: ProposalType['rebalance'],
+    { flow = [], ...offerArgs }: PlannedOfferArgs<'rebalance'>,
+  ) => {
+    const { Deposit } = (proposal.give ?? {}) as { Deposit?: NatAmount };
+    const { Cash } = (proposal.want ?? {}) as { Cash?: NatAmount };
+    if (!Deposit && !Cash) {
+      const targetAllocation =
+        offerArgs.targetAllocation ?? (await allocationCovering(flow));
+      const args = targetAllocation ? { targetAllocation } : {};
+      return offerAndPlan(
+        planning,
+        () => trader.simpleRebalance(t, proposal, args),
+        flow,
+      );
+    }
+    offerArgs.targetAllocation === undefined ||
+      Fail`no targetAllocation with a Deposit or Cash`;
+    const offer = () =>
+      Deposit ? trader.deposit(t, Deposit) : trader.withdraw(t, Cash!);
+    return offerAndPlan(planning, offer, flow);
+  };
+
+  /**
+   * For callers that only have a proposal, like the CSV-driven scenarios.
+   * The planner only accepts `<Deposit>` in a deposit flow and `<Cash>` in a
+   * withdraw flow, so this uses the invitation that starts the matching flow:
+   * Deposit, Withdraw, or else SimpleRebalance. Prefer `deposit` / `withdraw`
+   * when the intent is known.
+   */
+  const rebalance = async (
+    t: ExecutionContext,
+    proposal: ProposalType['rebalance'],
+    offerArgs: PlannedOfferArgs<'rebalance'> = {},
+  ) => rebalanceWith(notePlanning(), t, proposal, offerArgs);
+
+  const openPortfolio = async (
+    t: ExecutionContext,
+    give: ProposalType['openPortfolio']['give'],
+    { flow, ...offerArgs }: PlannedOfferArgs<'openPortfolio'> = {},
+  ) => {
+    if (!flow) return trader.openPortfolio(t, give, offerArgs);
+    const planning = notePlanning();
+    try {
+      if (!give.Deposit) {
+        // An open can't withdraw, so pay out any `<Cash>` steps separately,
+        // with the payouts the single offer would have had.
+        const cashOut = flow
+          .filter(({ dest }) => dest === '<Cash>')
+          .map(({ amount }) => amount);
+        const want = cashOut.length
+          ? { Cash: cashOut.reduce((a, b) => AmountMath.add(a, b)) }
+          : {};
+        const opened = await trader.openPortfolio(t, give, offerArgs);
+        const done = await rebalanceWith(
+          planning,
+          t,
+          { give: {}, want } as ProposalType['rebalance'],
+          { flow },
+        );
+        return { ...opened, payouts: { ...opened.payouts, ...done.payouts } };
+      }
+      const targetAllocation =
+        offerArgs.targetAllocation ?? allocationOfFlow(flow);
+      const offer = () =>
+        trader.openPortfolio(t, give, { ...offerArgs, targetAllocation });
+      return await offerAndPlan(planning, offer, flow);
+    } catch (reason) {
+      planning.reject(reason);
+      throw reason;
+    }
+  };
+
+  /**
+   * Wait until the planner has resolved the latest flow's steps and the flow
+   * has had a chance to start them. The steps arrive a few turns after the
+   * offer, so wait for this before acknowledging what the steps send.
+   */
+  const whenPlanned = async () => {
+    const flowId = await lastPlanned;
+    await eventLoopIteration();
+    return flowId;
+  };
+
+  /** Deposit through the Deposit invitation; the planner runs `flow`. */
+  const deposit = async (
+    t: ExecutionContext,
+    Deposit: NatAmount,
+    flow: MovementDesc[] = [],
+  ) =>
+    rebalanceWith(notePlanning(), t, { give: { Deposit }, want: {} }, { flow });
+
+  /** Withdraw through the Withdraw invitation; the planner runs `flow`. */
+  const withdraw = async (
+    t: ExecutionContext,
+    Cash: NatAmount,
+    flow: MovementDesc[] = [],
+  ) => rebalanceWith(notePlanning(), t, { give: {}, want: { Cash } }, { flow });
+
+  return harden({
+    ...trader,
+    openPortfolio,
+    rebalance,
+    deposit,
+    withdraw,
+    whenPlanned,
+  });
+};
+
+/**
+ * Like setupTrader, but `trader1` is wrapped by makePlannedTrader with its
+ * own planner, so tests can name the steps of the flows its offers start.
+ */
+/**
+ * A planner for makePlannedTrader, redeemed on first use. Reuses `planner`
+ * when given, e.g. setupPlanner's `planner1`, whether or not it is redeemed.
+ */
+const makePlannerProvider = (
+  zoe: ZoeService,
+  creatorFacet: Parameters<typeof makeDirectPlannerClient>[1],
+  planner: DirectPlannerClient = makeDirectPlannerClient(zoe, creatorFacet),
+) => {
+  let redeemed: Promise<void> | undefined;
+  return async () => {
+    try {
+      return planner.stub;
+    } catch {
+      await (redeemed ||= planner.redeem());
+      return planner.stub;
+    }
+  };
+};
+
+/**
+ * Like setupTrader, but its traders are wrapped by makePlannedTrader with a
+ * shared planner, so tests can name the steps of the flows their offers start.
+ */
+const setupPlannedTrader = async (...args: Parameters<typeof setupTrader>) => {
+  const setup = await setupTrader(...args);
+  const { zoe, started, trader1, trader2, makeFundedTrader } = setup;
+  const providePlanner = makePlannerProvider(zoe, started.creatorFacet);
+  const plan = (trader: Trader) => makePlannedTrader(trader, providePlanner);
+  return {
+    ...setup,
+    trader1: plan(trader1),
+    trader2: trader2 && plan(trader2),
+    makeFundedTrader: async () => plan(await makeFundedTrader()),
+    providePlanner,
+  };
 };
 
 const resolveDepositPlan = async (
@@ -303,7 +576,7 @@ const resolveDepositPlan = async (
 
 const beefyTestMacro = test.macro({
   async exec(t, vaultKey: AssetPlaceRef) {
-    const { trader1, common, txResolver } = await setupTrader(t);
+    const { trader1, common, txResolver } = await setupPlannedTrader(t);
     const { usdc, bld, poc26 } = common.brands;
 
     const amount = usdc.units(3_333.33);
@@ -668,7 +941,7 @@ const makeCreateAndDepositScenarioRunner = (
 
 const erc4626TestMacro = test.macro({
   async exec(t, vaultKey: AssetPlaceRef) {
-    const { trader1, common, txResolver } = await setupTrader(t);
+    const { trader1, common, txResolver } = await setupPlannedTrader(t);
     const { usdc, bld, poc26 } = common.brands;
 
     const amount = usdc.units(3_333.33);
@@ -746,6 +1019,9 @@ export {
   getPortfolioInfo,
   ackNFA,
   makeDirectPlannerClient,
+  makePlannedTrader,
+  setupPlannedTrader,
+  makePlannerProvider,
   resolveDepositPlan,
   beefyTestMacro,
   setupPlanner,
@@ -768,4 +1044,5 @@ export type {
   RunningFlowDetail,
   EvmTraderKit,
   DirectPlannerClient,
+  PlannedOfferArgs,
 };

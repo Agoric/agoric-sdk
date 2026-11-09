@@ -24,9 +24,8 @@ import {
 } from '@agoric/portfolio-api';
 import { E, passStyleOf } from '@endo/far';
 import { extractEvmRemoteAccountConfig } from '../src/portfolio.contract.ts';
-import { type OfferArgsFor, type StatusFor } from '../src/type-guards.ts';
+import { type StatusFor } from '../src/type-guards.ts';
 import {
-  setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
 } from './contract-setup.ts';
@@ -46,12 +45,14 @@ import {
   setupEvmRemoteAccountConfigTest,
   keys,
   values,
+  setupPlannedTrader,
+  type PlannedOfferArgs,
 } from './contract-test-support.ts';
 
 test.serial(
   'open 2 positions on an EVM chain, with a CCTP confirmation for each',
   async t => {
-    const { trader1, common, txResolver } = await setupTrader(t);
+    const { trader1, common, txResolver } = await setupPlannedTrader(t);
     const { usdc, bld, poc26 } = common.brands;
 
     const amount = usdc.units(6_666.66);
@@ -125,7 +126,7 @@ test.serial(
 );
 
 test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
-  const { trader1, common, txResolver, trader2 } = await setupTrader(
+  const { trader1, common, txResolver, trader2 } = await setupPlannedTrader(
     t,
     undefined,
     undefined,
@@ -152,7 +153,7 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
 
-  const depositToAave: OfferArgsFor['openPortfolio'] = {
+  const depositToAave: PlannedOfferArgs<'openPortfolio'> = {
     flow: [
       { src: '<Deposit>', dest: '@agoric', amount },
       { src: '@agoric', dest: '@noble', amount },

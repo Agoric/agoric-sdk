@@ -122,16 +122,39 @@ test('ProposalShapes', t => {
   }
 });
 
-test('offerArgs can carry fee', t => {
+test('plans can carry fee', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const [amount, fee] = [usdc(200n), bld.make(100n)];
   const specimen = harden({
     flow: [{ src: '@noble', dest: '@Arbitrum', amount, fee }],
   });
-  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+  t.notThrows(() => mustMatch(specimen, shapes.plan));
 });
 
-test('plan and offer flows are limited to 30 movements', t => {
+test('offers cannot carry a plan', t => {
+  // Only the planner and delegated agents supply plans.
+  const shapes = makeOfferArgsShapes(USDC);
+  const amount = usdc(1n);
+  const flow = [{ src: '<Deposit>', dest: '@agoric', amount }];
+  for (const name of ['openPortfolio', 'rebalance', 'deposit'] as const) {
+    t.throws(
+      () => mustMatch(harden({ flow }), shapes[name]),
+      { message: /flow/ },
+      name,
+    );
+    t.throws(
+      () => mustMatch(harden({ flow: [] }), shapes[name]),
+      { message: /flow/ },
+      `${name}: even an empty plan`,
+    );
+  }
+  t.notThrows(() =>
+    mustMatch(harden({ targetAllocation: { USDN: 1n } }), shapes.rebalance),
+  );
+  t.notThrows(() => mustMatch(harden({}), shapes.deposit));
+});
+
+test('plans are limited to 30 movements', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const movement = harden({
     src: '@noble',
@@ -139,22 +162,15 @@ test('plan and offer flows are limited to 30 movements', t => {
     amount: usdc(1n),
   });
 
-  for (const shape of [
-    shapes.plan,
-    shapes.openPortfolio,
-    shapes.rebalance,
-    shapes.deposit,
-  ]) {
-    t.notThrows(() =>
-      mustMatch(harden({ flow: Array(30).fill(movement) }), shape),
-    );
-    t.throws(
-      () => mustMatch(harden({ flow: Array(31).fill(movement) }), shape),
-      {
-        message: /Array length 31 must be <= limit 30/,
-      },
-    );
-  }
+  t.notThrows(() =>
+    mustMatch(harden({ flow: Array(30).fill(movement) }), shapes.plan),
+  );
+  t.throws(
+    () => mustMatch(harden({ flow: Array(31).fill(movement) }), shapes.plan),
+    {
+      message: /Array length 31 must be <= limit 30/,
+    },
+  );
 });
 
 test('plan dependency lists are limited to 29 steps', t => {
@@ -184,16 +200,16 @@ test('plan order is limited to 30 entries', t => {
   );
 });
 
-test('offerArgs can carry usdnOut', t => {
+test('plans can carry usdnOut', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const [amount, detail] = [usdc(200n), { usdnOut: 198n }];
   const specimen = harden({
     flow: [{ src: '@noble', dest: 'USDN', amount, detail }],
   });
-  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+  t.notThrows(() => mustMatch(specimen, shapes.plan));
 });
 
-test('offerArgs can carry 1inch swap params', t => {
+test('plans can carry 1inch swap params', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const amount = usdc(200n);
   const specimen = harden({
@@ -214,7 +230,7 @@ test('offerArgs can carry 1inch swap params', t => {
       },
     ],
   });
-  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+  t.notThrows(() => mustMatch(specimen, shapes.plan));
 
   const withTokenOut = harden({
     flow: [
@@ -227,7 +243,7 @@ test('offerArgs can carry 1inch swap params', t => {
       },
     ],
   });
-  t.notThrows(() => mustMatch(withTokenOut, shapes.rebalance));
+  t.notThrows(() => mustMatch(withTokenOut, shapes.plan));
 });
 
 test('movementDescShape allows unknown additional properties', t => {
@@ -375,8 +391,8 @@ test('numeric position references are rejected', t => {
     flow: [{ src: '@noble', dest: 42, amount }],
   });
 
-  t.throws(() => mustMatch(specimenWithNumber, shapes.rebalance), {
-    message: /Must match one of/,
+  t.throws(() => mustMatch(specimenWithNumber, shapes.plan), {
+    message: /dest: number 42 - Must be a string/,
   });
 });
 
@@ -992,7 +1008,7 @@ test('movement Shape accepts additive withdraw params and requires an amount', t
     t.false(matches(harden(specimen), shape), name);
 });
 
-test('plan and offer Shapes accept additive withdraw params', t => {
+test('plan Shape accepts additive withdraw params', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const specimen = harden({
     flow: [
@@ -1004,14 +1020,7 @@ test('plan and offer Shapes accept additive withdraw params', t => {
       },
     ],
   });
-  for (const shape of [
-    shapes.plan,
-    shapes.deposit,
-    shapes.openPortfolio,
-    shapes.rebalance,
-  ]) {
-    t.true(matches(specimen, shape));
-  }
+  t.true(matches(specimen, shapes.plan));
 });
 
 test('movement Ext Shape accepts future places while validating known withdrawal fields', t => {
@@ -1154,7 +1163,7 @@ test('Ext acceptance does not enable future places at current offer boundaries',
   t.false(matches(extendedKnownPlan, shapes.plan));
 });
 
-test('supported plans and offers retain structural checks through Ext foundations', t => {
+test('supported plans retain structural checks through Ext foundations', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const movement = {
     src: 'Aave_Base',
@@ -1163,24 +1172,20 @@ test('supported plans and offers retain structural checks through Ext foundation
     withdraw: { amountOfShares: 0n },
     futureMovementField: true,
   };
-  for (const shape of [
-    shapes.plan,
-    shapes.deposit,
-    shapes.openPortfolio,
-    shapes.rebalance,
+  t.true(
+    matches(
+      harden({ flow: Array(MAX_PLAN_STEPS).fill(movement) }),
+      shapes.plan,
+    ),
+  );
+  for (const specimen of [
+    { flow: Array(MAX_PLAN_STEPS + 1).fill(movement) },
+    { flow: [{ ...movement, amount: bld.make(1n) }] },
+    { flow: [{ ...movement, withdraw: { amountOfShares: -1n } }] },
+    { flow: [{ ...movement, fee: 1n }] },
+    { flow: [{ ...movement, detail: { gas: -1n } }] },
   ]) {
-    t.true(
-      matches(harden({ flow: Array(MAX_PLAN_STEPS).fill(movement) }), shape),
-    );
-    for (const specimen of [
-      { flow: Array(MAX_PLAN_STEPS + 1).fill(movement) },
-      { flow: [{ ...movement, amount: bld.make(1n) }] },
-      { flow: [{ ...movement, withdraw: { amountOfShares: -1n } }] },
-      { flow: [{ ...movement, fee: 1n }] },
-      { flow: [{ ...movement, detail: { gas: -1n } }] },
-    ]) {
-      t.false(matches(harden(specimen), shape));
-    }
+    t.false(matches(harden(specimen), shapes.plan));
   }
   for (const shape of [shapes.plan, shapes.planShapeExt]) {
     t.true(matches(harden({ flow: [movement], order: [[0, []]] }), shape));

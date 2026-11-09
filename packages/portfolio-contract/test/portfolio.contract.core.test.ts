@@ -8,6 +8,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
+import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -18,7 +19,6 @@ import { passStyleOf } from '@endo/far';
 import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   deploy,
-  setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
 } from './contract-setup.ts';
@@ -30,7 +30,13 @@ import {
   ackNFA,
   getPortfolioInfoTimed,
   keys,
+  setupPlannedTrader,
 } from './contract-test-support.ts';
+
+const expectUnhandled = makeExpectUnhandledRejectionMacro({
+  test,
+  importMetaUrl: import.meta.url,
+});
 
 test('contract feature flags are published in vstorage', async t => {
   const checkFeatures = async (
@@ -72,7 +78,7 @@ test('contract feature flags are published in vstorage', async t => {
 });
 
 test('open portfolio with USDN position', async t => {
-  const { trader1, common, txResolver } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupPlannedTrader(t);
   const { usdc, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -130,7 +136,7 @@ test('open portfolio with USDN position', async t => {
 });
 
 test('open a portfolio with Aave position', async t => {
-  const { trader1, common, txResolver } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupPlannedTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const portfolioP = (async () => {
@@ -181,7 +187,7 @@ test('open a portfolio with Aave position', async t => {
 });
 
 test('open a portfolio with Compound position', async t => {
-  const { trader1, common, txResolver } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupPlannedTrader(t);
   const { bld, usdc, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -233,7 +239,8 @@ test('open a portfolio with Compound position', async t => {
 });
 
 test('open portfolio with USDN, Aave positions', async t => {
-  const { trader1, common, contractBaggage, txResolver } = await setupTrader(t);
+  const { trader1, common, contractBaggage, txResolver } =
+    await setupPlannedTrader(t);
   const { bld, usdc, poc26 } = common.brands;
 
   const { add } = AmountMath;
@@ -292,17 +299,18 @@ test('open portfolio with USDN, Aave positions', async t => {
   snapshotTimed(t, tree, 'baggage after open with positions');
 });
 
-test('contract rejects unknown pool keys', async t => {
-  const { trader1, common } = await setupTrader(t);
+test('contract rejects unknown pool keys in a plan', async t => {
+  const { trader1, common } = await setupPlannedTrader(t);
   const { usdc, poc26 } = common.brands;
 
   const amount = usdc.units(1000);
 
-  // Try to open portfolio with unknown pool key
+  // The planner tries to resolve the opening deposit with an unknown pool key
   const rejectionP = trader1.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
     {
+      targetAllocation: { USDN: 1n },
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
@@ -312,13 +320,16 @@ test('contract rejects unknown pool keys', async t => {
     },
   );
 
+  await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
+
   await t.throwsAsync(rejectionP, {
     message: /Must match one of|Aave_Base/i,
   });
 });
 
 test('open portfolio with target allocations', async t => {
-  const { trader1, common, contractBaggage } = await setupTrader(t);
+  const { trader1, common, contractBaggage } = await setupPlannedTrader(t);
   const { poc26 } = common.brands;
 
   const targetAllocation = {
@@ -350,7 +361,7 @@ test('open portfolio with target allocations', async t => {
 });
 
 test('claim rewards on Aave position successfully', async t => {
-  const { trader1, common, txResolver } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupPlannedTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -394,7 +405,7 @@ test('claim rewards on Aave position successfully', async t => {
   // instead of embedding it in a user rebalance offer.
   const rebalanceP = trader1.rebalance(
     t,
-    { give: { Deposit: amount }, want: {} },
+    { give: {}, want: {} },
     {
       flow: [
         {
@@ -412,6 +423,7 @@ test('claim rewards on Aave position successfully', async t => {
     },
   );
 
+  await trader1.whenPlanned();
   await txResolver.drainPending();
 
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
@@ -431,8 +443,10 @@ test('claim rewards on Aave position successfully', async t => {
   snapshotTimed(t, rebalanceResult.payouts, 'rebalance payouts');
 });
 
-test('USDN claim fails currently', async t => {
-  const { trader1, common, txResolver } = await setupTrader(t);
+// The failed claim leaves executePlan's vow rejected, which the contract
+// leaves to platform-level unhandled rejection reporting.
+test('USDN claim fails currently', expectUnhandled(1), async t => {
+  const { trader1, common, txResolver } = await setupPlannedTrader(t);
   const { usdc, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -515,7 +529,7 @@ test('USDN claim fails currently', async t => {
 });
 
 test('portfolios node updates for each new portfolio', async t => {
-  const { makeFundedTrader, common } = await setupTrader(t);
+  const { makeFundedTrader, common } = await setupPlannedTrader(t);
   const { poc26 } = common.brands;
   const { storage } = common.bootstrap;
 
@@ -542,7 +556,7 @@ test('portfolios node updates for each new portfolio', async t => {
 
 // baggage after a simple startInstance, without any other startup logic
 test('initial baggage', async t => {
-  const { contractBaggage } = await setupTrader(t);
+  const { contractBaggage } = await setupPlannedTrader(t);
 
   const tree = inspectMapStore(contractBaggage);
   snapshotTimed(t, tree, 'contract baggage after start');
@@ -550,7 +564,7 @@ test('initial baggage', async t => {
 });
 
 test('start deposit more to same', async t => {
-  const { trader1, common } = await setupTrader(t);
+  const { trader1, common } = await setupPlannedTrader(t);
   const { usdc, poc26 } = common.brands;
 
   const targetAllocation = {
@@ -563,13 +577,9 @@ test('start deposit more to same', async t => {
   ]);
 
   const amount = usdc.units(3_333.33);
-  await trader1.rebalance(
-    t,
-    { give: { Deposit: amount }, want: {} },
-    {
-      flow: [{ src: '<Deposit>', dest: '+agoric', amount }],
-    },
-  );
+  await trader1.deposit(t, amount, [
+    { src: '<Deposit>', dest: '+agoric', amount },
+  ]);
 
   const info = await trader1.getPortfolioStatus();
   t.deepEqual(
@@ -669,4 +679,75 @@ test('public facet does not expose EVM portfolio powers', async t => {
   // invoke them.
   t.false('openPortfolioFromEVM' in publicFacet);
   t.false('validateEVMMessageDomain' in publicFacet);
+});
+
+test('offers can no longer carry a plan', async t => {
+  // Steps come only from the planner (or a delegated agent), not from offers.
+  const { common, zoe, started } = await deploy(t);
+  const { usdc, bld, poc26 } = common.brands;
+  const { mint: _bldMint, ...bldSansMint } = bld;
+  const { mint: _poc26Mint, ...poc26SansMint } = poc26;
+  const wallet = makeWallet(
+    { USDC: usdc, BLD: bldSansMint, Access: poc26SansMint },
+    zoe,
+    common.utils.vowTools.when,
+  );
+  await wallet.deposit(await common.utils.pourPayment(usdc.units(100)));
+
+  const Deposit = usdc.units(1);
+  const flow = [
+    { src: '<Deposit>', dest: '@agoric', amount: Deposit },
+    { src: '@agoric', dest: '@noble', amount: Deposit },
+  ];
+
+  const openInvitationSpec = {
+    source: 'contract',
+    instance: started.instance,
+    publicInvitationMaker: 'makeOpenPortfolioInvitation',
+  } as const;
+  await t.throwsAsync(
+    wallet.executePublicOffer({
+      id: 'open-with-plan',
+      invitationSpec: openInvitationSpec,
+      proposal: { give: { Deposit } },
+      offerArgs: { flow },
+    }),
+    { message: /flow/ },
+  );
+
+  // Nor through a continuing invitation.
+  await Promise.all([
+    wallet.executePublicOffer({
+      id: 'open',
+      invitationSpec: openInvitationSpec,
+      proposal: { give: {} },
+      offerArgs: {},
+    }),
+    ackNFA(common.utils),
+  ]);
+  for (const [invitationMakerName, proposal] of [
+    ['Rebalance', { give: {}, want: {} }],
+    ['SimpleRebalance', { give: {}, want: {} }],
+    ['Deposit', { give: { Deposit }, want: {} }],
+  ] as const) {
+    await t.throwsAsync(
+      wallet.executeContinuingOffer({
+        id: `${invitationMakerName}-with-plan`,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'open',
+          invitationMakerName,
+        },
+        proposal,
+        offerArgs: { flow },
+      }),
+      { message: /flow/ },
+      invitationMakerName,
+    );
+  }
+
+  const status = common.bootstrap.storage
+    .getDeserialized(`${ROOT_STORAGE_PATH}.portfolios.portfolio0`)
+    .at(-1) as { flowCount?: number };
+  t.falsy(status.flowCount, 'no offer started a flow');
 });

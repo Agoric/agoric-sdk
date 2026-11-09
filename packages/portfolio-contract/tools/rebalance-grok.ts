@@ -236,8 +236,11 @@ export const withBrand = (
   const flow = scenario.offerArgs?.flow?.map(
     m => withFee({ ...m, amount: $(m.amount) }) as MovementDesc,
   );
-  const offerArgs = flow ? harden({ flow }) : harden({});
-  mustMatch(offerArgs, makeOfferArgsShapes(brand).rebalance);
+  // Offers can't carry a plan: tests have a planner supply `flow`.
+  const offerArgs: { flow?: MovementDesc[] } = flow
+    ? harden({ flow })
+    : harden({});
+  if (flow) mustMatch(harden({ flow }), makeOfferArgsShapes(brand).plan);
 
   const proposal = objectMap(scenario.proposal, $$);
   mustMatch(proposal, makeProposalShapes(brand).rebalance);
