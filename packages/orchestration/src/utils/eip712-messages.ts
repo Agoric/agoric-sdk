@@ -117,7 +117,10 @@ export type WitnessFieldName<
 export type WitnessTypeParam<
   S extends EIP712MessageSchema,
   T extends OperationNames<S> = OperationNames<S>,
-> = TypedDataParameter<WitnessFieldName<S, T>, WitnessTypeName<S, T>>;
+> = TypedDataParameter<
+  WitnessFieldName<S, T>,
+  Extract<keyof WitnessOperationTypes<S, T>, string>
+>;
 
 type WitnessOperationTypes<
   S extends EIP712MessageSchema,
@@ -462,7 +465,7 @@ export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
     const { message, types } = normalizeAndValidateEIP712Data({
       message: data as Record<string, unknown>,
       types: getWitnessTypes(operation),
-      primaryType: witnessTypeParam.type,
+      primaryType: getWitnessTypeName(operation),
     });
     return makeWitness<WitnessTypedData<S, T>, WitnessTypedDataParam<S, T>>(
       message as OperationWitness<S, T>['witness'],

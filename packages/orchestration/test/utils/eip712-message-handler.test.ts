@@ -1134,7 +1134,7 @@ test('public authoring encodes falsy sentinels without changing its input', t =>
   t.notThrows(() => hashTypedData(data as any));
 });
 
-test('signer-supplied optSentinel cannot fill missing or undefined signed values', t => {
+test('signer-supplied codec metadata cannot fill or omit signed values', t => {
   const kit = makeEIP712MessageKit(SentinelSchema);
   const utils = makeEIP712MessageHandlerUtils(viemUtils, SentinelSchema);
   const authored = kit.getStandaloneOperationData(
@@ -1153,6 +1153,7 @@ test('signer-supplied optSentinel cannot fill missing or undefined signed values
             Reading: authored.types.Reading.map(field => ({
               ...field,
               optSentinel: sentinelValue,
+              optional: true,
             })),
           },
           message: { ...authored.message, readings: [reading] },
