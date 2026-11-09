@@ -220,7 +220,7 @@ const toSafeNumber = (value: bigint, what: string): number => {
 };
 
 /** Validate identities and units without inventing valuations or holdings. */
-const assertHoldings: (
+const assertTypedHoldings: (
   holdings: readonly TypedHoldingDetail[],
 ) => asserts holdings is TypedHoldingDetail[] = holdings => {
   const identities = new Set<string>();
@@ -297,7 +297,7 @@ export const portfolioObservationsToEIP712 = ({
   ) {
     throw TypeError('cannot combine aggregate balances with typed holdings');
   }
-  if (holdings !== undefined) assertHoldings(holdings);
+  if (holdings !== undefined) assertTypedHoldings(holdings);
   const legacy: HoldingDetailEIP712Input[] = Object.entries(balances).flatMap(
     ([place, balanceUsdc]) => {
       if (balanceUsdc === undefined) return [];
@@ -358,7 +358,7 @@ export const portfolioObservationsFromEIP712 = ({
   }
   if (rawHoldings.length && Object.keys(balances).length)
     throw TypeError('cannot combine aggregate balances with typed holdings');
-  assertHoldings(rawHoldings);
+  assertTypedHoldings(rawHoldings);
   const instrumentTvls: PlanObservations['instrumentTvls'] = {};
   for (const { instrumentId, tvlUsd } of instruments) {
     if (!isInstrumentId(instrumentId))
