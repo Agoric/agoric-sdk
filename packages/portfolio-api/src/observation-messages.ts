@@ -232,16 +232,18 @@ const assertTypedHoldings: (
     valueUsd,
     balanceUsdc,
   } of holdings) {
-    if (!isPortfolioBalancePlaceRef(place))
+    if (!isPortfolioBalancePlaceRef(place)) {
       throw TypeError(`invalid holding place ${JSON.stringify(place)}`);
+    }
     const isNative =
       typeof kind === 'string' && kind.startsWith('$') && kind.length > 1;
     const isInstrument =
       kind === 'shares' || kind === 'principal' || kind === 'claimable-reward';
     const isAccountHolding =
       isNative || kind === 'token' || kind === 'claimed-reward';
-    if (!isAccountHolding && !isInstrument)
+    if (!isAccountHolding && !isInstrument) {
       throw TypeError(`invalid holding kind ${JSON.stringify(kind)}`);
+    }
     if (
       isInstrument ? !isInstrumentId(place) : !isInterChainAccountRef(place)
     ) {
@@ -255,11 +257,13 @@ const assertTypedHoldings: (
     ) {
       throw TypeError(`invalid holding token address ${String(tokenAddress)}`);
     }
-    if (isNative !== /^0x0{40}$/i.test(tokenAddress))
+    if (isNative !== /^0x0{40}$/i.test(tokenAddress)) {
       throw TypeError(`holding kind ${kind} has an incompatible token address`);
+    }
     const identity = JSON.stringify([place, kind, tokenAddress.toLowerCase()]);
-    if (identities.has(identity))
+    if (identities.has(identity)) {
       throw TypeError(`duplicate holding identity ${identity}`);
+    }
     identities.add(identity);
     assertUint256(amount, 'amount');
     if (
@@ -270,7 +274,9 @@ const assertTypedHoldings: (
     ) {
       throw RangeError(`invalid valuation valueUsd: ${String(valueUsd)}`);
     }
-    if (balanceUsdc !== undefined) assertUint256(balanceUsdc, 'balanceUsdc');
+    if (balanceUsdc !== undefined) {
+      assertUint256(balanceUsdc, 'balanceUsdc');
+    }
   }
 };
 
@@ -288,8 +294,9 @@ export const portfolioObservationsToEIP712 = ({
     portfolio: portfolioId,
     ...syncState,
   })) {
-    if (!Number.isSafeInteger(value) || value < 0)
+    if (!Number.isSafeInteger(value) || value < 0) {
       throw RangeError(`${field} out of range: ${value}`);
+    }
   }
   if (
     holdings !== undefined &&
@@ -297,21 +304,29 @@ export const portfolioObservationsToEIP712 = ({
   ) {
     throw TypeError('cannot combine aggregate balances with typed holdings');
   }
-  if (holdings !== undefined) assertTypedHoldings(holdings);
+  if (holdings !== undefined) {
+    assertTypedHoldings(holdings);
+  }
   const legacy: HoldingDetailEIP712Input[] = Object.entries(balances).flatMap(
     ([place, balanceUsdc]) => {
-      if (balanceUsdc === undefined) return [];
-      if (!isPortfolioBalancePlaceRef(place))
+      if (balanceUsdc === undefined) {
+        return [];
+      }
+      if (!isPortfolioBalancePlaceRef(place)) {
         throw TypeError(`invalid holding place ${JSON.stringify(place)}`);
+      }
       assertUint256(balanceUsdc, 'balanceUsdc');
       return [{ place, balanceUsdc }];
     },
   );
   const instruments = Object.entries(instrumentTvls).flatMap(
     ([instrumentId, tvl]) => {
-      if (tvl === undefined) return [];
-      if (!isInstrumentId(instrumentId))
+      if (tvl === undefined) {
+        return [];
+      }
+      if (!isInstrumentId(instrumentId)) {
         throw TypeError(`invalid instrument ${JSON.stringify(instrumentId)}`);
+      }
       assertUint256(tvl.tvlUsd, 'tvlUsd');
       return [{ instrumentId, tvlUsd: tvl.tvlUsd }];
     },
@@ -341,8 +356,9 @@ export const portfolioObservationsFromEIP712 = ({
   const rawHoldings: TypedHoldingDetail[] = [];
   for (const holding of holdings) {
     const { place, balanceUsdc, kind, tokenAddress, amount } = holding;
-    if (!isPortfolioBalancePlaceRef(place))
+    if (!isPortfolioBalancePlaceRef(place)) {
       throw TypeError(`invalid holding place ${JSON.stringify(place)}`);
+    }
     if (
       kind !== undefined ||
       tokenAddress !== undefined ||
@@ -350,21 +366,25 @@ export const portfolioObservationsFromEIP712 = ({
     ) {
       rawHoldings.push(typedHoldingFromEIP712(holding));
     } else {
-      if (Object.hasOwn(balances, place))
+      if (Object.hasOwn(balances, place)) {
         throw TypeError(`duplicate holding place ${JSON.stringify(place)}`);
+      }
       assertUint256(balanceUsdc as bigint, 'balanceUsdc');
       balances[place] = balanceUsdc;
     }
   }
-  if (rawHoldings.length && Object.keys(balances).length)
+  if (rawHoldings.length && Object.keys(balances).length) {
     throw TypeError('cannot combine aggregate balances with typed holdings');
+  }
   assertTypedHoldings(rawHoldings);
   const instrumentTvls: PlanObservations['instrumentTvls'] = {};
   for (const { instrumentId, tvlUsd } of instruments) {
-    if (!isInstrumentId(instrumentId))
+    if (!isInstrumentId(instrumentId)) {
       throw TypeError(`invalid instrument ${JSON.stringify(instrumentId)}`);
-    if (Object.hasOwn(instrumentTvls, instrumentId))
+    }
+    if (Object.hasOwn(instrumentTvls, instrumentId)) {
       throw TypeError(`duplicate instrument ${JSON.stringify(instrumentId)}`);
+    }
     assertUint256(tvlUsd, 'tvlUsd');
     instrumentTvls[instrumentId] = { tvlUsd };
   }
