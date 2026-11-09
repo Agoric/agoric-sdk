@@ -369,7 +369,7 @@ const accountStateByChain = (
   return harden(byChain) as StatusFor['portfolio']['accountStateByChain'];
 };
 
-const { fromEntries } = Object;
+const { fromEntries, keys } = Object;
 
 const makePortfolioAgentsRecord = (
   delegations?: PortfolioKitState['delegations'],
@@ -451,7 +451,6 @@ type PortfolioKitCycleBreaker = unknown;
 export const preparePortfolioKit = (
   zone: Zone,
   {
-    rebalance,
     executePlan,
     onAgoricTransfer,
     transferChannels,
@@ -470,12 +469,6 @@ export const preparePortfolioKit = (
     verifyPortfolioObservations,
     timerService,
   }: {
-    rebalance: (
-      seat: ZCFSeat,
-      offerArgs: unknown,
-      kit: PortfolioKitCycleBreaker,
-      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
-    ) => Vow<unknown>;
     executePlan: (
       seat: ZCFSeat,
       offerArgs: unknown,
@@ -2086,25 +2079,24 @@ export const preparePortfolioKit = (
         },
       },
       rebalanceHandler: {
-        async handle(seat: ZCFSeat, offerArgs: unknown) {
+        /**
+         * Legacy `Rebalance` invitations used to run a plan supplied in the
+         * offer. Offers can no longer carry a plan, so this now
+         * behaves like `SimpleRebalance`: the planner supplies the steps.
+         * The facet is kept because durable kits can't drop facets, and
+         * invitations made before the upgrade still target it.
+         *
+         * A rebalance plan doesn't use the offer's funds, so reject a
+         * proposal that gives or wants any: Deposit and Withdraw handle
+         * those. Check here rather than in the invitation's proposal shape,
+         * since invitations made before the upgrade keep their old shape.
+         */
+        handle(seat: ZCFSeat, offerArgs: unknown): FlowKey {
           insistAgoricOwned(this.state);
-          mustMatch(offerArgs, offerArgsShapes.rebalance);
-          // XXX not wired to record `initiatingOperation` (AGO-1125) like the
-          // other setTargetAllocation call sites: this legacy path has no
-          // real callers (superseded by SimpleRebalance) and switching it to
-          // executePlan surfaced a separate, pre-existing bug where
-          // executePlan republishes a duplicate, badly-formatted fail entry
-          // on any step failure (unlike this `rebalance` flow's quieter
-          // handling). Revisit once that's fixed.
-          const startedFlow = this.facets.manager.startFlow(
-            { type: 'rebalance' },
-            offerArgs.flow,
-          );
-
-          // This flow does its own error handling and always exits the seat
-          // XXX: rewrite to use executePlan instead of rebalance, which is legacy and broken
-          void rebalance(seat, offerArgs, this.facets, startedFlow);
-          return `flow${startedFlow.flowId}`;
+          const { give, want } = seat.getProposal();
+          (keys(give).length === 0 && keys(want).length === 0) ||
+            Fail`Rebalance offers can't give or want funds; use Deposit or Withdraw`;
+          return this.facets.simpleRebalanceHandler.handle(seat, offerArgs);
         },
       },
       depositHandler: {
@@ -2117,10 +2109,7 @@ export const preparePortfolioKit = (
             type: 'deposit',
             amount: proposal.give.Deposit,
           } as FlowDetail;
-          const startedFlow = this.facets.manager.startFlow(
-            flowDetail,
-            offerArgs.flow,
-          );
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
           void executePlan(
             seat,
@@ -2135,7 +2124,6 @@ export const preparePortfolioKit = (
       simpleRebalanceHandler: {
         handle(seat: ZCFSeat, offerArgs: unknown): FlowKey {
           insistAgoricOwned(this.state);
-          // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           const { manager } = this.facets;
 
@@ -2156,7 +2144,7 @@ export const preparePortfolioKit = (
             type: 'rebalance',
             ...(initiatingOperation && { initiatingOperation }),
           } as FlowDetail;
-          const startedFlow = manager.startFlow(flowDetail, offerArgs.flow);
+          const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
           void executePlan(
             seat,

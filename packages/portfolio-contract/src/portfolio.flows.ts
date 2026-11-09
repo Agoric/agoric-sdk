@@ -109,6 +109,7 @@ import {
   getWithdrawChainOfPlaceRef,
   type AssetPlaceRef,
   type MovementDesc,
+  type LegacyOfferPlan,
   type OfferArgsFor,
 } from './type-guards-steps.ts';
 import {
@@ -1784,7 +1785,8 @@ export const rebalance = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  offerArgs: OfferArgsFor['rebalance'],
+  // `flow` only for activations replaying from before AGO-1662
+  offerArgs: OfferArgsFor['rebalance'] & LegacyOfferPlan,
   kit: GuestInterface<PortfolioKit>,
   startedFlow?: PortfolioStartedFlow,
   config?: FlowConfig,
@@ -1953,7 +1955,8 @@ export const openPortfolio = (async (
   orch: Orchestrator,
   ctx: PortfolioBootstrapContext,
   seat: ZCFSeat,
-  offerArgs: OfferArgsFor['openPortfolio'],
+  // `flow` only for activations replaying from before AGO-1662
+  offerArgs: OfferArgsFor['openPortfolio'] & LegacyOfferPlan,
   madeKit?: GuestInterface<PortfolioKit>,
   openConfig?: FlowConfig & {
     /**
@@ -2027,7 +2030,8 @@ export const openPortfolio = (async (
       .give as ProposalType['openPortfolio']['give'];
     try {
       if (offerArgs.flow) {
-        // XXX only for testing recovery?
+        // Unreachable for new offers, which can't carry a plan (AGO-1662).
+        // Kept so that activations started before then replay unchanged.
         await rebalance(orch, ctxI, seat, offerArgs, kit, undefined, config);
       } else if (offerArgs.targetAllocation) {
         let depositFlowDetail: FlowDetail | undefined;
