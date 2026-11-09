@@ -117,10 +117,7 @@ export type WitnessFieldName<
 export type WitnessTypeParam<
   S extends EIP712MessageSchema,
   T extends OperationNames<S> = OperationNames<S>,
-> = TypedDataParameter<
-  WitnessFieldName<S, T>,
-  Extract<keyof WitnessOperationTypes<S, T>, string>
->;
+> = TypedDataParameter<WitnessFieldName<S, T>, WitnessTypeName<S, T>>;
 
 type WitnessOperationTypes<
   S extends EIP712MessageSchema,
