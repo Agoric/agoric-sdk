@@ -387,14 +387,18 @@ export const portfolioObservationsFromEIP712 = ({
   const legacyBalances: PlanObservations['balances'] = {};
   const rawHoldings: TypedHoldingDetail[] = [];
   for (const holding of holdings) {
-    const { place, balanceUsdc, kind, tokenAddress, amount } = holding;
+    const { place, balanceUsdc, kind, tokenAddress, amount, valueUsd } =
+      holding;
     if (!isPortfolioBalancePlaceRef(place)) {
       throw TypeError(`invalid holding place ${JSON.stringify(place)}`);
     }
+    // Any typed field makes this a typed holding, validated as a whole, so a
+    // partial hybrid is rejected rather than having signed fields dropped.
     if (
       kind !== undefined ||
       tokenAddress !== undefined ||
-      amount !== undefined
+      amount !== undefined ||
+      valueUsd !== undefined
     ) {
       rawHoldings.push(typedHoldingFromEIP712(holding));
     } else {

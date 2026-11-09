@@ -473,6 +473,20 @@ test('typed holdings reject balances that their balanceUsdc does not derive', t 
   }
 });
 
+test('decoding rejects partial typed holdings instead of dropping signed fields', t => {
+  const data = readMessage(messageFor().message);
+  for (const valueUsd of [0n, 5n, VALUE_USD_UNKNOWN]) {
+    t.throws(
+      () =>
+        portfolioObservationsFromEIP712({
+          ...data,
+          holdings: [{ place: morpho, balanceUsdc: 1n, valueUsd }],
+        }),
+      { message: /invalid holding kind/ },
+    );
+  }
+});
+
 test('handler leaves the sentinel on the wire for the converter to decode', t => {
   for (const onUnknownSignedField of ['throw', 'keep'] as const) {
     const handler = makeEIP712MessageHandlerUtils(
