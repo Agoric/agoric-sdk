@@ -5,6 +5,10 @@
  *   per-message: dropped from `types` if never present on any instance of
  *   the struct, otherwise kept with the `optional` marker stripped (treated
  *   as required from then on).
+ * - `optSentinel` struct fields are translated `undefined`<->sentinel.
+ *   Authoring encodes undefined values. Decoding with a trusted schema returns
+ *   application values that may contain undefined and are not hashable wire
+ *   data; preserve the original signed message for hashing and verification.
  * - struct types not referenced from `primaryType` through kept fields
  *   (e.g. only through a dropped `optional` field) are absent from
  *   `types`. Referenced ones are kept even when no value reaches them (e.g.
@@ -19,7 +23,8 @@
  *   and `message` is untrusted, to catch data smuggled in outside what's
  *   declared.
  * - 'keep': leave `message` untouched (no projection, no removal of excess
- *   data). Dynamic-length arrays are never truncated in any mode, since
+ *   data), except that 'throw' for onNonCanonicalValue returns a decoded copy.
+ *   Dynamic-length arrays are never truncated in any mode, since
  *   every element affects the EIP-712 hash.
  *
  * `onNonCanonicalValue` controls how a valid primitive leaf value that
@@ -28,18 +33,21 @@
  * have a distinct canonical form: a `number` for an explicit width of at
  * most 48 bits (e.g. `uint32`), else a `bigint` (e.g. `uint64`,
  * `uint256`), matching abitype's TS types.
- * - 'normalize' (default, except with `onExtraField: 'keep'`): replace it
- *   with its canonical form. Since `onExtraField: 'keep'` never modifies
+ * - 'normalize' (default, except with `onExtraField: 'keep'`): encode
+ *   undefined as optSentinel, then replace values with their canonical form. Since `onExtraField: 'keep'` never modifies
  *   `message`, combining it with an explicit `onNonCanonicalValue:
  *   'normalize'` is an error (the call throws).
- * - 'keep' (default with `onExtraField: 'keep'`): leave it as is.
+ * - 'keep' (default with `onExtraField: 'keep'`): leave it as is, retaining
+ *   sentinels as wire values.
  * - 'throw': reject it -- e.g. to check that an already-normalized message
  *   also has the expected JS types for a different (trusted) set of
- *   `types`, which a field declared with another type would not.
+ *   `types`, which a field declared with another type would not. Decode
+ *   optSentinel values to undefined using those trusted types.
  *
- * Regardless of `onExtraField`, the result is also *validated*, with the
- * goal that if validation succeeds, hashing the result is guaranteed to
- * succeed and to hash exactly the values given:
+ * Regardless of `onExtraField`, wire values are also *validated*, with the
+ * goal that if validation succeeds, hashing their canonical representation
+ * succeeds and hashes exactly the values given. Sentinel decoding returns
+ * application data instead; preserve the wire representation for hashing.
  * - every declared field must be present. Fixed-length arrays must have at
  *   least their declared number of elements (too few is missing data, not
  *   excess, so no mode tolerates it; too many is excess, tolerated only by
@@ -85,6 +93,8 @@ export type NormalizeAndValidateEIP712DataOptions = {
    * 'normalize', except with `onExtraField: 'keep'`, where it defaults to
    * 'keep' instead: 'keep' mode never modifies `message`, so explicitly
    * passing 'normalize' with it is an error (the call throws).
+   * Also controls optSentinel handling: 'normalize' encodes undefined,
+   * 'throw' decodes sentinels, and 'keep' preserves wire values.
    */
   onNonCanonicalValue?: 'normalize' | 'keep' | 'throw';
 };
@@ -323,7 +333,10 @@ type FieldState = 'optional-unseen' | 'optional-seen' | 'required';
  * FieldState}. Also doubles as an array-typed field's per-element record,
  * keyed by index instead (as a string, per usual JS property-key coercion).
  */
-type TypeFields = Record<string, { state: FieldState; type: string }>;
+type TypeFields = Record<
+  string,
+  { state: FieldState; type: string; optSentinel: unknown }
+>;
 
 /** Looks up (and lazily builds) the {@link TypeFields} for a struct type name, or `undefined` for a primitive leaf. */
 type GetType = (typeName: string) => TypeFields | undefined;
@@ -346,12 +359,13 @@ type GetType = (typeName: string) => TypeFields | undefined;
  *   the field absent, this one sets it. Rejected immediately.
  * - `optional-seen` + absent => stays `optional-seen`.
  * - `required` + present => stays `required`.
- * - `required` + absent => rejected immediately.
+ * - `required` + absent => rejected immediately, except that 'normalize'
+ *   can encode an undefined value when this field has an optSentinel.
  *
  * Every mode runs these the same way, `keep` included -- missing data is
  * missing data regardless of `onExtraField`. `keep` only skips removing or
- * rejecting *excess* data (extra fields, over-length arrays) and never
- * touches `message` (so `onNonCanonicalValue` is never 'normalize').
+ * rejecting *excess* data (extra fields, over-length arrays). It preserves
+ * the input; 'throw' for onNonCanonicalValue can return a decoded copy.
  */
 const visit = (
   fieldType: string,
@@ -359,23 +373,38 @@ const visit = (
   getType: GetType,
   onExtraField: 'drop' | 'throw' | 'keep',
   onNonCanonicalValue: 'normalize' | 'keep' | 'throw',
+  optSentinel: unknown,
 ): unknown => {
   const keep = onExtraField === 'keep';
+  const project = !keep || onNonCanonicalValue === 'throw';
   const { base, length: requiredLength, isArray } = splitArrayType(fieldType);
   // Registers `base` in the output types even if no element ends up visited.
   const baseType = getType(base);
 
   if (!isArray && !baseType) {
+    // Sentinel metadata belongs to the field, including primitive array elements.
     // Not a declared struct or array, so it must be a recognized Solidity
     // primitive with a matching JS value; also catches an unknown type.
-    const canonical = normalizeEIP712Primitive(fieldType, value);
-    if (canonical === value || onNonCanonicalValue === 'keep') return value;
-    if (onNonCanonicalValue === 'throw') {
+    const wireValue =
+      onNonCanonicalValue === 'normalize'
+        ? value === undefined
+          ? optSentinel
+          : value
+        : value;
+    const canonical = normalizeEIP712Primitive(fieldType, wireValue);
+    if (canonical !== wireValue && onNonCanonicalValue === 'throw') {
       throw new Error(
-        `Expected a ${typeof canonical} for EIP-712 type ${quoteName(fieldType)}, got ${describeValue(value)}`,
+        `Expected a ${typeof canonical} for EIP-712 type ${quoteName(fieldType)}, got ${describeValue(wireValue)}`,
       );
     }
-    return canonical;
+    if (
+      onNonCanonicalValue === 'throw' &&
+      optSentinel !== undefined &&
+      canonical === normalizeEIP712Primitive(fieldType, optSentinel)
+    ) {
+      return undefined;
+    }
+    return onNonCanonicalValue === 'keep' ? wireValue : canonical;
   }
 
   // A declared struct or array needs an actual object/array value. Split
@@ -420,14 +449,14 @@ const visit = (
     const length = keep
       ? actualLength
       : Math.min(actualLength, requiredLength ?? actualLength);
-    result = keep ? value : new Array(length);
+    result = project ? new Array(length) : value;
     // Not `Array.from({ length }, ...)`: our pinned XS mis-enumerates an
     // array built that way, reporting index "0" `length` times and never
     // "1".."length - 1" -- see `packages/xsnap/test/xs-js.test.js`. A
     // null-prototype object with plain indexed assignment avoids it.
     type = Object.create(null) as TypeFields;
     for (let index = 0; index < length; index += 1) {
-      type[index] = { state: 'required', type: base };
+      type[index] = { state: 'required', type: base, optSentinel };
     }
   } else {
     // Guaranteed defined (the `!isArray && !baseType` case already
@@ -438,7 +467,7 @@ const visit = (
     // Plain object, not null-prototype: this ends up in the returned
     // `message`, which may need to be Endo-Passable (e.g. across a Zoe/exo
     // boundary), and a null-prototype object fails that check.
-    result = keep ? value : {};
+    result = project ? (keep ? { ...value } : {}) : value;
     type = baseType;
   }
 
@@ -463,7 +492,11 @@ const visit = (
   }
   for (const fieldName of Object.keys(type)) {
     const field = type[fieldName];
-    const present = fieldName in value;
+    const present =
+      fieldName in value ||
+      (onNonCanonicalValue === 'normalize' &&
+        field.state === 'required' &&
+        field.optSentinel !== undefined);
 
     if (present) {
       if (field.state === 'optional-seen') {
@@ -487,8 +520,9 @@ const visit = (
       getType,
       onExtraField,
       onNonCanonicalValue,
+      field.optSentinel,
     );
-    if (!keep) result[fieldName] = projectedValue;
+    if (project) result[fieldName] = projectedValue;
   }
   return result;
 };
@@ -537,6 +571,7 @@ export const normalizeAndValidateEIP712Data = (
       fields[field.name] = {
         state: field.optional ? 'optional-unseen' : 'required',
         type: field.type,
+        optSentinel: field.optSentinel,
       };
     }
     resultTypes.set(typeName, fields);
@@ -549,6 +584,7 @@ export const normalizeAndValidateEIP712Data = (
     getType,
     onExtraField,
     onNonCanonicalValue,
+    undefined,
   ) as Record<string, unknown>;
 
   // Output only the fields still required (resolved `optional` ones are

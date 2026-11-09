@@ -1685,3 +1685,127 @@ test('normalizeEIP712Primitive validates and returns the canonical form of a pri
     message: /Unrecognized EIP-712 type "uint256\[\]"/,
   });
 });
+
+for (const [type, sentinel] of [
+  ['int8', -128n],
+  ['int256', -(2n ** 255n)],
+] as const) {
+  test(`optSentinel round trips undefined, known and zero ${type} values`, t => {
+    const types = {
+      Root: [{ name: 'items', type: 'Item[]' }],
+      Item: [{ name: 'value', type, optSentinel: sentinel }],
+    };
+    const input = {
+      message: { items: [{ value: undefined }, { value: 0n }, { value: 7n }] },
+      types,
+      primaryType: 'Root',
+    };
+    const encoded = normalizeAndValidateEIP712Data(input);
+    const cast = type === 'int8' ? Number : BigInt;
+    t.deepEqual(encoded.message, {
+      items: [
+        { value: cast(sentinel) },
+        { value: cast(0n) },
+        { value: cast(7n) },
+      ],
+    });
+    t.deepEqual(encoded.types.Item, [{ name: 'value', type }]);
+    t.notThrows(() =>
+      hashTypedData({ ...encoded, primaryType: 'Root' } as any),
+    );
+    const decoded = normalizeAndValidateEIP712Data(
+      { ...encoded, types, primaryType: 'Root' },
+      { onNonCanonicalValue: 'throw' },
+    );
+    t.deepEqual(decoded.message, {
+      items: [{ value: undefined }, { value: cast(0n) }, { value: cast(7n) }],
+    });
+    t.is(input.message.items[0]!.value, undefined);
+    t.deepEqual(
+      normalizeAndValidateEIP712Data({ ...decoded, types, primaryType: 'Root' })
+        .message,
+      encoded.message,
+    );
+  });
+}
+
+test('optSentinel applies through primitive arrays and supports a zero sentinel', t => {
+  const types = {
+    Root: [{ name: 'values', type: 'uint256[]', optSentinel: 0n }],
+  };
+  const encoded = normalizeAndValidateEIP712Data({
+    types,
+    primaryType: 'Root',
+    message: { values: [undefined, 1n] },
+  });
+  t.deepEqual(encoded.message, { values: [0n, 1n] });
+  t.deepEqual(
+    normalizeAndValidateEIP712Data(
+      { ...encoded, types, primaryType: 'Root' },
+      { onNonCanonicalValue: 'throw' },
+    ).message,
+    { values: [undefined, 1n] },
+  );
+});
+
+test('sentinel decoding keeps unknown fields without mutating signed input', t => {
+  const types = { Root: [{ name: 'value', type: 'int256', optSentinel: -1n }] };
+  const message = harden({ value: -1n, future: true });
+  const decoded = normalizeAndValidateEIP712Data(
+    { types, message, primaryType: 'Root' },
+    { onExtraField: 'keep', onNonCanonicalValue: 'throw' },
+  );
+  t.deepEqual(decoded.message, { value: undefined, future: true });
+  t.is(message.value, -1n);
+  t.is(
+    normalizeAndValidateEIP712Data(
+      { types, message, primaryType: 'Root' },
+      { onExtraField: 'keep' },
+    ).message,
+    message,
+  );
+});
+
+test('wire-only validation never fills unsigned fields from sentinel metadata', t => {
+  const types = { Root: [{ name: 'value', type: 'int256', optSentinel: -1n }] };
+  for (const message of [{}, { value: undefined }]) {
+    t.throws(() =>
+      normalizeAndValidateEIP712Data(
+        { types, message, primaryType: 'Root' },
+        { onNonCanonicalValue: 'keep' },
+      ),
+    );
+    t.throws(() =>
+      normalizeAndValidateEIP712Data(
+        { types, message, primaryType: 'Root' },
+        { onNonCanonicalValue: 'throw' },
+      ),
+    );
+  }
+});
+
+test('encoding undefined cannot bypass validation through an invalid optSentinel', t => {
+  for (const field of [
+    { name: 'value', type: 'int8', optSentinel: 128n },
+    { name: 'value', type: 'uint256', optSentinel: -1n },
+    { name: 'value', type: 'bool', optSentinel: 'false' },
+  ]) {
+    t.throws(() =>
+      normalizeAndValidateEIP712Data({
+        types: { Root: [field] },
+        primaryType: 'Root',
+        message: { value: undefined },
+      }),
+    );
+  }
+});
+
+test('encoding leaves undefined without a configured sentinel invalid', t => {
+  t.throws(() =>
+    normalizeAndValidateEIP712Data({
+      types: { Root: [{ name: 'value', type: 'int256' }] },
+      primaryType: 'Root',
+      message: { value: undefined },
+    }),
+  );
+});

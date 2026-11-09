@@ -5,6 +5,18 @@ import type {
 } from 'abitype';
 import type { Simplify } from '@agoric/internal';
 
+/**
+ * @param nbits Number of bits in the signed value
+ * @returns Minimum signed integer that fits in nbits
+ */
+export const minSignedBigInt = (nbits: bigint) => -(2n ** (nbits - 1n));
+
+/**
+ * @param nbits Number of bits in the signed value
+ * @returns Maximum signed integer that fits in nbits
+ */
+export const maxSignedBigInt = (nbits: bigint) => 2n ** (nbits - 1n) - 1n;
+
 // Redefine abitype's TypedDataParameter to make it generic
 export type TypedDataParameter<
   TN extends string = string,
@@ -24,6 +36,11 @@ export type TypedDataParameter<
    * doesn't understand it.
    */
   optional?: boolean;
+  /**
+   * Repo-local extension for primitive leaves (including array elements).
+   * Encode `undefined` as this sentinel; decode the sentinel to `undefined`.
+   */
+  optSentinel?: unknown;
 };
 
 /**
@@ -77,12 +94,22 @@ type StructToType<
     [F in Exclude<
       Fields[number],
       { optional: true }
-    > as F['name']]: FieldToType<TD, F['type'], Kind>;
+    > as F['name']]: FieldToType<
+      TD,
+      F['type'],
+      Kind,
+      F extends { optSentinel: unknown } ? true : false
+    >;
   } & {
     [F in Extract<
       Fields[number],
       { optional: true }
-    > as F['name']]?: FieldToType<TD, F['type'], Kind>;
+    > as F['name']]?: FieldToType<
+      TD,
+      F['type'],
+      Kind,
+      F extends { optSentinel: unknown } ? true : false
+    >;
   }
 >;
 
@@ -136,6 +163,7 @@ type FieldToType<
   TD extends Record<string, readonly TypedDataParameter[]>,
   FieldType extends string,
   Kind extends TypedDataValueKind,
+  HasSentinel extends boolean = false,
 > =
   ParseArrayType<FieldType> extends {
     elem: infer Elem extends string;
@@ -143,9 +171,13 @@ type FieldToType<
   }
     ? Elem extends keyof TD & string
       ? ApplyArrayDims<StructToType<TD, TD[Elem], Kind>, Dims>
-      : Kind extends 'input'
-        ? ApplyArrayDims<PrimitiveToType<Elem, Kind>, Dims>
-        : AbiParameterToPrimitiveType<{ name: string; type: FieldType }>
+      : ApplyArrayDims<
+          | PrimitiveToType<Elem, Kind>
+          | (HasSentinel extends true ? undefined : never),
+          Dims
+        >
     : FieldType extends keyof TD & string
       ? StructToType<TD, TD[FieldType], Kind>
-      : PrimitiveToType<FieldType, Kind>;
+      :
+          | PrimitiveToType<FieldType, Kind>
+          | (HasSentinel extends true ? undefined : never);

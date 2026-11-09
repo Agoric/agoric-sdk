@@ -271,7 +271,10 @@ export const makeEIP712MessageHandlerUtils = <
         types: messageKit.getOperationTypes(operation),
         primaryType: operation,
       },
-      { onExtraField: onUnknownSignedField, onNonCanonicalValue: 'throw' },
+      {
+        onExtraField: onUnknownSignedField,
+        onNonCanonicalValue: 'throw',
+      },
     );
     return {
       operation,
@@ -331,7 +334,10 @@ export const makeEIP712MessageHandlerUtils = <
         types: messageKit.getOperationTypes(operation),
         primaryType: operation,
       },
-      { onExtraField: onUnknownSignedField, onNonCanonicalValue: 'throw' },
+      {
+        onExtraField: onUnknownSignedField,
+        onNonCanonicalValue: 'throw',
+      },
     );
     const spender = permitData.message.spender;
     return {
@@ -500,7 +506,14 @@ export const makeEIP712MessageHandlerUtils = <
       normalizeAndValidateEIP712Data(
         {
           message: otherData.message as Record<string, unknown>,
-          types: otherData.types,
+          // optSentinel is local codec metadata, not part of the signed type.
+          // Never let an untrusted declaration fill undefined wire values.
+          types: Object.fromEntries(
+            Object.entries(otherData.types).map(([name, fields]) => [
+              name,
+              fields.map(({ optSentinel: _optSentinel, ...field }) => field),
+            ]),
+          ),
           primaryType: otherData.primaryType,
         },
         { onExtraField: 'throw' },
