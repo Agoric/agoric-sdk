@@ -3,35 +3,17 @@ import '@endo/init/debug.js';
 import test from 'ava';
 import { matches } from '@endo/patterns';
 import {
-  OPT_UINT_UNDEFINED,
-  optUint255Shape,
-  maxOptUint255,
-  assertOptUint255,
-} from '@agoric/portfolio-api';
+  minSignedBigInt,
+  maxSignedBigInt,
+} from '@agoric/orchestration/src/utils/abitype.ts';
 import {
   WithdrawParamsShape,
   HoldingKindShape,
   HoldingDetailShape,
-  PlanObservationsV2Shape,
+  PlanObservationsShape,
 } from '../src/type-guards.ts';
 
 const address = `0x${'1'.repeat(40)}`;
-
-test('optUint255 accepts the unused marker and bounds wire values by field name', t => {
-  for (const value of [OPT_UINT_UNDEFINED, 0n, maxOptUint255 - 1n]) {
-    t.true(matches(value, optUint255Shape));
-    t.notThrows(() => assertOptUint255(value, 'quantity'));
-  }
-  for (const value of [
-    OPT_UINT_UNDEFINED - 1n,
-    maxOptUint255,
-    1 as unknown as bigint,
-  ]) {
-    t.throws(() => assertOptUint255(value, 'quantity'), {
-      message: `invalid optUint255 quantity: ${String(value)}`,
-    });
-  }
-});
 
 test('withdraw parameters preserve omitted, false and zero values', t => {
   for (const params of [
@@ -39,6 +21,8 @@ test('withdraw parameters preserve omitted, false and zero values', t => {
     { max: false },
     { max: true },
     { srcAmount: 0n },
+    { srcKind: 'shares' },
+    { srcKind: 'principal' },
     { srcToken: address },
     { srcToken: address, srcAmount: 123n },
     { max: true, srcToken: address, srcAmount: 0n },
@@ -46,6 +30,9 @@ test('withdraw parameters preserve omitted, false and zero values', t => {
     t.true(matches(harden(params), WithdrawParamsShape));
   for (const params of [
     { max: 'true' },
+    { srcKind: 'reward' },
+    { srcKind: '$ETH' },
+    { srcKind: 'share' },
     { srcAmount: 1 },
     { srcAmount: -1n },
     { srcToken: 1n },
@@ -64,10 +51,22 @@ test('holding kinds cover typed and native holdings', t => {
     'token',
     '$ETH',
     '$AVAX',
+    '$$',
+    '$%',
   ]) {
     t.true(matches(kind, HoldingKindShape), `kind ${kind}`);
   }
-  for (const kind of ['share', 'native-token', 'unknown', '$', 'ETH', 1]) {
+  for (const kind of [
+    'share',
+    'native-token',
+    'unknown',
+    '$',
+    '%',
+    '%ETH',
+    '#ETH',
+    'ETH',
+    1,
+  ]) {
     t.false(matches(kind, HoldingKindShape), `kind ${kind}`);
   }
 });
@@ -78,20 +77,21 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
     kind: 'principal',
     tokenAddress: address,
     amount: 0n,
-    valueUsd: OPT_UINT_UNDEFINED,
+    valueUsd: minSignedBigInt(256n),
   };
   for (const specimen of [
     holding,
     { ...holding, valueUsd: 0n },
-    { ...holding, balanceUsdc: OPT_UINT_UNDEFINED },
+    { ...holding, valueUsd: undefined },
+    { ...holding, valueUsd: maxSignedBigInt(256n) },
     { ...holding, balanceUsdc: 0n },
     { ...holding, balanceUsdc: 1n },
   ]) {
     t.true(matches(harden(specimen), HoldingDetailShape));
     t.true(
       matches(
-        harden({ holdings: [specimen], instrumentTvls: {} }),
-        PlanObservationsV2Shape,
+        harden({ balances: {}, holdings: [specimen], instrumentTvls: {} }),
+        PlanObservationsShape,
       ),
     );
   }
@@ -99,8 +99,9 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
     { amount: undefined },
     { amount: -1n },
     { amount: 123 },
-    { valueUsd: undefined },
     { valueUsd: -2n },
+    { valueUsd: -1n },
+    { valueUsd: maxSignedBigInt(256n) + 1n },
     { valueUsd: 0 },
     { balanceUsdc: -2n },
     { balanceUsdc: '123' },
@@ -111,7 +112,21 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
   t.false(
     matches(
       harden({ holdings: [], instrumentTvls: { Aave_Base: { tvlUsd: -1n } } }),
-      PlanObservationsV2Shape,
+      PlanObservationsShape,
     ),
   );
+});
+
+test('legacy holding Shape requires a place and a nonnegative balance', t => {
+  t.true(
+    matches(harden({ place: '@Base', balanceUsdc: 0n }), HoldingDetailShape),
+  );
+  for (const entry of [
+    { balanceUsdc: 0n },
+    { place: '@Base' },
+    { place: '@Base', balanceUsdc: -1n },
+    { place: '@Base', balanceUsdc: 0n, extra: true },
+  ]) {
+    t.false(matches(harden(entry), HoldingDetailShape));
+  }
 });

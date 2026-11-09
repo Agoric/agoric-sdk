@@ -11,16 +11,14 @@ import {
 } from '@agoric/orchestration/src/stubs/viem-typedData.ts';
 import { makeEIP712MessageHandlerUtils } from '@agoric/orchestration/src/utils/eip712-message-handler.ts';
 import {
-  YmaxObservationMessageSchemaV2,
-  OPT_UINT_UNDEFINED,
+  YmaxObservationMessageSchema,
   ymaxObservationMessageKit,
-  ymaxObservationMessageKitV2,
-  portfolioObservationsToEIP712V2,
-  portfolioObservationsFromEIP712V2,
-  type PortfolioObservationsContentV2,
-  type PortfolioObservationsEIP712V2,
+  portfolioObservationsToEIP712,
+  portfolioObservationsFromEIP712,
+  type PortfolioObservationsContent,
+  type PortfolioObservationsEIP712,
 } from '../src/observation-messages.ts';
-import type { HoldingDetail } from '../src/types.ts';
+import type { TypedHoldingDetail as HoldingDetail } from '../src/types.ts';
 import { runWithoutLockdown } from './without-lockdown.ts';
 
 const address = '0x123456789012345678901234567890123456789a' as const;
@@ -31,21 +29,21 @@ const holding: HoldingDetail = {
   kind: 'shares',
   tokenAddress: address,
   amount: 10n ** 24n,
-  valueUsd: OPT_UINT_UNDEFINED,
-  balanceUsdc: OPT_UINT_UNDEFINED,
+  valueUsd: undefined,
 };
-const content: PortfolioObservationsContentV2 = {
+const content: PortfolioObservationsContent = {
   portfolioId: 12,
   syncState: { policyVersion: 3, rebalanceCount: 7 },
   observations: {
+    balances: {},
     holdings: [holding],
     instrumentTvls: { [morpho]: { tvlUsd: 12n } },
   },
 };
 const messageFor = (holdings: HoldingDetail[] = [holding]) =>
-  ymaxObservationMessageKitV2.getStandaloneOperationData(
+  ymaxObservationMessageKit.getStandaloneOperationData(
     {
-      ...portfolioObservationsToEIP712V2({
+      ...portfolioObservationsToEIP712({
         ...content,
         observations: { ...content.observations, holdings },
       }),
@@ -58,9 +56,9 @@ const messageFor = (holdings: HoldingDetail[] = [holding]) =>
   );
 
 const decode = (holdings: HoldingDetail[]) =>
-  portfolioObservationsFromEIP712V2(messageFor(holdings).message);
+  portfolioObservationsFromEIP712(messageFor(holdings).message);
 
-test('v2 round trip keeps raw units separate from required signed valuations', t => {
+test('typed holdings round trip keeps raw units separate from optional signed valuations', t => {
   for (const fields of [
     {},
     { valueUsd: 0n },
@@ -76,15 +74,18 @@ test('v2 round trip keeps raw units separate from required signed valuations', t
 });
 
 test('missing holdings, empty holdings and observed zero remain distinct', t => {
-  t.deepEqual(decode([]).observations.holdings, []);
+  t.deepEqual(decode([]).observations, {
+    balances: {},
+    instrumentTvls: content.observations.instrumentTvls,
+  });
   t.deepEqual(decode([{ ...holding, amount: 0n }]).observations.holdings, [
     { ...holding, amount: 0n },
   ]);
   t.throws(() =>
-    portfolioObservationsToEIP712V2({
+    portfolioObservationsToEIP712({
       ...content,
       observations: { instrumentTvls: {} },
-    } as unknown as PortfolioObservationsContentV2),
+    } as unknown as PortfolioObservationsContent),
   );
 });
 
@@ -100,15 +101,13 @@ test('multiple kinds and reward tokens can share one instrument place', t => {
       tokenAddress: address,
       amount: 123n,
       valueUsd: 123n,
-      balanceUsdc: 123n,
     },
     {
       place: '@Base',
       kind: '$ETH',
       tokenAddress: zeroAddress,
       amount: 0n,
-      valueUsd: OPT_UINT_UNDEFINED,
-      balanceUsdc: OPT_UINT_UNDEFINED,
+      valueUsd: undefined,
     },
   ];
   t.deepEqual(decode(entries).observations.holdings, entries);
@@ -146,25 +145,24 @@ for (const [label, fields, error] of [
   [
     'invalid negative balanceUsdc',
     { balanceUsdc: -2n },
-    /invalid optUint255 balanceUsdc/,
+    /invalid uint256 balanceUsdc/,
   ],
   [
     'overflow balanceUsdc',
-    { balanceUsdc: 2n ** 255n },
-    /invalid optUint255 balanceUsdc/,
+    { balanceUsdc: 2n ** 256n },
+    /invalid uint256 balanceUsdc/,
   ],
   ['negative shares', { amount: -1n }, /invalid uint256 amount/],
   ['overflow shares', { amount: 2n ** 256n }, /invalid uint256 amount/],
   [
     'invalid negative valuation',
     { valueUsd: -2n },
-    /invalid optUint255 valueUsd/,
+    /invalid valuation valueUsd/,
   ],
-  ['missing valuation', { valueUsd: undefined }, /invalid optUint255 valueUsd/],
   [
     'overflow valuation',
     { valueUsd: 2n ** 255n },
-    /invalid optUint255 valueUsd/,
+    /invalid valuation valueUsd/,
   ],
 ] as const) {
   test(`v2 rejects ${label} on encoding and decoding`, t => {
@@ -173,19 +171,10 @@ for (const [label, fields, error] of [
     const data = {
       ...messageFor().message,
       holdings: [entry],
-    } as unknown as PortfolioObservationsEIP712V2;
-    t.throws(() => portfolioObservationsFromEIP712V2(data), { message: error });
+    } as unknown as PortfolioObservationsEIP712;
+    t.throws(() => portfolioObservationsFromEIP712(data), { message: error });
   });
 }
-
-test('deprecated balanceUsdc can be observed independently for each holding', t => {
-  const entries: HoldingDetail[] = [
-    holding,
-    { ...holding, kind: 'principal', balanceUsdc: 123n },
-    { ...holding, kind: 'reward', balanceUsdc: 0n },
-  ];
-  t.deepEqual(decode(entries).observations.holdings, entries);
-});
 
 test('syntactically valid future instruments retain their raw evidence', t => {
   const future: HoldingDetail = {
@@ -232,7 +221,7 @@ test('handler rejects raw holdings added outside the signed field definitions', 
         encodeType,
         getTypesForEIP712Domain,
       },
-      YmaxObservationMessageSchemaV2,
+      YmaxObservationMessageSchema,
       { onUnknownSignedField: 'throw' },
     );
   const message = messageFor();
@@ -240,7 +229,7 @@ test('handler rejects raw holdings added outside the signed field definitions', 
     ...message,
     message: {
       ...message.message,
-      holdings: [{ ...holding, unsignedShares: 123n }],
+      holdings: [{ ...message.message.holdings[0], unsignedShares: 123n }],
     },
     address,
     signature: `0x${'ab'.repeat(65)}`,
@@ -252,8 +241,12 @@ test('handler rejects raw holdings added outside the signed field definitions', 
       }),
     { message: /unsignedShares/ },
   );
-  for (const field of ['amount', 'valueUsd'] as const) {
-    const withoutField: Partial<HoldingDetail> = { ...holding };
+  for (const field of ['amount'] as const) {
+    const withoutField: Partial<
+      PortfolioObservationsEIP712['holdings'][number]
+    > = {
+      ...message.message.holdings[0],
+    };
     delete withoutField[field];
     const missingSignedField = {
       ...altered,
@@ -267,80 +260,94 @@ test('handler rejects raw holdings added outside the signed field definitions', 
     };
     t.throws(
       () =>
-        extractOperationDetailsFromDataWithAddress(missingSignedField as any, {
-          verifyingContract: { '1': address },
-        }),
+        portfolioObservationsFromEIP712(
+          extractOperationDetailsFromDataWithAddress(
+            missingSignedField as any,
+            {
+              verifyingContract: { '1': address },
+            },
+          ).data,
+        ),
       { message: new RegExp(field) },
     );
   }
 });
 
-test('v1 remains explicit and domain-separated from v2', t => {
-  const v1 = ymaxObservationMessageKit.getStandaloneDomain(1n, address);
-  const v2 = ymaxObservationMessageKitV2.getStandaloneDomain(1n, address);
-  t.is(v1.version, '1');
-  t.is(v2.version, '2');
-  t.throws(() => ymaxObservationMessageKit.validateDomain(v2));
-  t.throws(() => ymaxObservationMessageKitV2.validateDomain(v1));
+test('legacy and typed holdings use one domain with distinct signed field definitions', t => {
+  const legacy = ymaxObservationMessageKit.getStandaloneOperationData(
+    {
+      portfolio: 12n,
+      syncState: { policyVersion: 3n, rebalanceCount: 7n },
+      holdings: [{ place: morpho, balanceUsdc: 123n }],
+      instruments: [],
+      nonce: 1n,
+      deadline: 2n,
+    },
+    'PortfolioObservations',
+    1n,
+    address,
+  );
+  const typed = messageFor();
+  t.is(legacy.domain.version, '1');
+  t.deepEqual(legacy.domain, typed.domain);
+  t.deepEqual(legacy.types.HoldingDetail, [
+    { name: 'place', type: 'string' },
+    { name: 'balanceUsdc', type: 'uint256' },
+  ]);
+  t.notDeepEqual(legacy.types.HoldingDetail, typed.types.HoldingDetail);
+  t.not(hashTypedData(legacy as any), hashTypedData(typed as any));
 });
 
-test('v2 rejects duplicate instruments and unsafe context numbers', t => {
+test('typed holdings rejects duplicate instruments and unsafe context numbers', t => {
   const data = messageFor().message;
   t.throws(
     () =>
-      portfolioObservationsFromEIP712V2({
+      portfolioObservationsFromEIP712({
         ...data,
         instruments: [...data.instruments, ...data.instruments],
       }),
     { message: /duplicate instrument/ },
   );
   for (const portfolio of [-1n, 2n ** 53n])
-    t.throws(() => portfolioObservationsFromEIP712V2({ ...data, portfolio }));
+    t.throws(() => portfolioObservationsFromEIP712({ ...data, portfolio }));
 });
 
-test('v2 is usable without lockdown', async t => {
+test('typed holdings is usable without lockdown', async t => {
   await t.notThrowsAsync(
     runWithoutLockdown(`
     const m = await import('@agoric/portfolio-api/src/observation-messages.js');
     const content = ${JSON.stringify({ portfolioId: 1, syncState: { policyVersion: 1, rebalanceCount: 0 } })};
-    content.observations = { holdings: [{ place: '${morpho}', kind: 'shares', tokenAddress: '${address}', amount: 0n, valueUsd: m.OPT_UINT_UNDEFINED, balanceUsdc: m.OPT_UINT_UNDEFINED }], instrumentTvls: {} };
-    const data = m.portfolioObservationsToEIP712V2(content);
-    const signedData = m.ymaxObservationMessageKitV2.getStandaloneOperationData({ ...data, nonce: 1n, deadline: 2n }, 'PortfolioObservations', 1n, '${address}');
-    m.portfolioObservationsFromEIP712V2(signedData.message);
+    content.observations = { balances: {}, holdings: [{ place: '${morpho}', kind: 'shares', tokenAddress: '${address}', amount: 0n, valueUsd: undefined }], instrumentTvls: {} };
+    const data = m.portfolioObservationsToEIP712(content);
+    const signedData = m.ymaxObservationMessageKit.getStandaloneOperationData({ ...data, nonce: 1n, deadline: 2n }, 'PortfolioObservations', 1n, '${address}');
+    m.portfolioObservationsFromEIP712(signedData.message);
   `),
   );
 });
 
 test('one signed message can mix known, unknown and zero valuations', t => {
   const entries: HoldingDetail[] = [
-    { ...holding, valueUsd: OPT_UINT_UNDEFINED },
-    {
-      ...holding,
-      kind: 'principal',
-      valueUsd: 100_000_000n,
-      balanceUsdc: 100_000_000n,
-    },
-    { ...holding, kind: 'reward', valueUsd: 0n, balanceUsdc: 0n },
+    holding,
+    { ...holding, kind: 'principal', valueUsd: 100_000_000n },
+    { ...holding, kind: 'reward', valueUsd: 0n },
   ];
   t.deepEqual(decode(entries).observations.holdings, entries);
-  const definition = messageFor(entries).types.HoldingDetail;
+  const message = messageFor(entries);
+  t.is(message.message.holdings[0]!.valueUsd, -(2n ** 255n));
   t.deepEqual(
-    definition.filter(
-      field => field.name === 'balanceUsdc' || field.name === 'valueUsd',
-    ),
-    [
-      { name: 'balanceUsdc', type: 'int256' },
-      { name: 'valueUsd', type: 'int256' },
-    ],
+    message.types.HoldingDetail.find(field => field.name === 'valueUsd'),
+    { name: 'valueUsd', type: 'int256' },
   );
 });
 
-test('decimal-string unknown valuation normalizes to the signed bigint sentinel', t => {
-  const data = portfolioObservationsToEIP712V2(content);
-  const normalized = ymaxObservationMessageKitV2.getStandaloneOperationData(
+test('decimal-string unknown valuation normalizes to the signed sentinel', t => {
+  const data = portfolioObservationsToEIP712(content);
+  const normalized = ymaxObservationMessageKit.getStandaloneOperationData(
     {
       ...data,
-      holdings: [{ ...holding, valueUsd: '-1', balanceUsdc: '-1' }],
+      holdings: [
+        { ...holding, valueUsd: String(-(2n ** 255n)) as `${bigint}` },
+      ],
       nonce: 1n,
       deadline: 2n,
     },
@@ -349,29 +356,66 @@ test('decimal-string unknown valuation normalizes to the signed bigint sentinel'
     address,
   );
   t.is(
-    portfolioObservationsFromEIP712V2(normalized.message).observations
-      .holdings[0]!.valueUsd,
-    OPT_UINT_UNDEFINED,
+    portfolioObservationsFromEIP712(normalized.message).observations
+      .holdings![0]!.valueUsd,
+    undefined,
   );
   t.is(hashTypedData(normalized as any), hashTypedData(messageFor() as any));
 });
 
-test('balanceUsdc can be omitted for the whole message without fabricating a sentinel', t => {
-  const { balanceUsdc: _balanceUsdc, ...withoutBalance } = holding;
+test('legacy compatibility balances remain unsigned and require uniform presence', t => {
   const entries: HoldingDetail[] = [
-    withoutBalance,
-    { ...withoutBalance, kind: 'reward' },
+    { ...holding, balanceUsdc: 0n },
+    { ...holding, kind: 'reward', balanceUsdc: 2n ** 256n - 1n },
   ];
   t.deepEqual(decode(entries).observations.holdings, entries);
-  const message = messageFor(entries);
-  t.false(
-    message.types.HoldingDetail.some(field => field.name === 'balanceUsdc'),
-  );
-  t.not(
-    hashTypedData(messageFor([withoutBalance]) as any),
-    hashTypedData(messageFor() as any),
-  );
-  t.throws(() => decode([holding, { ...withoutBalance, kind: 'reward' }]), {
-    message: /inconsistent balanceUsdc presence/,
+  t.throws(() => decode([entries[0]!, { ...holding, kind: 'reward' }]), {
+    message: /balanceUsdc/,
   });
+});
+
+test('typed observations do not fabricate aggregate balances or silently drop them', t => {
+  t.deepEqual(
+    decode([{ ...holding, valueUsd: 123n }]).observations.balances,
+    {},
+  );
+  t.throws(
+    () =>
+      portfolioObservationsToEIP712({
+        ...content,
+        observations: { ...content.observations, balances: { [morpho]: 1n } },
+      }),
+    { message: /cannot combine/ },
+  );
+});
+
+test('handler decodes trusted sentinels without changing the signed message', t => {
+  for (const onUnknownSignedField of ['throw', 'keep'] as const) {
+    const handler = makeEIP712MessageHandlerUtils(
+      {
+        hashStruct,
+        isHex,
+        recoverTypedDataAddress,
+        encodeType,
+        getTypesForEIP712Domain,
+      },
+      YmaxObservationMessageSchema,
+      { onUnknownSignedField },
+    );
+    const message = messageFor([
+      holding,
+      { ...holding, kind: 'reward', valueUsd: 0n },
+    ]);
+    const details = handler.extractOperationDetailsFromDataWithAddress(
+      { ...message, address, signature: `0x${'ab'.repeat(65)}` } as any,
+      { verifyingContract: { '1': address } },
+    );
+    t.is(details.data.holdings[0]!.valueUsd, undefined);
+    t.is(details.data.holdings[1]!.valueUsd, 0n);
+    t.is(message.message.holdings[0]!.valueUsd, -(2n ** 255n));
+    t.deepEqual(
+      portfolioObservationsFromEIP712(details.data).observations.holdings,
+      [holding, { ...holding, kind: 'reward', valueUsd: 0n }],
+    );
+  }
 });

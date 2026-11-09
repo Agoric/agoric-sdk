@@ -5,14 +5,6 @@
 import { keyMirror } from '@agoric/internal';
 import { M, objectMap } from '@endo/patterns';
 
-export {
-  OPT_UINT_UNDEFINED,
-  optUint255,
-  optUint255Shape,
-  maxOptUint255,
-  assertOptUint255,
-} from './opt-uint.ts';
-
 /**
  * @import {ClusterName, TypedPattern} from '@agoric/internal';
  * @import {CaipChainId} from '@agoric/orchestration';

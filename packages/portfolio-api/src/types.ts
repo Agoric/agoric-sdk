@@ -82,7 +82,7 @@ export type AssetPlaceRef =
   | InterChainAccountRef
   | InstrumentId;
 
-type Empty = Record<never, NatAmount>;
+type Empty = Record<string, never>;
 
 /**
  * Proposal shapes for portfolio operations.
@@ -176,34 +176,42 @@ export type PortfolioBalancePlaceRef = InstrumentId | InterChainAccountRef;
  */
 export type PlanObservations = {
   balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
+  /** Authenticated raw holdings; legacy balances are not inferred from valuations. */
+  holdings?: TypedHoldingDetail[];
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
 };
 
+export type WithdrawSourceHoldingKind = 'shares' | 'principal';
+
 export type HoldingKind =
-  | 'shares'
-  | 'principal'
+  | WithdrawSourceHoldingKind
   | 'reward'
   | 'token'
   | `$${string}`;
 
+/** A legacy balance observation, in micro-USDC. */
+export type LegacyHoldingDetail = {
+  place: PortfolioBalancePlaceRef;
+  balanceUsdc: bigint;
+  /** Valuation in micro-USD; undefined if not observed. */
+  valueUsd?: bigint;
+};
+
 /** One raw holding; quantities and valuations must not be added together. */
-export type HoldingDetail = {
+export type TypedHoldingDetail = {
   place: PortfolioBalancePlaceRef;
   kind: HoldingKind;
   tokenAddress: EvmAddress;
   /** Native token units, independent of USD valuation. Zero is observed zero. */
   amount: bigint;
-  /** Valuation in micro-USD, -1 means unknown. */
-  valueUsd: bigint;
-  /** @deprecated Compatibility valuation in micro-USDC; OPT_UINT_UNDEFINED if unobserved. */
+  /** Valuation in micro-USD; undefined if not observed. */
+  valueUsd?: bigint;
+  /** @deprecated Compatibility valuation in micro-USDC, when observed. */
   balanceUsdc?: bigint;
 };
 
-/** Version 2 evidence. Multiple distinct holdings may belong to one place. */
-export type PlanObservationsV2 = {
-  holdings: HoldingDetail[];
-  instrumentTvls: PlanObservations['instrumentTvls'];
-};
+/** Legacy balances and typed raw holdings share the observation schema. */
+export type HoldingDetail = LegacyHoldingDetail | TypedHoldingDetail;
 
 export type FlowDetail =
   | {
@@ -312,7 +320,9 @@ export type SwapProvider = SwapDesc['provider'];
 export type WithdrawParams = {
   /** When true, any MovementDesc['amount'] and/or WithdrawParams['srcAmount'] are minima, not exact. */
   max?: boolean;
-  /** Omit to withdraw the default kind from this place, otherwise must correspond to a 'shares' or 'principal' kind. */
+  /** Omit to withdraw from the default kind, otherwise just 'shares' or 'principal'. */
+  srcKind?: WithdrawSourceHoldingKind;
+  /** Omit to withdraw the default token from this place/kind. */
   srcToken?: EvmAddress;
   /** Units of srcToken to withdraw. When specified, MovementDesc['amount'] is a minimum. */
   srcAmount?: bigint;

@@ -76,11 +76,11 @@ sequenceDiagram
    ```ts
    HoldingDetail: [
      { name: 'place', type: 'string' },
-     { name: 'balanceUsdc', type: optUint255, optional: true }, // deprecated
-     { name: 'valueUsd', type: 'int256' }, // micro-USD; -1 means unknown
-     { name: 'kind', type: 'string' },
-     { name: 'tokenAddress', type: 'address' },
-     { name: 'amount', type: 'uint256' }, // native units
+     { name: 'balanceUsdc', type: 'uint256', optional: true }, // deprecated
+     { name: 'valueUsd', type: 'int256', optional: true, optSentinel: minSignedBigInt(256n) }, // undefined means unknown
+     { name: 'kind', type: 'string', optional: true },
+     { name: 'tokenAddress', type: 'address', optional: true },
+     { name: 'amount', type: 'uint256', optional: true }, // native units
    ],
    ```
 
@@ -97,32 +97,32 @@ sequenceDiagram
    Morpho uses `kind: 'shares'`, the vault address, and its raw share count as
    `amount`. An observed zero is an explicit entry with `amount: 0n`; missing
    entries mean unobserved holdings and must never be treated as zero. A raw
-   holding with unknown USD valuation uses `valueUsd: OPT_UINT_UNDEFINED`
-   (`-1n`), distinct from a known zero valuation. Do not infer shares from
-   `valueUsd` or deprecated `balanceUsdc`, or add both valuations together.
+   holding with unknown USD valuation uses `valueUsd: undefined`, distinct
+   from a known zero valuation. Do not infer shares from `valueUsd` or
+   deprecated `balanceUsdc`, nor add both valuations together.
 
-   `valueUsd` is required and signed as `int256`; in JavaScript it is a bigint.
-   Its Shape is `M.or(OPT_UINT_UNDEFINED, M.nat())`, where the shared exported
-   constant `OPT_UINT_UNDEFINED` is `-1n`. Known and unknown valuations can coexist
-   in one message. Consumers requiring complete valuation must obtain it or
-   reject unknown values rather than substituting zero.
-
-   Deprecated `balanceUsdc` uses `type: optUint255` with `optional: true` and
-   `OPT_UINT_UNDEFINED` for an unobserved value when included. Its presence must
-   be uniform across entries in a signed message, but its observed/unobserved
-   status can differ per entry. Required `valueUsd` has no presence constraint.
+   Unknown `valueUsd` is encoded as `minSignedBigInt(256n)` (`-2n ** 255n`)
+   in the signed `int256` field and decoded to JavaScript `undefined`.
+   Known valuations range from zero through `maxSignedBigInt(256n)`.
+   Optional-field presence remains uniform per signed struct type; typed
+   conversion supplies a `valueUsd` property for every raw entry, allowing
+   independently unknown valuations. Deprecated `balanceUsdc` is unsigned
+   `uint256`, with uniform presence and no valuation sentinel.
 
    Reuse the existing Morpho collector. YDS's
    [`getMorphoBalance`](../../../../ymax-web/yds/src/utils/alchemy-kit.ts) reads
    `balanceOf`, then `convertToAssets` at the same block. Its batched equivalent
    does the same in two multicalls. Retain raw shares alongside valuation.
    Extend application types, Shapes, converters, producer, and verifier together.
-   The shared API provides the opt-in version 2 holding schema and converters;
-   producer and contract-verifier integration remain separate work.
-   The additional required holding fields change the signed type. Roll out a
-   versioned schema with explicit legacy decoding: legacy observations remain
-   usable for numeric plans but cannot supply share-based redemption data.
-   Deploy verifier support before producers switch; never enrich a legacy
+   The shared schema retains the `YmaxObservation` domain version `1` and
+   extends its optional signed fields to support typed holdings. Legacy
+   balance-only messages keep their original resolved signed type; raw kind,
+   token, and quantity fields are validated together when present. Shared
+   converters retain legacy aggregate balances while exposing typed raw
+   holdings without deriving aggregate balances from valuations. Producer and
+   verifier rollout remain integration work: deploy verifier support before
+   producers add raw fields. Legacy observations remain usable for numeric
+   plans but cannot supply share-based redemption data. Never enrich a legacy
    signature with unsigned raw holdings. AGO-1615 defines that compatibility
    boundary, coordinated with AGO-1617 (YDS) and AGO-1618 (attestor).
 
@@ -139,8 +139,9 @@ sequenceDiagram
    specified; otherwise it is exact. `0n` as a minimum imposes no positive
    destination-amount requirement.
    `WithdrawParams` is
-   `{ max?: boolean; srcToken?: EvmAddress; srcAmount?: bigint }`.
-   Omit `srcToken` to withdraw the default kind from the source place. An explicit
+   `{ max?: boolean; srcKind?: WithdrawSourceHoldingKind; srcToken?: EvmAddress; srcAmount?: bigint }`.
+   `srcKind` selects `shares` or `principal`; omission uses the place's default.
+   Omit `srcToken` to withdraw the default token for the selected source kind. An explicit
    address must correspond to an authenticated `shares` or `principal` holding
    in that place. `srcAmount` is measured in units of `srcToken` (or the
    default source token selected when `srcToken` is omitted). With `max`

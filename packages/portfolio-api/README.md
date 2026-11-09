@@ -21,57 +21,45 @@ accept the structure and execute the movement's `amount` exactly, ignoring the
 options. This is the current contract's fallback; `amount: 0` may fail
 validation. API acceptance does not imply full-exit or source-token support.
 
-`HoldingDetail`, `HoldingKind`, and `PlanObservationsV2` describe flattened raw
-holdings. A holding contains `place`, `kind`, `tokenAddress`, `amount`, and
-required `valueUsd` (signed int256 micro-USD). `OPT_UINT_UNDEFINED` (`-1n`) means
-unknown; known valuations are nonnegative. Deprecated `balanceUsdc` (micro-USDC)
-is optional and uses the same `optUint255` representation when included.
-`OPT_UINT_UNDEFINED` is exported from the package root, constants,
-and observation-messages entrypoints.
-The shared `optUint255` wire type is `'int256'`; `optUint255Shape` is
-`M.or(OPT_UINT_UNDEFINED, M.nat())`. `maxOptUint255` is the exclusive wire bound
-`2n ** 255n`, enforced by `assertOptUint255(value, field)`.
-`opt-uint.ts` exports the Shape and re-exports its constants and assertion from
-the pure `opt-uint-core.ts` module, keeping observation conversion usable without
-Endo initialization. The observation-messages entrypoint exports the pure
-helpers; the package root and constants entrypoint also export the Shape.
-`HoldingDetailShape` and `PlanObservationsV2Shape` check structural input;
-the observation converter checks place/kind compatibility, address validity,
-native-token zero addresses, uint256/int256 ranges, and duplicate identities. Place
-and instrument references use the existing extensible syntactic validators.
-Duplicate `(place, kind, tokenAddress)` identities are rejected using
-case-insensitive address comparison; distinct reward tokens can share a place.
-Native-token kinds use `$SYMBOL`, such as `$ETH`.
+`PlanObservations` retains legacy aggregate `balances` and optionally carries
+`holdings: TypedHoldingDetail[]`. Each raw holding identifies `place`, `kind`,
+`tokenAddress`, and native-unit `amount`; `valueUsd` is optional micro-USD.
+`HoldingDetail` is the union of legacy balance entries and typed raw holdings.
+`HoldingDetailShape` and `PlanObservationsShape` check structural input;
+converters also validate place/kind compatibility, addresses, native-token zero
+addresses, integer ranges, and duplicate holding identities (case-insensitive
+addresses). `WithdrawParams.srcKind` supports `shares` and `principal`.
 
-Use the existing `./src/observation-messages.js` subpath for either version:
+Use the existing observation schema, kit, and converters from
+`./src/observation-messages.js`: `YmaxObservationMessageSchema`,
+`ymaxObservationMessageKit`, `portfolioObservationsToEIP712`, and
+`portfolioObservationsFromEIP712`. Both legacy balances and typed holdings use
+`YmaxObservation` domain version `1`; resolved signed struct definitions identify
+which optional fields were included. Legacy balance-only messages retain their
+original signed field definitions. There are no separate v2 schema exports.
 
-| Version | Schema and kit | Converters |
-| --- | --- | --- |
-| 1 | `YmaxObservationMessageSchema`, `ymaxObservationMessageKit` | `portfolioObservationsToEIP712`, `portfolioObservationsFromEIP712` |
-| 2 | `YmaxObservationMessageSchemaV2`, `ymaxObservationMessageKitV2` | `portfolioObservationsToEIP712V2`, `portfolioObservationsFromEIP712V2` |
+In JavaScript, unknown valuation is `undefined`, distinct from known zero.
+The `valueUsd` field uses `int256` and `optSentinel: minSignedBigInt(256n)`
+(`-2n ** 255n`) to encode unknown valuations. Known valuations must satisfy
+`0n <= value <= maxSignedBigInt(256n)`. Authoring encodes explicit `undefined`
+values as the sentinel; trusted-schema extraction decodes them without mutating
+the signed wire data. Integer normalization works without Endo initialization.
 
-Version 1's schema, existing unversioned exports, and numeric observation conversion remain
-unchanged. Version 2 uses the `YmaxObservation` domain with version `2` and the
-required typed holding fields. Opt into v2 only after deploying verifier
-support. Producers, verifiers, and clients must preserve the selected signed
-schema; there is no automatic downgrade, share inference from valuation, or
-unsigned enrichment of v1 observations. This API does not sign plans.
+Optional-field presence must be uniform per signed struct type. Typed-holding
+conversion supplies a `valueUsd` property for every raw holding, so valuations
+can independently be known, zero, or unknown. Deprecated `balanceUsdc` remains
+optional unsigned `uint256`: include it on every raw holding or omit it from
+all of them. It does not use the valuation sentinel.
 
-The v2 decoder expects normalized data extracted with
-`onUnknownSignedField: 'throw'` after signature and domain verification; it does
-not verify signatures itself. The existing contract verifier supports v1;
-contract integration and execution remain separate work.
-
-An explicit raw `amount: 0n` is observed zero. A missing holding is unobserved;
-`valueUsd: OPT_UINT_UNDEFINED` means unvalued, distinct from a known `0n`
-valuation. Known and unknown valuations can coexist in one signed message.
-Missing `valueUsd` and negative values other than the sentinel are rejected.
-No aggregate balances are inferred from holdings. Consumers requiring complete
-valuation must reject unknown valuations rather than treating them as zero.
-Required `valueUsd` and included deprecated `balanceUsdc` can independently be
-observed or use `OPT_UINT_UNDEFINED` for each entry. Optional `balanceUsdc` must
-be present in every entry in a signed message or absent from all entries; its
-observed/unobserved status need not be uniform because the sentinel is a value.
+A raw zero is an explicit `amount: 0n`; an absent holding is unobserved. Typed
+valuations do not imply aggregate balances. Supply either legacy `balances` or
+raw `holdings` with `balances: {}`; combining nonempty aggregate balances with
+raw holdings is rejected rather than silently discarding data. Empty holdings
+and empty balances encode the same empty array and decode to empty balances.
+The decoder expects normalized data extracted with
+`onUnknownSignedField: 'throw'` after signature/domain verification; it does not
+verify signatures itself. Supporting the schema does not implement withdrawal
+execution or authorize a source holding. This API does not sign plans.
 
 ## YDS Target Balances
 
