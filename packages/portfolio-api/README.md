@@ -6,20 +6,20 @@ API shared between on-chain contract and external clients
 
 Movements use `withdraw?: WithdrawParams` without parameterizing `MovementDesc`
 or `FundsFlowPlan`. The shared `WithdrawParamsShape` checks structural input:
-optional `max`, EVM `srcToken` string, and nonnegative bigint `srcAmount`.
-Consumers implementing these options must also validate addresses, source/destination routes, and the
-selected holding's identity and kind (`shares` or `principal`). A Shape match
-alone does not authorize execution.
+optional `max` and nonnegative bigint `amountOfShares`.
+Consumers implementing these options must also validate source/destination
+routes and the selected holding's identity. A Shape match alone does not
+authorize execution.
 
 The movement's `amount` is default-token units (micro-USDC) received at `dest`.
-It is a minimum if `max` is true or `srcAmount` is supplied, otherwise exact.
-`srcAmount` is raw source-token units: exact unless `max` is true. Omitting
-`srcToken` selects the default source holding.
+It is a minimum if `max` is true or `amountOfShares` is supplied, otherwise exact.
+`amountOfShares` is raw share-token units: exact unless `max` is true. Without
+it, a position interprets the movement's `amount` in principal-token units.
 
 Withdrawal options are additive. A contract that does not implement them can
 accept the structure and execute the movement's `amount` exactly, ignoring the
 options. This is the current contract's fallback; `amount: 0` may fail
-validation. API acceptance does not imply full-exit or source-token support.
+validation. API acceptance does not imply full-exit or share-quantity support.
 
 `MovementDescExt` and `FundsFlowPlanExt` provide forward-compatible structural
 input types. They allow future source/destination place strings and additional
@@ -37,7 +37,8 @@ existing offer boundaries and execution behavior remain unchanged.
 `HoldingDetailShape` and `PlanObservationsShape` check structural input;
 converters also validate place/kind compatibility, addresses, native-token zero
 addresses, integer ranges, and duplicate holding identities (case-insensitive
-addresses). `WithdrawParams.srcKind` supports `shares` and `principal`.
+addresses). `claimable-reward` belongs to an instrument; `claimed-reward`
+belongs to a chain account.
 
 Use the existing observation schema, kit, and converters from
 `./src/observation-messages.js`: `YmaxObservationMessageSchema`,
@@ -48,15 +49,17 @@ which optional fields were included. Legacy balance-only messages retain their
 original signed field definitions. There are no separate v2 schema exports.
 
 In JavaScript, unknown valuation is `undefined`, distinct from known zero.
-The `valueUsd` field uses `int256` and `optSentinel: minSignedBigInt(256n)`
-(`-2n ** 255n`) to encode unknown valuations. Known valuations must satisfy
+The `valueUsd` field uses `int256` and `optSentinel: -1n` to encode unknown
+valuations. Known valuations must satisfy
 `0n <= value <= maxSignedBigInt(256n)`. Authoring encodes explicit `undefined`
 values as the sentinel; trusted-schema extraction decodes them without mutating
 the signed wire data. Integer normalization works without Endo initialization.
 
-Optional-field presence must be uniform per signed struct type. Typed-holding
-conversion supplies a `valueUsd` property for every raw holding, so valuations
-can independently be known, zero, or unknown. Deprecated `balanceUsdc` remains
+Optional-field presence must be uniform per signed struct type. To mix known,
+zero, and unknown valuations, supply a `valueUsd` property on
+every raw holding, using explicit `undefined` for unknown values. The converter
+validates holdings without adding or rewriting fields. Deprecated
+`balanceUsdc` remains
 optional unsigned `uint256`: include it on every raw holding or omit it from
 all of them. It does not use the valuation sentinel.
 

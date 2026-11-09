@@ -182,11 +182,11 @@ export type PlanObservations = {
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
 };
 
-export type WithdrawSourceHoldingKind = 'shares' | 'principal';
-
 export type HoldingKind =
-  | WithdrawSourceHoldingKind
-  | 'reward'
+  | 'shares'
+  | 'principal'
+  | 'claimable-reward'
+  | 'claimed-reward'
   | 'token'
   | `$${string}`;
 
@@ -194,8 +194,6 @@ export type HoldingKind =
 export type LegacyHoldingDetail = {
   place: PortfolioBalancePlaceRef;
   balanceUsdc: bigint;
-  /** Valuation in micro-USD; undefined if not observed. */
-  valueUsd?: bigint;
 };
 
 /** One raw holding; quantities and valuations must not be added together. */
@@ -319,14 +317,14 @@ export type SwapDesc = OneInchSwapDesc;
 export type SwapProvider = SwapDesc['provider'];
 
 export type WithdrawParams = {
-  /** When true, any MovementDesc['amount'] and/or WithdrawParams['srcAmount'] are minima, not exact. */
+  /** When true, MovementDesc['amount'] and amountOfShares are minima, not exact. */
   max?: boolean;
-  /** Omit to withdraw from the default kind, otherwise just 'shares' or 'principal'. */
-  srcKind?: WithdrawSourceHoldingKind;
-  /** Omit to withdraw the default token from this place/kind. */
-  srcToken?: EvmAddress;
-  /** Units of srcToken to withdraw. When specified, MovementDesc['amount'] is a minimum. */
-  srcAmount?: bigint;
+  /**
+   * How many 'shares' tokens to withdraw.
+   * Without this, if the place is a Position, then
+   * `MovementDesc['amount']` refers to 'principal' tokens.
+   */
+  amountOfShares?: bigint;
 };
 
 /**
@@ -360,7 +358,7 @@ export type ClaimRewardsParams = {
 };
 
 export type MovementDesc = {
-  /** Default-token units (micro-USDC) received at dest; a minimum when withdraw.max is true or withdraw.srcAmount is specified, otherwise exact. */
+  /** Default-token units (micro-USDC) received at dest; a minimum when withdraw.max is true or withdraw.amountOfShares is specified, otherwise exact. */
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;

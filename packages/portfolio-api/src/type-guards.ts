@@ -1,8 +1,5 @@
 import { M, type CastedPattern } from '@endo/patterns';
-import {
-  maxSignedBigInt,
-  minSignedBigInt,
-} from '@agoric/orchestration/src/utils/abitype.ts';
+import { maxSignedBigInt } from '@agoric/orchestration/src/utils/abitype.ts';
 import type { ChainTokenMetadata, TokenMetadata } from './places.ts';
 import type {
   PortfolioAgentKey,
@@ -13,7 +10,6 @@ import type {
   HoldingKind,
   HoldingDetail,
   PlanObservations,
-  WithdrawSourceHoldingKind,
 } from './types.js';
 
 export {
@@ -36,24 +32,18 @@ export type {
 } from './places.ts';
 
 const optInt256 = M.opt(
-  M.and(M.or(minSignedBigInt(256n), M.nat()), M.lte(maxSignedBigInt(256n))),
+  M.and(M.or(-1n, M.nat()), M.lte(maxSignedBigInt(256n))),
 );
 
 export const TokenUsageShape = M.or('swapFrom', 'swapTo');
 harden(TokenUsageShape);
-
-export const WithdrawSourceHoldingKindShape: CastedPattern<WithdrawSourceHoldingKind> =
-  M.or('shares', 'principal');
-harden(WithdrawSourceHoldingKindShape);
 
 /** Structural withdrawal parameters; route and holding identity need decoding. */
 export const WithdrawParamsShape: CastedPattern<WithdrawParams> = M.splitRecord(
   {},
   {
     max: M.boolean(),
-    srcKind: WithdrawSourceHoldingKindShape,
-    srcToken: M.string(),
-    srcAmount: M.nat(),
+    amountOfShares: M.nat(),
   },
   {},
 );
@@ -61,8 +51,10 @@ harden(WithdrawParamsShape);
 
 /** Native-token kinds start with '$' and have a nonempty symbol. */
 export const HoldingKindShape: CastedPattern<HoldingKind> = M.or(
-  WithdrawSourceHoldingKindShape,
-  'reward',
+  'shares',
+  'principal',
+  'claimable-reward',
+  'claimed-reward',
   'token',
   // Strings strictly between '$' and the following ASCII character ('%') have a nonempty '$' prefix.
   M.and(
@@ -75,7 +67,7 @@ harden(HoldingKindShape);
 
 export const HoldingDetailV1Shape = M.splitRecord(
   { place: M.string(), balanceUsdc: M.nat() },
-  { valueUsd: optInt256 },
+  {},
   {},
 );
 harden(HoldingDetailV1Shape);

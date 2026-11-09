@@ -9,6 +9,7 @@ import {
   encodeType,
   getTypesForEIP712Domain,
 } from '@agoric/orchestration/src/stubs/viem-typedData.ts';
+import { normalizeAndValidateEIP712Data } from '@agoric/orchestration/src/utils/viem-utils/eip712-normalize.ts';
 import { makeEIP712MessageHandlerUtils } from '@agoric/orchestration/src/utils/eip712-message-handler.ts';
 import {
   YmaxObservationMessageSchema,
@@ -55,8 +56,19 @@ const messageFor = (holdings: HoldingDetail[] = [holding]) =>
     address,
   );
 
+const readMessage = (message: PortfolioObservationsEIP712) =>
+  normalizeAndValidateEIP712Data(
+    {
+      message,
+      types: ymaxObservationMessageKit.getOperationTypes(
+        'PortfolioObservations',
+      ),
+      primaryType: 'PortfolioObservations',
+    },
+    { onExtraField: 'drop', onNonCanonicalValue: 'throw' },
+  ).message as PortfolioObservationsEIP712;
 const decode = (holdings: HoldingDetail[]) =>
-  portfolioObservationsFromEIP712(messageFor(holdings).message);
+  portfolioObservationsFromEIP712(readMessage(messageFor(holdings).message));
 
 test('typed holdings round trip keeps raw units separate from optional signed valuations', t => {
   for (const fields of [
@@ -93,8 +105,13 @@ test('multiple kinds and reward tokens can share one instrument place', t => {
   const entries: HoldingDetail[] = [
     holding,
     { ...holding, kind: 'principal' },
-    { ...holding, kind: 'reward' },
-    { ...holding, kind: 'reward', tokenAddress: `0x${'2'.repeat(40)}` },
+    { ...holding, kind: 'claimable-reward' },
+    { ...holding, place: '@Base', kind: 'claimed-reward' },
+    {
+      ...holding,
+      kind: 'claimable-reward',
+      tokenAddress: `0x${'2'.repeat(40)}`,
+    },
     {
       place: '@Base',
       kind: 'token',
@@ -131,6 +148,22 @@ test('duplicate holding identity is case-insensitive for token addresses', t => 
 
 for (const [label, fields, error] of [
   ['unknown kind', { kind: 'share' }, /invalid holding kind/],
+  ['obsolete reward kind', { kind: 'reward' }, /invalid holding kind/],
+  [
+    'claimed reward on instrument',
+    { kind: 'claimed-reward' },
+    /incompatible with place/,
+  ],
+  [
+    'claimable reward on account',
+    { place: '@Base', kind: 'claimable-reward' },
+    /incompatible with place/,
+  ],
+  [
+    'wire sentinel as application valuation',
+    { valueUsd: -1n },
+    /invalid valuation valueUsd/,
+  ],
   ['invalid place', { place: '?FutureVault' }, /invalid holding place/],
   ['seat', { place: '<Cash>' }, /invalid holding place/],
   ['shares on account', { place: '@Base' }, /incompatible with place/],
@@ -299,7 +332,7 @@ test('legacy and typed holdings use one domain with distinct signed field defini
 });
 
 test('typed holdings rejects duplicate instruments and unsafe context numbers', t => {
-  const data = messageFor().message;
+  const data = readMessage(messageFor().message);
   t.throws(
     () =>
       portfolioObservationsFromEIP712({
@@ -320,7 +353,9 @@ test('typed holdings is usable without lockdown', async t => {
     content.observations = { balances: {}, holdings: [{ place: '${morpho}', kind: 'shares', tokenAddress: '${address}', amount: 0n, valueUsd: undefined }], instrumentTvls: {} };
     const data = m.portfolioObservationsToEIP712(content);
     const signedData = m.ymaxObservationMessageKit.getStandaloneOperationData({ ...data, nonce: 1n, deadline: 2n }, 'PortfolioObservations', 1n, '${address}');
-    m.portfolioObservationsFromEIP712(signedData.message);
+    const { normalizeAndValidateEIP712Data } = await import('@agoric/orchestration/src/utils/viem-utils/eip712-normalize.ts');
+    const decoded = normalizeAndValidateEIP712Data({ ...signedData, types: m.ymaxObservationMessageKit.getOperationTypes('PortfolioObservations') }, { onExtraField: 'drop', onNonCanonicalValue: 'throw' });
+    m.portfolioObservationsFromEIP712(decoded.message);
   `),
   );
 });
@@ -329,11 +364,11 @@ test('one signed message can mix known, unknown and zero valuations', t => {
   const entries: HoldingDetail[] = [
     holding,
     { ...holding, kind: 'principal', valueUsd: 100_000_000n },
-    { ...holding, kind: 'reward', valueUsd: 0n },
+    { ...holding, kind: 'claimable-reward', valueUsd: 0n },
   ];
   t.deepEqual(decode(entries).observations.holdings, entries);
   const message = messageFor(entries);
-  t.is(message.message.holdings[0]!.valueUsd, -(2n ** 255n));
+  t.is(message.message.holdings[0]!.valueUsd, -1n);
   t.deepEqual(
     message.types.HoldingDetail.find(field => field.name === 'valueUsd'),
     { name: 'valueUsd', type: 'int256' },
@@ -345,9 +380,7 @@ test('decimal-string unknown valuation normalizes to the signed sentinel', t => 
   const normalized = ymaxObservationMessageKit.getStandaloneOperationData(
     {
       ...data,
-      holdings: [
-        { ...holding, valueUsd: String(-(2n ** 255n)) as `${bigint}` },
-      ],
+      holdings: [{ ...holding, valueUsd: String(-1n) as `${bigint}` }],
       nonce: 1n,
       deadline: 2n,
     },
@@ -356,8 +389,8 @@ test('decimal-string unknown valuation normalizes to the signed sentinel', t => 
     address,
   );
   t.is(
-    portfolioObservationsFromEIP712(normalized.message).observations
-      .holdings![0]!.valueUsd,
+    portfolioObservationsFromEIP712(readMessage(normalized.message))
+      .observations.holdings![0]!.valueUsd,
     undefined,
   );
   t.is(hashTypedData(normalized as any), hashTypedData(messageFor() as any));
@@ -366,12 +399,15 @@ test('decimal-string unknown valuation normalizes to the signed sentinel', t => 
 test('legacy compatibility balances remain unsigned and require uniform presence', t => {
   const entries: HoldingDetail[] = [
     { ...holding, balanceUsdc: 0n },
-    { ...holding, kind: 'reward', balanceUsdc: 2n ** 256n - 1n },
+    { ...holding, kind: 'claimable-reward', balanceUsdc: 2n ** 256n - 1n },
   ];
   t.deepEqual(decode(entries).observations.holdings, entries);
-  t.throws(() => decode([entries[0]!, { ...holding, kind: 'reward' }]), {
-    message: /balanceUsdc/,
-  });
+  t.throws(
+    () => decode([entries[0]!, { ...holding, kind: 'claimable-reward' }]),
+    {
+      message: /balanceUsdc/,
+    },
+  );
 });
 
 test('typed observations do not fabricate aggregate balances or silently drop them', t => {
@@ -404,7 +440,7 @@ test('handler decodes trusted sentinels without changing the signed message', t 
     );
     const message = messageFor([
       holding,
-      { ...holding, kind: 'reward', valueUsd: 0n },
+      { ...holding, kind: 'claimable-reward', valueUsd: 0n },
     ]);
     const details = handler.extractOperationDetailsFromDataWithAddress(
       { ...message, address, signature: `0x${'ab'.repeat(65)}` } as any,
@@ -412,10 +448,32 @@ test('handler decodes trusted sentinels without changing the signed message', t 
     );
     t.is(details.data.holdings[0]!.valueUsd, undefined);
     t.is(details.data.holdings[1]!.valueUsd, 0n);
-    t.is(message.message.holdings[0]!.valueUsd, -(2n ** 255n));
+    t.is(message.message.holdings[0]!.valueUsd, -1n);
     t.deepEqual(
       portfolioObservationsFromEIP712(details.data).observations.holdings,
-      [holding, { ...holding, kind: 'reward', valueUsd: 0n }],
+      [holding, { ...holding, kind: 'claimable-reward', valueUsd: 0n }],
+    );
+  }
+});
+
+test('holding validation preserves input identity and omitted fields', t => {
+  const { valueUsd: _valueUsd, ...unvalued } = holding;
+  const holdings = harden([unvalued]);
+  const data = portfolioObservationsToEIP712({
+    ...content,
+    observations: { ...content.observations, holdings },
+  });
+  t.is(data.holdings, holdings);
+  t.is(data.holdings[0], unvalued);
+  t.false(Object.hasOwn(unvalued, 'valueUsd'));
+  t.deepEqual(decode([unvalued]).observations.holdings, [unvalued]);
+});
+
+test('observation context rejects non-bigint and unsafe wire numbers', t => {
+  const data = readMessage(messageFor().message);
+  for (const portfolio of [NaN, undefined, 'garbage', 0, -1n, 2n ** 53n]) {
+    t.throws(() =>
+      portfolioObservationsFromEIP712({ ...data, portfolio } as any),
     );
   }
 });

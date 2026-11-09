@@ -77,15 +77,16 @@ sequenceDiagram
    HoldingDetail: [
      { name: 'place', type: 'string' },
      { name: 'balanceUsdc', type: 'uint256', optional: true }, // deprecated
-     { name: 'valueUsd', type: 'int256', optional: true, optSentinel: minSignedBigInt(256n) }, // undefined means unknown
      { name: 'kind', type: 'string', optional: true },
      { name: 'tokenAddress', type: 'address', optional: true },
      { name: 'amount', type: 'uint256', optional: true }, // native units
+     { name: 'valueUsd', type: 'int256', optional: true, optSentinel: -1n }, // undefined means unknown
    ],
    ```
 
    Kinds are `shares` for vault shares, `principal` for instruments such as Aave
-   and Compound, `reward` for claimable instrument rewards, `token` for other
+   and Compound, `claimable-reward` for unclaimed instrument rewards,
+   `claimed-reward` for rewards held in a chain account, `token` for other
    ERC-20 holdings, and `$ETH` (or the corresponding `$SYMBOL`) for a chain's
    native token. A share uses the vault contract address; principal, token,
    and reward entries use the underlying token address. Native tokens use the
@@ -101,12 +102,13 @@ sequenceDiagram
    from a known zero valuation. Do not infer shares from `valueUsd` or
    deprecated `balanceUsdc`, nor add both valuations together.
 
-   Unknown `valueUsd` is encoded as `minSignedBigInt(256n)` (`-2n ** 255n`)
+   Unknown `valueUsd` is encoded as `-1n`
    in the signed `int256` field and decoded to JavaScript `undefined`.
    Known valuations range from zero through `maxSignedBigInt(256n)`.
    Optional-field presence remains uniform per signed struct type; typed
-   conversion supplies a `valueUsd` property for every raw entry, allowing
-   independently unknown valuations. Deprecated `balanceUsdc` is unsigned
+   authors supply a `valueUsd` property for every raw entry, using explicit
+   `undefined` for independently unknown valuations. Validation does not add
+   fields. Deprecated `balanceUsdc` is unsigned
    `uint256`, with uniform presence and no valuation sentinel.
 
    Reuse the existing Morpho collector. YDS's
@@ -135,20 +137,18 @@ sequenceDiagram
    Amounts remain ERTP `NatAmount` records such as
    `{ brand: usdcBrand, value: 100_000_000n }`. The movement's `amount` is
    measured in default-token units (micro-USDC) received at `dest`.
-   It is a minimum when `withdraw.max` is true or `withdraw.srcAmount` is
+   It is a minimum when `withdraw.max` is true or `withdraw.amountOfShares` is
    specified; otherwise it is exact. `0n` as a minimum imposes no positive
    destination-amount requirement.
    `WithdrawParams` is
-   `{ max?: boolean; srcKind?: WithdrawSourceHoldingKind; srcToken?: EvmAddress; srcAmount?: bigint }`.
-   `srcKind` selects `shares` or `principal`; omission uses the place's default.
-   Omit `srcToken` to withdraw the default token for the selected source kind. An explicit
-   address must correspond to an authenticated `shares` or `principal` holding
-   in that place. `srcAmount` is measured in units of `srcToken` (or the
-   default source token selected when `srcToken` is omitted). With `max`
-   omitted or false, `srcAmount` is exact and the movement's `amount` is a
-   minimum. With `max` true, both are minima in their respective units.
+   `{ max?: boolean; amountOfShares?: bigint }`.
+   `amountOfShares` specifies the raw quantity of share tokens to withdraw.
+   Without it, a position interprets the movement's `amount` in principal-token
+   units. With `max` omitted or false, `amountOfShares` is exact and the
+   movement's `amount` is a minimum. With `max` true, both are minima in their
+   respective units. Execution authenticates the source position's share holding.
    The movement retains its required `amount`. Reject missing amounts, negative
-   raw quantities, invalid source addresses, and unknown options at decoding.
+   share quantities, and unknown options at decoding.
    Maximum withdrawals apply only to protocol-to-same-chain-account routes;
    transfers, bridges, deposits, and downstream steps retain exact amounts.
    `MovementDesc` includes optional `withdraw?: WithdrawParams`.

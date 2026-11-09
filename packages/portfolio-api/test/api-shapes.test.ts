@@ -2,10 +2,7 @@ import '@endo/init/debug.js';
 
 import test from 'ava';
 import { matches } from '@endo/patterns';
-import {
-  minSignedBigInt,
-  maxSignedBigInt,
-} from '@agoric/orchestration/src/utils/abitype.ts';
+import { maxSignedBigInt } from '@agoric/orchestration/src/utils/abitype.ts';
 import {
   WithdrawParamsShape,
   HoldingKindShape,
@@ -20,17 +17,18 @@ test('withdraw parameters preserve omitted, false and zero values', t => {
     {},
     { max: false },
     { max: true },
-    { srcAmount: 0n },
-    { srcKind: 'shares' },
-    { srcKind: 'principal' },
-    { srcToken: address },
-    { srcToken: address, srcAmount: 123n },
-    { max: true, srcToken: address, srcAmount: 0n },
+    { amountOfShares: 0n },
+    { amountOfShares: 123n },
+    { max: true, amountOfShares: 0n },
   ])
     t.true(matches(harden(params), WithdrawParamsShape));
   for (const params of [
     { max: 'true' },
-    { srcKind: 'reward' },
+    { srcKind: 'shares' },
+    { srcToken: address },
+    { srcAmount: 0n },
+    { amountOfShares: 1 },
+    { amountOfShares: -1n },
     { srcKind: '$ETH' },
     { srcKind: 'share' },
     { srcAmount: 1 },
@@ -47,7 +45,8 @@ test('holding kinds cover typed and native holdings', t => {
   for (const kind of [
     'shares',
     'principal',
-    'reward',
+    'claimable-reward',
+    'claimed-reward',
     'token',
     '$ETH',
     '$AVAX',
@@ -58,6 +57,7 @@ test('holding kinds cover typed and native holdings', t => {
   }
   for (const kind of [
     'share',
+    'reward',
     'native-token',
     'unknown',
     '$',
@@ -77,7 +77,7 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
     kind: 'principal',
     tokenAddress: address,
     amount: 0n,
-    valueUsd: minSignedBigInt(256n),
+    valueUsd: -1n,
   };
   for (const specimen of [
     holding,
@@ -100,7 +100,7 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
     { amount: -1n },
     { amount: 123 },
     { valueUsd: -2n },
-    { valueUsd: -1n },
+    { valueUsd: -(2n ** 255n) },
     { valueUsd: maxSignedBigInt(256n) + 1n },
     { valueUsd: 0 },
     { balanceUsdc: -2n },
@@ -126,6 +126,7 @@ test('legacy holding Shape requires a place and a nonnegative balance', t => {
     { place: '@Base' },
     { place: '@Base', balanceUsdc: -1n },
     { place: '@Base', balanceUsdc: 0n, extra: true },
+    { place: '@Base', balanceUsdc: 0n, valueUsd: 1n },
   ]) {
     t.false(matches(harden(entry), HoldingDetailShape));
   }

@@ -961,14 +961,12 @@ test('movement Shape accepts additive withdraw params and requires an amount', t
   for (const specimen of [
     base,
     { ...base, withdraw: {} },
-    { ...base, withdraw: { srcAmount: 0n } },
+    { ...base, withdraw: { amountOfShares: 0n } },
     {
       ...base,
-      withdraw: { max: true, srcToken: `0x${'1'.repeat(40)}`, srcAmount: 123n },
+      withdraw: { max: true, amountOfShares: 123n },
     },
     { ...base, withdraw: { max: false } },
-    { ...base, withdraw: { srcToken: `0x${'1'.repeat(40)}` } },
-    { ...base, withdraw: { max: true, srcToken: `0x${'1'.repeat(40)}` } },
     {
       ...base,
       amount: usdc(100n),
@@ -982,9 +980,11 @@ test('movement Shape accepts additive withdraw params and requires an amount', t
     missingAmount: { ...base, amount: undefined },
     badAmount: { ...base, amount: 'MAX' },
     invalidMax: { ...base, withdraw: { max: 'yes' } },
-    negativeSrcAmount: { ...base, withdraw: { srcAmount: -1n } },
-    invalidSrcAmount: { ...base, withdraw: { srcAmount: 123 } },
-    invalidToken: { ...base, withdraw: { srcToken: 123n } },
+    negativeSrcAmount: { ...base, withdraw: { amountOfShares: -1n } },
+    invalidSrcAmount: { ...base, withdraw: { amountOfShares: 123 } },
+    obsoleteToken: { ...base, withdraw: { srcToken: `0x${'1'.repeat(40)}` } },
+    obsoleteKind: { ...base, withdraw: { srcKind: 'shares' } },
+    obsoleteAmount: { ...base, withdraw: { srcAmount: 0n } },
     unknownOption: { ...base, withdraw: { max: true, force: true } },
     badFee: { ...base, fee: '100' },
     badDetail: { ...base, detail: { evmGas: -1n } },
@@ -1030,9 +1030,7 @@ test('movement Ext Shape accepts future places while validating known withdrawal
     {
       withdraw: {
         max: true,
-        srcKind: 'shares',
-        srcToken: `0x${'1'.repeat(40)}`,
-        srcAmount: 0n,
+        amountOfShares: 0n,
       },
     },
     { fee: bld.make(1n), detail: { gas: 1n }, futureField: { version: 2 } },
@@ -1064,8 +1062,8 @@ test('movement Ext Shape accepts future places while validating known withdrawal
     badMax: { withdraw: { max: 'yes' } },
     badKind: { withdraw: { srcKind: 'reward' } },
     badToken: { withdraw: { srcToken: 1n } },
-    negativeSourceAmount: { withdraw: { srcAmount: -1n } },
-    badSourceAmount: { withdraw: { srcAmount: 1 } },
+    negativeSourceAmount: { withdraw: { amountOfShares: -1n } },
+    badSourceAmount: { withdraw: { amountOfShares: 1 } },
     unknownWithdrawalField: { withdraw: { force: true } },
   })) {
     t.false(matches(harden({ ...base, ...fields }), shape), name);

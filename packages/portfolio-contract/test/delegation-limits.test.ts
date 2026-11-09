@@ -1408,12 +1408,8 @@ const additiveWithdrawCases: [string, WithdrawParams | undefined][] = [
   ['empty', {}],
   ['false max', { max: false }],
   ['true max', { max: true }],
-  ['source token', { srcToken: `0x${'1'.repeat(40)}` }],
-  ['source quantity', { srcAmount: 10n ** 24n }],
-  [
-    'source quantity minimum',
-    { max: true, srcToken: `0x${'1'.repeat(40)}`, srcAmount: 10n ** 24n },
-  ],
+  ['source quantity', { amountOfShares: 10n ** 24n }],
+  ['source quantity minimum', { max: true, amountOfShares: 10n ** 24n }],
 ];
 
 for (const [label, withdraw] of additiveWithdrawCases) {
@@ -1476,7 +1472,7 @@ test('withdraw options do not reserve the source or change exact downstream fund
         src: 'Aave_Base',
         dest: '@Base',
         amount: { brand: USDC, value: 50_000_000n },
-        withdraw: { srcAmount: 1n },
+        withdraw: { amountOfShares: 1n },
       },
     ],
   };
