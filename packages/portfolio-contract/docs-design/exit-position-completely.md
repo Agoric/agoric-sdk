@@ -107,7 +107,10 @@ sequenceDiagram
    absent valuation as `-1n` in the signed `int256` field and stripping it
    again when decoding. Known valuations range from zero through
    `2n ** 255n - 1n`. Deprecated `balanceUsdc` is unsigned
-   `uint256`, with uniform presence and no valuation sentinel.
+   `uint256`, with uniform presence and no valuation sentinel. During the
+   transition it carries each place's legacy balance (on one holding per
+   place, `0n` on the others), and decoding sums it per place into legacy
+   `balances`, so existing mandate checks keep working once producers switch.
 
    Reuse the existing Morpho collector. YDS's
    [`getMorphoBalance`](../../../../ymax-web/yds/src/utils/alchemy-kit.ts) reads
@@ -118,10 +121,10 @@ sequenceDiagram
    extends its optional signed fields to support typed holdings. Legacy
    balance-only messages keep their original resolved signed type; raw kind,
    token, and quantity fields are validated together when present. Shared
-   converters retain legacy aggregate balances while exposing typed raw
-   holdings without deriving aggregate balances from valuations. Producer and
-   verifier rollout remain integration work: deploy verifier support before
-   producers add raw fields. Legacy observations remain usable for numeric
+   converters derive legacy aggregate balances from typed holdings' deprecated
+   `balanceUsdc`, never from `valueUsd`. Rollout: deploy verifier support,
+   switch producers to typed holdings with `balanceUsdc`, move consumers to
+   typed holdings, then retire `balanceUsdc` and balance-only holdings. Legacy observations remain usable for numeric
    plans but cannot supply share-based redemption data. Never enrich a legacy
    signature with unsigned raw holdings. AGO-1615 defines that compatibility
    boundary, coordinated with AGO-1617 (YDS) and AGO-1618 (attestor).

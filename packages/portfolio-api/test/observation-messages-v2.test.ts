@@ -71,16 +71,19 @@ const decode = (holdings: HoldingDetail[]) =>
   portfolioObservationsFromEIP712(readMessage(messageFor(holdings).message));
 
 test('typed holdings round trip keeps raw units separate from optional signed valuations', t => {
-  for (const fields of [
-    {},
-    { valueUsd: 0n },
-    { valueUsd: 2n ** 255n - 1n },
-    { valueUsd: 100_000_000n, balanceUsdc: 100_000_000n },
-  ]) {
+  for (const [fields, balances] of [
+    [{}, {}],
+    [{ valueUsd: 0n }, {}],
+    [{ valueUsd: 2n ** 255n - 1n }, {}],
+    [
+      { valueUsd: 100_000_000n, balanceUsdc: 100_000_000n },
+      { [morpho]: 100_000_000n },
+    ],
+  ] as const) {
     const entry = { ...holding, ...fields };
     t.deepEqual(decode([entry]), {
       ...content,
-      observations: { ...content.observations, holdings: [entry] },
+      observations: { ...content.observations, balances, holdings: [entry] },
     });
   }
 });
@@ -410,19 +413,64 @@ test('legacy compatibility balances remain unsigned and require uniform presence
   );
 });
 
-test('typed observations do not fabricate aggregate balances or silently drop them', t => {
+test('typed holdings derive legacy balances only from balanceUsdc', t => {
+  // valueUsd never implies a legacy balance
   t.deepEqual(
     decode([{ ...holding, valueUsd: 123n }]).observations.balances,
     {},
   );
-  t.throws(
-    () =>
-      portfolioObservationsToEIP712({
-        ...content,
-        observations: { ...content.observations, balances: { [morpho]: 1n } },
-      }),
-    { message: /cannot combine/ },
+  // one main holding per place carries the place balance, others 0n
+  const entries: HoldingDetail[] = [
+    { ...holding, valueUsd: 5n, balanceUsdc: 100n },
+    { ...holding, kind: 'claimable-reward', valueUsd: 7n, balanceUsdc: 0n },
+    {
+      place: '@Base',
+      kind: 'token',
+      tokenAddress: address,
+      amount: 3n,
+      balanceUsdc: 3n,
+    },
+    {
+      place: '@Base',
+      kind: '$ETH',
+      tokenAddress: zeroAddress,
+      amount: 9n,
+      balanceUsdc: 0n,
+    },
+  ];
+  const decoded = decode(entries);
+  t.deepEqual(decoded.observations.balances, { [morpho]: 100n, '@Base': 3n });
+  t.deepEqual(decoded.observations.holdings, entries);
+  // decoded content re-encodes to the same message
+  t.deepEqual(
+    portfolioObservationsToEIP712(decoded),
+    portfolioObservationsToEIP712({
+      ...decoded,
+      observations: { ...decoded.observations, balances: {} },
+    }),
   );
+});
+
+test('typed holdings reject balances that their balanceUsdc does not derive', t => {
+  const withBalance = { ...holding, balanceUsdc: 1n };
+  for (const [holdings, balances] of [
+    [[holding], { [morpho]: 1n }],
+    [[withBalance], { [morpho]: 2n }],
+    [[withBalance], { [morpho]: 1n, '@Base': 0n }],
+  ] as const) {
+    t.throws(
+      () =>
+        portfolioObservationsToEIP712({
+          ...content,
+          observations: {
+            ...content.observations,
+            balances,
+            holdings: [...holdings],
+          },
+        }),
+      { message: /must match the balanceUsdc/ },
+    );
+  }
 });
 
 test('handler leaves the sentinel on the wire for the converter to decode', t => {

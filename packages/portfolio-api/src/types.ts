@@ -177,7 +177,10 @@ export type PortfolioBalancePlaceRef = InstrumentId | InterChainAccountRef;
  */
 export type PlanObservations = {
   balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
-  /** Authenticated raw holdings; legacy balances are not inferred from valuations. */
+  /**
+   * Authenticated raw holdings. When present, `balances` is derived from their
+   * deprecated `balanceUsdc` (never from `valueUsd`).
+   */
   holdings?: TypedHoldingDetail[];
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
 };
@@ -208,7 +211,12 @@ export type TypedHoldingDetail = {
    * encodes an absent valuation as a sentinel, which its converters strip.)
    */
   valueUsd?: bigint;
-  /** @deprecated Compatibility valuation in micro-USDC, when observed. */
+  /**
+   * @deprecated Transitional legacy valuation in micro-USDC, summed per place
+   * into `PlanObservations['balances']` for consumers not yet reading typed
+   * holdings. Put the place's legacy balance on one holding and `0n` on its
+   * others; include on every holding or none. Removed with legacy balances.
+   */
   balanceUsdc?: bigint;
 };
 

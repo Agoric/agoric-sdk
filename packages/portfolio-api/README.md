@@ -59,12 +59,20 @@ struct type, so on the wire every typed holding carries `valueUsd` as an
 without Endo initialization.
 
 Deprecated `balanceUsdc` remains optional unsigned `uint256` without a
-sentinel: include it on every raw holding or omit it from all of them.
+sentinel: include it on every raw holding or omit it from all of them. It is a
+transitional bridge for consumers that still read legacy `balances`: decoding
+typed holdings sums `balanceUsdc` per place into `balances`. Producers put the
+place's legacy balance on one holding per place and `0n` on the others.
+`valueUsd` never feeds `balances`. When authoring typed holdings, `balances`
+may be empty or must equal that derivation (as decoding returns); anything else
+is rejected rather than silently discarded.
 
-A raw zero is an explicit `amount: 0n`; an absent holding is unobserved. Typed
-valuations do not imply aggregate balances. Supply either legacy `balances` or
-raw `holdings` with `balances: {}`; combining nonempty aggregate balances with
-raw holdings is rejected rather than silently discarding data. Empty holdings
+Removal timeline: (1) deploy contracts that accept typed holdings; (2) switch
+producers to typed holdings carrying `balanceUsdc`; (3) move contract consumers
+from `balances` to `holdings`; (4) stop producing `balanceUsdc`, then drop
+legacy balance-only holdings and `balanceUsdc` from the schema.
+
+A raw zero is an explicit `amount: 0n`; an absent holding is unobserved. Empty holdings
 and empty balances encode the same empty array and decode to empty balances.
 The decoder expects normalized data extracted with
 `onUnknownSignedField: 'throw'` after signature/domain verification; it does not

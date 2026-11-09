@@ -281,9 +281,34 @@ const assertTypedHoldings: (
 };
 
 /**
+ * Transitional: derive legacy per-place `balances` from the deprecated
+ * `balanceUsdc` of typed holdings, summed per place, so consumers of
+ * `balances` keep working when producers switch to typed holdings. Producers
+ * put the legacy place balance on one holding per place and `0n` on the
+ * others. Never derived from `valueUsd`. Empty if the holdings omit
+ * `balanceUsdc` (EIP-712 requires it on all of them or none).
+ */
+const balancesFromTypedHoldings = (
+  holdings: readonly TypedHoldingDetail[],
+): PlanObservations['balances'] => {
+  const balances: PlanObservations['balances'] = {};
+  for (const { place, balanceUsdc } of holdings) {
+    if (balanceUsdc !== undefined) {
+      balances[place] = (balances[place] ?? 0n) + balanceUsdc;
+    }
+  }
+  for (const [place, balance] of Object.entries(balances)) {
+    assertUint256(balance, `balanceUsdc sum for ${place}`);
+  }
+  return balances;
+};
+
+/**
  * Author either legacy balances or typed holdings using the shared schema.
  * Typed holdings always carry `valueUsd`, with {@link VALUE_USD_UNKNOWN}
- * standing for an absent valuation.
+ * standing for an absent valuation. With typed holdings, `balances` may only
+ * repeat what their `balanceUsdc` values derive (as decoding returns), so no
+ * balance is silently dropped.
  */
 export const portfolioObservationsToEIP712 = ({
   portfolioId,
@@ -298,14 +323,19 @@ export const portfolioObservationsToEIP712 = ({
       throw RangeError(`${field} out of range: ${value}`);
     }
   }
-  if (
-    holdings !== undefined &&
-    Object.values(balances).some(value => value !== undefined)
-  ) {
-    throw TypeError('cannot combine aggregate balances with typed holdings');
-  }
   if (holdings !== undefined) {
     assertTypedHoldings(holdings);
+    const derived = balancesFromTypedHoldings(holdings);
+    const given = Object.entries(balances).filter(([, v]) => v !== undefined);
+    if (
+      given.length > 0 &&
+      (given.length !== Object.keys(derived).length ||
+        given.some(([place, v]) => derived[place] !== v))
+    ) {
+      throw TypeError(
+        'aggregate balances must match the balanceUsdc of typed holdings',
+      );
+    }
   }
   const legacy: HoldingDetailEIP712Input[] = Object.entries(balances).flatMap(
     ([place, balanceUsdc]) => {
@@ -343,8 +373,10 @@ export const portfolioObservationsToEIP712 = ({
 /**
  * Decode normalized authenticated observations. The handler must use
  * onUnknownSignedField: 'throw'. This converter does not verify signatures.
- * Raw holding valuations never imply aggregate balances. A typed holding's
- * {@link VALUE_USD_UNKNOWN} valuation decodes to an absent `valueUsd`.
+ * For typed holdings, `balances` is derived from their deprecated
+ * `balanceUsdc` (see {@link balancesFromTypedHoldings}), never from `valueUsd`.
+ * A typed holding's {@link VALUE_USD_UNKNOWN} valuation decodes to an absent
+ * `valueUsd`.
  */
 export const portfolioObservationsFromEIP712 = ({
   portfolio,
@@ -352,7 +384,7 @@ export const portfolioObservationsFromEIP712 = ({
   holdings,
   instruments,
 }: PortfolioObservationsEIP712): PortfolioObservationsContent => {
-  const balances: PlanObservations['balances'] = {};
+  const legacyBalances: PlanObservations['balances'] = {};
   const rawHoldings: TypedHoldingDetail[] = [];
   for (const holding of holdings) {
     const { place, balanceUsdc, kind, tokenAddress, amount } = holding;
@@ -366,17 +398,21 @@ export const portfolioObservationsFromEIP712 = ({
     ) {
       rawHoldings.push(typedHoldingFromEIP712(holding));
     } else {
-      if (Object.hasOwn(balances, place)) {
+      if (Object.hasOwn(legacyBalances, place)) {
         throw TypeError(`duplicate holding place ${JSON.stringify(place)}`);
       }
       assertUint256(balanceUsdc as bigint, 'balanceUsdc');
-      balances[place] = balanceUsdc;
+      legacyBalances[place] = balanceUsdc;
     }
   }
-  if (rawHoldings.length && Object.keys(balances).length) {
-    throw TypeError('cannot combine aggregate balances with typed holdings');
+  // Uniform EIP-712 field presence already rules this out; fail closed anyway.
+  if (rawHoldings.length && Object.keys(legacyBalances).length) {
+    throw TypeError('cannot combine legacy balances with typed holdings');
   }
   assertTypedHoldings(rawHoldings);
+  const balances = rawHoldings.length
+    ? balancesFromTypedHoldings(rawHoldings)
+    : legacyBalances;
   const instrumentTvls: PlanObservations['instrumentTvls'] = {};
   for (const { instrumentId, tvlUsd } of instruments) {
     if (!isInstrumentId(instrumentId)) {
