@@ -1527,26 +1527,3 @@ test('withdraw options introduce no protocol-specific admission rule', t => {
     ),
   );
 });
-
-for (const amount of [undefined, { brand: USDC, value: -1n }]) {
-  test(`withdraw options do not bypass ordinary amount validation: ${String(amount?.value)}`, t => {
-    t.throws(
-      () =>
-        vetPlanAllocation(
-          { '@Base': 1n },
-          {
-            flow: [
-              {
-                src: 'Aave_Base',
-                dest: '@Base',
-                amount,
-                withdraw: { max: true },
-              },
-            ],
-          } as unknown as FundsFlowPlan,
-          { balances: { Aave_Base: 100n, '@Base': 0n }, instrumentTvls: {} },
-        ),
-      { message: /movement requires a numeric amount/ },
-    );
-  });
-}

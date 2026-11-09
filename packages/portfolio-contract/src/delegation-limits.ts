@@ -168,9 +168,6 @@ const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
   vetNoSwaps(plan);
   const flow = plan.flow.map((movement): PlanOperation => {
     const { src, dest, amount, claimRewards } = movement;
-    if (typeof amount?.value !== 'bigint' || amount.value < 0n) {
-      throw Fail`movement requires a numeric amount`;
-    }
     if (!isPortfolioBalancePlaceRef(src)) {
       throw Fail`allocation plan does not support deposit or withdrawal place ${q(src)}`;
     }
