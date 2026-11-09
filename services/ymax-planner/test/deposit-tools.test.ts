@@ -131,6 +131,49 @@ for (const op of ['deposit', 'rebalance', 'withdraw'] as const) {
   });
 }
 
+test('withdraw planning partially satisfies a request using available liquidity', async t => {
+  const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    currentBalances: {
+      Aave_Ethereum: makeDeposit(scale6(100)),
+      Compound_Ethereum: makeDeposit(scale6(100)),
+    },
+    instrumentLiquidity: {
+      Aave_Ethereum: scale6(10),
+      Compound_Ethereum: scale6(20),
+    },
+    amount: makeDeposit(scale6(50)),
+    toChain: 'Ethereum',
+  });
+  arrayIsLike(t, plan.flow, [
+    { dest: '@Ethereum' },
+    { dest: '@Ethereum' },
+    { src: '@Ethereum', dest: '-Ethereum', amount: makeDeposit(scale6(27)) },
+  ]);
+  t.deepEqual(
+    plan.flow.find(m => m.src === 'Aave_Ethereum')?.amount,
+    makeDeposit(scale6(9)),
+  );
+  t.deepEqual(
+    plan.flow.find(m => m.src === 'Compound_Ethereum')?.amount,
+    makeDeposit(scale6(18)),
+  );
+});
+
+test('withdraw planning returns no movements when all liquidity is unavailable', async t => {
+  const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    currentBalances: {
+      Aave_Ethereum: makeDeposit(scale6(100)),
+      Compound_Ethereum: makeDeposit(scale6(100)),
+    },
+    instrumentLiquidity: { Aave_Ethereum: 0n, Compound_Ethereum: 0n },
+    amount: makeDeposit(scale6(50)),
+    toChain: 'Ethereum',
+  });
+  t.deepEqual(plan, emptyPlan);
+});
+
 const makeMovementDesc = (
   src: AssetPlaceRef,
   dest: AssetPlaceRef,
@@ -1614,9 +1657,7 @@ for (const [title, usdcOverdraft] of Object.entries({
     ['dynamic', undefined, dynamicBlocks],
   ];
   for (const [kind, staticBlockWithdrawReason, instrumentBlocks] of cases) {
-    // TODO(AGO-535): Both of these scenarios should withdraw 50 USDC.
-    const testFn = usdcOverdraft === 0 ? test : test.failing;
-    testFn(`${title}, ${kind}`, async t => {
+    test(`${title}, ${kind}`, async t => {
       const network: NetworkSpec = harden({
         ...plannerContext.network,
         pools: [

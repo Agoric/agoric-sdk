@@ -134,17 +134,61 @@ test('withdrawal fallback respects liquidity caps below the soft minimum', t => 
   });
 });
 
-test('insufficient liquidity never produces an over-limit withdrawal', t => {
+test('insufficient liquidity produces a partial withdrawal within the limit', t => {
   const targets = computeTargetBalances({
     brand,
     currentBalances: { Aave_Ethereum: amount, Compound_Ethereum: amount },
     balanceDelta: -half.value,
     network: tinyNetwork,
     instrumentLiquidity: { Aave_Ethereum: 0n, Compound_Ethereum: scale6(10) },
+    withdrawalLiquidityLimitBps: 9_000n, // 90%
+  });
+  t.deepEqual(targets, { Compound_Ethereum: makeAmount(scale6(91)) });
+});
+
+test('partial withdrawal combines hub funds and liquidity below the soft minimum', t => {
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances: {
+      '@Ethereum': makeAmount(scale6(2)),
+      Aave_Ethereum: amount,
+      Compound_Ethereum: amount,
+    },
+    balanceDelta: -half.value,
+    network: tinyNetwork,
+    instrumentLiquidity: {
+      Aave_Ethereum: scale6(0.5),
+      Compound_Ethereum: scale6(10),
+    },
     withdrawalLiquidityLimitBps: 9_000n,
   });
-  t.deepEqual(targets, {});
+  t.deepEqual(targets, {
+    '@Ethereum': makeAmount(0n),
+    Aave_Ethereum: makeAmount(scale6(99.55)),
+    Compound_Ethereum: makeAmount(scale6(91)),
+  });
 });
+
+for (const blocked of [false, true]) {
+  test(`withdrawal with no available funds returns no changes, blocked=${blocked}`, t => {
+    const targets = computeTargetBalances({
+      brand,
+      currentBalances: { Aave_Ethereum: amount, Compound_Ethereum: amount },
+      balanceDelta: -half.value,
+      network: tinyNetwork,
+      instrumentLiquidity: blocked
+        ? undefined
+        : { Aave_Ethereum: 0n, Compound_Ethereum: 0n },
+      instrumentBlocks: {
+        noDepositInstruments: new Set(),
+        noWithdrawInstruments: new Set(
+          blocked ? ['Aave_Ethereum', 'Compound_Ethereum'] : [],
+        ),
+      },
+    });
+    t.deepEqual(targets, {});
+  });
+}
 
 test('liquidity limits do not cap hub withdrawals or instruments without data', t => {
   const targets = computeTargetBalances({
