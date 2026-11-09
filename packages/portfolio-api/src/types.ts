@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
-import type { Brand, NatAmount } from '@agoric/ertp';
+import type { NatAmount } from '@agoric/ertp';
 import {
   type AccountId,
   type Bech32Address,
@@ -309,40 +309,13 @@ export type SwapDesc = OneInchSwapDesc;
  */
 export type SwapProvider = SwapDesc['provider'];
 
-/** One explicit source holding and quantity to withdraw. */
-export type AmountSelector = {
-  /** Kind of holding to withdraw from the src place. */
-  kind: HoldingKind;
-  /** ERTP nat brand, token address, or denom identifying the holding. */
-  token: Brand<'nat'> | string;
-  /** Raw token units to withdraw; a minimum when effective max is true. */
-  amount: bigint;
-  /**
-   * Attempt to withdraw all remaining units of this holding,
-   * treating amount as a minimum rather than an exact quantity.
-   * Default: WithdrawParams['max'], or false if both are omitted.
-   */
-  max?: boolean;
-};
-
-/** Parameters for withdrawing holdings into the destination's base token. */
 export type WithdrawParams = {
-  /** Default for each AmountSelector['max']. Default: false. */
+  /** When true, any MovementDesc['amount'] and/or WithdrawParams['srcAmount'] are minima, not exact. */
   max?: boolean;
-  /**
-   * Holdings and quantities to withdraw from the src place.
-   * When omitted, select an amount of that place's default kind and token
-   * that delivers at least MovementDesc['amount'] of base token (USDC) to dest.
-   * When max is false or omitted, attempt to minimize the excess delivered
-   * above MovementDesc['amount'].
-   * When max is true, attempt to withdraw all units of the default holding.
-   *
-   * Explicit selections are nonempty and apply in array order to remaining
-   * quantities. Process every selector, even after the destination minimum
-   * is met. Partial completion uses the existing flow failure/recovery path.
-   * Unsupported selections fail; swaps require separate plan movements.
-   */
-  select?: [AmountSelector, ...AmountSelector[]];
+  /** Omit to withdraw the default kind from this place, otherwise must correspond to a 'shares' or 'principal' kind. */
+  srcToken?: EvmAddress;
+  /** Units of srcToken to withdraw. When specified, MovementDesc['amount'] is a minimum. */
+  srcAmount?: bigint;
 };
 
 /**
@@ -376,7 +349,7 @@ export type ClaimRewardsParams = {
 };
 
 export type MovementDesc = {
-  /** Base-token units (micro-USDC) received at dest; a minimum whenever withdraw is supplied, otherwise exact. */
+  /** Default-token units (micro-USDC) received at dest; a minimum when withdraw.max is true or withdraw.srcAmount is specified, otherwise exact. */
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
