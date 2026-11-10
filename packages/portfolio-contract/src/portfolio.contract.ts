@@ -477,7 +477,7 @@ const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
  * @param zone - Durable storage zone for contract state persistence
  * @param tools - Orchestration tools for cross-chain operations and Zoe integration
  * @see {@link openPortfolio} for portfolio creation flow details
- * @see {@link rebalance} for position management flow details
+ * @see {@link executePlan} for position management flow details
  * @see {@link start}
  */
 export const contract = async (
@@ -633,8 +633,8 @@ export const contract = async (
   // behavior), but newly-invoked flows get `config = defaultFlowConfig`.
   //
   // Create executePlan flow first - needed by preparePortfolioKit.
-  // `rebalance` no longer has a host-side caller (offers can't supply a plan,
-  // AGO-1662), but it must stay registered so in-flight activations replay.
+  // `rebalance` is a tombstone (AGO-1394); it stays registered because
+  // async-flow requires every previously registered flow across upgrades.
   const orchFns1 = orchestrateAll(
     {
       executePlan: flows.executePlan,
@@ -863,7 +863,7 @@ export const contract = async (
      *
      * @see {@link OfferArgsFor.openPortfolio} for offer arguments
      * @see {@link openPortfolio} for the underlying flow implementation
-     * @see {@link rebalance} for position management flow details
+     * @see {@link executePlan} for position management flow details
      */
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
