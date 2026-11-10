@@ -117,9 +117,10 @@ const makeYdsTokenBalance = (
     symbol === 'USDC'
       ? mustGetOwn(UsdcTokenIds.mainnet, chainName)
       : mustGetOwn(rewardTokensByChain[chainName], symbol);
+  const evmChainId = `${mustGetOwn(Eip155ChainIds.mainnet, chainName)}`;
   return {
     chainName,
-    caipChainId: `eip155:${mustGetOwn(Eip155ChainIds.mainnet, chainName)}`,
+    caipChainId: `eip155:${evmChainId}`,
     instrumentName: isInstrumentId(placeRef) ? placeRef : null,
     symbol,
     tokenId,
@@ -239,9 +240,10 @@ const makeAutoClaimPowers = (
     // Default gas units per claim are uniform.
     GAS_UNITS_PER_CLAIM: fromTypedEntries(
       typedEntries(rewardTokensByChain).flatMap(([_chainName, tokens]) =>
-        Object.values(tokens).map(
-          addr => [addr, defaultGasUnitsPerClaim] as [EvmAddress, bigint],
-        ),
+        Object.values(tokens).map(addr => {
+          const normalized = addr.toLowerCase();
+          return [normalized, defaultGasUnitsPerClaim] as [EvmAddress, bigint];
+        }),
       ),
     ),
     GAS_UNITS_PER_SWAP: 10_000_000n,
@@ -281,6 +283,7 @@ test('pickAutoClaimSources obeys autoClaimConfig', t => {
   t.deepEqual(picks, [
     {
       ...makeYdsTokenBalance('@Ethereum', uusdValue, 'reward1'),
+      evmChainId: '1',
       uusdcValue: uusdValue,
       usdcTokenId: mustGetOwn(UsdcTokenIds.mainnet, 'Ethereum'),
     },
