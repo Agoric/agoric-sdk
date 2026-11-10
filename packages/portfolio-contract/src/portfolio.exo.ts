@@ -806,7 +806,7 @@ export const preparePortfolioKit = (
               targetAllocation,
               plan,
               observations,
-            );
+            ).commitNow;
           }
 
           // Check and reserve synchronously, after any observation verification.
@@ -836,7 +836,7 @@ export const preparePortfolioKit = (
                 targetAllocation,
                 plan,
                 observations,
-              );
+              ).commitNow;
             if (commitNow) {
               const resultingPolicyVersion =
                 manager.updateTargetAllocation(targetAllocation);

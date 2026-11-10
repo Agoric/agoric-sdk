@@ -229,6 +229,10 @@ type GetUsdcAddress = (
   account: InterChainAccountRef,
 ) => TypedHoldingDetail['tokenAddress'] | undefined;
 
+type GetVaultAddress = (
+  src: ERC4626InstrumentId,
+) => TypedHoldingDetail['tokenAddress'] | undefined;
+
 /**
  * Decode once so every balance check uses the same operation semantics.
  * Legacy balance observations retain the existing exact-amount fallback.
@@ -308,6 +312,39 @@ const decodePlan = (
     ...(plan.order !== undefined && { order: plan.order }),
   });
 };
+
+export type BoundShareWithdrawal = Readonly<{
+  src: ERC4626InstrumentId;
+  vaultAddress: TypedHoldingDetail['tokenAddress'];
+  shares: bigint;
+}>;
+
+/** Derive execution instructions from the same operations used by allocation checks. */
+const bindShareWithdrawals = (
+  plan: DecodedPlan,
+  getVaultAddress?: GetVaultAddress,
+): Partial<Record<number, BoundShareWithdrawal>> => {
+  const bound: Partial<Record<number, BoundShareWithdrawal>> = {};
+  for (const [step, movement] of plan.flow.entries()) {
+    if (movement.kind !== 'withdrawMax') continue;
+    const vaultAddress = getVaultAddress?.(movement.src);
+    if (!vaultAddress) {
+      throw Fail`no configured vault for ${q(movement.src)}`;
+    }
+    sameEvmAddress(movement.holding.tokenAddress, vaultAddress) ||
+      Fail`observed share token ${q(movement.holding.tokenAddress)} does not match configured vault ${q(vaultAddress)} at ${q(movement.src)}`;
+    if (movement.amount.value > 0n) {
+      throw Fail`share redemption cannot yet enforce a positive proceeds minimum ${q(movement.amount.value)} at ${q(movement.src)}`;
+    }
+    bound[step] = {
+      src: movement.src,
+      vaultAddress,
+      shares: movement.holding.amount,
+    };
+  }
+  return harden(bound);
+};
+harden(bindShareWithdrawals);
 
 /** An investment requires principal or shares; rewards alone do not cover it. */
 const hasObservedBalance = (
@@ -613,12 +650,18 @@ export const vetPlanAllocation = (
 };
 harden(vetPlanAllocation);
 
+type VettedAllocationPlan = Readonly<{
+  commitNow: boolean;
+  shareWithdrawals?: ReturnType<typeof bindShareWithdrawals>;
+}>;
+
 /**
  * Vet a target allocation and optional execution plan against delegated
  * permissions and the attested observations of the portfolio.
  *
- * @returns Whether the target allocation can be committed immediately. `false`
- * means observation-dependent permissions require a later plan.
+ * @returns The policy commit decision and execution instructions bound to the
+ * plan that passed allocation checks. `commitNow: false` means observation-
+ * dependent permissions require a later plan.
  * @throws {Error} if the allocation, plan, or observations violate the
  * delegated permissions, or if a plan lacks observations
  */
@@ -627,13 +670,29 @@ export const vetAllocationPlan = (
   targetAllocation: TargetAllocation,
   plan: FundsFlowPlan | undefined,
   observations: PlanObservations | undefined,
-): boolean => {
+  addresses: {
+    getUsdcAddress?: GetUsdcAddress;
+    getVaultAddress?: GetVaultAddress;
+  } = {},
+): VettedAllocationPlan => {
   assertMandateForAllocation(permissions, targetAllocation);
-  if (!plan) return !needsObservations(permissions);
+  if (!plan) return harden({ commitNow: !needsObservations(permissions) });
 
   if (!observations) throw Fail`allocation plan requires observations`;
-  vetPlanAllocation(targetAllocation, plan, observations);
+  const decodedPlan = vetPlanAllocation(
+    targetAllocation,
+    plan,
+    observations,
+    addresses.getUsdcAddress,
+  );
   assertMandateForPlanObservations(permissions, targetAllocation, observations);
-  return true;
+  const shareWithdrawals = bindShareWithdrawals(
+    decodedPlan,
+    addresses.getVaultAddress,
+  );
+  return harden({
+    commitNow: true,
+    ...(keys(shareWithdrawals).length && { shareWithdrawals }),
+  });
 };
 harden(vetAllocationPlan);
