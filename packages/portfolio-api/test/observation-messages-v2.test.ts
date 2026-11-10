@@ -1,6 +1,7 @@
 import '@endo/init/debug.js';
 
 import test from 'ava';
+import { assert } from '@endo/errors';
 import {
   hashTypedData,
   hashStruct,
@@ -21,6 +22,7 @@ import {
   type PortfolioObservationsEIP712,
 } from '../src/observation-messages.ts';
 import type { TypedHoldingDetail as HoldingDetail } from '../src/types.ts';
+import { isInstrumentId } from '../src/places.ts';
 import { runWithoutLockdown } from './without-lockdown.ts';
 
 const address = '0x123456789012345678901234567890123456789a' as const;
@@ -470,6 +472,40 @@ test('typed holdings reject balances that their balanceUsdc does not derive', t 
         }),
       { message: /must match the balanceUsdc/ },
     );
+  }
+});
+
+test('explicitly undefined compatibility balances are omitted before signing', t => {
+  for (const entries of [
+    [{ ...holding, balanceUsdc: undefined }],
+    [
+      { ...holding, balanceUsdc: undefined },
+      { ...holding, kind: 'principal' as const },
+    ],
+  ]) {
+    const message = messageFor(entries);
+    t.false(
+      message.types.HoldingDetail.some(field => field.name === 'balanceUsdc'),
+    );
+    for (const entry of message.message.holdings) {
+      t.false(Object.hasOwn(entry, 'balanceUsdc'));
+    }
+    t.deepEqual(decode(entries).observations.balances, {});
+    t.deepEqual(entries[0], { ...holding, balanceUsdc: undefined });
+  }
+});
+
+test('future instrument balances ignore inherited object properties', t => {
+  for (const place of ['constructor', 'toString', 'hasOwnProperty'] as const) {
+    assert(isInstrumentId(place));
+    const entries: HoldingDetail[] = [
+      { ...holding, place, kind: 'principal', balanceUsdc: 3n },
+      { ...holding, place, kind: 'claimable-reward', balanceUsdc: 5n },
+    ];
+    const decoded = decode(entries);
+    t.deepEqual(decoded.observations.balances, { [place]: 8n });
+    t.deepEqual(decoded.observations.holdings, entries);
+    t.notThrows(() => portfolioObservationsToEIP712(decoded));
   }
 });
 

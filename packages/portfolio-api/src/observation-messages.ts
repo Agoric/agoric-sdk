@@ -189,7 +189,7 @@ const typedHoldingToEIP712 = ({
   amount,
   valueUsd: valueUsd ?? VALUE_USD_UNKNOWN,
   // deprecated, and must be uniformly present or absent
-  ...('balanceUsdc' in rest ? { balanceUsdc: rest.balanceUsdc } : {}),
+  ...(rest.balanceUsdc === undefined ? {} : { balanceUsdc: rest.balanceUsdc }),
 });
 
 /** Wire -> application: the sentinel (or an absent field) becomes absent. */
@@ -291,16 +291,16 @@ const assertTypedHoldings: (
 const balancesFromTypedHoldings = (
   holdings: readonly TypedHoldingDetail[],
 ): PlanObservations['balances'] => {
-  const balances: PlanObservations['balances'] = {};
+  const balances = new Map<TypedHoldingDetail['place'], bigint>();
   for (const { place, balanceUsdc } of holdings) {
     if (balanceUsdc !== undefined) {
-      balances[place] = (balances[place] ?? 0n) + balanceUsdc;
+      balances.set(place, (balances.get(place) ?? 0n) + balanceUsdc);
     }
   }
-  for (const [place, balance] of Object.entries(balances)) {
+  for (const [place, balance] of balances) {
     assertUint256(balance, `balanceUsdc sum for ${place}`);
   }
-  return balances;
+  return Object.fromEntries(balances);
 };
 
 /**
