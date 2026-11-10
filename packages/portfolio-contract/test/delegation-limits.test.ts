@@ -10,6 +10,7 @@ import type {
   PlanObservations,
   PortfolioBalancePlaceRef,
   TargetAllocation,
+  WithdrawParams,
 } from '@agoric/portfolio-api';
 import { chainOf, isInstrumentId } from '@agoric/portfolio-api/src/places.js';
 import {
@@ -1399,5 +1400,130 @@ test('final dust allowance cannot authorize a new above-target supply', t => {
         },
       ),
     { message: /plan intermediate balance exceeds target allocation/ },
+  );
+});
+
+const additiveWithdrawCases: [string, WithdrawParams | undefined][] = [
+  ['absent', undefined],
+  ['empty', {}],
+  ['false max', { max: false }],
+  ['true max', { max: true }],
+  ['source quantity', { amountOfShares: 10n ** 24n }],
+  ['source quantity minimum', { max: true, amountOfShares: 10n ** 24n }],
+];
+
+for (const [label, withdraw] of additiveWithdrawCases) {
+  test(`withdraw is additive to exact-amount allocation validation: ${label}`, t => {
+    const plan: FundsFlowPlan = harden({
+      flow: [
+        {
+          src: 'Aave_Base',
+          dest: '@Base',
+          amount: { brand: USDC, value: 100_000_000n },
+          ...(withdraw === undefined ? {} : { withdraw }),
+        },
+      ],
+    });
+    t.notThrows(() =>
+      vetPlanAllocation({ '@Base': 1n }, plan, {
+        balances: { Aave_Base: 100_000_000n, '@Base': 0n },
+        instrumentTvls: {},
+      }),
+    );
+    t.deepEqual(
+      plan.flow[0]!.withdraw,
+      withdraw,
+      'validation leaves the options intact',
+    );
+  });
+}
+
+test('max metadata does not project a full exit before contract support', t => {
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Aave_Base',
+        dest: '@Base',
+        amount: { brand: USDC, value: 50_000_000n },
+        withdraw: { max: true },
+      },
+    ],
+  };
+  t.throws(
+    () =>
+      vetPlanAllocation({ '@Base': 1n }, plan, {
+        balances: { Aave_Base: 100_000_000n, '@Base': 0n },
+        instrumentTvls: {},
+      }),
+    { message: /plan final balance exceeds target allocation/ },
+  );
+});
+
+test('withdraw options do not reserve the source or change exact downstream funding', t => {
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: 'Aave_Base',
+        dest: '@Base',
+        amount: { brand: USDC, value: 50_000_000n },
+        withdraw: { max: true },
+      },
+      {
+        src: 'Aave_Base',
+        dest: '@Base',
+        amount: { brand: USDC, value: 50_000_000n },
+        withdraw: { amountOfShares: 1n },
+      },
+    ],
+  };
+  t.notThrows(() =>
+    vetPlanAllocation({ '@Base': 1n }, plan, {
+      balances: { Aave_Base: 100_000_000n, '@Base': 0n },
+      instrumentTvls: {},
+    }),
+  );
+  const unfunded: FundsFlowPlan = {
+    flow: [
+      plan.flow[0]!,
+      {
+        src: '@Base',
+        dest: 'Compound_Base',
+        amount: { brand: USDC, value: 60_000_000n },
+      },
+    ],
+  };
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        { Aave_Base: 1n, Compound_Base: 1n, '@Base': 1n },
+        unfunded,
+        {
+          balances: { Aave_Base: 100_000_000n, '@Base': 0n, Compound_Base: 0n },
+          instrumentTvls: {},
+        },
+      ),
+    { message: /unfunded plan movement/ },
+  );
+});
+
+test('withdraw options introduce no protocol-specific admission rule', t => {
+  t.notThrows(() =>
+    vetPlanAllocation(
+      { '@Ethereum': 1n },
+      {
+        flow: [
+          {
+            src: 'ERC4626_vaultU2_Ethereum',
+            dest: '@Ethereum',
+            amount: { brand: USDC, value: 100n },
+            withdraw: { max: true },
+          },
+        ],
+      },
+      {
+        balances: { ERC4626_vaultU2_Ethereum: 100n, '@Ethereum': 0n },
+        instrumentTvls: {},
+      },
+    ),
   );
 });

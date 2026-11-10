@@ -395,9 +395,7 @@ export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
   const getWitnessTypeName = <T extends Ops>(operation: T) =>
     `${domainName}V${domainVersion}${operation}` as WitnessTypeName<S, T>;
 
-  const getWitnessTypeParam = <T extends Ops>(
-    operation: T,
-  ): WitnessTypeParam<S, T> => {
+  const getWitnessTypeParam = <T extends Ops>(operation: T) => {
     if (witnessFieldNamePrefix === undefined) {
       throw new Error(
         `${domainName} messages do not support permit2 witness data`,
@@ -405,7 +403,7 @@ export const makeEIP712MessageKit = <const S extends EIP712MessageSchema>(
     }
     return {
       name: `${witnessFieldNamePrefix}${operation}` as WitnessFieldName<S, T>,
-      type: getWitnessTypeName(operation) as WitnessTypeParam<S, T>['type'],
+      type: getWitnessTypeName(operation),
     };
   };
 

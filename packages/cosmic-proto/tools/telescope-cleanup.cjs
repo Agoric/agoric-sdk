@@ -131,7 +131,18 @@ async function fixRegistryHelper(filePath) {
     );
     next = next.replace(
       /^import\s+\{\s*Any,\s*AnyAmino\s*\}\s+from\s+['"]\.\/google\/protobuf\/any\.js['"];\n/m,
-      "import { Any } from './google/protobuf/any.js';\nimport type { AnyAmino } from './google/protobuf/any.js';\n",
+      "import { Any } from './google/protobuf/any.js';\n",
+    );
+    // Any has no generated Amino codec when Amino generation is disabled.
+    // Registry envelopes use the shared interface, independently of that codec.
+    next = next.replace(
+      /^import type \{ AnyAmino \} from ['"]\.\/google\/protobuf\/any\.js['"];\n/m,
+      '',
+    );
+    next = next.replace(/\bAnyAmino\b/g, 'IAminoMsg<Amino>');
+    next = next.replace(
+      'import type { IProtoType, TelescopeGeneratedCodec }',
+      'import type { IAminoMsg, IProtoType, TelescopeGeneratedCodec }',
     );
     return next;
   });

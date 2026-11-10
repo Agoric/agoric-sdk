@@ -8,7 +8,10 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
-import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
+import {
+  PortfolioPlannerAgent,
+  type PlanObservations,
+} from '@agoric/portfolio-api';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { preparePlanner } from '../src/planner.exo.ts';
 import {
@@ -152,6 +155,64 @@ test('planner exo resolvePlan method', async t => {
 
     aPortfolio.reporter.finishFlow(flowId);
   }
+});
+
+test('planner resolvePlan validates and forwards typed holdings', t => {
+  const zone = makeHeapZone();
+  const observations = harden({
+    balances: { Aave_Base: 100n },
+    holdings: [
+      {
+        place: 'Aave_Base',
+        kind: 'principal',
+        tokenAddress: `0x${'1'.repeat(40)}`,
+        amount: 100n,
+        balanceUsdc: 100n,
+      },
+    ],
+    instrumentTvls: {},
+  } satisfies PlanObservations);
+  const received: unknown[] = [];
+  const planner = preparePlanner(zone, {
+    getPortfolioPlanner: () =>
+      ({
+        getTargetAllocation: () => ({ Aave_Base: 100n }),
+        validateAndCommitPlanPolicy: (_flowId, obs) => {
+          received.push(obs);
+          return { policyVersion: 1, rebalanceCount: 1 };
+        },
+        submitVersion: () => {},
+        resolveFlowPlan: () => {},
+      }) as unknown as PortfolioKit['planner'],
+    getPlannerDelegation: () => undefined,
+    shapes: makeOfferArgsShapes(USDC),
+  })();
+  t.notThrows(() => planner.resolvePlan(1, 1, [], 1, 0, observations));
+  t.deepEqual(received, [observations]);
+  for (const fields of [
+    { amount: -1n },
+    { kind: 'unknown' },
+    { tokenAddress: 1n },
+  ]) {
+    t.throws(() =>
+      planner.resolvePlan(
+        1,
+        2,
+        [],
+        1,
+        1,
+        harden({
+          ...observations,
+          holdings: [{ ...observations.holdings[0], ...fields }],
+        }) as any,
+      ),
+    );
+  }
+  t.deepEqual(
+    received,
+    [observations],
+    'malformed holdings never reach policy validation',
+  );
 });
 
 test('planner rejects delegated plans that fail observation-time validation', async t => {

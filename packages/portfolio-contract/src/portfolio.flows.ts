@@ -1791,7 +1791,7 @@ export const rebalance = (async (
 ) => {
   const id = kit.reader.getPortfolioId();
   const traceP = makeTracer('rebalance').sub(`portfolio${id}`);
-  const proposal = seat.getProposal() as ProposalType['rebalance'];
+  const proposal = seat.getProposal();
   traceP('proposal', proposal.give, proposal.want, offerArgs);
   const { flow, targetAllocation } = offerArgs;
 
@@ -2023,7 +2023,8 @@ export const openPortfolio = (async (
       );
     }
 
-    const { give } = seat.getProposal() as ProposalType['openPortfolio'];
+    const give = seat.getProposal()
+      .give as ProposalType['openPortfolio']['give'];
     try {
       if (offerArgs.flow) {
         // XXX only for testing recovery?

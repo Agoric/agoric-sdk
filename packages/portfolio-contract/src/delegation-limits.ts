@@ -1,6 +1,7 @@
 /** @file Delegation limits and evidence checks for delegated portfolio operations. */
 import {
   type FundsFlowPlan,
+  type MovementDesc,
   type InstrumentId,
   type InterChainAccountRef,
   type PlanObservations,
@@ -17,7 +18,6 @@ import {
 import { b, Fail, q } from '@endo/errors';
 import { maxWeightClosure } from './max-weight-closure.ts';
 import { fullOrder, makeDependencies, makeSchedule } from './schedule-order.ts';
-import type { MovementDesc } from './type-guards-steps.ts';
 
 const { entries, keys, values } = Object;
 

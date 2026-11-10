@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { NatAmount } from '@agoric/ertp';
+import type { CopyRecord } from '@endo/pass-style';
 import {
   type AccountId,
   type Bech32Address,
@@ -82,7 +83,7 @@ export type AssetPlaceRef =
   | InterChainAccountRef
   | InstrumentId;
 
-type Empty = Record<never, NatAmount>;
+type Empty = Record<string, never>;
 
 /**
  * Proposal shapes for portfolio operations.
@@ -176,8 +177,85 @@ export type PortfolioBalancePlaceRef = InstrumentId | InterChainAccountRef;
  */
 export type PlanObservations = {
   balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
+  /**
+   * Authenticated raw holdings. When present, `balances` is derived from their
+   * deprecated `balanceUsdc` (never from `valueUsd`).
+   */
+  holdings?: TypedHoldingDetail[];
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
 };
+
+/**
+ * Holding kinds understood by the observation converters. `shares` identifies
+ * vault shares; `principal` identifies instrument principal (for example Aave
+ * or Compound). `claimable-reward` belongs to an instrument, while
+ * `claimed-reward` and other `token` holdings belong to a chain account.
+ * Native tokens use `$` followed by a nonempty symbol, such as `$ETH`.
+ */
+export type HoldingKind =
+  | 'shares'
+  | 'principal'
+  | 'claimable-reward'
+  | 'claimed-reward'
+  | 'token'
+  | `$${string}`;
+
+/** A legacy balance observation, in micro-USDC. */
+export type LegacyHoldingDetail = {
+  place: PortfolioBalancePlaceRef;
+  balanceUsdc: bigint;
+};
+
+/**
+ * One authenticated raw holding, independent of its USD valuation.
+ *
+ * The identity is `(place, kind, tokenAddress)`, with case-insensitive EVM
+ * addresses. Multiple holdings may share a place, including multiple reward
+ * tokens, but duplicate identities are rejected. Instrument holdings appear
+ * under the instrument, not again under its chain account. Missing holdings
+ * are unobserved and must never be treated as zero.
+ *
+ * Signed observations use the shared `YmaxObservation` version-1 schema.
+ * Legacy balance-only entries retain their original resolved signed type;
+ * typed fields are optional in that schema for compatibility, but must form a
+ * complete typed holding when present. Optional-field presence is uniform per
+ * signed struct type. The converters always include `valueUsd` for typed
+ * holdings on the wire, encoding an absent valuation as `-1n` and stripping
+ * that sentinel when decoding. Never add unsigned holdings to a legacy
+ * signature, or infer shares from either valuation field.
+ *
+ * Producer rollout must follow verifier support. Producers first include
+ * typed holdings with transitional `balanceUsdc`; consumers then adopt typed
+ * holdings before legacy balances and balance-only entries are retired.
+ */
+export type TypedHoldingDetail = {
+  /** Instrument place or chain account, as required by the holding kind. */
+  place: PortfolioBalancePlaceRef;
+  kind: HoldingKind;
+  /**
+   * Vault address for shares; underlying token address for principal, rewards,
+   * and other ERC-20 holdings. Native tokens use the zero address.
+   */
+  tokenAddress: EvmAddress;
+  /** Native token units, independent of USD valuation. Zero is observed zero. */
+  amount: bigint;
+  /**
+   * Valuation in micro-USD; absent if not observed, distinct from known zero.
+   * Known values range from `0n` through `2n ** 255n - 1n`. This is not a raw
+   * token quantity and must not be added to `balanceUsdc`.
+   */
+  valueUsd?: bigint;
+  /**
+   * @deprecated Transitional legacy valuation in micro-USDC, summed per place
+   * into `PlanObservations['balances']` for consumers not yet reading typed
+   * holdings. Put the place's legacy balance on one holding and `0n` on its
+   * others; include on every holding or none. Removed with legacy balances.
+   */
+  balanceUsdc?: bigint;
+};
+
+/** Legacy balances and typed raw holdings share the observation schema. */
+export type HoldingDetail = LegacyHoldingDetail | TypedHoldingDetail;
 
 export type FlowDetail =
   | {
@@ -284,6 +362,28 @@ export type SwapDesc = OneInchSwapDesc;
 export type SwapProvider = SwapDesc['provider'];
 
 /**
+ * Additive options for a position-to-same-chain-account withdrawal. Structural
+ * acceptance does not establish implementation support; an older contract may
+ * ignore these options and execute the movement's amount exactly.
+ *
+ * The movement retains its required default-token amount (micro-USDC at dest).
+ * It is a minimum when `max` is true or `amountOfShares` is present. An explicit
+ * share quantity is exact unless `max` is true. Missing movement amounts,
+ * negative share quantities, and unknown withdrawal options are rejected.
+ * Transfers, bridges, deposits, and downstream movements retain exact amounts.
+ */
+export type WithdrawParams = {
+  /** When true, MovementDesc['amount'] and amountOfShares are minima, not exact. */
+  max?: boolean;
+  /**
+   * How many 'shares' tokens to withdraw.
+   * Without this, if the place is a Position, then
+   * `MovementDesc['amount']` refers to 'principal' tokens.
+   */
+  amountOfShares?: bigint;
+};
+
+/**
  * Parameters for claiming external rewards.
  *
  * `tokens` and `minAmounts` are common across protocols. Protocol-specific
@@ -314,6 +414,7 @@ export type ClaimRewardsParams = {
 };
 
 export type MovementDesc = {
+  /** Default-token units (micro-USDC) received at dest; a minimum when withdraw.max is true or withdraw.amountOfShares is specified, otherwise exact. */
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
@@ -321,11 +422,24 @@ export type MovementDesc = {
   fee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
+  /** Present only for withdrawing from a position to an account. */
+  withdraw?: WithdrawParams;
   /** Present only for reward-token claims. */
   claimRewards?: ClaimRewardsParams;
   /** Present only for reward-token -> stable-token swaps. */
   swap?: SwapDesc;
 };
+
+/**
+ * Extensible structural input, not a validated movement. Known fields retain
+ * their types, including the required amount and optional withdrawal parameters;
+ * future source/destination places and additional fields remain representable.
+ * Consumers must validate place support and semantics before execution.
+ */
+export type MovementDescExt = Omit<MovementDesc, 'src' | 'dest'> & {
+  src: string;
+  dest: string;
+} & CopyRecord<any>;
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
 
@@ -367,6 +481,11 @@ export type FundsFlowPlan = {
   /** When `order` is absent, default to fully sequential dependencies. */
   order?: FlowStepDependency[];
 };
+
+/** Forward-compatible structural plan input; its movements still need validation. */
+export type FundsFlowPlanExt = Omit<FundsFlowPlan, 'flow'> & {
+  flow: MovementDescExt[];
+} & CopyRecord<any>;
 
 export type FundsFlow = MovementDesc[] | FundsFlowPlan;
 

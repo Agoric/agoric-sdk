@@ -973,7 +973,7 @@ test('withdraw in coordination with planner', async t => {
 
   {
     const amount = make(USDC, 50_000_000n);
-    const seat = makeMockSeat({ Aave: amount }, {}, offer.log);
+    const seat = makeMockSeat({ Deposit: amount }, {}, offer.log);
     const feeAcct = AmountMath.make(BLD, 50n);
     const feeCall = AmountMath.make(BLD, 100n);
     const depositP = rebalance(
@@ -3655,7 +3655,7 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
   // Seed a Base Aave position.
   {
     const amount = make(USDC, 50_000_000n);
-    const seat = makeMockSeat({ Aave: amount }, {}, offer.log);
+    const seat = makeMockSeat({ Deposit: amount }, {}, offer.log);
     const feeAcct = AmountMath.make(BLD, 50n);
     const feeCall = AmountMath.make(BLD, 100n);
     const depositP = rebalance(

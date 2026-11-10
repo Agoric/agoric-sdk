@@ -850,9 +850,8 @@ export const contract = async (
   // Access token gating has been removed; if provided, consume one for backward compatibility.
   const consumeAccessToken = brands.Access
     ? (seat: ZCFSeat) => {
-        const {
-          give: { Access: offeredAccess },
-        } = seat.getProposal() as ProposalType['openPortfolio'];
+        const { Access: offeredAccess } = seat.getProposal()
+          .give as ProposalType['openPortfolio']['give'];
         if (!offeredAccess) return;
         const Access = AmountMath.make(brands.Access, 1n);
         zcf.atomicRearrange(harden([[seat, usedAccessTokens, { Access }]]));

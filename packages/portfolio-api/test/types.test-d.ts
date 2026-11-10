@@ -17,10 +17,17 @@ import type {
   FlowKey,
   FlowStatus,
   FlowStep,
+  FundsFlowPlan,
+  FundsFlowPlanExt,
   InterChainAccountRef,
   PortfolioAgentKey,
   LocalChainAccountRef,
+  MovementDesc,
+  MovementDescExt,
+  WithdrawParams,
   PlanObservations,
+  HoldingDetail,
+  HoldingKind,
   PortfolioBalancePlaceRef,
   PortfolioKey,
   PortfolioPublishedPathTypes,
@@ -31,6 +38,118 @@ import type {
 } from '../src/types.js';
 
 declare const natAmount: NatAmount;
+const numericMovement = {
+  src: 'Aave_Base',
+  dest: '@Base',
+  amount: natAmount,
+} as const;
+const fullWithdrawal = { ...numericMovement, withdraw: { max: true } } as const;
+expectAssignable<WithdrawParams>({});
+expectAssignable<WithdrawParams>({ max: false });
+expectAssignable<WithdrawParams>({ max: true });
+expectAssignable<WithdrawParams>({ amountOfShares: 0n });
+expectAssignable<WithdrawParams>({ max: true, amountOfShares: 123n });
+expectNotAssignable<WithdrawParams>({ max: 'yes' });
+expectNotAssignable<WithdrawParams>({ amountOfShares: 123 });
+expectNotAssignable<WithdrawParams>({ amountOfShares: '123' });
+expectNotAssignable<WithdrawParams>({ srcKind: 'shares' });
+expectNotAssignable<WithdrawParams>({ srcToken: '0x1234' });
+expectNotAssignable<WithdrawParams>({ srcAmount: 0n });
+expectAssignable<MovementDesc>(numericMovement);
+expectAssignable<MovementDesc>(fullWithdrawal);
+expectAssignable<MovementDesc>({ ...numericMovement, withdraw: {} });
+expectAssignable<MovementDesc>({
+  ...numericMovement,
+  withdraw: { max: false },
+});
+expectNotAssignable<MovementDesc>({
+  src: 'Aave_Base',
+  dest: '@Base',
+  withdraw: { max: true },
+});
+expectNotAssignable<MovementDesc>({
+  ...numericMovement,
+  withdraw: { max: 'yes' },
+});
+expectNotAssignable<MovementDesc>({ ...fullWithdrawal, amount: 'MAX' });
+expectAssignable<FundsFlowPlan>({ flow: [numericMovement, fullWithdrawal] });
+const futureMovement = {
+  src: 'FutureVault_FutureChain',
+  dest: '@FutureChain',
+  amount: natAmount,
+  withdraw: { max: true, amountOfShares: 0n },
+  futureField: { version: 2 },
+} as const;
+expectAssignable<MovementDescExt>(numericMovement);
+expectAssignable<MovementDescExt>(fullWithdrawal);
+expectAssignable<MovementDescExt>(futureMovement);
+expectNotAssignable<MovementDesc>(futureMovement);
+expectNotAssignable<MovementDescExt>({
+  src: 'FutureVault_FutureChain',
+  dest: '@FutureChain',
+  withdraw: { max: true },
+});
+expectNotAssignable<MovementDescExt>({ ...futureMovement, amount: undefined });
+expectNotAssignable<MovementDescExt>({ ...futureMovement, amount: 'MAX' });
+expectNotAssignable<MovementDescExt>({ ...futureMovement, src: 1 });
+expectNotAssignable<MovementDescExt>({ ...futureMovement, dest: 1 });
+expectNotAssignable<MovementDescExt>({ ...futureMovement, fee: 1n });
+expectNotAssignable<MovementDescExt>({
+  ...futureMovement,
+  withdraw: { max: 'yes' },
+});
+expectNotAssignable<MovementDescExt>({
+  ...futureMovement,
+  withdraw: { srcKind: 'reward' },
+});
+expectNotAssignable<MovementDescExt>({
+  ...futureMovement,
+  withdraw: { amountOfShares: 1 },
+});
+expectAssignable<FundsFlowPlanExt>({
+  flow: [numericMovement, fullWithdrawal, futureMovement],
+  order: [
+    [1, [0]],
+    [2, [1]],
+  ],
+  futurePlanField: true,
+});
+expectAssignable<FundsFlowPlanExt>({ flow: [] });
+expectNotAssignable<FundsFlowPlanExt>({
+  flow: [{ src: 'future', dest: 'future' }],
+});
+expectNotAssignable<FundsFlowPlanExt>({ flow: [], order: [[0, ['1']]] });
+expectAssignable<HoldingKind>('shares');
+expectAssignable<HoldingKind>('claimable-reward');
+expectAssignable<HoldingKind>('claimed-reward');
+expectNotAssignable<HoldingKind>('reward');
+expectAssignable<HoldingKind>('$ETH');
+expectNotAssignable<HoldingKind>('share');
+const rawHolding = {
+  place: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
+  kind: 'shares',
+  tokenAddress: '0x1234',
+  amount: 0n,
+  valueUsd: undefined,
+  balanceUsdc: undefined,
+} as const;
+expectAssignable<HoldingDetail>(rawHolding);
+expectAssignable<HoldingDetail>({ ...rawHolding, valueUsd: 0n });
+expectAssignable<HoldingDetail>({ ...rawHolding, valueUsd: undefined });
+expectNotAssignable<HoldingDetail>({ ...rawHolding, valueUsd: 1 });
+expectAssignable<HoldingDetail>({ ...rawHolding, balanceUsdc: undefined });
+expectNotAssignable<HoldingDetail>({ ...rawHolding, balanceUsdc: 1 });
+expectNotAssignable<HoldingDetail>({ ...rawHolding, amount: 123 });
+expectNotAssignable<HoldingDetail>({
+  ...rawHolding,
+  tokenAddress: 'not-an-address',
+});
+expectAssignable<PlanObservations>({
+  balances: {},
+  holdings: [rawHolding],
+  instrumentTvls: {},
+});
+expectAssignable<PlanObservations>({ balances: {}, instrumentTvls: {} });
 declare const chainId: CaipChainId;
 declare const accountId: AccountId;
 declare const address: EvmAddress;
@@ -73,7 +192,7 @@ const planObservations = {
     Aave_Base: { tvlUsd: 20_000_000n },
   },
 } satisfies PlanObservations;
-expectType<PlanObservations>(planObservations);
+expectAssignable<PlanObservations>(planObservations);
 expectAssignable<PortfolioBalancePlaceRef>('@Base');
 expectAssignable<PortfolioBalancePlaceRef>('Aave_Base');
 expectNotAssignable<PortfolioBalancePlaceRef>('<Deposit>');
@@ -96,23 +215,35 @@ const openPortfolio = {
   want: {},
 } satisfies ProposalType['openPortfolio'];
 expectType<ProposalType['openPortfolio']['give']>(emptyGive);
-expectType<ProposalType['openPortfolio']>(openPortfolio);
+expectAssignable<ProposalType['openPortfolio']>(openPortfolio);
 
 const rebalanceDeposit = {
   give: { Deposit: natAmount },
   want: {},
 } satisfies ProposalType['rebalance'];
-expectType<ProposalType['rebalance']>(rebalanceDeposit);
+expectAssignable<ProposalType['rebalance']>(rebalanceDeposit);
 expectNotAssignable<ProposalType['rebalance']>({
   want: { Deposit: natAmount },
   give: {},
+});
+expectNotAssignable<ProposalType['rebalance']>({
+  give: { Deposit: natAmount },
+  want: { Cash: natAmount },
+});
+expectNotAssignable<ProposalType['openPortfolio']>({
+  give: {},
+  want: { Cash: natAmount },
 });
 
 const withdrawProposal = {
   want: { Cash: natAmount },
   give: {},
 } satisfies ProposalType['withdraw'];
-expectType<ProposalType['withdraw']>(withdrawProposal);
+expectAssignable<ProposalType['withdraw']>(withdrawProposal);
+expectNotAssignable<ProposalType['withdraw']>({
+  want: { Cash: natAmount },
+  give: { Deposit: natAmount },
+});
 expectNotAssignable<ProposalType['withdraw']>({
   give: { Deposit: natAmount },
   want: {},
@@ -246,13 +377,13 @@ const flowSteps: FlowStep[] = [
   },
 ];
 
-expectType<FlowKey>('flow1');
+expectAssignable<FlowKey>('flow1');
 expectNotAssignable<FlowKey>('flow');
 
-expectType<PortfolioKey>('portfolio2');
+expectAssignable<PortfolioKey>('portfolio2');
 expectNotAssignable<PortfolioKey>('portfolio');
 
-expectType<PortfolioAgentKey>('agent3');
+expectAssignable<PortfolioAgentKey>('agent3');
 expectNotAssignable<PortfolioAgentKey>('portfolio2agent3');
 
 const flowsRunning = {
