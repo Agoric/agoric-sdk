@@ -436,14 +436,15 @@ export const maybeAutoClaim = async (
 
     // Build a FundsFlowPlan in which the only dependencies are that each
     // swap step depends upon all claim steps for the same chain.
-    const swapPlaceholders = new Map<SupportedChain, null | AutoClaimSource>();
+    const swapPlaceholders = new Map<string, null | AutoClaimSource>();
     for (const source of sources) {
-      const { chainName } = source;
+      const { caipChainId, tokenId } = source;
+      const tokenCaip10 = `${caipChainId}:${tokenId}`.toLowerCase();
       // A placeholder is needed iff we lack an already-swappable balance.
       if (source.instrumentName === null) {
-        swapPlaceholders.set(chainName, null);
-      } else if (!swapPlaceholders.has(chainName)) {
-        swapPlaceholders.set(chainName, {
+        swapPlaceholders.set(tokenCaip10, null);
+      } else if (!swapPlaceholders.has(tokenCaip10)) {
+        swapPlaceholders.set(tokenCaip10, {
           ...source,
           instrumentName: null,
           amount: '0',
