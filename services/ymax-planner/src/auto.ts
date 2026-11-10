@@ -517,16 +517,35 @@ export const maybeAutoClaim = async (
         const tokenCaip10 = `${caipChainId}:${tokenId}`.toLowerCase();
         const claimRewards = merklClaimsByToken.get(tokenCaip10);
         merklClaimsByToken.delete(tokenCaip10);
-        resolvedSources[i] = claimRewards ? { ...source, claimRewards } : null;
-        if (claimRewards) continue;
-
-        // Remove any now-inappropriate swap placeholder for this chain.
-        const swappable = resolvedSources.some(
-          src => src?.chainName === chainName && src?.uusdcValue > 0n,
-        );
-        if (swappable) continue;
-        for (const [j, src] of sources.entries()) {
-          if (src?.chainName === chainName) resolvedSources[j] = null;
+        if (claimRewards) {
+          // This source claims the full value.
+          const totalUusdc = resolvedSources.slice(i + 1).reduce((sum, src) => {
+            if (!src || src.chainName !== chainName) return sum;
+            const srcCaip10 = `${src.caipChainId}:${src.tokenId}`.toLowerCase();
+            const consolidation =
+              src.instrumentName !== null &&
+              isERC4626InstrumentId(src.instrumentName) &&
+              srcCaip10 === tokenCaip10
+                ? src.uusdcValue
+                : 0n;
+            return sum + consolidation;
+          }, source.uusdcValue);
+          resolvedSources[i] = {
+            ...source,
+            amount: `${claimRewards.minAmounts[0]}`,
+            uusdcValue: totalUusdc,
+            claimRewards,
+          };
+        } else {
+          resolvedSources[i] = null;
+          // Remove any now-inappropriate swap placeholder for this chain.
+          const swappable = resolvedSources.some(
+            src => src?.chainName === chainName && src?.uusdcValue > 0n,
+          );
+          if (swappable) continue;
+          for (const [j, src] of sources.entries()) {
+            if (src?.chainName === chainName) resolvedSources[j] = null;
+          }
         }
       }
     }
