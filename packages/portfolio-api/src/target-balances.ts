@@ -47,6 +47,12 @@ export type ComputeTargetBalancesOptions<
    * target sink is unavailable or suppressed.
    */
   depositFromChain?: SupportedChain;
+  /**
+   * Chain receiving a withdrawal. When a withdrawal can only be partially
+   * satisfied, funds on this chain are preferred and funds on other chains are
+   * used only in amounts that satisfy the minimums of some route to it.
+   */
+  withdrawToChain?: SupportedChain;
   /** Instruments for which deposit and/or withdraw is unavailable. */
   instrumentBlocks?: {
     noDepositInstruments: Set<AssetPlaceRef>;
@@ -74,6 +80,12 @@ const placeRecordsByNetwork = new WeakMap<
   Map<AssetPlaceRef, PlaceRecord>
 >();
 
+/** network -> destination chain -> source hub -> least movable amount */
+const routeMinsByNetwork = new WeakMap<
+  NetworkSpec,
+  Map<SupportedChain, Map<AssetPlaceRef, NatValue>>
+>();
+
 const failTargetBalance = (message: string): never => {
   throw new TargetBalanceError(message);
 };
@@ -99,6 +111,14 @@ const bigintMin = (first: bigint, ...rest: bigint[]): bigint => {
     if (arg < min) min = arg;
   }
   return min;
+};
+
+const bigintMax = (first: bigint, ...rest: bigint[]): bigint => {
+  let max = first;
+  for (const arg of rest) {
+    if (arg > max) max = arg;
+  }
+  return max;
 };
 // #endregion
 
@@ -151,6 +171,45 @@ const isNonemptyPositionEntry = (entry: [AssetPlaceRef, NatValue]): boolean => {
 };
 
 /**
+ * The least amount that can be moved from one chain hub to another, i.e., the
+ * minimum over all hub-to-hub routes of the largest link `min` along the route,
+ * or undefined if there is no route.
+ */
+const getRouteMin = (
+  network: NetworkSpec,
+  fromChain: SupportedChain,
+  toChain: SupportedChain,
+): NatValue | undefined => {
+  const routeMins = provideLazyMap(
+    provideLazyMap(routeMinsByNetwork, network, () => new Map()),
+    toChain,
+    () => {
+      // Bottleneck shortest path (Dijkstra) over reversed hub-to-hub links.
+      const best = new Map<AssetPlaceRef, NatValue>([[`@${toChain}`, 0n]]);
+      const todo = new Set<AssetPlaceRef>([`@${toChain}`]);
+      while (todo.size) {
+        let node: AssetPlaceRef | undefined;
+        for (const n of todo) {
+          if (node === undefined || best.get(n)! < best.get(node)!) node = n;
+        }
+        todo.delete(node!);
+        for (const { src, dest, min = 0n } of network.links) {
+          if (dest !== node || !src.startsWith('@')) continue;
+          const cost = bigintMax(best.get(node)!, min);
+          const prev = best.get(src);
+          if (prev === undefined || cost < prev) {
+            best.set(src, cost);
+            todo.add(src);
+          }
+        }
+      }
+      return best;
+    },
+  );
+  return routeMins.get(`@${fromChain}` as AssetPlaceRef);
+};
+
+/**
  * Derive target balances for allocation keys, suppressing small changes and
  * movements blocked by e.g. lack of instrument liquidity or available capacity.
  * When target allocations cannot be satisfied, strive for proportionality and
@@ -172,6 +231,7 @@ export const computeTargetBalances = <
   targetAllocation = {},
   network,
   depositFromChain,
+  withdrawToChain,
   instrumentBlocks,
   instrumentLiquidity,
   withdrawalLiquidityLimitBps = 10_000n,
@@ -345,15 +405,72 @@ export const computeTargetBalances = <
   if (liquidTotal < 0n && balanceDelta < 0n) {
     const fallback = Object.create(null) as Partial<Record<C | T, NatAmount>>;
     let unsatisfied = -balanceDelta;
-    for (const [place, value] of sortEntriesDesc(
+    // When the destination is known, group sources by chain (destination
+    // first) so that a remote chain contributes only if its total can actually
+    // be moved. Otherwise, treat all sources as a single group.
+    const destChain = withdrawToChain
+      ? getPlaceData(`@${withdrawToChain}` as AssetPlaceRef, network).chain
+      : undefined;
+    const groups = new Map<SupportedChain | undefined, [C, NatValue][]>();
+    if (destChain) groups.set(destChain.name, []);
+    for (const entry of sortEntriesDesc(
       typedEntries(currentValues) as [C, NatValue][],
     )) {
+      const [place, value] = entry;
       if (isDust(value)) break;
       if (draft[place]?.blockWithdraw !== false) continue;
-      const take = bigintMin(unsatisfied, computeWithdrawLimit(place, value));
-      if (take === 0n) continue;
-      fallback[place] = makeNatAmount(brand, value - take);
-      unsatisfied -= take;
+      const key = destChain && draft[place].chain.name;
+      const group = groups.get(key);
+      if (group) group.push(entry);
+      else groups.set(key, [entry]);
+    }
+    const takeFrom = (sources: [C, NatValue][], want: NatValue) => {
+      const takes: [C, NatValue, take: NatValue][] = [];
+      let taken = 0n;
+      for (const [place, value] of sources) {
+        const available = computeWithdrawLimit(place, value);
+        const take = bigintMin(want - taken, available);
+        if (take === 0n) continue;
+        takes.push([place, value, take]);
+        taken += take;
+        if (taken === want) break;
+      }
+      return { takes, taken };
+    };
+    let destTakes: [C, NatValue, take: NatValue][] = [];
+    for (const [chainName, sources] of groups) {
+      let { takes, taken } = takeFrom(sources, unsatisfied);
+      if (destChain && chainName === destChain.name) {
+        destTakes = takes;
+      } else if (destChain) {
+        const routeMin = getRouteMin(network, chainName!, destChain.name);
+        if (routeMin === undefined) continue; // unreachable
+        if (taken < routeMin) {
+          // Too little to move from this chain. But if the chain has enough
+          // and only the remaining need is too small, move the route minimum
+          // and take the difference less from the destination chain.
+          const shortfall = routeMin - taken;
+          const destTotal = destTakes.reduce((acc, t) => acc + t[2], 0n);
+          if (taken !== unsatisfied || destTotal < shortfall) continue;
+          ({ takes, taken } = takeFrom(sources, routeMin));
+          if (taken < routeMin) continue;
+          let excess = shortfall;
+          for (const destTake of destTakes.toReversed()) {
+            const [place, value, take] = destTake;
+            const giveBack = bigintMin(excess, take);
+            destTake[2] = take - giveBack;
+            if (destTake[2] === 0n) delete fallback[place];
+            else fallback[place] = makeNatAmount(brand, value - destTake[2]);
+            excess -= giveBack;
+            if (excess === 0n) break;
+          }
+          unsatisfied += shortfall;
+        }
+      }
+      for (const [place, value, take] of takes) {
+        fallback[place] = makeNatAmount(brand, value - take);
+      }
+      unsatisfied -= taken;
       if (unsatisfied === 0n) return { ...fallback };
     }
     // Preserve any available withdrawal even when blocked or liquidity-limited
