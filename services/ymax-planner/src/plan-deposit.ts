@@ -9,7 +9,10 @@ import type {
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
-import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
+import {
+  computeTargetBalances,
+  TargetBalanceError,
+} from '@agoric/portfolio-api/src/target-balances.js';
 import type { ComputeTargetBalancesOptions } from '@agoric/portfolio-api/src/target-balances.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
@@ -377,6 +380,15 @@ export const planWithdrawFromAllocations: PlanMaker<{
     },
     0n,
   );
+  if (withdrawalValue <= 0n) {
+    // Nothing can be withdrawn right now (e.g., all funds are in blocked or
+    // illiquid positions).
+    // A negative value would be an internal accounting error, but must still
+    // reject the flow rather than leave it awaiting a plan.
+    throw new TargetBalanceError(
+      'No funds are currently available to withdraw.',
+    );
+  }
   const withdrawalAmount = AmountMath.make(brand, withdrawalValue);
 
   const resolvedCurrent = { ...currentBalances, [withdrawTo]: zeroAmount };

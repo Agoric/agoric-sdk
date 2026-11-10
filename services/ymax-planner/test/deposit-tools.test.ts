@@ -38,6 +38,7 @@ import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { q, Fail } from '@endo/errors';
 import { Far } from '@endo/pass-style';
 import PROD_NETWORK from '@agoric/portfolio-api/src/network/prod-network.js';
+import { TargetBalanceError } from '@agoric/portfolio-api/src/target-balances.js';
 import type { EvmAddress } from '@agoric/fast-usdc';
 import { assetList as nobleAssetList } from 'chain-registry/mainnet/noble/index.js';
 import type { InstrumentBlocks } from '../src/instrument-status.ts';
@@ -160,18 +161,20 @@ test('withdraw planning partially satisfies a request using available liquidity'
   );
 });
 
-test('withdraw planning returns no movements when all liquidity is unavailable', async t => {
-  const plan = await planWithdrawFromAllocations({
-    ...plannerContext,
-    currentBalances: {
-      Aave_Ethereum: makeDeposit(scale6(100)),
-      Compound_Ethereum: makeDeposit(scale6(100)),
-    },
-    instrumentLiquidity: { Aave_Ethereum: 0n, Compound_Ethereum: 0n },
-    amount: makeDeposit(scale6(50)),
-    toChain: 'Ethereum',
-  });
-  t.deepEqual(plan, emptyPlan);
+test('withdraw planning rejects when all liquidity is unavailable', async t => {
+  await t.throwsAsync(
+    planWithdrawFromAllocations({
+      ...plannerContext,
+      currentBalances: {
+        Aave_Ethereum: makeDeposit(scale6(100)),
+        Compound_Ethereum: makeDeposit(scale6(100)),
+      },
+      instrumentLiquidity: { Aave_Ethereum: 0n, Compound_Ethereum: 0n },
+      amount: makeDeposit(scale6(50)),
+      toChain: 'Ethereum',
+    }),
+    { instanceOf: TargetBalanceError, message: /No funds/ },
+  );
 });
 
 const makeMovementDesc = (
