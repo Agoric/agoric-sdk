@@ -259,6 +259,66 @@ const makeShareWithdrawalCase = ({
   return { step1, options };
 };
 
+const makeFullExitCase = async () => {
+  const { orch, ctx, offer, txResolver, resolverService, storage } = mocks(
+    {},
+    { Deposit: make(USDC, 1_000_000n) },
+  );
+  const kit = await ctx.makePortfolioKit();
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const accountP = provideEVMAccount(
+    'Ethereum',
+    axelarCCTPConfig.Ethereum,
+    { chain: await orch.getChain('axelar'), fee: 100n },
+    kit.reader.getLocalAccount(),
+    ctx,
+    kit,
+  );
+  await offer.factoryPK.promise;
+  await txResolver.drainPending();
+  const accountInfo = await accountP;
+  await accountInfo.ready;
+  offer.log.length = 0;
+  const executeExit = ({
+    observedShares,
+    minimumProceeds = 0n,
+  }: {
+    observedShares: bigint;
+    minimumProceeds?: bigint;
+  }) => {
+    const { step1, options } = makeShareWithdrawalCase({
+      minimumProceeds,
+      observedShares,
+    });
+    return executePlan(
+      orch,
+      ctx,
+      makeMockSeat({}, undefined, offer.log),
+      { flow: [{ ...step1, fee: make(BLD, 100n) }] },
+      kit,
+      { type: 'rebalance' },
+      undefined,
+      DEFAULT_FLOW_CONFIG,
+      options,
+    );
+  };
+  const redemptionQuantities = () =>
+    offer.log.flatMap(({ _method, opts }) => {
+      if (_method !== 'transfer' || typeof opts?.memo !== 'string') return [];
+      const { calls } = decodeFunctionCall(opts.memo, [
+        'redeem(uint256,address,address)',
+      ]);
+      return calls.map(call => call.args![0]);
+    });
+  return {
+    kit,
+    txResolver,
+    resolverService,
+    storage,
+    executeExit,
+    redemptionQuantities,
+  };
+};
 /* eslint-disable no-underscore-dangle */
 /* We use _method to get it to sort before other properties. */
 
@@ -4798,4 +4858,55 @@ test('Vault changes invalidate a pending share withdrawal before any transfer', 
       ({ _method }) => _method === 'send' || _method === 'transfer',
     ),
   );
+});
+
+test('An observed empty position exits without a redemption transaction', async t => {
+  const { executeExit, redemptionQuantities } = await makeFullExitCase();
+  await executeExit({
+    observedShares: 0n,
+    minimumProceeds: 0n,
+  });
+  t.deepEqual(redemptionQuantities(), []);
+});
+
+test('A failed full exit can be retried with refreshed share evidence', async t => {
+  const {
+    kit,
+    txResolver,
+    resolverService,
+    storage,
+    executeExit,
+    redemptionQuantities,
+  } = await makeFullExitCase();
+  const failed = t.throwsAsync(executeExit({ observedShares: 50n }), {
+    message: /Transaction failed/,
+  });
+  // Delivery succeeds; the remote redemption itself fails.
+  for (;;) {
+    const pending = await txResolver.findPending();
+    if (!pending.length) break;
+    for (const txId of pending) {
+      resolverService.settleTransaction({
+        txId,
+        status:
+          txResolver.getPublished(txId)?.type === 'GMP' ? 'failed' : 'success',
+      });
+    }
+  }
+  await failed;
+  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+  const portfolioId = kit.reader.getPortfolioId();
+  t.is((await getFlowStatus(portfolioId, 1))?.state, 'fail');
+  t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
+
+  t.deepEqual(redemptionQuantities(), [50n], 'no automatic partial retry');
+  t.deepEqual(await txResolver.findPending(), []);
+
+  const retry = executeExit({ observedShares: 30n });
+  await txResolver.drainPending();
+  t.is(await retry, 'flow2');
+  t.is((await getFlowStatus(portfolioId, 2))?.state, 'done');
+  t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
+  t.deepEqual(redemptionQuantities(), [50n, 30n]);
+  t.deepEqual(await txResolver.findPending(), []);
 });

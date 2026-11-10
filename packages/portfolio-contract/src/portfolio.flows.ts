@@ -218,6 +218,13 @@ export type ProtocolDetail<
     dest: AccountInfoFor[C],
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
+  /** Redeem a raw share quantity into the position's chain account. */
+  redeem?: (
+    ctx: CTX,
+    shares: bigint,
+    dest: AccountInfoFor[C],
+    ...optsArgs: [OrchestrationOptions?]
+  ) => Promise<void>;
   claimRewards?: (
     ctx: CTX,
     dest: AccountInfoFor[C],
@@ -1069,6 +1076,7 @@ const stepFlow = async (
   >(
     way: Way & { how: P },
     move: MovementDesc,
+    shareWithdrawal?: BoundShareWithdrawal,
   ): AssetMovement => {
     // The pool determines where the step runs. The account side of the way
     // must agree; wayFromSrcToDest already checked, so this guards its bugs.
@@ -1124,6 +1132,11 @@ const stepFlow = async (
           // Rewards land in the user's remote address as separate tokens;
           // the pool position is unchanged.
           return harden({});
+        } else if (shareWithdrawal) {
+          if (shareWithdrawal.shares === 0n) return harden({});
+          pImpl.redeem || Fail`${q(how)} does not support share redemption`;
+          await pImpl.redeem!(evmCtx, shareWithdrawal.shares, gInfo, opts);
+          return harden({ srcPos: pos });
         } else {
           await pImpl.withdraw(evmCtx, amount, gInfo, opts);
           return harden({ srcPos: pos });
@@ -1447,7 +1460,13 @@ const stepFlow = async (
         break;
 
       case 'ERC4626':
-        todo.push(makeEVMProtocolStep(way as Way & { how: 'ERC4626' }, move));
+        todo.push(
+          makeEVMProtocolStep(
+            way as Way & { how: 'ERC4626' },
+            move,
+            shareWithdrawal,
+          ),
+        );
         break;
 
       case 'withdrawToEVM': {
