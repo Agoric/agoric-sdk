@@ -5,7 +5,18 @@
     mode: '0755'
 
 - name: Install nodesource PPA
-  shell: '/root/setup_nodejs{{ NODEJS_VERSION }}.sh'
+  # The installer can report success after an APT failure; verify its result.
+  shell: |
+    set -e
+    /root/setup_nodejs{{ NODEJS_VERSION }}.sh
+    if ! apt-cache madison nodejs | grep -Eq '[|][[:space:]]+{{ NODEJS_VERSION }}[.]'; then
+      echo 'Node.js {{ NODEJS_VERSION }} packages are unavailable after NodeSource setup' >&2
+      exit 1
+    fi
+  register: nodesource_setup
+  until: nodesource_setup is succeeded
+  retries: 3
+  delay: 10
 
 - name: Update repositories cache and install prerequisites
   apt:
