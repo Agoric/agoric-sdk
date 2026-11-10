@@ -381,7 +381,15 @@ export const computeTargetBalances = <
     const chainPlace = `@${chainName}` as C | T;
     draft[chainPlace] ??= makeDraftRecord(chainPlace);
     draft[chainPlace].resolvedDelta += value;
-    if (!pending.has(draft[chainPlace])) remainder -= value;
+    // A hub that will still be visited by the loop below accounts for its own
+    // claims, unless that visit is skipped for suppression/limitation.
+    if (
+      !pending.has(draft[chainPlace]) ||
+      suppressions.has(chainPlace) ||
+      limitedSources.has(chainPlace)
+    ) {
+      remainder -= value;
+    }
   };
   for (const draftRecord of pending) {
     pending.delete(draftRecord);

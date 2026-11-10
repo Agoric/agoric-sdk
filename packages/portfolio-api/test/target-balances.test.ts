@@ -192,3 +192,64 @@ test('liquidity-capped movements still respect the chain soft minimum', t => {
   });
   t.deepEqual(targets, {});
 });
+
+const twoChainNetwork: NetworkSpec = harden({
+  localPlaces: [],
+  chains: [
+    { name: 'Base', control: 'axelar' },
+    { name: 'Ethereum', control: 'axelar' },
+  ],
+  pools: [
+    { pool: 'Aave_Base', chain: 'Base', protocol: 'Aave' },
+    { pool: 'Aave_Ethereum', chain: 'Ethereum', protocol: 'Aave' },
+  ],
+  links: [
+    ...(['Base', 'Ethereum'] as const).map(src => ({
+      src: `@${src}` as const,
+      dest: `@${src === 'Base' ? 'Ethereum' : 'Base'}` as const,
+      transfer: 'cctpV2' as const,
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: scale6(1),
+    })),
+  ],
+});
+
+const netChangeOf = (
+  current: Record<string, { value: bigint }>,
+  targets: Record<string, { value: bigint } | undefined>,
+) =>
+  Object.entries(targets).reduce(
+    (acc, [place, a]) => acc + a!.value - (current[place]?.value ?? 0n),
+    0n,
+  );
+
+{
+  const currentBalances = {
+    Aave_Base: makeAmount(scale6(1)),
+    Aave_Ethereum: makeAmount(scale6(1)),
+    '@Ethereum': makeAmount(scale6(0.5)),
+  };
+  const cases = {
+    'zero liquidity': { instrumentLiquidity: { Aave_Base: 0n } },
+    'withdraw-blocked': {
+      instrumentBlocks: {
+        noDepositInstruments: new Set<never>(),
+        noWithdrawInstruments: new Set(['Aave_Base' as const]),
+      },
+    },
+  };
+  for (const [title, opts] of Object.entries(cases)) {
+    test(`claims into a suppressed hub preserve the total (${title})`, t => {
+      const targets = computeTargetBalances({
+        brand,
+        currentBalances,
+        targetAllocation: { '@Base': 1n },
+        balanceDelta: -scale6(0.1),
+        network: twoChainNetwork,
+        ...opts,
+      });
+      t.is(netChangeOf(currentBalances, targets), -scale6(0.1));
+    });
+  }
+}
