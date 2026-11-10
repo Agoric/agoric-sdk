@@ -73,7 +73,7 @@ const makeMaximumWithdrawalCase = ({
     target: TargetAllocation,
     plan: FundsFlowPlan = { flow: [movement] },
     evidence = observations,
-  ) => vetPlanAllocation(target, plan, evidence);
+  ) => vetPlanAllocation(target, plan, evidence, () => holdingTokens.usdc);
   return { instrument, shares, observations, movement, checkAllocation };
 };
 
@@ -1651,7 +1651,142 @@ test('A maximum withdrawal removes share exposure, not just its proceeds minimum
   t.notThrows(() => checkAllocation({ Aave_Ethereum: 100n }));
 });
 
+test('A full exit can be followed by investing cash already in the account', t => {
+  const { shares, movement, checkAllocation } = makeMaximumWithdrawalCase({
+    valueUsd: 100_000_000n,
+    minimumProceeds: 0n,
+  });
+  const cash = 20_000_000n;
+  const withCash = makeHoldingObservations([
+    shares,
+    makeHolding({
+      place: '@Ethereum',
+      kind: 'token',
+      amount: cash,
+      valueUsd: cash,
+    }),
+    makeHolding({
+      place: 'Aave_Ethereum',
+      kind: 'principal',
+      amount: 0n,
+      valueUsd: 0n,
+    }),
+  ]);
+  const plan: FundsFlowPlan = {
+    flow: [
+      movement,
+      {
+        src: '@Ethereum',
+        dest: 'Aave_Ethereum',
+        amount: { brand: USDC, value: cash },
+      },
+    ],
+  };
+  // The investment uses existing USDC, without relying on redemption proceeds.
+  t.notThrows(() => checkAllocation({ Aave_Ethereum: 100n }, plan, withCash));
+});
+
+test('Cash movements spend observed USDC, not other holdings’ USD value', t => {
+  const cash = makeHolding({
+    place: '@Ethereum',
+    kind: 'token',
+    amount: 20_000_000n,
+    valueUsd: 20_000_000n,
+  });
+  const reward: TypedHoldingDetail = {
+    ...makeHolding({
+      place: '@Ethereum',
+      kind: 'claimed-reward',
+      amount: 100_000_000n,
+      valueUsd: 100_000_000n,
+    }),
+    tokenAddress: holdingTokens.reward,
+  };
+  const transfer = (value: bigint): MovementDesc => ({
+    src: '@Ethereum',
+    dest: '@Arbitrum',
+    amount: { brand: USDC, value },
+  });
+  const check = (
+    plan: FundsFlowPlan,
+    cashHolding = cash,
+    getUsdcAddress = (): TypedHoldingDetail['tokenAddress'] | undefined =>
+      holdingTokens.usdc,
+  ) =>
+    vetPlanAllocation(
+      {},
+      plan,
+      makeHoldingObservations([cashHolding, reward]),
+      getUsdcAddress,
+    );
+
+  t.notThrows(() => check({ flow: [transfer(20_000_000n)] }));
+  t.throws(() => check({ flow: [transfer(21_000_000n)] }), {
+    message: /unfunded USDC movement.*20000000.*21000000/,
+  });
+  // Both sequential and concurrent transfers consume the same raw cash budget.
+  for (const order of [undefined, []]) {
+    t.throws(
+      () =>
+        check({ flow: [transfer(15_000_000n), transfer(15_000_000n)], order }),
+      { message: /unfunded USDC movement/ },
+    );
+  }
+  t.throws(
+    () =>
+      check(
+        { flow: [transfer(1n)] },
+        { ...cash, tokenAddress: holdingTokens.otherVault },
+      ),
+    { message: /requires one observed USDC holding/ },
+  );
+  t.throws(
+    () => check({ flow: [transfer(1n)] }, { ...cash, valueUsd: 19_000_000n }),
+    { message: /requires one-for-one USDC valuation/ },
+  );
+  t.throws(() => check({ flow: [transfer(1n)] }, cash, () => undefined), {
+    message: /no configured USDC token/,
+  });
+});
+
 for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
+  test(`Observing rewards does not establish how much is already invested (${investment})`, t => {
+    const cash = 20_000_000n;
+    const observations = makeHoldingObservations([
+      makeHolding({
+        place: '@Ethereum',
+        kind: 'token',
+        amount: cash,
+        valueUsd: cash,
+      }),
+      makeHolding({
+        place: investment,
+        kind: 'claimable-reward',
+        amount: 0n,
+        valueUsd: 0n,
+      }),
+    ]);
+    const plan: FundsFlowPlan = {
+      flow: [
+        {
+          src: '@Ethereum',
+          dest: investment,
+          amount: { brand: USDC, value: cash },
+        },
+      ],
+    };
+    t.throws(
+      () =>
+        vetPlanAllocation(
+          { [investment]: 100n },
+          plan,
+          observations,
+          () => holdingTokens.usdc,
+        ),
+      { message: new RegExp(`missing.*${investment}`) },
+    );
+  });
+
   test(`A full exit cannot treat unobserved investments as empty (${investment})`, t => {
     const { instrument, shares, movement } = makeMaximumWithdrawalCase();
     const observations = makeHoldingObservations([

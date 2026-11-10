@@ -14,6 +14,7 @@ import {
   chainOf,
   type ERC4626InstrumentId,
 } from '@agoric/portfolio-api/src/places.js';
+import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import {
   isERC4626MorphoInstrumentId,
   isInstrumentId,
@@ -222,6 +223,11 @@ type PlanOperation =
     };
 
 type DecodedPlan = Omit<FundsFlowPlan, 'flow'> & { flow: PlanOperation[] };
+
+/** Resolve USDC identity from contract configuration, not from observations. */
+type GetUsdcAddress = (
+  account: InterChainAccountRef,
+) => TypedHoldingDetail['tokenAddress'] | undefined;
 
 /**
  * Decode once so every balance check uses the same operation semantics.
@@ -461,8 +467,38 @@ const vetPartialPlanAllocation = (
 const projectPlanBalances = (
   plan: DecodedPlan,
   observations: PlanObservations,
+  getUsdcAddress?: GetUsdcAddress,
 ): Map<string, bigint> => {
   const balances = sumValueUsdByPlace(observations);
+  const remainingCash = new Map<InterChainAccountRef, bigint>();
+  if (observations.holdings?.length) {
+    for (const movement of plan.flow) {
+      if (movement.kind !== 'move') continue;
+      const { src } = movement;
+      if (!isInterChainAccountRef(src)) {
+        throw Fail`portfolio checks cannot yet project exact withdrawals from observed holdings at ${q(src)}`;
+      }
+      if (remainingCash.has(src)) continue;
+      const usdcAddress = getUsdcAddress?.(src);
+      if (!usdcAddress) throw Fail`no configured USDC token at ${q(src)}`;
+      const candidates = observations.holdings.filter(
+        holding =>
+          holding.place === src &&
+          holding.kind === 'token' &&
+          sameEvmAddress(holding.tokenAddress, usdcAddress),
+      );
+      if (candidates.length !== 1) {
+        throw Fail`cash movement requires one observed USDC holding at ${q(src)}`;
+      }
+      const holding = candidates[0]!;
+      // Exact-movement exposure arithmetic currently assumes USDC at parity.
+      // Reject other valuations rather than equating raw units with USD value.
+      if (holding.valueUsd !== holding.amount) {
+        throw Fail`cash movement requires one-for-one USDC valuation at ${q(src)}`;
+      }
+      remainingCash.set(src, holding.amount);
+    }
+  }
   const { flow } = plan;
   const remainingShares = new Map<InstrumentId, bigint>();
   for (const movement of flow) {
@@ -506,6 +542,11 @@ const projectPlanBalances = (
         Fail`unfunded share withdrawal from ${q(src)}: available ${q(available)} < requested ${q(debit)}`;
     }
     for (const [src, debit] of debits.entries()) {
+      if (isInterChainAccountRef(src) && remainingCash.has(src)) {
+        const available = remainingCash.get(src)!;
+        available >= debit ||
+          Fail`unfunded USDC movement from ${q(src)}: available ${q(available)} < requested ${q(debit)}`;
+      }
       const balance = balances.get(src) ?? 0n;
       balance >= debit ||
         Fail`unfunded plan movement from ${q(src)}: balance ${q(balance)} < debit ${q(debit)}`;
@@ -517,6 +558,12 @@ const projectPlanBalances = (
       const { src, dest, amount, debitValueUsd } = movement;
       balances.set(src, (balances.get(src) ?? 0n) - debitValueUsd);
       balances.set(dest, (balances.get(dest) ?? 0n) + amount.value);
+      if (isInterChainAccountRef(src) && remainingCash.has(src)) {
+        remainingCash.set(src, remainingCash.get(src)! - amount.value);
+      }
+      if (isInterChainAccountRef(dest) && remainingCash.has(dest)) {
+        remainingCash.set(dest, remainingCash.get(dest)! + amount.value);
+      }
     }
     for (const [src, debit] of shareDebits) {
       remainingShares.set(src, remainingShares.get(src)! - debit);
@@ -542,6 +589,7 @@ export const vetPlanAllocation = (
   targetAllocation: TargetAllocation,
   plan: FundsFlowPlan,
   observations: PlanObservations,
+  getUsdcAddress?: GetUsdcAddress,
 ): DecodedPlan => {
   const decodedPlan = decodePlan(plan, observations);
   for (const { kind } of decodedPlan.flow) {
@@ -554,7 +602,11 @@ export const vetPlanAllocation = (
   // is deferred during controlled ymax0 testing; enforce it before opening
   // plan submission to untrusted agents.
   vetNoNewPositions(targetAllocation, plan);
-  const balances = projectPlanBalances(decodedPlan, observations);
+  const balances = projectPlanBalances(
+    decodedPlan,
+    observations,
+    getUsdcAddress,
+  );
   vetAllocationCeilings(balances, targetAllocation);
   vetPartialPlanAllocation(targetAllocation, decodedPlan, observations);
   return decodedPlan;
