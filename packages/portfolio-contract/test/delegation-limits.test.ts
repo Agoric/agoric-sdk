@@ -10,20 +10,72 @@ import type {
   PlanObservations,
   PortfolioBalancePlaceRef,
   TargetAllocation,
+  TypedHoldingDetail,
   WithdrawParams,
 } from '@agoric/portfolio-api';
 import { chainOf, isInstrumentId } from '@agoric/portfolio-api/src/places.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
-  vetAllocationPlan,
   vetObservationPlaces,
+  vetAllocationPlan,
   vetPlanAllocation,
 } from '../src/delegation-limits.ts';
 import type { MovementDesc } from '../src/type-guards-steps.ts';
 import { makeSchedule } from '../src/schedule-order.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
+
+const holdingTokens = {
+  vault: '0x0000000000000000000000000000000000000001',
+  usdc: '0x0000000000000000000000000000000000000002',
+  reward: '0x0000000000000000000000000000000000000003',
+  otherVault: '0x0000000000000000000000000000000000000004',
+} as const;
+
+const makeHolding = (
+  detail: Omit<TypedHoldingDetail, 'tokenAddress'>,
+): TypedHoldingDetail => ({
+  tokenAddress:
+    detail.kind === 'shares'
+      ? holdingTokens.vault
+      : detail.kind === 'claimable-reward'
+        ? holdingTokens.reward
+        : holdingTokens.usdc,
+  ...detail,
+});
+
+const makeHoldingObservations = (
+  holdings: TypedHoldingDetail[],
+  instrumentTvls: PlanObservations['instrumentTvls'] = {},
+): PlanObservations => ({ balances: {}, holdings, instrumentTvls });
+
+const makeMaximumWithdrawalCase = ({
+  shareQuantity = 50n,
+  valueUsd = 100_000_000n,
+  minimumProceeds = 0n,
+} = {}) => {
+  const instrument = 'ERC4626_morphoGauntletUsdcRwa_Ethereum' as const;
+  const shares = makeHolding({
+    place: instrument,
+    kind: 'shares',
+    amount: shareQuantity,
+    valueUsd,
+  });
+  const observations = makeHoldingObservations([shares]);
+  const movement: MovementDesc = {
+    src: instrument,
+    dest: '@Ethereum',
+    amount: { brand: USDC, value: minimumProceeds },
+    withdraw: { max: true },
+  };
+  const checkAllocation = (
+    target: TargetAllocation,
+    plan: FundsFlowPlan = { flow: [movement] },
+    evidence = observations,
+  ) => vetPlanAllocation(target, plan, evidence);
+  return { instrument, shares, observations, movement, checkAllocation };
+};
 
 const staticObservations = harden({
   balances: {
@@ -700,6 +752,37 @@ test('balance observations report all missing places together', t => {
       ),
     { message: /missing balance observation.*Aave_Base.*Compound_Base/ },
   );
+});
+
+test('Observed holdings account for every location used by the plan', t => {
+  const { instrument, shares, movement } = makeMaximumWithdrawalCase();
+  const cash = makeHolding({
+    place: '@Ethereum',
+    kind: 'token',
+    amount: 0n,
+    valueUsd: 0n,
+  });
+  const plan = { flow: [movement] };
+  const check = (holdings: TypedHoldingDetail[]) =>
+    vetObservationPlaces([instrument], plan, makeHoldingObservations(holdings));
+  t.notThrows(() => check([shares, cash]));
+  t.throws(() => check([shares]), {
+    message: /missing balance observation.*@Ethereum/,
+  });
+  t.throws(() => check([cash]), {
+    message: /missing balance observation.*ERC4626_morpho/,
+  });
+  const extra = { ...cash, place: '@Base' } as const;
+  t.notThrows(() => check([shares, cash, extra]));
+  for (const change of [
+    { amount: 1n },
+    { valueUsd: 1n },
+    { valueUsd: undefined },
+  ]) {
+    t.throws(() => check([shares, cash, { ...extra, ...change }]), {
+      message: 'unexpected balance observation for ["@Base"]',
+    });
+  }
 });
 
 test('balance observations report all nonzero extra places together', t => {
@@ -1482,6 +1565,55 @@ const additiveWithdrawCases: [string, WithdrawParams | undefined][] = [
   ['source quantity', { amountOfShares: 10n ** 24n }],
   ['source quantity minimum', { max: true, amountOfShares: 10n ** 24n }],
 ];
+
+for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
+  test(`A full exit cannot treat unobserved investments as empty (${investment})`, t => {
+    const { instrument, shares, movement } = makeMaximumWithdrawalCase();
+    const observations = makeHoldingObservations([
+      shares,
+      makeHolding({
+        place: '@Ethereum',
+        kind: 'token',
+        amount: 0n,
+        valueUsd: 0n,
+      }),
+      // This is an existing investment. Only its rewards have been observed;
+      // its principal could still exceed the proposed zero allocation.
+      makeHolding({
+        place: investment,
+        kind: 'claimable-reward',
+        amount: 0n,
+        valueUsd: 0n,
+      }),
+    ]);
+    const plan = { flow: [movement] };
+    const withLegacyBalances: PlanObservations = {
+      ...observations,
+      holdings: observations.holdings!.map(holding => ({
+        ...holding,
+        balanceUsdc: holding.valueUsd!,
+      })),
+      balances: {
+        [instrument]: shares.valueUsd!,
+        '@Ethereum': 0n,
+        [investment]: 0n,
+      },
+    };
+    for (const evidence of [observations, withLegacyBalances]) {
+      t.throws(
+        () => {
+          vetObservationPlaces(
+            [instrument, investment, '@Ethereum'],
+            plan,
+            evidence,
+          );
+          vetPlanAllocation({ [instrument]: 100n }, plan, evidence);
+        },
+        { message: new RegExp(`missing.*${investment}`) },
+      );
+    }
+  });
+}
 
 for (const [label, withdraw] of additiveWithdrawCases) {
   test(`withdraw is additive to exact-amount allocation validation: ${label}`, t => {
