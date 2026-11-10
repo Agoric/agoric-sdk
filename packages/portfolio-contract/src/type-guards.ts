@@ -30,6 +30,7 @@ import {
 } from '@agoric/orchestration';
 import {
   AxelarChain,
+  HoldingDetailV2Shape,
   PortfolioAgentKeyShape,
   PortfolioPermissionsExtShape,
   YieldProtocol,
@@ -158,13 +159,16 @@ export const PortfolioBalancePlaceRefShapeExt: TypedPattern<PortfolioBalancePlac
   M.string();
 
 export const PlanObservationsShape: TypedPattern<PlanObservations> =
-  M.splitRecord({
-    balances: M.recordOf(PortfolioBalancePlaceRefShapeExt, M.nat()),
-    instrumentTvls: M.recordOf(
-      PoolKeyShapeExt,
-      M.splitRecord({ tvlUsd: M.nat() }),
-    ),
-  });
+  M.splitRecord(
+    {
+      balances: M.recordOf(PortfolioBalancePlaceRefShapeExt, M.nat()),
+      instrumentTvls: M.recordOf(
+        PoolKeyShapeExt,
+        M.splitRecord({ tvlUsd: M.nat() }),
+      ),
+    },
+    { holdings: M.arrayOf(HoldingDetailV2Shape) },
+  );
 
 // #endregion
 
