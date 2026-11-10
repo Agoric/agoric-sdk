@@ -60,6 +60,7 @@ import {
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import { chainOf } from '@agoric/portfolio-api/src/places.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { EVow } from '@agoric/vow';
@@ -74,6 +75,7 @@ import type {
   AccountInfoFor,
   PortfolioKit,
 } from './portfolio.exo.ts';
+import type { BoundShareWithdrawal } from './delegation-limits.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -245,7 +247,9 @@ type FlowStepPowers = {
   updatePhase: (txIds: TxId[]) => void;
 };
 
-type ExecutePlanOptions = {
+export type ExecutePlanOptions = {
+  /** Host-bound quantities from authenticated observations, never plan fields. */
+  shareWithdrawals?: Readonly<Partial<Record<number, BoundShareWithdrawal>>>;
   evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
   // XXX consider using pattern matching for queued steps instead of src/dest.
   queuedSteps?: Array<
@@ -974,7 +978,10 @@ const stepFlow = async (
   flowId: number,
   flowReporter: FlowReporter,
   config?: FlowConfig,
-  options?: Pick<ExecutePlanOptions, 'queuedSteps' | 'evmDepositDetail'>,
+  options?: Pick<
+    ExecutePlanOptions,
+    'queuedSteps' | 'evmDepositDetail' | 'shareWithdrawals'
+  >,
 ) => {
   const features = config?.features;
   const { queuedSteps, evmDepositDetail } = options ?? {};
@@ -1134,10 +1141,26 @@ const stepFlow = async (
   moves.length > 0 || Fail`moves list must not be empty`;
 
   for (const [i, move] of moves.entries()) {
+    const shareWithdrawal = options?.shareWithdrawals?.[i];
+    if (shareWithdrawal) {
+      (move.src === shareWithdrawal.src &&
+        move.dest === `@${chainOf(shareWithdrawal.src)}` &&
+        move.withdraw?.max === true &&
+        !move.claimRewards) ||
+        Fail`share withdrawal evidence does not match movement ${q(i)}`;
+      sameEvmAddress(
+        shareWithdrawal.vaultAddress,
+        ctx.contracts[chainOf(shareWithdrawal.src) as AxelarChain]?.[
+          shareWithdrawal.src
+        ],
+      ) ||
+        Fail`share withdrawal vault no longer matches configuration at ${q(move.src)}`;
+    }
     const isClaimRewards =
       getAssetPlaceRefKind(move.src) === 'pos' && !!move.claimRewards;
     move.amount.value > 0n ||
       isClaimRewards ||
+      !!shareWithdrawal ||
       Fail`movement amount must be positive in ${q(move)}`;
     const queuedStep = getQueuedStep(move);
     if (queuedStep) {
@@ -2243,7 +2266,13 @@ export const executePlan = (async (
       flowId,
       flowReporter,
       config,
-      { queuedSteps, evmDepositDetail: options?.evmDepositDetail },
+      {
+        queuedSteps,
+        evmDepositDetail: options?.evmDepositDetail,
+        ...(options?.shareWithdrawals && {
+          shareWithdrawals: options.shareWithdrawals,
+        }),
+      },
     );
     return `flow${flowId}`;
   } catch (err) {

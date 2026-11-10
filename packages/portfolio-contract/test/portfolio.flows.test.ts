@@ -68,6 +68,7 @@ import {
   executePlan as rawExecutePlan,
   openPortfolio as rawOpenPortfolio,
   wayFromSrcToDest,
+  type ExecutePlanOptions,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { swapRewardToStable, type EVMContext } from '../src/pos-evm.flows.ts';
@@ -224,6 +225,40 @@ const openWithPlan = async (
 
 const { make } = AmountMath;
 const { keys } = Object;
+const vaults = {
+  rwa: {
+    id: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+    address: contractsMock.Ethereum.ERC4626_morphoGauntletUsdcRwa_Ethereum!,
+  },
+  u2: {
+    id: 'ERC4626_vaultU2_Ethereum',
+    address: contractsMock.Ethereum.ERC4626_vaultU2_Ethereum!,
+  },
+  replacement: { address: '0x0000000000000000000000000000000000000003' },
+} as const;
+
+const makeShareWithdrawalCase = ({
+  minimumProceeds = 0n,
+  observedShares = 50n,
+} = {}) => {
+  const step1: MovementDesc = {
+    src: vaults.rwa.id,
+    dest: '@Ethereum',
+    amount: make(USDC, minimumProceeds),
+    withdraw: { max: true },
+  };
+  const options: ExecutePlanOptions = {
+    shareWithdrawals: {
+      0: {
+        src: vaults.rwa.id,
+        vaultAddress: vaults.rwa.address,
+        shares: observedShares,
+      },
+    },
+  };
+  return { step1, options };
+};
+
 /* eslint-disable no-underscore-dangle */
 /* We use _method to get it to sort before other properties. */
 
@@ -4673,4 +4708,94 @@ test('EVM-to-EVM CCTP does not provision a Noble forwarding account', async t =>
       event._method === 'transfer' && event.address?.chainId === nobleId,
   );
   t.falsy(registration, 'direct EVM-to-EVM CCTP must not register an NFA');
+});
+
+test('A withdrawal cannot use another position’s observed shares', async t => {
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const { step1 } = makeShareWithdrawalCase({ minimumProceeds: 1n });
+  const options: ExecutePlanOptions = {
+    shareWithdrawals: {
+      0: {
+        src: vaults.u2.id,
+        vaultAddress: vaults.u2.address,
+        shares: 50n,
+      },
+    },
+  };
+  await t.throwsAsync(
+    executePlan(
+      orch,
+      ctx,
+      offer.seat,
+      { flow: [step1] },
+      kit,
+      { type: 'rebalance' },
+      undefined,
+      DEFAULT_FLOW_CONFIG,
+      options,
+    ),
+    { message: /share withdrawal evidence does not match movement/ },
+  );
+  t.false(
+    offer.log.some(
+      ({ _method }) => _method === 'send' || _method === 'transfer',
+    ),
+  );
+});
+
+test('A zero proceeds minimum requires authenticated share instructions', async t => {
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const { step1, options } = makeShareWithdrawalCase({ minimumProceeds: 0n });
+  const submittedStep = {
+    ...step1,
+    shareWithdrawals: options.shareWithdrawals,
+  };
+  await t.throwsAsync(
+    executePlan(orch, ctx, offer.seat, { flow: [submittedStep] }, kit, {
+      type: 'rebalance',
+    }),
+    { message: /movement amount must be positive/ },
+  );
+  t.false(
+    offer.log.some(
+      ({ _method }) => _method === 'send' || _method === 'transfer',
+    ),
+  );
+});
+
+test('Vault changes invalidate a pending share withdrawal before any transfer', async t => {
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const { step1, options } = makeShareWithdrawalCase({ minimumProceeds: 0n });
+  const changedContext = {
+    ...ctx,
+    contracts: {
+      ...ctx.contracts,
+      Ethereum: {
+        ...ctx.contracts.Ethereum,
+        [vaults.rwa.id]: vaults.replacement.address,
+      },
+    },
+  };
+  await t.throwsAsync(
+    executePlan(
+      orch,
+      changedContext,
+      offer.seat,
+      { flow: [step1] },
+      kit,
+      { type: 'rebalance' },
+      undefined,
+      DEFAULT_FLOW_CONFIG,
+      options,
+    ),
+    { message: /share withdrawal vault no longer matches configuration/ },
+  );
+  t.false(
+    offer.log.some(
+      ({ _method }) => _method === 'send' || _method === 'transfer',
+    ),
+  );
 });
