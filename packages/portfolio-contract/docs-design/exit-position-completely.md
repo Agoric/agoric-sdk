@@ -68,66 +68,16 @@ sequenceDiagram
    the balances to collect. The `...` elides the existing sync-state and other
    status fields.
 
-6. **Return signed observations with typed raw holdings.** Use flattened
-   `HoldingDetail[]` entries. Each entry identifies a place, holding kind, token
-   address, and raw native-unit amount.
-   Valuation is separate from raw quantity. The proposed signed schema is:
+6. **Return signed observations with typed raw holdings.** The oracle reports
+   the position's vault address, raw `shares` quantity, and observed USD value
+   in signed observations. The contract will use that share quantity for
+   redemption. See the API's
+   [`TypedHoldingDetail`](../../portfolio-api/src/types.ts) JSDoc for holding
+   identities, kinds, units, signed representation, and legacy compatibility.
 
-   ```ts
-   HoldingDetail: [
-     { name: 'place', type: 'string' },
-     { name: 'balanceUsdc', type: 'uint256', optional: true }, // deprecated
-     { name: 'kind', type: 'string', optional: true },
-     { name: 'tokenAddress', type: 'address', optional: true },
-     { name: 'amount', type: 'uint256', optional: true }, // native units
-     { name: 'valueUsd', type: 'int256', optional: true }, // -1 means unknown
-   ],
-   ```
-
-   Kinds are `shares` for vault shares, `principal` for instruments such as Aave
-   and Compound, `claimable-reward` for unclaimed instrument rewards,
-   `claimed-reward` for rewards held in a chain account, `token` for other
-   ERC-20 holdings, and `$ETH` (or the corresponding `$SYMBOL`) for a chain's
-   native token. A share uses the vault contract address; principal, token,
-   and reward entries use the underlying token address. Native tokens use the
-   zero address. Instrument holdings belong under their instrument place, not
-   again under the remote account place. Multiple entries for a place are
-   expected; reject duplicate `(place, kind, tokenAddress)` identities rather
-   than duplicate places. This also permits multiple reward tokens.
-
-   Morpho uses `kind: 'shares'`, the vault address, and its raw share count as
-   `amount`. An observed zero is an explicit entry with `amount: 0n`; missing
-   entries mean unobserved holdings and must never be treated as zero. A raw
-   holding with unknown USD valuation omits `valueUsd`, distinct
-   from a known zero valuation. Do not infer shares from `valueUsd` or
-   deprecated `balanceUsdc`, nor add both valuations together.
-
-   Optional-field presence must be uniform per signed struct type, so the
-   observation converters always put `valueUsd` on typed holdings, encoding an
-   absent valuation as `-1n` in the signed `int256` field and stripping it
-   again when decoding. Known valuations range from zero through
-   `2n ** 255n - 1n`. Deprecated `balanceUsdc` is unsigned
-   `uint256`, with uniform presence and no valuation sentinel. During the
-   transition it carries each place's legacy balance (on one holding per
-   place, `0n` on the others), and decoding sums it per place into legacy
-   `balances`, so existing mandate checks keep working once producers switch.
-
-   Reuse the existing Morpho collector. YDS's
-   [`getMorphoBalance`](../../../../ymax-web/yds/src/utils/alchemy-kit.ts) reads
-   `balanceOf`, then `convertToAssets` at the same block. Its batched equivalent
-   does the same in two multicalls. Retain raw shares alongside valuation.
-   Extend application types, Shapes, converters, producer, and verifier together.
-   The shared schema retains the `YmaxObservation` domain version `1` and
-   extends its optional signed fields to support typed holdings. Legacy
-   balance-only messages keep their original resolved signed type; raw kind,
-   token, and quantity fields are validated together when present. Shared
-   converters derive legacy aggregate balances from typed holdings' deprecated
-   `balanceUsdc`, never from `valueUsd`. Rollout: deploy verifier support,
-   switch producers to typed holdings with `balanceUsdc`, move consumers to
-   typed holdings, then retire `balanceUsdc` and balance-only holdings. Legacy observations remain usable for numeric
-   plans but cannot supply share-based redemption data. Never enrich a legacy
-   signature with unsigned raw holdings. AGO-1615 defines that compatibility
-   boundary, coordinated with AGO-1617 (YDS) and AGO-1618 (attestor).
+   The existing Morpho collector reads `balanceOf`, then `convertToAssets` at
+   the same block; it retains the raw shares alongside valuation. See YDS's
+   [`getMorphoBalance`](../../../../ymax-web/yds/src/utils/alchemy-kit.ts).
 
 7. **Submit the plan and observations.** The agent uses
    [`delegationClient.setTargetAllocation`](../src/delegation.exo.ts). Its
@@ -135,39 +85,20 @@ sequenceDiagram
    `signedObservations`, plus optional `agentMemo`. The diagram's `...` elides
    those other fields; the movement itself is wrapped in `plan.flow`.
 
-   Amounts remain ERTP `NatAmount` records such as
-   `{ brand: usdcBrand, value: 100_000_000n }`. The movement's `amount` is
-   measured in default-token units (micro-USDC) received at `dest`.
-   It is a minimum when `withdraw.max` is true or `withdraw.amountOfShares` is
-   specified; otherwise it is exact. `0n` as a minimum imposes no positive
-   destination-amount requirement.
-   `WithdrawParams` is
-   `{ max?: boolean; amountOfShares?: bigint }`.
-   `amountOfShares` specifies the raw quantity of share tokens to withdraw.
-   Without it, a position interprets the movement's `amount` in principal-token
-   units. With `max` omitted or false, `amountOfShares` is exact and the
-   movement's `amount` is a minimum. With `max` true, both are minima in their
-   respective units. Execution authenticates the source position's share holding.
-   The movement retains its required `amount`. Reject missing amounts, negative
-   share quantities, and unknown options at decoding.
-   Maximum withdrawals apply only to protocol-to-same-chain-account routes;
-   transfers, bridges, deposits, and downstream steps retain exact amounts.
-   `MovementDesc` includes optional `withdraw?: WithdrawParams`.
-   `MovementDesc` and `FundsFlowPlan` are non-generic; a single plan can mix
-   exact and maximum withdrawals.
-
-   `MovementDescExt` and `FundsFlowPlanExt` represent forward-compatible
-   structural inputs. Their `movementDescShapeExt` and `planShapeExt` Shapes
-   accept future place strings and extra movement/plan fields while preserving
-   known field types, required amounts, withdrawal option checks, and plan
-   size limits. These inputs still need validation against supported places
-   before execution; the existing offer Shapes keep their admission rules.
+   In this scenario, `withdraw: { max: true }` requests all shares from the
+   source position, and the movement's `amount` is the minimum USDC received
+   at `@Base`. The request uses the authenticated share holding to determine
+   redemption quantity. See [`WithdrawParams`](../../portfolio-api/src/types.ts)
+   for the option semantics; the
+   [principal-withdrawal simulation TODO](../test/exit-position-completely-sim.test.ts)
+   describes a separate scenario that requests an exact principal amount.
 
 8. **Verify and validate.** The contract verifies the signed observations,
    checks their portfolio and sync-state context, and enforces the delegation
-   and mandate. The attestor is trusted to provide observations for mandate
-   checks and transaction construction: the verified `shares` holding determines
-   the `redeem` transaction's share argument. The delegated plan supplies
+   and mandate. The portfolio contract relies on the attestor for accurate
+   observations when checking the mandate and constructing the transaction:
+   the verified `shares` holding determines the `redeem` transaction's share
+   argument. The delegated plan supplies
    the intent to withdraw all from a specific position; observations do not
    authorize a new operation or destination. Binding observations to the
    portfolio and sync state, authenticating the signer, and checking freshness
@@ -265,7 +196,8 @@ a funds-moving transaction. Genuine errors and unmet minimums remain failures.
 ## Simulation work
 
 Following the [actor simulation skill](../../../.agents/skills/sequence-diagram-actor-sim/SKILL.md),
-add `test/exit-position-completely-sim.test.ts` using
+implement the scenarios in
+[`test/exit-position-completely-sim.test.ts`](../test/exit-position-completely-sim.test.ts) using
 [`sequence-diagram-actor-sim.ts`](../tools/sequence-diagram-actor-sim.ts).
 Read this diagram as test input and compare its causal arrows. Separately
 assert fixture balances, shares, and transaction counts: full exit after

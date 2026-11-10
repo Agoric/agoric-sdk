@@ -185,6 +185,13 @@ export type PlanObservations = {
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
 };
 
+/**
+ * Holding kinds understood by the observation converters. `shares` identifies
+ * vault shares; `principal` identifies instrument principal (for example Aave
+ * or Compound). `claimable-reward` belongs to an instrument, while
+ * `claimed-reward` and other `token` holdings belong to a chain account.
+ * Native tokens use `$` followed by a nonempty symbol, such as `$ETH`.
+ */
 export type HoldingKind =
   | 'shares'
   | 'principal'
@@ -199,16 +206,43 @@ export type LegacyHoldingDetail = {
   balanceUsdc: bigint;
 };
 
-/** One raw holding; quantities and valuations must not be added together. */
+/**
+ * One authenticated raw holding, independent of its USD valuation.
+ *
+ * The identity is `(place, kind, tokenAddress)`, with case-insensitive EVM
+ * addresses. Multiple holdings may share a place, including multiple reward
+ * tokens, but duplicate identities are rejected. Instrument holdings appear
+ * under the instrument, not again under its chain account. Missing holdings
+ * are unobserved and must never be treated as zero.
+ *
+ * Signed observations use the shared `YmaxObservation` version-1 schema.
+ * Legacy balance-only entries retain their original resolved signed type;
+ * typed fields are optional in that schema for compatibility, but must form a
+ * complete typed holding when present. Optional-field presence is uniform per
+ * signed struct type. The converters always include `valueUsd` for typed
+ * holdings on the wire, encoding an absent valuation as `-1n` and stripping
+ * that sentinel when decoding. Never add unsigned holdings to a legacy
+ * signature, or infer shares from either valuation field.
+ *
+ * Producer rollout must follow verifier support. Producers first include
+ * typed holdings with transitional `balanceUsdc`; consumers then adopt typed
+ * holdings before legacy balances and balance-only entries are retired.
+ */
 export type TypedHoldingDetail = {
+  /** Instrument place or chain account, as required by the holding kind. */
   place: PortfolioBalancePlaceRef;
   kind: HoldingKind;
+  /**
+   * Vault address for shares; underlying token address for principal, rewards,
+   * and other ERC-20 holdings. Native tokens use the zero address.
+   */
   tokenAddress: EvmAddress;
   /** Native token units, independent of USD valuation. Zero is observed zero. */
   amount: bigint;
   /**
-   * Valuation in micro-USD; absent if not observed. (The signed observation
-   * encodes an absent valuation as a sentinel, which its converters strip.)
+   * Valuation in micro-USD; absent if not observed, distinct from known zero.
+   * Known values range from `0n` through `2n ** 255n - 1n`. This is not a raw
+   * token quantity and must not be added to `balanceUsdc`.
    */
   valueUsd?: bigint;
   /**
@@ -327,6 +361,17 @@ export type SwapDesc = OneInchSwapDesc;
  */
 export type SwapProvider = SwapDesc['provider'];
 
+/**
+ * Additive options for a position-to-same-chain-account withdrawal. Structural
+ * acceptance does not establish implementation support; an older contract may
+ * ignore these options and execute the movement's amount exactly.
+ *
+ * The movement retains its required default-token amount (micro-USDC at dest).
+ * It is a minimum when `max` is true or `amountOfShares` is present. An explicit
+ * share quantity is exact unless `max` is true. Missing movement amounts,
+ * negative share quantities, and unknown withdrawal options are rejected.
+ * Transfers, bridges, deposits, and downstream movements retain exact amounts.
+ */
 export type WithdrawParams = {
   /** When true, MovementDesc['amount'] and amountOfShares are minima, not exact. */
   max?: boolean;
