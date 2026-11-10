@@ -177,6 +177,63 @@ test('withdraw planning rejects when all liquidity is unavailable', async t => {
   );
 });
 
+{
+  const prodContext = {
+    ...plannerContext,
+    network: { ...PROD_NETWORK, debug: false },
+  };
+  const payoutTo = (plan: { flow: MovementDesc[] }, dest: AssetPlaceRef) =>
+    plan.flow
+      .filter(m => m.dest === dest)
+      .reduce((v, m) => v + m.amount.value, 0n);
+
+  test('AGO-535: partial withdrawal leaves unmovable remote dust behind', async t => {
+    const plan = await planWithdrawFromAllocations({
+      ...prodContext,
+      currentBalances: {
+        '@Arbitrum': makeDeposit(scale6(0.5)),
+        '@Avalanche': makeDeposit(scale6(0.5)),
+        '@Base': makeDeposit(scale6(98.5)),
+        '@Ethereum': makeDeposit(scale6(0.5)),
+      },
+      amount: makeDeposit(scale6(99)),
+      toChain: 'Base',
+    });
+    t.is(payoutTo(plan, '-Base'), scale6(98.5));
+  });
+
+  test('partial withdrawal omits remote liquidity below the bridge minimum', async t => {
+    const plan = await planWithdrawFromAllocations({
+      ...prodContext,
+      currentBalances: {
+        Aave_Base: makeDeposit(scale6(100)),
+        Aave_Ethereum: makeDeposit(scale6(100)),
+      },
+      instrumentLiquidity: {
+        Aave_Base: scale6(0.5),
+        Aave_Ethereum: scale6(10),
+      },
+      amount: makeDeposit(scale6(50)),
+      toChain: 'Ethereum',
+    });
+    t.is(payoutTo(plan, '-Ethereum'), scale6(9));
+  });
+
+  test('withdrawal tops up a sub-minimum remote remainder from the destination', async t => {
+    const plan = await planWithdrawFromAllocations({
+      ...prodContext,
+      currentBalances: {
+        Aave_Ethereum: makeDeposit(scale6(1000)),
+        '@Base': makeDeposit(scale6(100)),
+      },
+      targetAllocation: { Aave_Ethereum: 1n },
+      amount: makeDeposit(scale6(100.5)),
+      toChain: 'Base',
+    });
+    t.is(payoutTo(plan, '-Base'), scale6(100.5));
+  });
+}
+
 const makeMovementDesc = (
   src: AssetPlaceRef,
   dest: AssetPlaceRef,

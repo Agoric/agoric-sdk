@@ -352,18 +352,19 @@ export const planWithdrawFromAllocations: PlanMaker<{
   toChain?: SupportedChain;
 }> = async details => {
   const { amount, brand, currentBalances, network, targetAllocation } = details;
+  const { feeBrand, gasEstimator, toChain = 'agoric' } = details;
   const target = computeTargetBalances({
     brand,
     currentBalances,
     network,
     balanceDelta: -amount.value,
+    withdrawToChain: toChain,
     targetAllocation,
     instrumentBlocks: details.instrumentBlocks,
     instrumentLiquidity: details.instrumentLiquidity,
     withdrawalLiquidityLimitBps: WITHDRAWAL_LIQUIDITY_LIMIT_BPS,
   });
 
-  const { feeBrand, gasEstimator, toChain = 'agoric' } = details;
   const withdrawTo =
     // TODO(#12309): Remove the `<Cash>` special case in favor of `-agoric`.
     (toChain === 'agoric' ? '<Cash>' : `-${toChain}`) as AssetPlaceRef;
@@ -382,7 +383,7 @@ export const planWithdrawFromAllocations: PlanMaker<{
   );
   if (withdrawalValue <= 0n) {
     // Nothing can be withdrawn right now (e.g., all funds are in blocked or
-    // illiquid positions).
+    // illiquid positions, or are too small to move to the destination).
     // A negative value would be an internal accounting error, but must still
     // reject the flow rather than leave it awaiting a plan.
     throw new TargetBalanceError(
