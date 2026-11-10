@@ -10,25 +10,28 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { inspect } from 'node:util';
 import { makePromiseKit } from '@endo/promise-kit';
-import type { OfferArgsFor, ProposalType } from '../src/type-guards.ts';
+import type { ProposalType } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,
   importCSV,
   withBrand,
 } from '../tools/rebalance-grok.ts';
-import { setupTrader } from './contract-setup.ts';
 import {
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
   portfolio0lcaOrch,
 } from './mocks.ts';
+import {
+  setupPlannedTrader,
+  type PlannedOfferArgs,
+} from './contract-test-support.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 
 const { values } = Object;
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
-    const { trader1, common, started, zoe } = await setupTrader(t);
+    const { trader1, common, started, zoe } = await setupPlannedTrader(t);
     const scenarios = await scenariosP;
     const rawScenario = scenarios[description];
     if (!rawScenario) return t.fail(`Scenario "${description}" not found`);
@@ -89,11 +92,14 @@ const rebalanceScenarioMacro = test.macro({
     }
 
     const ackSteps = async (
-      offerArgs: OfferArgsFor['openPortfolio'],
+      offerArgs: PlannedOfferArgs<'openPortfolio'>,
       opening = false,
     ) => {
       const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
+      // The planner supplies the steps a few turns after the offer. An open
+      // first provisions the Noble account, acknowledged below.
+      if (!opening) await trader1.whenPlanned();
 
       const nobleInvolved = moves.some(
         move => move.src === '@noble' || move.dest === '@noble',
@@ -103,6 +109,7 @@ const rebalanceScenarioMacro = test.macro({
       if (opening || nobleInvolved) {
         await transmitVTransferEvent('acknowledgementPacket', -1);
       }
+      if (opening) await trader1.whenPlanned();
 
       const evmInvolved = moves.some(
         move => move.src === '@Arbitrum' || move.dest === '@Arbitrum',
@@ -130,7 +137,7 @@ const rebalanceScenarioMacro = test.macro({
 
     const openPortfolioAndAck = async (
       give: ProposalType['openPortfolio']['give'],
-      offerArgs: OfferArgsFor['openPortfolio'] = {},
+      offerArgs: PlannedOfferArgs<'openPortfolio'> = {},
     ) => {
       const doneP = trader1.openPortfolio(t, give, offerArgs);
       await ackSteps(offerArgs, true);

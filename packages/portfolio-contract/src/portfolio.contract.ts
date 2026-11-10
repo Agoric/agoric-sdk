@@ -632,7 +632,9 @@ export const contract = async (
   // `config` argument (which defaults to the original, pre-progressTracker
   // behavior), but newly-invoked flows get `config = defaultFlowConfig`.
   //
-  // Create rebalance flow first - needed by preparePortfolioKit
+  // Create executePlan flow first - needed by preparePortfolioKit.
+  // `rebalance` no longer has a host-side caller (offers can't supply a plan,
+  // AGO-1662), but it must stay registered so in-flight activations replay.
   const orchFns1 = orchestrateAll(
     {
       executePlan: flows.executePlan,
@@ -658,15 +660,6 @@ export const contract = async (
       ...flowCfg(config),
       options,
     );
-  const rebalance: typeof orchFns1.rebalance = (
-    seat,
-    offerArgs,
-    kit,
-    startedFlow,
-    config = defaultFlowConfig,
-  ) =>
-    orchFns1.rebalance(seat, offerArgs, kit, startedFlow, ...flowCfg(config));
-
   // unused but must be defined for upgrade
   const { parseInboundTransfer: _obsolete } = orchestrateAll(
     { parseInboundTransfer: flows.parseInboundTransfer },
@@ -784,7 +777,6 @@ export const contract = async (
     inertSeat,
     vowTools,
     executePlan,
-    rebalance,
     onAgoricTransfer,
     proposalShapes,
     offerArgsShapes,

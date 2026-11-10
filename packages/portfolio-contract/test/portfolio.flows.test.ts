@@ -78,6 +78,7 @@ import {
 } from '../src/pos-usdn.flows.ts';
 import {
   type MovementDesc,
+  type LegacyOfferPlan,
   type OfferArgsFor,
 } from '../src/type-guards-steps.ts';
 import { makeProposalShapes } from '../src/type-guards.ts';
@@ -598,7 +599,7 @@ test.skip('rebalance handles stepFlow failure correctly', async t => {
 
   const { log, seat } = offer;
 
-  const badOfferArgs: OfferArgsFor['rebalance'] = {
+  const badOfferArgs: OfferArgsFor['rebalance'] & LegacyOfferPlan = {
     flow: [
       { src: '<Deposit>', dest: '@agoric', amount: make(USDC, 500n) },
       { src: '@agoric', dest: '@noble', amount: make(USDC, 500n) },

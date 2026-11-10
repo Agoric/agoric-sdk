@@ -119,10 +119,22 @@ export const getKeywordOfPlaceRef = (
   return keyword as SeatKeyword;
 };
 
+/**
+ * Offers no longer carry a plan (`flow`): steps come only from the planner or
+ * from a delegated agent.
+ *
+ * Flows still accept this property only so that activations started before
+ * the change replay the same way.
+ */
+export type LegacyOfferPlan = {
+  /** @deprecated offers can no longer supply a plan */
+  flow?: MovementDesc[];
+};
+
 export type OfferArgsFor = {
-  deposit: { flow?: MovementDesc[] };
-  openPortfolio: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
-  rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
+  deposit: Record<string, never>;
+  openPortfolio: { targetAllocation?: TargetAllocation };
+  rebalance: { targetAllocation?: TargetAllocation };
   transferOwnershipToEVM: {
     /** the EVM account designated as the new owner */
     evmAddress: `0x${string}`;
@@ -209,17 +221,12 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   );
 
   return {
-    deposit: M.splitRecord(
-      {},
-      {
-        flow: flowShape,
-      },
-      {},
-    ) as TypedPattern<OfferArgsFor['deposit']>,
+    // Offers must not carry a plan (`flow`); see LegacyOfferPlan. These are
+    // closed records, so an offer that still includes one is rejected.
+    deposit: M.splitRecord({}, {}, {}) as TypedPattern<OfferArgsFor['deposit']>,
     openPortfolio: M.splitRecord(
       {},
       {
-        flow: flowShape,
         destinationEVMChain: M.or(...keys(AxelarChain)),
         targetAllocation: TargetAllocationShape,
       },
@@ -228,7 +235,6 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     rebalance: M.splitRecord(
       {},
       {
-        flow: flowShape,
         targetAllocation: TargetAllocationShape,
       },
       {},

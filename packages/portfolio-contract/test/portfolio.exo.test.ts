@@ -78,18 +78,14 @@ const makeTestSetup = (
   const marshaller = board.getReadonlyMarshaller();
   const vowTools = prepareVowTools(zone);
 
-  const depStubs: Pick<
-    PortfolioKitDeps,
-    'rebalance' | 'executePlan' | 'deliverDelegation'
-  > = {
-    rebalance: (..._args: Parameters<PortfolioKitDeps['rebalance']>) =>
-      vowTools.asVow(() => {}),
-    executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) =>
-      vowTools.asVow(() => {}),
-    deliverDelegation: async (
-      ..._args: Parameters<PortfolioKitDeps['deliverDelegation']>
-    ) => {},
-  };
+  const depStubs: Pick<PortfolioKitDeps, 'executePlan' | 'deliverDelegation'> =
+    {
+      executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) =>
+        vowTools.asVow(() => {}),
+      deliverDelegation: async (
+        ..._args: Parameters<PortfolioKitDeps['deliverDelegation']>
+      ) => {},
+    };
 
   const { spies, log: callLog } = makeSpies(depStubs);
 
@@ -1995,7 +1991,7 @@ test('Agoric owner offers are rejected once EVM-owned', async t => {
   const message =
     'portfolio460 is owned by EVM account "eip155:42161:0x2222222222222222222222222222222222222222"';
 
-  await t.throwsAsync(rebalanceHandler.handle(seat, {}), { message });
+  t.throws(() => rebalanceHandler.handle(seat, {}), { message });
   t.throws(() => simpleRebalanceHandler.handle(seat, {}), { message });
   t.throws(() => depositHandler.handle(seat, {}), { message });
   t.throws(() => withdrawHandler.handle(seat), { message });

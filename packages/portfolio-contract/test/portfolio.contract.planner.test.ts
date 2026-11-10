@@ -18,12 +18,17 @@ import {
 } from '@agoric/portfolio-api';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
-import { type TargetAllocation } from '../src/type-guards.ts';
+import {
+  type ProposalType,
+  type TargetAllocation,
+} from '../src/type-guards.ts';
 import { setupTrader } from './contract-setup.ts';
 import {
   getRunningFlowEntries,
   ackNFA,
   setupPlanner,
+  makePlannedTrader,
+  makePlannerProvider,
   makeCreateAndDepositScenarioRunner,
   keys,
   stripStoredPortfolioKit,
@@ -111,19 +116,20 @@ test('request rebalance - send same targetAllocation', async t => {
 });
 
 test('withdraw using planner', async t => {
-  const { common, trader1, planner1 } = await setupPlanner(t);
+  const { common, trader1, planner1, zoe, started } = await setupPlanner(t);
 
   await planner1.redeem();
   await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const pId: number = trader1.getPortfolioId();
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
-  const depP = trader1.rebalance(
-    t,
-    { give: { Deposit }, want: {} },
-    { flow: [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }] },
+  const planned = makePlannedTrader(
+    trader1,
+    makePlannerProvider(zoe, started.creatorFacet, planner1),
   );
-  await depP;
+  await planned.deposit(t, Deposit, [
+    { src: '<Deposit>', dest: '@agoric', amount: Deposit },
+  ]);
   t.log('trader deposited', Deposit);
 
   const traderP = (async () => {
@@ -298,19 +304,20 @@ test('deposit using planner', async t => {
 });
 
 test('simple rebalance using planner', async t => {
-  const { common, trader1, planner1 } = await setupPlanner(t);
+  const { common, trader1, planner1, zoe, started } = await setupPlanner(t);
 
   await planner1.redeem();
   await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const pId: number = trader1.getPortfolioId();
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
-  const depP = trader1.rebalance(
-    t,
-    { give: { Deposit }, want: {} },
-    { flow: [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }] },
+  const planned = makePlannedTrader(
+    trader1,
+    makePlannerProvider(zoe, started.creatorFacet, planner1),
   );
-  await depP;
+  await planned.deposit(t, Deposit, [
+    { src: '<Deposit>', dest: '@agoric', amount: Deposit },
+  ]);
   t.log('trader deposited', Deposit);
 
   const traderP = (async () => {
@@ -387,36 +394,56 @@ test('create portfolio and deposit using planner (upgrade)', async t => {
   await runScenario({ restartOverrides: {} });
 });
 
-test('legacy Rebalance without flow releases its reservation before another offer', async t => {
-  const { common, trader1 } = await setupTrader(t);
+test('legacy Rebalance invitation waits for the planner, like SimpleRebalance', async t => {
+  const { common, trader1, planner1 } = await setupPlanner(t);
+  await planner1.redeem();
   await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
+  const pId = trader1.getPortfolioId();
 
   const offerArgs = { targetAllocation: { USDN: 100n } };
   const before = await trader1.getPortfolioStatus();
   t.deepEqual(before.flowsRunning, {});
 
-  // Use the continuing Rebalance invitation, which reserves the flow before
-  // invoking the legacy rebalance flow. No planner steps are supplied.
-  await trader1.rebalance(t, { give: {}, want: {} }, offerArgs);
-  const after = await trader1.getPortfolioStatus();
-  t.is(after.flowCount, before.flowCount + 1);
-  t.deepEqual(after.targetAllocation, offerArgs.targetAllocation);
-  t.deepEqual(
-    after.flowsRunning,
-    {},
-    'the completed offer must release its flow',
-  );
+  // Offers can't carry a plan, so the continuing Rebalance
+  // invitation starts a planner-driven flow, as SimpleRebalance does.
+  const rebalanceP = trader1.rebalance(t, { give: {}, want: {} }, offerArgs);
+  await eventLoopIteration();
+  const pending = await trader1.getPortfolioStatus();
+  t.deepEqual(pending.targetAllocation, offerArgs.targetAllocation);
+  const [[flowKey, detail]] = getRunningFlowEntries(pending.flowsRunning);
+  t.like(detail, { type: 'rebalance', awaitingSteps: true });
 
-  // The single-active-flow guard must admit the next offer without planner
-  // resolution or rejection of the previous reservation.
-  await trader1.rebalance(t, { give: {}, want: {} }, offerArgs);
-  const afterNext = await trader1.getPortfolioStatus();
-  t.is(afterNext.flowCount, after.flowCount + 1);
-  t.deepEqual(
-    afterNext.flowsRunning,
-    {},
-    'another offer must still be accepted even before the previous one is resolved',
+  const plan: FundsFlowPlan = { flow: [] };
+  await E(planner1.stub).resolvePlan(
+    pId,
+    Number(flowKey.replace('flow', '')),
+    plan,
+    pending.policyVersion,
+    pending.rebalanceCount,
   );
+  const { result } = await rebalanceP;
+  t.is(result, flowKey);
+  const after = await trader1.getPortfolioStatus();
+  t.deepEqual(after.flowsRunning, {}, 'the completed offer releases its flow');
+});
+
+test('legacy Rebalance invitation rejects offers that give or want funds', async t => {
+  const { common, trader1, planner1 } = await setupPlanner(t);
+  const { usdc } = common.brands;
+  await planner1.redeem();
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
+
+  const amount = usdc.units(100);
+  for (const proposal of [
+    { give: { Deposit: amount }, want: {} },
+    { give: {}, want: { Cash: amount } },
+  ] as ProposalType['rebalance'][]) {
+    await t.throwsAsync(trader1.rebalance(t, proposal, {}), {
+      message: /use Deposit or Withdraw/,
+    });
+  }
+  const after = await trader1.getPortfolioStatus();
+  t.deepEqual(after.flowsRunning, {}, 'no offer started a flow');
 });
 
 test('planner reaches portfolios stored before its facet existed', async t => {
