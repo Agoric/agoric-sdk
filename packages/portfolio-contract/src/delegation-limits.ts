@@ -8,9 +8,14 @@ import {
   type PortfolioBalancePlaceRef,
   type PortfolioPermissions,
   type TargetAllocation,
+  type TypedHoldingDetail,
 } from '@agoric/portfolio-api';
-import { chainOf } from '@agoric/portfolio-api/src/places.js';
 import {
+  chainOf,
+  type ERC4626InstrumentId,
+} from '@agoric/portfolio-api/src/places.js';
+import {
+  isERC4626MorphoInstrumentId,
   isInstrumentId,
   isInterChainAccountRef,
   isPortfolioBalancePlaceRef,
@@ -197,6 +202,17 @@ type PlanOperation =
       src: PortfolioBalancePlaceRef;
       dest: PortfolioBalancePlaceRef;
       amount: MovementDesc['amount'];
+      debitValueUsd: bigint;
+    }
+  | {
+      kind: 'withdrawMax';
+      src: ERC4626InstrumentId;
+      dest: InterChainAccountRef;
+      /** Minimum destination quantity, not the quantity removed from src. */
+      amount: MovementDesc['amount'];
+      /** USD exposure removed from the source, independent of the minimum. */
+      debitValueUsd: bigint;
+      holding: TypedHoldingDetail & { valueUsd: bigint };
     }
   | {
       kind: 'claimRewards';
@@ -207,12 +223,18 @@ type PlanOperation =
 
 type DecodedPlan = Omit<FundsFlowPlan, 'flow'> & { flow: PlanOperation[] };
 
-/** Decode once so every balance check uses the same operation semantics. */
-const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
+/**
+ * Decode once so every balance check uses the same operation semantics.
+ * Legacy balance observations retain the existing exact-amount fallback.
+ */
+const decodePlan = (
+  plan: FundsFlowPlan,
+  observations: PlanObservations,
+): DecodedPlan => {
   // Swap output values are not yet available to mandate analysis.
   vetNoSwaps(plan);
   const flow = plan.flow.map((movement): PlanOperation => {
-    const { src, dest, amount, claimRewards } = movement;
+    const { src, dest, amount, claimRewards, withdraw } = movement;
     if (!isPortfolioBalancePlaceRef(src)) {
       throw Fail`allocation plan does not support deposit or withdrawal place ${q(src)}`;
     }
@@ -225,7 +247,46 @@ const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
     // Execution would use the instrument on the account's chain, so the two
     // chains must match for those checks to cover what actually happens.
     vetInstrumentAccountChain(movement);
-    if (!claimRewards) return { kind: 'move', src, dest, amount };
+    if (observations.holdings?.length && withdraw?.max === true) {
+      if (
+        !isERC4626MorphoInstrumentId(src) ||
+        !isInterChainAccountRef(dest) ||
+        dest !== `@${chainOf(src)}`
+      ) {
+        throw Fail`maximum withdrawal requires a Morpho source and its chain account destination: ${q(src)} -> ${q(dest)}`;
+      }
+      if (claimRewards) {
+        throw Fail`maximum withdrawal cannot also claim rewards at ${q(src)}`;
+      }
+      const candidates = observations.holdings.filter(
+        holding => holding.place === src && holding.kind === 'shares',
+      );
+      if (candidates.length !== 1) {
+        throw Fail`maximum withdrawal requires one observed share holding at ${q(src)}; found ${q(candidates.length)}`;
+      }
+      const holding = candidates[0]!;
+      const { valueUsd } = holding;
+      if (valueUsd === undefined) {
+        throw Fail`missing holding valuation for ${q(src)}`;
+      }
+      const minimumShares = withdraw.amountOfShares ?? 0n;
+      holding.amount >= minimumShares ||
+        Fail`observed shares ${q(holding.amount)} at ${q(src)} are below minimum ${q(minimumShares)}`;
+      if (holding.amount === 0n && amount.value > 0n) {
+        throw Fail`empty share holding cannot meet proceeds minimum ${q(amount.value)} at ${q(src)}`;
+      }
+      return {
+        kind: 'withdrawMax',
+        src,
+        dest,
+        amount,
+        debitValueUsd: valueUsd,
+        holding: { ...holding, valueUsd },
+      };
+    }
+    if (!claimRewards) {
+      return { kind: 'move', src, dest, amount, debitValueUsd: amount.value };
+    }
 
     if (
       !isInstrumentId(src) ||
@@ -373,7 +434,7 @@ const vetPartialPlanAllocation = (
         if (movement.kind === 'claimRewards') return 0n;
         const { src, dest, amount } = movement;
         if (dest === place) return amount.value;
-        if (src === place) return -amount.value;
+        if (src === place) return -movement.debitValueUsd;
         return 0n;
       },
       index => [...(dependencies.get(index) ?? [])],
@@ -403,6 +464,12 @@ const projectPlanBalances = (
 ): Map<string, bigint> => {
   const balances = sumValueUsdByPlace(observations);
   const { flow } = plan;
+  const remainingShares = new Map<InstrumentId, bigint>();
+  for (const movement of flow) {
+    if (movement.kind === 'withdrawMax') {
+      remainingShares.set(movement.src, movement.holding.amount);
+    }
+  }
   const schedule = makeSchedule({
     taskQty: flow.length,
     order: plan.order ?? fullOrder(flow.length),
@@ -411,7 +478,7 @@ const projectPlanBalances = (
   for (const { dest, kind } of flow) {
     if (kind === 'claimRewards') continue;
     if (isInstrumentId(dest)) {
-      observations.balances[dest] !== undefined ||
+      hasObservedBalance(dest, observations) ||
         Fail`missing balance observation for ${q(dest)}`;
     }
   }
@@ -420,13 +487,23 @@ const projectPlanBalances = (
     const ready = schedule.ready();
 
     const debits = new Map<PortfolioBalancePlaceRef, bigint>();
+    const shareDebits = new Map<InstrumentId, bigint>();
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;
-      debits.set(
-        movement.src,
-        (debits.get(movement.src) ?? 0n) + movement.amount.value,
-      );
+      const { src, debitValueUsd } = movement;
+      debits.set(src, (debits.get(src) ?? 0n) + debitValueUsd);
+      if (movement.kind === 'withdrawMax') {
+        shareDebits.set(
+          movement.src,
+          (shareDebits.get(movement.src) ?? 0n) + movement.holding.amount,
+        );
+      }
+    }
+    for (const [src, debit] of shareDebits) {
+      const available = remainingShares.get(src) ?? 0n;
+      available >= debit ||
+        Fail`unfunded share withdrawal from ${q(src)}: available ${q(available)} < requested ${q(debit)}`;
     }
     for (const [src, debit] of debits.entries()) {
       const balance = balances.get(src) ?? 0n;
@@ -437,9 +514,12 @@ const projectPlanBalances = (
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;
-      const { src, dest, amount } = movement;
-      balances.set(src, (balances.get(src) ?? 0n) - amount.value);
+      const { src, dest, amount, debitValueUsd } = movement;
+      balances.set(src, (balances.get(src) ?? 0n) - debitValueUsd);
       balances.set(dest, (balances.get(dest) ?? 0n) + amount.value);
+    }
+    for (const [src, debit] of shareDebits) {
+      remainingShares.set(src, remainingShares.get(src)! - debit);
     }
     for (const ix of ready) {
       schedule.complete(ix);
@@ -455,13 +535,15 @@ const projectPlanBalances = (
  * target allocation ceiling and its initial balance. Only the final-balance
  * check allows a shared {@link MAX_CHAIN_ALLOCATION_DIVERGENCE_UUSDC} per chain. Partial-failure,
  * mandate, and position checks remain exact.
+ *
+ * @returns The decoded accounting operations for subsequent execution binding.
  */
 export const vetPlanAllocation = (
   targetAllocation: TargetAllocation,
   plan: FundsFlowPlan,
   observations: PlanObservations,
-): void => {
-  const decodedPlan = decodePlan(plan);
+): DecodedPlan => {
+  const decodedPlan = decodePlan(plan, observations);
   for (const { kind } of decodedPlan.flow) {
     kind !== 'claimRewards' ||
       Fail`allocation plan does not support claimRewards`;
@@ -475,6 +557,7 @@ export const vetPlanAllocation = (
   const balances = projectPlanBalances(decodedPlan, observations);
   vetAllocationCeilings(balances, targetAllocation);
   vetPartialPlanAllocation(targetAllocation, decodedPlan, observations);
+  return decodedPlan;
 };
 harden(vetPlanAllocation);
 

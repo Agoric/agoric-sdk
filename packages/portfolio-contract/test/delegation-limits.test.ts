@@ -1643,6 +1643,14 @@ const additiveWithdrawCases: [string, WithdrawParams | undefined][] = [
   ['source quantity minimum', { max: true, amountOfShares: 10n ** 24n }],
 ];
 
+test('A maximum withdrawal removes share exposure, not just its proceeds minimum', t => {
+  const { checkAllocation } = makeMaximumWithdrawalCase({
+    valueUsd: 100_000_000n,
+    minimumProceeds: 0n,
+  });
+  t.notThrows(() => checkAllocation({ Aave_Ethereum: 100n }));
+});
+
 for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
   test(`A full exit cannot treat unobserved investments as empty (${investment})`, t => {
     const { instrument, shares, movement } = makeMaximumWithdrawalCase();
@@ -1691,6 +1699,156 @@ for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
     }
   });
 }
+
+test('Only minimum redemption proceeds count toward final portfolio value', t => {
+  const { shares, movement, checkAllocation } = makeMaximumWithdrawalCase({
+    valueUsd: 100_000_000n,
+    minimumProceeds: 0n,
+  });
+  const withOtherPosition = makeHoldingObservations([
+    shares,
+    makeHolding({
+      place: 'Aave_Ethereum',
+      kind: 'principal',
+      amount: 100_000_000n,
+      valueUsd: 100_000_000n,
+    }),
+  ]);
+  const target = { Aave_Ethereum: 50n, Compound_Ethereum: 50n };
+  t.throws(
+    () => checkAllocation(target, { flow: [movement] }, withOtherPosition),
+    { message: /plan final balance exceeds target allocation.*Aave_Ethereum/ },
+  );
+  t.notThrows(() =>
+    checkAllocation(
+      target,
+      { flow: [{ ...movement, amount: { brand: USDC, value: 100_000_000n } }] },
+      withOtherPosition,
+    ),
+  );
+});
+
+test('An empty share holding can meet only zero withdrawal minimums', t => {
+  const { instrument, movement, checkAllocation } = makeMaximumWithdrawalCase({
+    shareQuantity: 0n,
+    valueUsd: 0n,
+    minimumProceeds: 0n,
+  });
+  t.notThrows(() => checkAllocation({ [instrument]: 100n }));
+  t.throws(
+    () =>
+      checkAllocation(
+        { [instrument]: 100n },
+        { flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] },
+      ),
+    { message: /empty share holding cannot meet proceeds minimum/ },
+  );
+});
+
+test('Maximum withdrawals cannot exceed the observed shares', t => {
+  const { instrument, shares, observations, movement, checkAllocation } =
+    makeMaximumWithdrawalCase({ shareQuantity: 50n });
+  t.throws(
+    () =>
+      checkAllocation({ [instrument]: 100n }, { flow: [movement, movement] }),
+    { message: /unfunded share withdrawal.*50/ },
+  );
+  t.throws(
+    () =>
+      checkAllocation(
+        { [instrument]: 100n },
+        {
+          flow: [{ ...movement, withdraw: { max: true, amountOfShares: 51n } }],
+        },
+      ),
+    { message: /observed shares.*50.*below minimum.*51/ },
+  );
+  for (const holdings of [
+    [{ ...shares, kind: 'principal' as const }],
+    [
+      shares,
+      {
+        ...shares,
+        tokenAddress: holdingTokens.otherVault,
+      },
+    ],
+  ]) {
+    t.throws(
+      () =>
+        checkAllocation(
+          { [instrument]: 100n },
+          { flow: [movement] },
+          { ...observations, holdings },
+        ),
+      { message: /maximum withdrawal requires one observed share holding/ },
+    );
+  }
+});
+
+test('A maximum share withdrawal leaves reward exposure at the source', t => {
+  const { instrument, shares, movement, checkAllocation } =
+    makeMaximumWithdrawalCase();
+  t.throws(
+    () =>
+      checkAllocation(
+        { Aave_Ethereum: 100n },
+        { flow: [movement] },
+        makeHoldingObservations([
+          shares,
+          makeHolding({
+            place: instrument,
+            kind: 'claimable-reward',
+            amount: 20n,
+            valueUsd: 20_000_000n,
+          }),
+        ]),
+      ),
+    { message: /plan final balance exceeds target allocation.*20000000/ },
+  );
+});
+
+test('Maximum Morpho withdrawals target the position’s own chain account', t => {
+  const { instrument, movement, checkAllocation } = makeMaximumWithdrawalCase();
+  t.throws(
+    () =>
+      checkAllocation(
+        { [instrument]: 100n },
+        { flow: [{ ...movement, dest: '@Arbitrum' }] },
+      ),
+    { message: /lives on "Ethereum", not "Arbitrum"/ },
+  );
+  for (const [src, dest] of [
+    [instrument, 'Aave_Ethereum'],
+    ['Aave_Ethereum', '@Ethereum'],
+  ] as const) {
+    t.throws(
+      () =>
+        checkAllocation(
+          { [instrument]: 100n, Aave_Ethereum: 0n },
+          { flow: [{ ...movement, src, dest }] },
+        ),
+      {
+        message:
+          /maximum withdrawal requires a Morpho source and its chain account destination/,
+      },
+    );
+  }
+  t.throws(
+    () =>
+      checkAllocation(
+        { [instrument]: 100n },
+        {
+          flow: [
+            {
+              ...movement,
+              claimRewards: { tokens: [], minAmounts: [] },
+            },
+          ],
+        },
+      ),
+    { message: /maximum withdrawal cannot also claim rewards/ },
+  );
+});
 
 for (const [label, withdraw] of additiveWithdrawCases) {
   test(`withdraw is additive to exact-amount allocation validation: ${label}`, t => {
