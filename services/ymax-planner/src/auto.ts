@@ -509,7 +509,8 @@ export const maybeAutoClaim = async (
         );
       }
       for (const [i, source] of sources.entries()) {
-        const { caipChainId, evmChainId, instrumentName, tokenId } = source;
+        const { caipChainId, chainName, evmChainId, instrumentName, tokenId } =
+          source;
         if (!evmChainId || !instrumentName) continue;
         if (!isERC4626InstrumentId(instrumentName)) continue;
 
@@ -517,6 +518,16 @@ export const maybeAutoClaim = async (
         const claimRewards = merklClaimsByToken.get(tokenCaip10);
         merklClaimsByToken.delete(tokenCaip10);
         resolvedSources[i] = claimRewards ? { ...source, claimRewards } : null;
+        if (claimRewards) continue;
+
+        // Remove any now-inappropriate swap placeholder for this chain.
+        const swappable = resolvedSources.some(
+          src => src?.chainName === chainName && src?.uusdcValue > 0n,
+        );
+        if (swappable) continue;
+        for (const [j, src] of sources.entries()) {
+          if (src?.chainName === chainName) resolvedSources[j] = null;
+        }
       }
     }
 
