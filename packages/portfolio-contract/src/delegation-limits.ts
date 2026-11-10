@@ -44,6 +44,49 @@ const sumPortions = (targetAllocation: TargetAllocation): bigint =>
   sumOptionalBigints(values(targetAllocation));
 
 /**
+ * Sum observed values by portfolio location, in micro-USD.
+ * These values measure exposure; they do not establish spendable quantities.
+ * Legacy micro-USDC balances retain their existing one-for-one USD valuation.
+ */
+const sumValueUsdByPlace = (
+  observations: PlanObservations,
+): Map<PortfolioBalancePlaceRef, bigint> => {
+  const { holdings, balances } = observations;
+  if (!holdings?.length) {
+    return new Map(
+      entries(balances).map(([place, balance]) => [
+        place as PortfolioBalancePlaceRef,
+        balance ?? 0n,
+      ]),
+    );
+  }
+  const result = new Map<PortfolioBalancePlaceRef, bigint>();
+  const legacyBalances = new Map<string, bigint>();
+  for (const { place, valueUsd, balanceUsdc } of holdings) {
+    if (valueUsd === undefined) {
+      throw Fail`missing holding valuation for ${q(place)}`;
+    }
+    result.set(place, (result.get(place) ?? 0n) + valueUsd);
+    if (balanceUsdc !== undefined) {
+      legacyBalances.set(
+        place,
+        (legacyBalances.get(place) ?? 0n) + balanceUsdc,
+      );
+    }
+  }
+  // Transitional balances repeat the signed legacy fields; never count both.
+  const given = entries(balances).filter(([, value]) => value !== undefined);
+  if (
+    given.length > 0 &&
+    (given.length !== legacyBalances.size ||
+      given.some(([place, value]) => legacyBalances.get(place) !== value))
+  ) {
+    throw Fail`aggregate balances must match the balanceUsdc of observed holdings`;
+  }
+  return result;
+};
+
+/**
  * Check a proposed allocation against the current delegation permissions.
  * All checks run before policy mutation or flow creation.
  */
@@ -83,9 +126,10 @@ export const assertMandateForPlanObservations = (
   const { minVaultTvlUsd, maxVaultShareBps } = allocation;
   if (minVaultTvlUsd === undefined && maxVaultShareBps === undefined) return;
   const totalPortions = sumPortions(targetAllocation);
-  const portfolioValueMicroUsd = sumOptionalBigints(
-    values(observations.balances),
-  );
+  const portfolioValueMicroUsd =
+    maxVaultShareBps === undefined
+      ? 0n
+      : sumOptionalBigints([...sumValueUsdByPlace(observations).values()]);
 
   for (const [instrument, portion = 0n] of entries(targetAllocation)) {
     if (isInterChainAccountRef(instrument) || portion === 0n) continue;
@@ -303,12 +347,7 @@ const vetPartialPlanAllocation = (
   plan: DecodedPlan,
   observations: PlanObservations,
 ) => {
-  const initialBalances = new Map<string, bigint>(
-    entries(observations.balances).map(([place, balance]) => [
-      place,
-      balance ?? 0n,
-    ]),
-  );
+  const initialBalances = sumValueUsdByPlace(observations);
   const totalBalance = sumOptionalBigints([...initialBalances.values()]);
   const totalPortions = sumPortions(targetAllocation);
   const { flow } = plan;
@@ -362,12 +401,7 @@ const projectPlanBalances = (
   plan: DecodedPlan,
   observations: PlanObservations,
 ): Map<string, bigint> => {
-  const balances = new Map<string, bigint>(
-    entries(observations.balances).map(([place, balance]) => [
-      place,
-      balance ?? 0n,
-    ]),
-  );
+  const balances = sumValueUsdByPlace(observations);
   const { flow } = plan;
   const schedule = makeSchedule({
     taskQty: flow.length,
@@ -385,7 +419,7 @@ const projectPlanBalances = (
   while (schedule.pending()) {
     const ready = schedule.ready();
 
-    const debits = new Map<string, bigint>();
+    const debits = new Map<PortfolioBalancePlaceRef, bigint>();
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;

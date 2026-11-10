@@ -785,6 +785,83 @@ test('Observed holdings account for every location used by the plan', t => {
   }
 });
 
+test('Observed holdings must not be mistaken for an empty portfolio', t => {
+  const { checkAllocation } = makeMaximumWithdrawalCase({
+    valueUsd: 100_000_000n,
+  });
+  t.throws(() => checkAllocation({ Aave_Ethereum: 100n }, { flow: [] }), {
+    message:
+      /plan final balance exceeds target allocation at "ERC4626_morphoGauntletUsdcRwa_Ethereum"/,
+  });
+});
+
+for (const [instrument, kind] of [
+  ['ERC4626_morphoGauntletUsdcRwa_Ethereum', 'shares'],
+  ['Aave_Ethereum', 'principal'],
+  ['Compound_Ethereum', 'principal'],
+] as const) {
+  test(`Portfolio limits use the combined observed values, not raw token quantities (${instrument})`, t => {
+    const observations = makeHoldingObservations(
+      [
+        makeHolding({
+          place: instrument,
+          kind,
+          amount: 123n,
+          valueUsd: 40_000_000n,
+          balanceUsdc: 1n,
+        }),
+        makeHolding({
+          place: instrument,
+          kind: 'claimable-reward',
+          amount: 456n,
+          valueUsd: 60_000_000n,
+          balanceUsdc: 1n,
+        }),
+      ],
+      { [instrument]: { tvlUsd: 80n } },
+    );
+    for (const balances of [{}, { [instrument]: 2n }]) {
+      const withBalances = { ...observations, balances };
+      t.notThrows(() =>
+        vetPlanAllocation({ [instrument]: 100n }, { flow: [] }, withBalances),
+      );
+      t.throws(
+        () =>
+          assertMandateForPlanObservations(
+            { allocation: { maxVaultShareBps: 10_000n } },
+            { [instrument]: 100n },
+            withBalances,
+          ),
+        { message: /mandate.maxVaultShare.*portfolio value.*100000000/ },
+      );
+    }
+    t.throws(
+      () =>
+        vetPlanAllocation(
+          { [instrument]: 100n },
+          { flow: [] },
+          { ...observations, balances: { [instrument]: 100_000_000n } },
+        ),
+      { message: /aggregate balances must match the balanceUsdc/ },
+    );
+    t.throws(
+      () =>
+        vetPlanAllocation(
+          { [instrument]: 100n },
+          { flow: [] },
+          {
+            ...observations,
+            holdings: observations.holdings!.map(holding => ({
+              ...holding,
+              valueUsd: undefined,
+            })),
+          },
+        ),
+      { message: new RegExp(`missing holding valuation.*${instrument}`) },
+    );
+  });
+}
+
 test('balance observations report all nonzero extra places together', t => {
   t.throws(
     () =>
