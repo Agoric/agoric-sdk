@@ -1153,3 +1153,43 @@ test('Ext acceptance does not enable future places at current offer boundaries',
   t.true(matches(extendedKnownPlan, shapes.planShapeExt));
   t.false(matches(extendedKnownPlan, shapes.plan));
 });
+
+test('supported plans and offers retain structural checks through Ext foundations', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const movement = {
+    src: 'Aave_Base',
+    dest: '@Base',
+    amount: usdc(1n),
+    withdraw: { amountOfShares: 0n },
+    futureMovementField: true,
+  };
+  for (const shape of [
+    shapes.plan,
+    shapes.deposit,
+    shapes.openPortfolio,
+    shapes.rebalance,
+  ]) {
+    t.true(
+      matches(harden({ flow: Array(MAX_PLAN_STEPS).fill(movement) }), shape),
+    );
+    for (const specimen of [
+      { flow: Array(MAX_PLAN_STEPS + 1).fill(movement) },
+      { flow: [{ ...movement, amount: bld.make(1n) }] },
+      { flow: [{ ...movement, withdraw: { amountOfShares: -1n } }] },
+      { flow: [{ ...movement, fee: 1n }] },
+      { flow: [{ ...movement, detail: { gas: -1n } }] },
+    ]) {
+      t.false(matches(harden(specimen), shape));
+    }
+  }
+  for (const shape of [shapes.plan, shapes.planShapeExt]) {
+    t.true(matches(harden({ flow: [movement], order: [[0, []]] }), shape));
+    for (const order of [
+      [[0, ['1']]],
+      Array(MAX_PLAN_STEPS + 1).fill([0, []]),
+      [[0, Array(MAX_PLAN_STEPS).fill(0)]],
+    ]) {
+      t.false(matches(harden({ flow: [movement], order }), shape));
+    }
+  }
+});

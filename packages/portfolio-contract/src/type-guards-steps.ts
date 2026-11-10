@@ -175,18 +175,18 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       },
     ),
   });
-  const movementDescShape = M.splitRecord(
-    { ...places, amount: amountShape },
-    optionalFields,
-    // Be robust in the face of additional properties.
-    M.record(),
-  );
   // Structural compatibility does not establish support for a future place.
   // Known amounts and withdrawal parameters use the same checks as movements.
   const movementDescShapeExt: TypedPattern<MovementDescExt> = M.splitRecord(
     { src: M.string(), dest: M.string(), amount: amountShape },
     optionalFields,
     M.record(),
+  );
+  // Reuse the extensible structure while admitting only supported places.
+  // Additional movement fields remain accepted at existing offer boundaries.
+  const movementDescShape = M.and(
+    M.splitRecord(places, {}, M.record()),
+    movementDescShapeExt,
   );
   const flowShape = M.arrayOf(movementDescShape, {
     arrayLengthLimit: MAX_PLAN_STEPS,
@@ -238,10 +238,10 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       {},
       {},
     ) as TypedPattern<OfferArgsFor['transferOwnershipToEVM']>,
-    plan: M.splitRecord(
-      { flow: flowShape },
-      { order: orderShape },
-      {},
+    plan: M.and(
+      planShapeExt,
+      // Restrict places and top-level fields without widening plan admission.
+      M.splitRecord({ flow: flowShape }, { order: orderShape }, {}),
     ) as TypedPattern<FundsFlowPlan>,
     movementDescShape: movementDescShape as TypedPattern<MovementDesc>,
     movementDescShapeExt,
