@@ -367,20 +367,13 @@ export type SwapProvider = SwapDesc['provider'];
  * ignore these options and execute the movement's amount exactly.
  *
  * The movement retains its required default-token amount (micro-USDC at dest).
- * It is a minimum when `max` is true or `amountOfShares` is present. An explicit
- * share quantity is exact unless `max` is true. Missing movement amounts,
- * negative share quantities, and unknown withdrawal options are rejected.
+ * It is a minimum when `max` is true. Missing movement amounts and unknown
+ * withdrawal options are rejected.
  * Transfers, bridges, deposits, and downstream movements retain exact amounts.
  */
 export type WithdrawParams = {
-  /** When true, MovementDesc['amount'] and amountOfShares are minima, not exact. */
+  /** When true, MovementDesc['amount'] is a minimum, not exact. */
   max?: boolean;
-  /**
-   * How many 'shares' tokens to withdraw.
-   * Without this, if the place is a Position, then
-   * `MovementDesc['amount']` refers to 'principal' tokens.
-   */
-  amountOfShares?: bigint;
 };
 
 /**
@@ -414,7 +407,7 @@ export type ClaimRewardsParams = {
 };
 
 export type MovementDesc = {
-  /** Default-token units (micro-USDC) received at dest; a minimum when withdraw.max is true or withdraw.amountOfShares is specified, otherwise exact. */
+  /** Default-token units (micro-USDC) received at dest; a minimum when withdraw.max is true, otherwise exact. */
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
