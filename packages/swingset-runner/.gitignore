@@ -9,3 +9,4 @@ vslog
 vlog
 vdump
 benchstats-*
+bundle-*.js
