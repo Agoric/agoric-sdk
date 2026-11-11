@@ -11,15 +11,23 @@ import {
 
 const address = `0x${'1'.repeat(40)}`;
 
-test('withdraw parameters accept max and reject unknown options', t => {
-  for (const params of [{}, { max: false }, { max: true }])
+test('withdraw parameters preserve omitted, false and zero values', t => {
+  for (const params of [
+    {},
+    { max: false },
+    { max: true },
+    { amountOfShares: 0n },
+    { amountOfShares: 123n },
+    { max: true, amountOfShares: 0n },
+  ])
     t.true(matches(harden(params), WithdrawParamsShape));
   for (const params of [
     { max: 'true' },
-    { amountOfShares: 0n },
     { srcKind: 'shares' },
     { srcToken: address },
     { srcAmount: 0n },
+    { amountOfShares: 1 },
+    { amountOfShares: -1n },
     { srcKind: '$ETH' },
     { srcKind: 'share' },
     { srcAmount: 1 },

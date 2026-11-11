@@ -42,7 +42,10 @@ harden(TokenUsageShape);
 /** Structural withdrawal parameters; route and holding identity need decoding. */
 export const WithdrawParamsShape: CastedPattern<WithdrawParams> = M.splitRecord(
   {},
-  { max: M.boolean() },
+  {
+    max: M.boolean(),
+    amountOfShares: M.nat(),
+  },
   {},
 );
 harden(WithdrawParamsShape);

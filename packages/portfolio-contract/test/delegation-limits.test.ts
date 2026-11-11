@@ -1639,6 +1639,8 @@ const additiveWithdrawCases: [string, WithdrawParams | undefined][] = [
   ['empty', {}],
   ['false max', { max: false }],
   ['true max', { max: true }],
+  ['source quantity', { amountOfShares: 10n ** 24n }],
+  ['source quantity minimum', { max: true, amountOfShares: 10n ** 24n }],
 ];
 
 test('A maximum withdrawal removes share exposure, not just its proceeds minimum', t => {
@@ -1935,6 +1937,16 @@ test('Maximum withdrawals cannot exceed the observed shares', t => {
       checkAllocation({ [instrument]: 100n }, { flow: [movement, movement] }),
     { message: /unfunded share withdrawal.*50/ },
   );
+  t.throws(
+    () =>
+      checkAllocation(
+        { [instrument]: 100n },
+        {
+          flow: [{ ...movement, withdraw: { max: true, amountOfShares: 51n } }],
+        },
+      ),
+    { message: /observed shares.*50.*below minimum.*51/ },
+  );
   for (const holdings of [
     [{ ...shares, kind: 'principal' as const }],
     [
@@ -2082,7 +2094,7 @@ test('withdraw options do not reserve the source or change exact downstream fund
         src: 'Aave_Base',
         dest: '@Base',
         amount: { brand: USDC, value: 50_000_000n },
-        withdraw: { max: false },
+        withdraw: { amountOfShares: 1n },
       },
     ],
   };

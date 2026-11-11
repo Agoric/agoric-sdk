@@ -279,6 +279,9 @@ const decodePlan = (
       if (valueUsd === undefined) {
         throw Fail`missing holding valuation for ${q(src)}`;
       }
+      const minimumShares = withdraw.amountOfShares ?? 0n;
+      holding.amount >= minimumShares ||
+        Fail`observed shares ${q(holding.amount)} at ${q(src)} are below minimum ${q(minimumShares)}`;
       if (holding.amount === 0n && amount.value > 0n) {
         throw Fail`empty share holding cannot meet proceeds minimum ${q(amount.value)} at ${q(src)}`;
       }

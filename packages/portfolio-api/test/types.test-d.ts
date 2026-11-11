@@ -47,8 +47,11 @@ const fullWithdrawal = { ...numericMovement, withdraw: { max: true } } as const;
 expectAssignable<WithdrawParams>({});
 expectAssignable<WithdrawParams>({ max: false });
 expectAssignable<WithdrawParams>({ max: true });
+expectAssignable<WithdrawParams>({ amountOfShares: 0n });
+expectAssignable<WithdrawParams>({ max: true, amountOfShares: 123n });
 expectNotAssignable<WithdrawParams>({ max: 'yes' });
-expectNotAssignable<WithdrawParams>({ amountOfShares: 123n });
+expectNotAssignable<WithdrawParams>({ amountOfShares: 123 });
+expectNotAssignable<WithdrawParams>({ amountOfShares: '123' });
 expectNotAssignable<WithdrawParams>({ srcKind: 'shares' });
 expectNotAssignable<WithdrawParams>({ srcToken: '0x1234' });
 expectNotAssignable<WithdrawParams>({ srcAmount: 0n });
@@ -74,7 +77,7 @@ const futureMovement = {
   src: 'FutureVault_FutureChain',
   dest: '@FutureChain',
   amount: natAmount,
-  withdraw: { max: true },
+  withdraw: { max: true, amountOfShares: 0n },
   futureField: { version: 2 },
 } as const;
 expectAssignable<MovementDescExt>(numericMovement);
@@ -98,6 +101,10 @@ expectNotAssignable<MovementDescExt>({
 expectNotAssignable<MovementDescExt>({
   ...futureMovement,
   withdraw: { srcKind: 'reward' },
+});
+expectNotAssignable<MovementDescExt>({
+  ...futureMovement,
+  withdraw: { amountOfShares: 1 },
 });
 expectAssignable<FundsFlowPlanExt>({
   flow: [numericMovement, fullWithdrawal, futureMovement],
