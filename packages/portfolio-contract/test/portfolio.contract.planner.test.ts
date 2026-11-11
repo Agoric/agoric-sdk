@@ -427,20 +427,22 @@ test('legacy Rebalance invitation waits for the planner, like SimpleRebalance', 
   t.deepEqual(after.flowsRunning, {}, 'the completed offer releases its flow');
 });
 
-test('legacy Rebalance invitation rejects offers that give or want funds', async t => {
+test('Rebalance and SimpleRebalance reject offers that give or want funds', async t => {
   const { common, trader1, planner1 } = await setupPlanner(t);
   const { usdc } = common.brands;
   await planner1.redeem();
   await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
 
   const amount = usdc.units(100);
-  for (const proposal of [
-    { give: { Deposit: amount }, want: {} },
-    { give: {}, want: { Cash: amount } },
-  ] as ProposalType['rebalance'][]) {
-    await t.throwsAsync(trader1.rebalance(t, proposal, {}), {
-      message: /use Deposit or Withdraw/,
-    });
+  for (const offer of [trader1.rebalance, trader1.simpleRebalance]) {
+    for (const proposal of [
+      { give: { Deposit: amount }, want: {} },
+      { give: {}, want: { Cash: amount } },
+    ] as ProposalType['rebalance'][]) {
+      await t.throwsAsync(offer(t, proposal, {}), {
+        message: /use Deposit or Withdraw/,
+      });
+    }
   }
   const after = await trader1.getPortfolioStatus();
   t.deepEqual(after.flowsRunning, {}, 'no offer started a flow');
