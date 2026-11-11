@@ -583,6 +583,77 @@ test('allocation operation rejects a plan over its target ceiling', t => {
   );
 });
 
+test('allocation plan cannot reach an instrument through another chain account', t => {
+  // AGO-1656: a step runs on its account's chain, so `@Base -> Aave_Arbitrum`
+  // would supply Aave on Base, which the owner did not allow, while every
+  // mandate check values the declared Aave_Arbitrum.
+  const permissions = harden({ allocation: { maxWeightBps: 2_000n } });
+  const aave = ['Arbitrum', 'Avalanche', 'Optimism', 'Ethereum'] as const;
+  const targetAllocation: TargetAllocation = {
+    '@Base': 20n,
+    ...Object.fromEntries(aave.map(chain => [`Aave_${chain}`, 20n])),
+  };
+  const observations: PlanObservations = harden({
+    balances: {
+      '@Base': 100_000_000n,
+      ...Object.fromEntries(
+        aave.flatMap(chain => [
+          [`Aave_${chain}`, 0n],
+          [`@${chain}`, 0n],
+        ]),
+      ),
+    },
+    instrumentTvls: {},
+  });
+  const move = (src: AssetPlaceRef, dest: AssetPlaceRef) => ({
+    src,
+    dest,
+    amount: { brand: USDC, value: 20_000_000n },
+  });
+
+  t.throws(
+    () =>
+      vetAllocationPlan(
+        permissions,
+        targetAllocation,
+        { flow: [move('@Base', 'Aave_Arbitrum')] },
+        observations,
+      ),
+    { message: 'pool "Aave_Arbitrum" lives on "Arbitrum", not "Base"' },
+    'one deposit into the unapproved Aave_Base',
+  );
+  t.throws(
+    () =>
+      vetAllocationPlan(
+        permissions,
+        harden({ ...targetAllocation, '@Base': 0n, Aave_Base: 20n }),
+        { flow: aave.map(chain => move('@Base', `Aave_${chain}`)) },
+        harden({
+          ...observations,
+          balances: { ...observations.balances, Aave_Base: 0n },
+        }),
+      ),
+    { message: /pool "Aave_Arbitrum" lives on "Arbitrum", not "Base"/ },
+    'four 20% deposits concentrated into Aave_Base',
+  );
+
+  t.notThrows(
+    () =>
+      vetAllocationPlan(
+        permissions,
+        targetAllocation,
+        {
+          flow: [
+            { ...move('@Base', '@Arbitrum'), detail: { cctpVersion: 2n } },
+            move('@Arbitrum', 'Aave_Arbitrum'),
+          ],
+        },
+        observations,
+      ),
+    'same-chain deposit after moving the cash',
+  );
+});
+
 test('allocation operation rejects attested TVL below its mandate', t => {
   const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
   const observations: PlanObservations = {
@@ -780,7 +851,7 @@ test('plan allocation rejects transient disallowed positions', t => {
       },
       {
         src: 'USDN',
-        dest: '@Arbitrum',
+        dest: '@noble',
         amount: { brand: USDC, value: 20n },
       },
     ],
