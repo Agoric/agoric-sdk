@@ -85,6 +85,52 @@ const noMinChainRecords = plannerContext.network.chains.map(chain => ({
 
 const emptyPlan = harden({ flow: [], order: undefined });
 
+for (const op of ['deposit', 'rebalance', 'withdraw'] as const) {
+  test(`${op} planning withdraws at most 90% of instrument liquidity`, async t => {
+    const details = {
+      ...plannerContext,
+      currentBalances: {
+        Aave_Ethereum: makeDeposit(scale6(100)),
+        Compound_Ethereum: makeDeposit(scale6(100)),
+      },
+      targetAllocation: { Aave_Ethereum: 0n, Compound_Ethereum: 1n },
+      instrumentLiquidity: { Aave_Ethereum: scale6(10) },
+    };
+    const plan = await {
+      deposit: () =>
+        planDepositToAllocations({
+          ...details,
+          amount: makeDeposit(scale6(20)),
+          fromChain: 'Ethereum',
+        }),
+      rebalance: () => planRebalanceToAllocations(details),
+      withdraw: () =>
+        planWithdrawFromAllocations({
+          ...details,
+          amount: makeDeposit(scale6(50)),
+          toChain: 'Ethereum',
+        }),
+    }[op]();
+    const withdrawals = plan.flow.filter(m => m.src === 'Aave_Ethereum');
+    arrayIsLike(t, withdrawals, [{ amount: { value: scale6(9) } }]);
+    if (op === 'withdraw') {
+      t.like(
+        plan.flow.find(m => m.src === 'Compound_Ethereum'),
+        { amount: { value: scale6(41) } },
+      );
+      t.like(
+        plan.flow.find(m => m.dest === '-Ethereum'),
+        { amount: { value: scale6(50) } },
+      );
+    } else {
+      t.like(
+        plan.flow.find(m => m.dest === 'Compound_Ethereum'),
+        { amount: { value: scale6(op === 'deposit' ? 29 : 9) } },
+      );
+    }
+  });
+}
+
 const makeMovementDesc = (
   src: AssetPlaceRef,
   dest: AssetPlaceRef,
