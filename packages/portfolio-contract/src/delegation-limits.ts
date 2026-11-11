@@ -196,6 +196,7 @@ harden(vetNoSwaps);
  * boundary instead of independently interpreting optional movement fields.
  * Preserve extensibility at the wire boundary; reject unsupported semantics
  * before producing a closed internal operation.
+ * XXX `debitValueUsd` is in 1e-6 USD despite its name.
  */
 type PlanOperation =
   | {
