@@ -1977,10 +1977,13 @@ test('owner rebalances may start while a delegated or owner flow is running', as
     sourceAccountId: 'eip155:42161:0x4545454545454545454545454545454545454545',
   });
   const agoricKit = makePortfolioKit({ portfolioId: 2 });
+  const emptySeat = Far('Seat', {
+    getProposal: () => harden({ give: {}, want: {} }),
+  }) as unknown as ZCFSeat;
   const ownerRebalances = [
     () => evmKit.evmHandler.rebalance([{ instrument: 'USDN', portion: 75n }]),
     () =>
-      agoricKit.simpleRebalanceHandler.handle({} as any, {
+      agoricKit.simpleRebalanceHandler.handle(emptySeat, {
         targetAllocation: { USDN: 50n },
       }),
   ];
