@@ -80,3 +80,176 @@ test('computeTargetBalances network can statically unblock instruments', t => {
   });
   t.deepEqual(target, { Aave_Ethereum: half, Compound_Ethereum: half });
 });
+
+for (const balanceDelta of [0n, scale6(20), -scale6(50)]) {
+  test(`liquidity caps redistribute targets for balanceDelta ${balanceDelta}`, t => {
+    const amt = makeAmount(scale6(100));
+    const targets = computeTargetBalances({
+      brand,
+      currentBalances: { Aave_Ethereum: amt, Compound_Ethereum: amt },
+      targetAllocation: { Aave_Ethereum: 0n, Compound_Ethereum: 1n },
+      balanceDelta,
+      network: tinyNetwork,
+      instrumentLiquidity: { Aave_Ethereum: scale6(10) },
+      withdrawalLiquidityLimitBps: 9_000n, // 90%
+    });
+    t.deepEqual(targets, {
+      Aave_Ethereum: makeAmount(scale6(91)),
+      Compound_Ethereum: makeAmount(scale6(109) + balanceDelta),
+    });
+  });
+}
+
+test('liquidity caps cascade to other sources and round withdrawals down', t => {
+  const amt = makeAmount(scale6(100));
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances: { Aave_Ethereum: amt, Compound_Ethereum: amt },
+    balanceDelta: -scale6(50),
+    network: tinyNetwork,
+    instrumentLiquidity: { Aave_Ethereum: scale6(10) + 1n },
+    withdrawalLiquidityLimitBps: 9_000n, // 90%
+  });
+  t.deepEqual(targets, {
+    Aave_Ethereum: makeAmount(scale6(91)),
+    Compound_Ethereum: makeAmount(scale6(59)),
+  });
+});
+
+test('withdrawal fallback respects liquidity caps below the soft minimum', t => {
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances: {
+      Aave_Ethereum: makeAmount(scale6(0.8)),
+      Compound_Ethereum: makeAmount(scale6(0.7)),
+    },
+    balanceDelta: -scale6(0.6),
+    network: tinyNetwork,
+    instrumentLiquidity: { Aave_Ethereum: scale6(0.2) },
+    withdrawalLiquidityLimitBps: 5_000n, // 50%
+  });
+  t.deepEqual(targets, {
+    Aave_Ethereum: makeAmount(scale6(0.7)),
+    Compound_Ethereum: makeAmount(scale6(0.2)),
+  });
+});
+
+test('insufficient liquidity never produces an over-limit withdrawal', t => {
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances: { Aave_Ethereum: amount, Compound_Ethereum: amount },
+    balanceDelta: -half.value,
+    network: tinyNetwork,
+    instrumentLiquidity: { Aave_Ethereum: 0n, Compound_Ethereum: scale6(10) },
+    withdrawalLiquidityLimitBps: 9_000n,
+  });
+  t.deepEqual(targets, {});
+});
+
+test('liquidity limits do not cap hub withdrawals or instruments without data', t => {
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances: { '@Ethereum': amount, Aave_Ethereum: amount },
+    targetAllocation: { Compound_Ethereum: 1n },
+    network: tinyNetwork,
+    instrumentLiquidity: { '@Ethereum': 0n },
+    withdrawalLiquidityLimitBps: 9_000n,
+  });
+  t.deepEqual(targets, {
+    '@Ethereum': makeAmount(0n),
+    Aave_Ethereum: makeAmount(0n),
+    Compound_Ethereum: makeAmount(amount.value + amount.value),
+  });
+});
+
+test('liquidity-limited sources leave blocked deposits at their source hub', t => {
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances: { Aave_Ethereum: makeAmount(scale6(100)) },
+    targetAllocation: { Compound_Ethereum: 1n },
+    network: tinyNetwork,
+    instrumentLiquidity: { Aave_Ethereum: scale6(10) },
+    withdrawalLiquidityLimitBps: 9_000n,
+    instrumentBlocks: {
+      noDepositInstruments: new Set(['Compound_Ethereum']),
+      noWithdrawInstruments: new Set(),
+    },
+  });
+  t.deepEqual(targets, {
+    Aave_Ethereum: makeAmount(scale6(91)),
+    '@Ethereum': makeAmount(scale6(9)),
+  });
+});
+
+test('liquidity-capped movements still respect the chain soft minimum', t => {
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances: { Aave_Ethereum: makeAmount(scale6(100)) },
+    targetAllocation: { Compound_Ethereum: 1n },
+    network: tinyNetwork,
+    instrumentLiquidity: { Aave_Ethereum: scale6(0.5) },
+    withdrawalLiquidityLimitBps: 9_000n,
+  });
+  t.deepEqual(targets, {});
+});
+
+const twoChainNetwork: NetworkSpec = harden({
+  localPlaces: [],
+  chains: [
+    { name: 'Base', control: 'axelar' },
+    { name: 'Ethereum', control: 'axelar' },
+  ],
+  pools: [
+    { pool: 'Aave_Base', chain: 'Base', protocol: 'Aave' },
+    { pool: 'Aave_Ethereum', chain: 'Ethereum', protocol: 'Aave' },
+  ],
+  links: [
+    ...(['Base', 'Ethereum'] as const).map(src => ({
+      src: `@${src}` as const,
+      dest: `@${src === 'Base' ? 'Ethereum' : 'Base'}` as const,
+      transfer: 'cctpV2' as const,
+      variableFeeBps: 0,
+      timeSec: 60,
+      min: scale6(1),
+    })),
+  ],
+});
+
+const netChangeOf = (
+  current: Record<string, { value: bigint }>,
+  targets: Record<string, { value: bigint } | undefined>,
+) =>
+  Object.entries(targets).reduce(
+    (acc, [place, a]) => acc + a!.value - (current[place]?.value ?? 0n),
+    0n,
+  );
+
+{
+  const currentBalances = {
+    Aave_Base: makeAmount(scale6(1)),
+    Aave_Ethereum: makeAmount(scale6(1)),
+    '@Ethereum': makeAmount(scale6(0.5)),
+  };
+  const cases = {
+    'zero liquidity': { instrumentLiquidity: { Aave_Base: 0n } },
+    'withdraw-blocked': {
+      instrumentBlocks: {
+        noDepositInstruments: new Set<never>(),
+        noWithdrawInstruments: new Set(['Aave_Base' as const]),
+      },
+    },
+  };
+  for (const [title, opts] of Object.entries(cases)) {
+    test(`claims into a suppressed hub preserve the total (${title})`, t => {
+      const targets = computeTargetBalances({
+        brand,
+        currentBalances,
+        targetAllocation: { '@Base': 1n },
+        balanceDelta: -scale6(0.1),
+        network: twoChainNetwork,
+        ...opts,
+      });
+      t.is(netChangeOf(currentBalances, targets), -scale6(0.1));
+    });
+  }
+}

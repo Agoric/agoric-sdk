@@ -47,7 +47,11 @@ import {
   type GasStateWindowDuration,
   type GasStateWindowMetric,
 } from './gas-estimation.ts';
-import type { InstrumentBlocks } from './instrument-status.ts';
+import type {
+  InstrumentBlocks,
+  InstrumentLiquidity,
+} from './instrument-status.ts';
+import { WITHDRAWAL_LIQUIDITY_LIMIT_BPS } from './instrument-status.ts';
 import { fetchMerklRewardsInfo } from './merkl.ts';
 import { fetchOneInchSwapInfo } from './oneinch.ts';
 import { UserInputError } from './support.ts';
@@ -353,6 +357,7 @@ export type AutoPowers = {
   getWalletInvocationUpdate: (messageId: string | number) => Promise<unknown>;
   inspectForStdout: (obj: unknown, options?: InspectOptions) => string;
   instrumentBlocks?: InstrumentBlocks;
+  instrumentLiquidity?: InstrumentLiquidity;
   isDryRun?: boolean;
   makeNonce: () => string;
   network: NetworkSpec;
@@ -367,6 +372,7 @@ export type AutoPowers = {
     targetAllocation: StatusFor['portfolio']['targetAllocation'];
     network: NetworkSpec;
     instrumentBlocks?: InstrumentBlocks;
+    instrumentLiquidity?: InstrumentLiquidity;
     brand: Brand<'nat'>;
     feeBrand: Brand<'nat'>;
     gasEstimator: GasEstimator;
@@ -696,6 +702,7 @@ export const maybeAutoRebalance = async (
     getWalletInvocationUpdate,
     inspectForStdout,
     instrumentBlocks,
+    instrumentLiquidity,
     isDryRun,
     makeNonce,
     network,
@@ -728,6 +735,8 @@ export const maybeAutoRebalance = async (
     network,
     targetAllocation,
     instrumentBlocks,
+    instrumentLiquidity,
+    withdrawalLiquidityLimitBps: WITHDRAWAL_LIQUIDITY_LIMIT_BPS,
   };
   const plannerContext = {
     ...logContext,

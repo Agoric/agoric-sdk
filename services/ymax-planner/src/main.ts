@@ -46,6 +46,7 @@ import { startEngine } from './engine.ts';
 import type { ChainGasState } from './gas-estimation.ts';
 import {
   calculateInstrumentBlocks,
+  extractInstrumentLiquidity,
   extractInstrumentTvls,
 } from './instrument-status.ts';
 import type {
@@ -454,7 +455,11 @@ export const main = async (
         }
         lastInstrumentBlocksString = newBlocksString;
 
-        return { blocks: instrumentBlocks, tvls };
+        return {
+          blocks: instrumentBlocks,
+          liquidity: extractInstrumentLiquidity(instruments),
+          tvls,
+        };
       }
     : undefined;
 

@@ -82,8 +82,10 @@ import type { ChainGasState } from './gas-estimation.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type {
   InstrumentBlocks,
+  InstrumentLiquidity,
   InstrumentSnapshot,
 } from './instrument-status.ts';
+import { WITHDRAWAL_LIQUIDITY_LIMIT_BPS } from './instrument-status.ts';
 import type {
   EvmChain,
   EvmContext,
@@ -295,6 +297,7 @@ export type ProcessPortfolioPowers = Pick<
   exchangeRates?: RewardTokenRate[];
   gasCosts?: ChainGasState[];
   instrumentBlocks?: InstrumentBlocks;
+  instrumentLiquidity?: InstrumentLiquidity;
   instrumentTvls: PlanObservations['instrumentTvls'];
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
@@ -376,6 +379,7 @@ export const processPortfolioEvents = async (
     exchangeRates,
     gasCosts,
     instrumentBlocks,
+    instrumentLiquidity,
     instrumentTvls,
     signingSmartWalletKit,
     walletStore,
@@ -526,6 +530,7 @@ export const processPortfolioEvents = async (
       amount: flowDetail.amount,
       network,
       instrumentBlocks,
+      instrumentLiquidity,
       brand: depositBrand,
       feeBrand,
       gasEstimator,
@@ -614,6 +619,7 @@ export const processPortfolioEvents = async (
     getWalletInvocationUpdate,
     inspectForStdout,
     instrumentBlocks,
+    instrumentLiquidity,
     isDryRun,
     makeNonce,
     network,
@@ -682,6 +688,8 @@ export const processPortfolioEvents = async (
         network,
         targetAllocation,
         instrumentBlocks,
+        instrumentLiquidity,
+        withdrawalLiquidityLimitBps: WITHDRAWAL_LIQUIDITY_LIMIT_BPS,
       }),
     };
     const rebalanceDetail = checkAutoRebalance(
@@ -1164,6 +1172,7 @@ export const startEngine = async (
       exchangeRates,
       gasCosts,
       instrumentBlocks: instrumentSnapshot?.blocks,
+      instrumentLiquidity: instrumentSnapshot?.liquidity,
       instrumentTvls: instrumentSnapshot?.tvls ?? {},
     };
   };
