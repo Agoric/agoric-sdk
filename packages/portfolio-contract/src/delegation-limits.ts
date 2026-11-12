@@ -52,13 +52,13 @@ const sumPortions = (targetAllocation: TargetAllocation): bigint =>
 /**
  * Sum observed values by portfolio location, in micro-USD.
  * These values measure exposure; they do not establish spendable quantities.
- * Legacy micro-USDC balances retain their existing one-for-one USD valuation.
  */
-const sumValueUsdByPlace = (
+const sumValueMicroUsdByPlace = (
   observations: PlanObservations,
 ): Map<PortfolioBalancePlaceRef, bigint> => {
   const { holdings, balances } = observations;
   if (!holdings?.length) {
+    // Legacy micro-USDC balances are treated as micro-USD at parity.
     return new Map(
       entries(balances).map(([place, balance]) => [
         place as PortfolioBalancePlaceRef,
@@ -82,12 +82,10 @@ const sumValueUsdByPlace = (
   }
   // Transitional balances repeat the signed legacy fields; never count both.
   const given = entries(balances).filter(([, value]) => value !== undefined);
-  if (
-    given.length > 0 &&
-    (given.length !== legacyBalances.size ||
-      given.some(([place, value]) => legacyBalances.get(place) !== value))
-  ) {
-    throw Fail`aggregate balances must match the balanceUsdc of observed holdings`;
+  if (given.length > 0) {
+    (given.length === legacyBalances.size &&
+      given.every(([place, value]) => legacyBalances.get(place) === value)) ||
+      Fail`aggregate balances must match the balanceUsdc of observed holdings`;
   }
   return result;
 };
@@ -135,7 +133,7 @@ export const assertMandateForPlanObservations = (
   const portfolioValueMicroUsd =
     maxVaultShareBps === undefined
       ? 0n
-      : sumOptionalBigints([...sumValueUsdByPlace(observations).values()]);
+      : sumOptionalBigints([...sumValueMicroUsdByPlace(observations).values()]);
 
   for (const [instrument, portion = 0n] of entries(targetAllocation)) {
     if (isInterChainAccountRef(instrument) || portion === 0n) continue;
@@ -196,7 +194,6 @@ harden(vetNoSwaps);
  * boundary instead of independently interpreting optional movement fields.
  * Preserve extensibility at the wire boundary; reject unsupported semantics
  * before producing a closed internal operation.
- * XXX `debitValueUsd` is in 1e-6 USD despite its name.
  */
 type PlanOperation =
   | {
@@ -204,7 +201,7 @@ type PlanOperation =
       src: PortfolioBalancePlaceRef;
       dest: PortfolioBalancePlaceRef;
       amount: MovementDesc['amount'];
-      debitValueUsd: bigint;
+      debitValueMicroUsd: bigint;
     }
   | {
       kind: 'redeemShares';
@@ -212,8 +209,8 @@ type PlanOperation =
       dest: InterChainAccountRef;
       /** Minimum destination quantity, not the quantity removed from src. */
       amount: MovementDesc['amount'];
-      /** USD exposure removed from the source, independent of the minimum. */
-      debitValueUsd: bigint;
+      /** Micro-USD exposure removed from the source, independent of proceeds. */
+      debitValueMicroUsd: bigint;
       holding: TypedHoldingDetail & { valueUsd: bigint };
       shares: bigint;
     }
@@ -297,14 +294,20 @@ const decodePlan = (
         dest,
         amount,
         // Round down so the remaining source exposure is not understated.
-        debitValueUsd:
+        debitValueMicroUsd:
           holding.amount === 0n ? 0n : (valueUsd * shares) / holding.amount,
         holding: { ...holding, valueUsd },
         shares,
       };
     }
     if (!claimRewards) {
-      return { kind: 'move', src, dest, amount, debitValueUsd: amount.value };
+      return {
+        kind: 'move',
+        src,
+        dest,
+        amount,
+        debitValueMicroUsd: amount.value,
+      };
     }
 
     if (
@@ -460,7 +463,7 @@ const vetPartialPlanAllocation = (
   plan: DecodedPlan,
   observations: PlanObservations,
 ) => {
-  const initialBalances = sumValueUsdByPlace(observations);
+  const initialBalances = sumValueMicroUsdByPlace(observations);
   const totalBalance = sumOptionalBigints([...initialBalances.values()]);
   const totalPortions = sumPortions(targetAllocation);
   const { flow } = plan;
@@ -486,7 +489,7 @@ const vetPartialPlanAllocation = (
         if (movement.kind === 'claimRewards') return 0n;
         const { src, dest, amount } = movement;
         if (dest === place) return amount.value;
-        if (src === place) return -movement.debitValueUsd;
+        if (src === place) return -movement.debitValueMicroUsd;
         return 0n;
       },
       index => [...(dependencies.get(index) ?? [])],
@@ -515,7 +518,7 @@ const projectPlanBalances = (
   observations: PlanObservations,
   getUsdcAddress?: GetUsdcAddress,
 ): Map<string, bigint> => {
-  const balances = sumValueUsdByPlace(observations);
+  const balances = sumValueMicroUsdByPlace(observations);
   const remainingCash = new Map<InterChainAccountRef, bigint>();
   if (observations.holdings?.length) {
     for (const movement of plan.flow) {
@@ -573,8 +576,8 @@ const projectPlanBalances = (
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;
-      const { src, debitValueUsd } = movement;
-      debits.set(src, (debits.get(src) ?? 0n) + debitValueUsd);
+      const { src, debitValueMicroUsd } = movement;
+      debits.set(src, (debits.get(src) ?? 0n) + debitValueMicroUsd);
       if (movement.kind === 'redeemShares') {
         shareDebits.set(
           movement.src,
@@ -601,8 +604,8 @@ const projectPlanBalances = (
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;
-      const { src, dest, amount, debitValueUsd } = movement;
-      balances.set(src, (balances.get(src) ?? 0n) - debitValueUsd);
+      const { src, dest, amount, debitValueMicroUsd } = movement;
+      balances.set(src, (balances.get(src) ?? 0n) - debitValueMicroUsd);
       balances.set(dest, (balances.get(dest) ?? 0n) + amount.value);
       if (isInterChainAccountRef(src) && remainingCash.has(src)) {
         remainingCash.set(src, remainingCash.get(src)! - amount.value);

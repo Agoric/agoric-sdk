@@ -27,22 +27,22 @@ import { makeSchedule } from '../src/schedule-order.ts';
 const { brand: USDC } = makeIssuerKit('USDC');
 
 const holdingTokens = {
-  vault: '0x0000000000000000000000000000000000000001',
-  usdc: '0x0000000000000000000000000000000000000002',
-  reward: '0x0000000000000000000000000000000000000003',
-  otherVault: '0x0000000000000000000000000000000000000004',
+  vault: `0x${'1'.repeat(40)}`,
+  usdc: `0x${'2'.repeat(40)}`,
+  reward: `0x${'3'.repeat(40)}`,
+  otherVault: `0x${'4'.repeat(40)}`,
 } as const;
 
 const makeHolding = (
   detail: Omit<TypedHoldingDetail, 'tokenAddress'>,
 ): TypedHoldingDetail => ({
+  ...detail,
   tokenAddress:
     detail.kind === 'shares'
       ? holdingTokens.vault
       : detail.kind === 'claimable-reward'
         ? holdingTokens.reward
         : holdingTokens.usdc,
-  ...detail,
 });
 
 const makeHoldingObservations = (
