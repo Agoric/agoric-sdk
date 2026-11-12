@@ -34,6 +34,7 @@ import {
 } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
+import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { Fail, q, X } from '@endo/errors';
 import { makeEvmAbiCallBatch, makeEvmContract } from './evm-facade.ts';
 import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
@@ -54,6 +55,7 @@ import {
   tokenMessengerABI,
   tokenMessengerV2ABI,
 } from './interfaces/token-messenger.ts';
+import { universalRouterABI } from './interfaces/universal-router.ts';
 import { walletHelperABI } from './interfaces/wallet-helper.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -118,6 +120,8 @@ export type GMPCallContext = EVMContext & {
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
+
+const MAX_UINT256 = 2n ** 256n - 1n;
 
 export const sendGMPContractCall: typeof sendLegacyGMPContractCall = async (
   ctx,
@@ -499,6 +503,33 @@ export const swapRewardToStable = async (
 };
 harden(swapRewardToStable);
 
+const BALANCE_CHECK_ERC20 = '0x0e' as const;
+
+const addMinimumBalanceCheck = (
+  session: ReturnType<typeof makeEvmAbiCallBatch>,
+  ctx: EVMContext,
+  owner: `0x${string}`,
+  token: `0x${string}`,
+  minimum: bigint,
+) => {
+  if (minimum === 0n) return;
+  const router =
+    ctx.addresses.universalRouter ||
+    Fail`Universal Router not configured for minimum withdrawal`;
+  const universalRouter = session.makeContract(router, universalRouterABI);
+  // No allow-revert bit: the whole batch fails.
+  universalRouter.execute(BALANCE_CHECK_ERC20, [
+    encodeAbiParameters(
+      [
+        { type: 'address', name: 'owner' },
+        { type: 'address', name: 'token' },
+        { type: 'uint256', name: 'minBalance' },
+      ],
+      [owner, token, minimum],
+    ),
+  ]);
+};
+
 export const AaveProtocol = {
   protocol: 'Aave',
   chains: keys(AxelarChain) as AxelarChain[],
@@ -525,6 +556,20 @@ export const AaveProtocol = {
     const calls = session.finish();
 
     return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
+  },
+  withdrawMax: async (ctx, minimumProceeds, dest, ...optsArgs) => {
+    const { addresses: a } = ctx;
+    const session = makeEvmAbiCallBatch();
+    addMinimumBalanceCheck(
+      session,
+      ctx,
+      dest.remoteAddress,
+      a.aaveUSDC,
+      minimumProceeds,
+    );
+    const aave = session.makeContract(a.aavePool, aavePoolABI);
+    aave.withdraw(a.usdc, MAX_UINT256, dest.remoteAddress);
+    return sendGMPContractCall(ctx, dest, session.finish(), ...optsArgs);
   },
   claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
     const { addresses: a } = ctx;
@@ -571,6 +616,20 @@ export const CompoundProtocol = {
 
     return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
+  withdrawMax: async (ctx, minimumProceeds, dest, ...optsArgs) => {
+    const { addresses: a } = ctx;
+    const session = makeEvmAbiCallBatch();
+    addMinimumBalanceCheck(
+      session,
+      ctx,
+      dest.remoteAddress,
+      a.compound,
+      minimumProceeds,
+    );
+    const compound = session.makeContract(a.compound, compoundABI);
+    compound.withdraw(a.usdc, MAX_UINT256);
+    return sendGMPContractCall(ctx, dest, session.finish(), ...optsArgs);
+  },
   claimRewards: async (ctx, dest, _claimParams, ...optsArgs) => {
     const { addresses: a } = ctx;
     const session = makeEvmAbiCallBatch();
@@ -610,10 +669,8 @@ export const BeefyProtocol = {
       assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
     const vault = session.makeContract(vaultAddress, beefyVaultABI);
     const walletHelper = session.makeContract(a.walletHelper, walletHelperABI);
-    // Max possible value for approval
-    const maxUint256 = 2n ** 256n - 1n;
     // Give infinite approval because we dont know the exact amount the helper will withdraw
-    vault.approve(a.walletHelper, maxUint256);
+    vault.approve(a.walletHelper, MAX_UINT256);
     walletHelper.beefyWithdrawUSDC(vaultAddress, amount.value);
     vault.approve(a.walletHelper, 0n);
     const calls = session.finish();

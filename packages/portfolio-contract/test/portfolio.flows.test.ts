@@ -9,7 +9,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { GuestInterface } from '@agoric/async-flow';
 import { AmountMath, type NatAmount } from '@agoric/ertp';
-import { makeTracer, mustMatch } from '@agoric/internal';
+import { makeTracer, mustMatch, typedEntries } from '@agoric/internal';
 import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -19,6 +19,8 @@ import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   decodeFunctionData,
+  decodeAbiParameters,
+  parseAbiParameters,
   getAbiItem,
   getAddress,
   toFunctionSelector,
@@ -46,12 +48,15 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'abitype';
 import type { Assertions } from 'ava';
+import { aavePoolABI } from '../src/interfaces/aave.ts';
+import { compoundABI } from '../src/interfaces/compound.ts';
 import { erc20ABI } from '../src/interfaces/erc20.ts';
 import {
   bundler3ABI,
   generalAdapter1ABI,
 } from '../src/interfaces/morpho-bundler3.ts';
 import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
+import { universalRouterABI } from '../src/interfaces/universal-router.ts';
 import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
@@ -269,7 +274,9 @@ const makeShareWithdrawalCase = ({
   return { step1, options };
 };
 
-const makeFullExitCase = async () => {
+const makeFullExitCase = async (
+  principal?: 'Aave_Ethereum' | 'Compound_Ethereum',
+) => {
   const { orch, ctx, offer, txResolver, resolverService, storage } = mocks(
     {},
     { Deposit: make(USDC, 1_000_000n) },
@@ -300,6 +307,23 @@ const makeFullExitCase = async () => {
       minimumProceeds,
       observedShares,
     });
+    if (principal) {
+      step1.src = principal;
+      const protocolAddress =
+        principal === 'Aave_Ethereum'
+          ? contractsMock.Ethereum.aavePool
+          : contractsMock.Ethereum.compound;
+      options.boundSteps = {
+        0: {
+          kind: 'withdrawMax',
+          src: principal,
+          protocolAddress,
+          tokenAddress: contractsMock.Ethereum.usdc,
+          amount: observedShares,
+          ...(minimumProceeds > 0n && { minimumProceeds }),
+        },
+      };
+    }
     return executePlan(
       orch,
       ctx,
@@ -5070,3 +5094,113 @@ test('A positive redemption minimum is checked in the remote account batch', asy
   ]);
   t.is(redeem.args?.[3], redeem.args?.[4]);
 });
+
+const principalFullExits = {
+  Aave_Ethereum: {
+    token: contractsMock.Ethereum.aaveUSDC,
+    protocolAddress: contractsMock.Ethereum.aavePool,
+    abi: aavePoolABI,
+    getArgs: owner => [
+      getAddress(contractsMock.Ethereum.usdc),
+      2n ** 256n - 1n,
+      owner,
+    ],
+  },
+  Compound_Ethereum: {
+    token: contractsMock.Ethereum.compound,
+    protocolAddress: contractsMock.Ethereum.compound,
+    abi: compoundABI,
+    getArgs: _owner => [
+      getAddress(contractsMock.Ethereum.usdc),
+      2n ** 256n - 1n,
+    ],
+  },
+};
+for (const [src, expectations] of typedEntries(principalFullExits)) {
+  test(`${src} guarded full withdrawal batches balance check before max`, async t => {
+    const { executeExit, txResolver, log } = await makeFullExitCase(src);
+    const done = executeExit({ observedShares: 100n, minimumProceeds: 99n });
+    await txResolver.drainPending();
+    await done;
+    const memo = log.findLast(
+      ({ _method, opts }) =>
+        _method === 'transfer' && typeof opts?.memo === 'string',
+    )?.opts?.memo;
+    t.truthy(memo);
+    const { calls } = decodeMultiCalls(memo!);
+    t.is(calls.length, 2);
+    t.is(
+      calls[0].target.toLowerCase(),
+      contractsMock.Ethereum.universalRouter.toLowerCase(),
+    );
+    const check = decodeFunctionData({
+      abi: universalRouterABI,
+      data: calls[0].data,
+    });
+    t.is(check.functionName, 'execute');
+    const [commands, inputs] = check.args;
+    t.is(commands, '0x0e', 'BALANCE_CHECK_ERC20');
+    const [owner, token, minimum] = decodeAbiParameters(
+      parseAbiParameters('address, address, uint256'),
+      inputs[0],
+    );
+    t.is(token.toLowerCase(), expectations.token.toLowerCase());
+    t.is(minimum, 99n);
+    t.is(
+      calls[1].target.toLowerCase(),
+      expectations.protocolAddress.toLowerCase(),
+    );
+    const withdrawal = decodeFunctionData({
+      abi: expectations.abi,
+      data: calls[1].data,
+    });
+    t.is(withdrawal.functionName, 'withdraw');
+    t.deepEqual(withdrawal.args, expectations.getArgs(owner));
+  });
+
+  test(`${src} empty full withdrawal completes with no transaction`, async t => {
+    const { executeExit, log } = await makeFullExitCase(src);
+    await executeExit({ observedShares: 0n });
+    t.false(log.some(({ _method }) => _method === 'transfer'));
+  });
+
+  test(`${src} rejects mismatched bound minimum before sending`, async t => {
+    const { orch, ctx, offer } = mocks();
+    const kit = await ctx.makePortfolioKit();
+    const move: MovementDesc = {
+      src,
+      dest: '@Ethereum',
+      amount: make(USDC, 2n),
+      fee: make(BLD, 100n),
+      withdraw: { max: true },
+    };
+    const bound = {
+      kind: 'withdrawMax' as const,
+      src,
+      tokenAddress: contractsMock.Ethereum.usdc,
+      protocolAddress: expectations.protocolAddress,
+      amount: 100n,
+      minimumProceeds: 1n,
+    };
+    for (const change of [
+      {},
+      { minimumProceeds: 2n, tokenAddress: vaults.replacement.address },
+    ]) {
+      await t.throwsAsync(
+        executePlan(
+          orch,
+          ctx,
+          offer.seat,
+          { flow: [move] },
+          kit,
+          { type: 'rebalance' },
+          undefined,
+          DEFAULT_FLOW_CONFIG,
+          { boundSteps: { 0: { ...bound, ...change } } },
+        ),
+        { message: /principal withdrawal (evidence|configuration)/ },
+      );
+    }
+    t.false(offer.log.some(({ _method }) => _method === 'transfer'));
+  });
+}

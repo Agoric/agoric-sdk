@@ -207,3 +207,41 @@ partial withdrawal. An empty position with a zero minimum succeeds without a
 funds-moving transaction. Matching arrows alone does not prove ABI encoding, accounting, or
 recovery; wrapper and flow tests must cover those paths across the supported
 protocols and versions.
+
+## Aave and Compound full withdrawals
+
+Delegated plans can also use `withdraw: { max: true }` from an Aave or
+Compound position to its own chain account. The signed observations must contain
+exactly one `principal` holding for that source, identifying the configured USDC
+token, with `valueUusd === amount`. Balance-only legacy observations cannot
+authorize `max` from any source.
+
+The movement's `amount.value` is the minimum USDC proceeds. Validation debits
+the observed principal quantity from projected source exposure and credits only
+the minimum to spendable cash. A dependent redeployment may spend that minimum;
+it cannot rely on additional yield. Repeated withdrawals cannot reuse the same
+observed principal, even when separated by other steps.
+
+The authenticated principal quantity, configured protocol and USDC addresses,
+and minimum are recorded in the `withdrawMax` variant of `boundSteps`. Execution
+uses a dedicated protocol method, keeping the uint256 sentinel out of ERTP
+amounts. For a positive minimum M, the remote account executes one atomic batch:
+
+1. `uniswapUniversalRouter.execute(BALANCE_CHECK_ERC20, [abi.encode(remoteAccountAddr, token, M)])`
+   (where BALANCE_CHECK_ERC20 is 0x0e), with the allow-revert bit unset. The
+   token is Aave's configured aToken (`aaveUSDC`) or Compound's Comet proxy
+   (`compound`).
+2. `aavePool.withdraw(USDC, uint256.max, remoteAccountAddr)` or
+   `comet.withdraw(USDC, uint256.max)`.
+
+A zero minimum needs no router check. Positive minimums require a configured
+Universal Router; mainnet addresses are provided for Ethereum, Base, Arbitrum,
+and Optimism. Insufficient liquidity fails the step, requiring a fresh plan and
+observations to retry. Successful completion does not remove the position from
+the portfolio configuration.
+
+An observed zero principal quantity is a successful no-op, permitted only with
+a zero minimum: no withdrawal transaction or position debit occurs, and dependent
+steps can proceed. As with Morpho redemption, transfer accounting records the
+minimum rather than the actual payout; fresh observations remain authoritative
+for balances and accrued yield.

@@ -23,6 +23,8 @@ export const compoundABI = [
     name: 'withdraw',
     inputs: [
       { name: 'asset', type: 'address' },
+      // amount = uint256.max withdraws the entire current base token balance.
+      // See https://github.com/compound-finance/comet/blob/f766f51583c23acc33b2a7824654ef2029a96804/contracts/CometWithExtendedAssetList.sol
       { name: 'amount', type: 'uint256' },
     ],
     outputs: [],

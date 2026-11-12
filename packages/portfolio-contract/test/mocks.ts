@@ -330,6 +330,7 @@ export const contractsMock = {
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
+    universalRouter: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
