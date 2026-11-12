@@ -31,7 +31,7 @@ sequenceDiagram
   O-->>P: getPortfolioStatus(portfolio351)
   P-->>O: { positionKeys: ['MorphoV2'], ... }
   Note over O: Existing balance collection and signing elided<br/>Add typed raw holdings to the signed observations
-  O-->>A: signedObservations<br/>includes holdings: [{ place: 'MorphoV2', kind: 'shares',<br/>tokenAddress: vaultAddress, amount: ownedShares,<br/>valueUsd: 100_000_000n }, ...]
+  O-->>A: signedObservations<br/>includes holdings: [{ place: 'MorphoV2', kind: 'shares',<br/>tokenId: vaultAddress, amount: ownedShares,<br/>valueUsd: 100_000_000n }, ...]
   A-->>P: setTargetAllocation({<br/>plan: { flow: [withdrawal] },<br/>signedObservations, ...<br/>})
   P-->>P: observations = verifyPortfolioObservations(signedObservations)
   Note over P: Check context and mandate<br/>Full-exit support is proposed

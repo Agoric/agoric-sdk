@@ -165,7 +165,7 @@ test('planner resolvePlan validates and forwards typed holdings', t => {
       {
         place: 'Aave_Base',
         kind: 'principal',
-        tokenAddress: `0x${'1'.repeat(40)}`,
+        tokenId: `0x${'1'.repeat(40)}`,
         amount: 100n,
         balanceUsdc: 100n,
       },
@@ -192,7 +192,7 @@ test('planner resolvePlan validates and forwards typed holdings', t => {
   for (const fields of [
     { amount: -1n },
     { kind: 'unknown' },
-    { tokenAddress: 1n },
+    { tokenId: 1n },
   ]) {
     t.throws(() =>
       planner.resolvePlan(

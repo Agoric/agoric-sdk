@@ -74,7 +74,7 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
   const holding = {
     place: 'Aave_Base',
     kind: 'principal',
-    tokenAddress: address,
+    tokenId: address,
     amount: 0n,
   };
   for (const specimen of [
@@ -84,6 +84,8 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
     { ...holding, valueUsd: 2n ** 255n - 1n },
     { ...holding, balanceUsdc: 0n },
     { ...holding, balanceUsdc: 1n },
+    { ...holding, place: '@noble', kind: 'token', tokenId: 'uusdc' },
+    { ...holding, place: '@Base', kind: '$ETH', tokenId: '' },
   ]) {
     t.true(matches(harden(specimen), HoldingDetailShape));
     t.true(
@@ -102,6 +104,8 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
     { valueUsd: -(2n ** 255n) },
     { valueUsd: 2n ** 255n },
     { valueUsd: 0 },
+    { tokenAddress: address }, // obsolete asset identifier field
+    { tokenId: 123 },
     { balanceUsdc: -2n },
     { balanceUsdc: '123' },
     { kind: 'unknown' },

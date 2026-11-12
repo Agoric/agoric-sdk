@@ -7,7 +7,11 @@
  */
 
 import type { TypeTag } from '@agoric/internal/src/tagged.js';
-import type { SupportedChain, YieldProtocol } from './constants.js';
+import type {
+  AxelarChain,
+  SupportedChain,
+  YieldProtocol,
+} from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type {
   AssetPlaceRef,
@@ -358,3 +362,28 @@ export const chainOf = (id: AssetPlaceRef): SupportedChain => {
   throw Error(`Cannot determine chain for ${id}`);
 };
 deepFreeze(chainOf);
+
+/** JS idiom for `Some SupportedChain | None`. */
+export const maybeChainOf = (id: AssetPlaceRef): SupportedChain | null => {
+  try {
+    return chainOf(id);
+  } catch {
+    return null;
+  }
+};
+deepFreeze(maybeChainOf);
+
+// Type-only coverage keeps this module Endo-free and checks additions to
+// AxelarChain without importing the runtime constants module.
+const evmChains = deepFreeze({
+  Arbitrum: true,
+  Avalanche: true,
+  Base: true,
+  Ethereum: true,
+  Optimism: true,
+} as const satisfies Record<AxelarChain, true>);
+
+/** Whether the specimen names an opted-in EVM chain. */
+export const isEvmChain = (specimen: unknown): boolean =>
+  typeof specimen === 'string' && Object.hasOwn(evmChains, specimen);
+deepFreeze(isEvmChain);

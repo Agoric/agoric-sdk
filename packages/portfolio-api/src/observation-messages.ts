@@ -37,9 +37,11 @@ import {
 } from '@agoric/orchestration/src/utils/eip712-messages.ts';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
 import {
+  isEvmChain,
   isInterChainAccountRef,
   isInstrumentId,
   isPortfolioBalancePlaceRef,
+  maybeChainOf,
 } from './places.ts';
 import type {
   PlanObservations,
@@ -76,7 +78,7 @@ const holdingDetailV1 = [
 
 const holdingDetailV2 = [
   { name: 'kind', type: 'string' },
-  { name: 'tokenAddress', type: 'address' },
+  { name: 'tokenId', type: 'string' },
   { name: 'amount', type: 'uint256' },
   /**
    * Valuation in micro-USD, or {@link VALUE_USD_UNKNOWN} if not observed.
@@ -178,14 +180,14 @@ type TypedHoldingDetailEIP712 = Omit<TypedHoldingDetail, 'valueUsd'> & {
 const typedHoldingToEIP712 = ({
   place,
   kind,
-  tokenAddress,
+  tokenId,
   amount,
   valueUsd,
   ...rest
 }: TypedHoldingDetail): TypedHoldingDetailEIP712 => ({
   place,
   kind,
-  tokenAddress,
+  tokenId,
   amount,
   valueUsd: valueUsd ?? VALUE_USD_UNKNOWN,
   // deprecated, and must be uniformly present or absent
@@ -227,11 +229,16 @@ const assertTypedHoldings: (
   for (const {
     place,
     kind,
-    tokenAddress,
+    tokenId,
     amount,
     valueUsd,
     balanceUsdc,
+    ...rest
   } of holdings) {
+    const unknownFields = Object.keys(rest);
+    if (unknownFields.length) {
+      throw TypeError(`unknown holding fields: ${unknownFields.join(', ')}`);
+    }
     if (!isPortfolioBalancePlaceRef(place)) {
       throw TypeError(`invalid holding place ${JSON.stringify(place)}`);
     }
@@ -251,16 +258,28 @@ const assertTypedHoldings: (
         `holding kind ${kind} is incompatible with place ${place}`,
       );
     }
+    const isEvmPlace = isEvmChain(maybeChainOf(place));
+    // EIP-712 strings do not normalize addresses. Reject non-canonical hex
+    // so signatures and exact identity comparisons agree. Other chains use
+    // their exact local identifiers, e.g. Cosmos denoms or Solana mints.
     if (
-      typeof tokenAddress !== 'string' ||
-      !/^0x[0-9a-fA-F]{40}$/.test(tokenAddress)
+      typeof tokenId !== 'string' ||
+      /\s/.test(tokenId) ||
+      (!isNative && isEvmPlace && !/^0x[0-9a-f]{40}$/.test(tokenId)) ||
+      (/^0x/i.test(tokenId) && !/^0x[0-9a-f]{40}$/.test(tokenId))
     ) {
-      throw TypeError(`invalid holding token address ${String(tokenAddress)}`);
+      throw TypeError(`invalid holding token identifier ${String(tokenId)}`);
     }
-    if (isNative !== /^0x0{40}$/i.test(tokenAddress)) {
-      throw TypeError(`holding kind ${kind} has an incompatible token address`);
+    if (
+      isNative !== (tokenId === '') ||
+      /^0x0{40}$/.test(tokenId) ||
+      (isNative && !isEvmPlace)
+    ) {
+      throw TypeError(
+        `holding kind ${kind} has an incompatible token identifier`,
+      );
     }
-    const identity = JSON.stringify([place, kind, tokenAddress.toLowerCase()]);
+    const identity = JSON.stringify([place, kind, tokenId]);
     if (identities.has(identity)) {
       throw TypeError(`duplicate holding identity ${identity}`);
     }
@@ -387,8 +406,7 @@ export const portfolioObservationsFromEIP712 = ({
   const legacyBalances: PlanObservations['balances'] = {};
   const rawHoldings: TypedHoldingDetail[] = [];
   for (const holding of holdings) {
-    const { place, balanceUsdc, kind, tokenAddress, amount, valueUsd } =
-      holding;
+    const { place, balanceUsdc, kind, tokenId, amount, valueUsd } = holding;
     if (!isPortfolioBalancePlaceRef(place)) {
       throw TypeError(`invalid holding place ${JSON.stringify(place)}`);
     }
@@ -396,7 +414,7 @@ export const portfolioObservationsFromEIP712 = ({
     // partial hybrid is rejected rather than having signed fields dropped.
     if (
       kind !== undefined ||
-      tokenAddress !== undefined ||
+      tokenId !== undefined ||
       amount !== undefined ||
       valueUsd !== undefined
     ) {

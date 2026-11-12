@@ -50,7 +50,7 @@ export const WithdrawParamsShape: CastedPattern<WithdrawParams> = M.splitRecord(
 );
 harden(WithdrawParamsShape);
 
-/** Native-token kinds start with '$' and have a nonempty symbol. */
+/** A chain's own coin uses '$' plus a nonempty display symbol, e.g. '$ETH'. */
 export const HoldingKindShape: CastedPattern<HoldingKind> = M.or(
   'shares',
   'principal',
@@ -77,7 +77,7 @@ export const HoldingDetailV2Shape = M.splitRecord(
   {
     place: M.string(),
     kind: HoldingKindShape,
-    tokenAddress: M.string(),
+    tokenId: M.string(),
     amount: M.nat(),
   },
   { valueUsd: ValueUsdShape, balanceUsdc: M.nat() },

@@ -31,7 +31,7 @@ const morpho = 'ERC4626_morphoGauntletUsdcPrimeV2_Base' as const;
 const holding: HoldingDetail = {
   place: morpho,
   kind: 'shares',
-  tokenAddress: address,
+  tokenId: address,
   amount: 10n ** 24n,
 };
 const content: PortfolioObservationsContent = {
@@ -115,39 +115,136 @@ test('multiple kinds and reward tokens can share one instrument place', t => {
     {
       ...holding,
       kind: 'claimable-reward',
-      tokenAddress: `0x${'2'.repeat(40)}`,
+      tokenId: `0x${'2'.repeat(40)}` as `0x${string}`,
     },
     {
       place: '@Base',
       kind: 'token',
-      tokenAddress: address,
+      tokenId: address,
       amount: 123n,
       valueUsd: 123n,
     },
     {
       place: '@Base',
       kind: '$ETH',
-      tokenAddress: zeroAddress,
+      tokenId: '',
       amount: 0n,
     },
   ];
   t.deepEqual(decode(entries).observations.holdings, entries);
 });
 
-test('duplicate holding identity is case-insensitive for token addresses', t => {
+test('holding identity uses canonical token identifiers', t => {
+  t.throws(() => decode([holding, holding]), {
+    message: /duplicate holding identity/,
+  });
+  const mixedCase = `${address.slice(0, -1)}A` as `0x${string}`;
+  t.throws(() => decode([{ ...holding, tokenId: mixedCase }]), {
+    message: /invalid holding token identifier/,
+  });
   t.throws(
     () =>
-      decode([
-        holding,
-        {
-          ...holding,
-          tokenAddress: address
-            .toUpperCase()
-            .replace('0X', '0x') as `0x${string}`,
-        },
-      ]),
-    { message: /duplicate holding identity/ },
+      portfolioObservationsFromEIP712({
+        ...readMessage(messageFor().message),
+        holdings: [{ ...holding, tokenId: mixedCase }],
+      }),
+    { message: /invalid holding token identifier/ },
   );
+});
+
+const nobleUsdc: HoldingDetail = {
+  place: '@noble',
+  kind: 'token',
+  tokenId: 'uusdc',
+  amount: 1_000_000n,
+};
+
+test('chain-local token identifiers round trip in one signed schema', t => {
+  const entries: HoldingDetail[] = [
+    holding,
+    nobleUsdc,
+    { ...nobleUsdc, tokenId: `ibc/${'A'.repeat(64)}` },
+    { ...nobleUsdc, tokenId: 'factory/noble1issuer/usdc' },
+    {
+      ...nobleUsdc,
+      place: '@Solana',
+      tokenId: 'So11111111111111111111111111111111111111112',
+    } as unknown as HoldingDetail,
+    { ...nobleUsdc, place: '@Base', kind: '$ETH', tokenId: '' },
+  ];
+  t.deepEqual(decode(entries).observations.holdings, entries);
+  const message = messageFor(entries);
+  t.deepEqual(
+    message.types.HoldingDetail.find(f => f.name === 'tokenId'),
+    {
+      name: 'tokenId',
+      type: 'string',
+    },
+  );
+  t.deepEqual(
+    message.message.holdings.map(h => h.tokenId),
+    entries.map(h => h.tokenId),
+  );
+  t.not(
+    hashTypedData(messageFor([nobleUsdc]) as any),
+    hashTypedData(messageFor([{ ...nobleUsdc, tokenId: 'otherdenom' }]) as any),
+  );
+  t.throws(() => decode([nobleUsdc, nobleUsdc]), {
+    message: /duplicate holding identity/,
+  });
+  // A Cosmos denom's case is significant and is never folded like an address.
+  t.deepEqual(
+    decode([nobleUsdc, { ...nobleUsdc, tokenId: 'uUSDC' }]).observations
+      .holdings,
+    [nobleUsdc, { ...nobleUsdc, tokenId: 'uUSDC' }],
+  );
+});
+
+test('token identifiers reject non-canonical and incompatible values', t => {
+  for (const tokenId of [
+    undefined,
+    123,
+    'bad denom',
+    '0x1234',
+    address.replace('0x', '0X'),
+  ]) {
+    const entry = { ...nobleUsdc, tokenId } as HoldingDetail;
+    t.throws(() => messageFor([entry]), {
+      message: /invalid holding token identifier/,
+    });
+    t.throws(
+      () =>
+        portfolioObservationsFromEIP712({
+          ...readMessage(messageFor().message),
+          holdings: [entry],
+        } as PortfolioObservationsEIP712),
+      { message: /invalid holding token identifier/ },
+    );
+  }
+  for (const entry of [
+    { ...nobleUsdc, tokenId: '' },
+    { ...nobleUsdc, kind: '$USDC' },
+    { ...holding, place: '@Base', kind: '$ETH', tokenId: zeroAddress },
+    { ...nobleUsdc, kind: '$USDC', tokenId: '' },
+  ] as HoldingDetail[]) {
+    t.throws(() => messageFor([entry]), {
+      message: /incompatible token identifier/,
+    });
+    t.throws(
+      () =>
+        portfolioObservationsFromEIP712({
+          ...readMessage(messageFor().message),
+          holdings: [entry],
+        } as PortfolioObservationsEIP712),
+      { message: /incompatible token identifier/ },
+    );
+  }
+  t.throws(() => messageFor([{ ...holding, tokenId: 'uusdc' } as any]), {
+    message: /invalid holding token identifier/,
+  });
+  t.throws(() => messageFor([{ ...holding, tokenAddress: address } as any]), {
+    message: /unknown holding fields: tokenAddress/,
+  });
 });
 
 for (const [label, fields, error] of [
@@ -167,12 +264,12 @@ for (const [label, fields, error] of [
   ['seat', { place: '<Cash>' }, /invalid holding place/],
   ['shares on account', { place: '@Base' }, /incompatible with place/],
   ['token on instrument', { kind: 'token' }, /incompatible with place/],
-  ['bad address', { tokenAddress: '0x1234' }, /invalid holding token address/],
-  ['zero ERC20', { tokenAddress: zeroAddress }, /incompatible token address/],
+  ['bad address', { tokenId: '0x1234' }, /invalid holding token identifier/],
+  ['zero ERC20', { tokenId: zeroAddress }, /incompatible token identifier/],
   [
     'native nonzero address',
     { place: '@Base', kind: '$ETH' },
-    /incompatible token address/,
+    /incompatible token identifier/,
   ],
   [
     'invalid negative balanceUsdc',
@@ -217,9 +314,42 @@ test('the wire sentinel is not an application valuation', t => {
 test('syntactically valid future instruments retain their raw evidence', t => {
   const future: HoldingDetail = {
     ...holding,
-    place: 'FutureVault_FutureChain' as HoldingDetail['place'],
-  };
+    place: 'FutureVault_FutureChain',
+  } as unknown as HoldingDetail;
   t.deepEqual(decode([future]).observations.holdings, [future]);
+});
+
+test('chain classification handles registered and unresolved instrument places', t => {
+  for (const place of ['USDN', 'USDNVault', 'UnknownVault'] as const) {
+    const entry = {
+      ...nobleUsdc,
+      place,
+      kind: 'principal',
+    } as unknown as HoldingDetail;
+    t.deepEqual(decode([entry]).observations.holdings, [entry]);
+  }
+});
+
+test('native coin holdings require an opted-in EVM account', t => {
+  for (const place of ['@agoric', '@noble', '@osmosis', '@UnknownChain']) {
+    const entry = {
+      ...nobleUsdc,
+      place,
+      kind: '$COIN',
+      tokenId: '',
+    } as unknown as HoldingDetail;
+    t.throws(() => messageFor([entry]), {
+      message: /incompatible token identifier/,
+    });
+    t.throws(
+      () =>
+        portfolioObservationsFromEIP712({
+          ...readMessage(messageFor().message),
+          holdings: [entry],
+        } as PortfolioObservationsEIP712),
+      { message: /incompatible token identifier/ },
+    );
+  }
 });
 
 test('every holding field affects the signature digest', t => {
@@ -228,7 +358,7 @@ test('every holding field affects the signature digest', t => {
   for (const change of [
     { place: 'Aave_Base' },
     { kind: 'principal' },
-    { tokenAddress: `0x${'2'.repeat(40)}` },
+    { tokenId: `0x${'2'.repeat(40)}` },
     { amount: 0n },
     { valueUsd: 0n },
     { balanceUsdc: 0n },
@@ -311,6 +441,50 @@ test('handler rejects raw holdings added outside the signed field definitions', 
   }
 });
 
+test('the tokenId wire field changes the digest and rejects the old address field', t => {
+  const message = messageFor([{ ...holding, valueUsd: 100_000_000n }]);
+  const { valueUsd, tokenId, ...rest } = message.message.holdings[0]!;
+  const oldMessage = {
+    ...message,
+    types: {
+      ...message.types,
+      HoldingDetail: message.types.HoldingDetail.map(field =>
+        field.name === 'tokenId'
+          ? { name: 'tokenAddress', type: 'address' }
+          : field,
+      ),
+    },
+    message: {
+      ...message.message,
+      holdings: [{ ...rest, valueUsd, tokenAddress: tokenId }],
+    },
+  };
+  t.is(
+    hashTypedData(oldMessage as any),
+    '0xe8a599824c48a2e01e10398d59a7aa435f04baa7b63d68e9335f201e8993ff11',
+  );
+  t.not(hashTypedData(message as any), hashTypedData(oldMessage as any));
+  const handler = makeEIP712MessageHandlerUtils(
+    {
+      hashStruct,
+      isHex,
+      recoverTypedDataAddress,
+      encodeType,
+      getTypesForEIP712Domain,
+    },
+    YmaxObservationMessageSchema,
+    { onUnknownSignedField: 'throw' },
+  );
+  t.throws(
+    () =>
+      handler.extractOperationDetailsFromDataWithAddress(
+        { ...oldMessage, address, signature: `0x${'ab'.repeat(65)}` } as any,
+        { verifyingContract: { '1': address } },
+      ),
+    { message: /tokenAddress/ },
+  );
+});
+
 test('legacy and typed holdings use one domain with distinct signed field definitions', t => {
   const legacy = ymaxObservationMessageKit.getStandaloneOperationData(
     {
@@ -355,7 +529,7 @@ test('typed holdings is usable without lockdown', async t => {
     runWithoutLockdown(`
     const m = await import('@agoric/portfolio-api/src/observation-messages.js');
     const content = ${JSON.stringify({ portfolioId: 1, syncState: { policyVersion: 1, rebalanceCount: 0 } })};
-    content.observations = { balances: {}, holdings: [{ place: '${morpho}', kind: 'shares', tokenAddress: '${address}', amount: 0n }], instrumentTvls: {} };
+    content.observations = { balances: {}, holdings: [{ place: '${morpho}', kind: 'shares', tokenId: '${address}', amount: 0n }], instrumentTvls: {} };
     const data = m.portfolioObservationsToEIP712(content);
     const signedData = m.ymaxObservationMessageKit.getStandaloneOperationData({ ...data, nonce: 1n, deadline: 2n }, 'PortfolioObservations', 1n, '${address}');
     const { normalizeAndValidateEIP712Data } = await import('@agoric/orchestration/src/utils/viem-utils/eip712-normalize.ts');
@@ -428,14 +602,14 @@ test('typed holdings derive legacy balances only from balanceUsdc', t => {
     {
       place: '@Base',
       kind: 'token',
-      tokenAddress: address,
+      tokenId: address,
       amount: 3n,
       balanceUsdc: 3n,
     },
     {
       place: '@Base',
       kind: '$ETH',
-      tokenAddress: zeroAddress,
+      tokenId: '',
       amount: 9n,
       balanceUsdc: 0n,
     },
