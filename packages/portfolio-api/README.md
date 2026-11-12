@@ -32,7 +32,7 @@ existing offer boundaries and execution behavior remain unchanged.
 
 `PlanObservations` retains legacy aggregate `balances` and optionally carries
 `holdings: TypedHoldingDetail[]`. Each raw holding identifies `place`, `kind`,
-`tokenId`, and raw asset-unit `amount`; `valueUsd` is optional micro-USD.
+`tokenId`, and raw asset-unit `amount`; `valueUusd` is optional micro-USD.
 `HoldingDetail` is the union of legacy balance entries and typed raw holdings.
 `HoldingDetailShape` and `PlanObservationsShape` check structural input;
 converters also validate place/kind compatibility, canonical token identifiers,
@@ -75,15 +75,15 @@ Use the existing observation schema, kit, and converters from
 which optional fields were included. Legacy balance-only messages retain their
 original signed field definitions. There are no separate v2 schema exports.
 
-The micro-USD valuation field is `valueUsd` in both application data and signed
-holdings. In application data, an unknown valuation is an absent `valueUsd`,
+The micro-USD valuation field is `valueUusd` in both application data and signed
+holdings. In application data, an unknown valuation is an absent `valueUusd`,
 distinct from a known zero. EIP-712 cannot omit a field from only some instances
-of a struct type, so on the wire every typed holding carries `valueUsd` as an
-`int256`, with a sentinel `VALUE_USD_UNKNOWN` (`-1n`) standing for an unknown
+of a struct type, so on the wire every typed holding carries `valueUusd` as an
+`int256`, with a sentinel `VALUE_UUSD_UNKNOWN` (`-1n`) standing for an unknown
 valuation. `portfolioObservationsToEIP712` encodes an absent valuation as the
 sentinel and `portfolioObservationsFromEIP712` strips it; the sentinel never
 appears in `TypedHoldingDetail`. Known valuations must satisfy `0n <= value <=
-MAX_VALUE_USD` (`2n ** 255n - 1n`). Integer normalization works without Endo
+MAX_VALUE_UUSD` (`2n ** 255n - 1n`). Integer normalization works without Endo
 initialization.
 
 Deprecated `balanceUsdc` remains optional unsigned `uint256` without a
@@ -91,7 +91,7 @@ sentinel: include it on every raw holding or omit it from all of them. It is a
 transitional bridge for consumers that still read legacy `balances`: decoding
 typed holdings sums `balanceUsdc` per place into `balances`. Producers put the
 place's legacy balance on one holding per place and `0n` on the others.
-`valueUsd` never feeds `balances`. When authoring typed holdings, `balances`
+`valueUusd` never feeds `balances`. When authoring typed holdings, `balances`
 may be empty or must equal that derivation (as decoding returns); anything else
 is rejected rather than silently discarded.
 

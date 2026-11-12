@@ -131,13 +131,13 @@ const rawHolding = {
   kind: 'shares',
   tokenId: '0x1234',
   amount: 0n,
-  valueUsd: undefined,
+  valueUusd: undefined,
   balanceUsdc: undefined,
 } as const;
 expectAssignable<HoldingDetail>(rawHolding);
-expectAssignable<HoldingDetail>({ ...rawHolding, valueUsd: 0n });
-expectAssignable<HoldingDetail>({ ...rawHolding, valueUsd: undefined });
-expectNotAssignable<HoldingDetail>({ ...rawHolding, valueUsd: 1 });
+expectAssignable<HoldingDetail>({ ...rawHolding, valueUusd: 0n });
+expectAssignable<HoldingDetail>({ ...rawHolding, valueUusd: undefined });
+expectNotAssignable<HoldingDetail>({ ...rawHolding, valueUusd: 1 });
 expectAssignable<HoldingDetail>({ ...rawHolding, balanceUsdc: undefined });
 expectNotAssignable<HoldingDetail>({ ...rawHolding, balanceUsdc: 1 });
 expectNotAssignable<HoldingDetail>({ ...rawHolding, amount: 123 });

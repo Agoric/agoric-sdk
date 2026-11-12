@@ -81,10 +81,10 @@ const holdingDetailV2 = [
   { name: 'tokenId', type: 'string' },
   { name: 'amount', type: 'uint256' },
   /**
-   * Valuation in micro-USD, or {@link VALUE_USD_UNKNOWN} if not observed.
+   * Valuation in micro-USD, or {@link VALUE_UUSD_UNKNOWN} if not observed.
    * Signed only to make room for that sentinel.
    */
-  { name: 'valueUsd', type: 'int256' },
+  { name: 'valueUusd', type: 'int256' },
 ] as const satisfies TypedDataParameter[];
 
 const ObservationSubTypes = {
@@ -156,24 +156,24 @@ export type PortfolioObservationsContent = {
 
 /**
  * EIP-712 cannot omit a field from only some instances of a struct type, so
- * typed holdings always carry `valueUsd` on the wire, using this sentinel for
+ * typed holdings always carry `valueUusd` on the wire, using this sentinel for
  * an unknown valuation. The converters below translate it to and from an
- * absent `valueUsd` in {@link TypedHoldingDetail}; it never reaches
+ * absent `valueUusd` in {@link TypedHoldingDetail}; it never reaches
  * application data.
  */
-export const VALUE_USD_UNKNOWN = -1n;
+export const VALUE_UUSD_UNKNOWN = -1n;
 
 /** Largest valuation representable in the signed `int256` wire field. */
-export const MAX_VALUE_USD = 2n ** 255n - 1n;
+export const MAX_VALUE_UUSD = 2n ** 255n - 1n;
 
 /** A `HoldingDetail` entry as it appears on the wire. */
 type HoldingDetailEIP712Input =
   PortfolioObservationsEIP712Input['holdings'][number];
 
 /** A typed holding as it appears on the (normalized) wire. */
-type TypedHoldingDetailEIP712 = Omit<TypedHoldingDetail, 'valueUsd'> & {
-  /** non-negative, or {@link VALUE_USD_UNKNOWN} */
-  valueUsd: bigint;
+type TypedHoldingDetailEIP712 = Omit<TypedHoldingDetail, 'valueUusd'> & {
+  /** non-negative, or {@link VALUE_UUSD_UNKNOWN} */
+  valueUusd: bigint;
 };
 
 /** Application -> wire: an absent valuation becomes the sentinel. */
@@ -182,28 +182,28 @@ const typedHoldingToEIP712 = ({
   kind,
   tokenId,
   amount,
-  valueUsd,
+  valueUusd,
   ...rest
 }: TypedHoldingDetail): TypedHoldingDetailEIP712 => ({
   place,
   kind,
   tokenId,
   amount,
-  valueUsd: valueUsd ?? VALUE_USD_UNKNOWN,
+  valueUusd: valueUusd ?? VALUE_UUSD_UNKNOWN,
   // deprecated, and must be uniformly present or absent
   ...(rest.balanceUsdc === undefined ? {} : { balanceUsdc: rest.balanceUsdc }),
 });
 
 /** Wire -> application: the sentinel (or an absent field) becomes absent. */
 const typedHoldingFromEIP712 = ({
-  valueUsd,
+  valueUusd,
   ...rest
 }: PortfolioObservationsEIP712['holdings'][number]): TypedHoldingDetail =>
   ({
     ...rest,
-    ...(valueUsd === undefined || valueUsd === VALUE_USD_UNKNOWN
+    ...(valueUusd === undefined || valueUusd === VALUE_UUSD_UNKNOWN
       ? {}
-      : { valueUsd }),
+      : { valueUusd }),
   }) as TypedHoldingDetail;
 
 const assertUint256 = (value: bigint, field: string): void => {
@@ -231,7 +231,7 @@ const assertTypedHoldings: (
     kind,
     tokenId,
     amount,
-    valueUsd,
+    valueUusd,
     balanceUsdc,
     ...rest
   } of holdings) {
@@ -286,12 +286,12 @@ const assertTypedHoldings: (
     identities.add(identity);
     assertUint256(amount, 'amount');
     if (
-      valueUsd !== undefined &&
-      (typeof valueUsd !== 'bigint' ||
-        valueUsd < 0n ||
-        valueUsd > MAX_VALUE_USD)
+      valueUusd !== undefined &&
+      (typeof valueUusd !== 'bigint' ||
+        valueUusd < 0n ||
+        valueUusd > MAX_VALUE_UUSD)
     ) {
-      throw RangeError(`invalid valuation valueUsd: ${String(valueUsd)}`);
+      throw RangeError(`invalid valuation valueUusd: ${String(valueUusd)}`);
     }
     if (balanceUsdc !== undefined) {
       assertUint256(balanceUsdc, 'balanceUsdc');
@@ -304,7 +304,7 @@ const assertTypedHoldings: (
  * `balanceUsdc` of typed holdings, summed per place, so consumers of
  * `balances` keep working when producers switch to typed holdings. Producers
  * put the legacy place balance on one holding per place and `0n` on the
- * others. Never derived from `valueUsd`. Empty if the holdings omit
+ * others. Never derived from `valueUusd`. Empty if the holdings omit
  * `balanceUsdc` (EIP-712 requires it on all of them or none).
  */
 const balancesFromTypedHoldings = (
@@ -324,7 +324,7 @@ const balancesFromTypedHoldings = (
 
 /**
  * Author either legacy balances or typed holdings using the shared schema.
- * Typed holdings always carry `valueUsd`, with {@link VALUE_USD_UNKNOWN}
+ * Typed holdings always carry `valueUusd`, with {@link VALUE_UUSD_UNKNOWN}
  * standing for an absent valuation. With typed holdings, `balances` may only
  * repeat what their `balanceUsdc` values derive (as decoding returns), so no
  * balance is silently dropped.
@@ -393,9 +393,9 @@ export const portfolioObservationsToEIP712 = ({
  * Decode normalized authenticated observations. The handler must use
  * onUnknownSignedField: 'throw'. This converter does not verify signatures.
  * For typed holdings, `balances` is derived from their deprecated
- * `balanceUsdc` (see {@link balancesFromTypedHoldings}), never from `valueUsd`.
- * A typed holding's {@link VALUE_USD_UNKNOWN} valuation decodes to an absent
- * `valueUsd`.
+ * `balanceUsdc` (see {@link balancesFromTypedHoldings}), never from `valueUusd`.
+ * A typed holding's {@link VALUE_UUSD_UNKNOWN} valuation decodes to an absent
+ * `valueUusd`.
  */
 export const portfolioObservationsFromEIP712 = ({
   portfolio,
@@ -406,7 +406,7 @@ export const portfolioObservationsFromEIP712 = ({
   const legacyBalances: PlanObservations['balances'] = {};
   const rawHoldings: TypedHoldingDetail[] = [];
   for (const holding of holdings) {
-    const { place, balanceUsdc, kind, tokenId, amount, valueUsd } = holding;
+    const { place, balanceUsdc, kind, tokenId, amount, valueUusd } = holding;
     if (!isPortfolioBalancePlaceRef(place)) {
       throw TypeError(`invalid holding place ${JSON.stringify(place)}`);
     }
@@ -416,7 +416,7 @@ export const portfolioObservationsFromEIP712 = ({
       kind !== undefined ||
       tokenId !== undefined ||
       amount !== undefined ||
-      valueUsd !== undefined
+      valueUusd !== undefined
     ) {
       rawHoldings.push(typedHoldingFromEIP712(holding));
     } else {
