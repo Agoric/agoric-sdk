@@ -241,6 +241,7 @@ export type TypedHoldingDetail = {
   amount: bigint;
   /**
    * Valuation in micro-USD; absent if not observed, distinct from known zero.
+   * XXX The `valueUsd` name hides the 1e-6 USD unit; renaming this signed field requires a wire-format migration.
    * Known values range from `0n` through `2n ** 255n - 1n`. This is not a raw
    * token quantity and must not be added to `balanceUsdc`.
    */
@@ -368,20 +369,21 @@ export type SwapProvider = SwapDesc['provider'];
  *
  * The movement retains its required default-token amount (micro-USDC at dest).
  * It is a minimum when `max` is true or `amountOfShares` is present. An explicit
- * share quantity is exact unless `max` is true. Missing movement amounts,
- * negative share quantities, and unknown withdrawal options are rejected.
+ * share quantity is exact. `max` and `amountOfShares` are exclusive. Missing
+ * movement amounts, negative share quantities, and unknown options are rejected.
  * Transfers, bridges, deposits, and downstream movements retain exact amounts.
  */
-export type WithdrawParams = {
-  /** When true, MovementDesc['amount'] and amountOfShares are minima, not exact. */
-  max?: boolean;
-  /**
-   * How many 'shares' tokens to withdraw.
-   * Without this, if the place is a Position, then
-   * `MovementDesc['amount']` refers to 'principal' tokens.
-   */
-  amountOfShares?: bigint;
-};
+export type WithdrawParams =
+  | {
+      /** When true, MovementDesc['amount'] is a minimum, not exact. */
+      max?: boolean;
+      amountOfShares?: never;
+    }
+  | {
+      max?: never;
+      /** Exact number of share tokens to redeem. */
+      amountOfShares?: bigint;
+    };
 
 /**
  * Parameters for claiming external rewards.

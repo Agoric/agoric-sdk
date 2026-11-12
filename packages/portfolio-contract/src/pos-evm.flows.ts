@@ -614,6 +614,19 @@ export const ERC4626Protocol = {
 
     await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
+  redeem: async (ctx, shares, dest, ...optsArgs) => {
+    const { addresses: a, poolKey } = ctx;
+    const { remoteAddress } = dest;
+    const session = makeEvmAbiCallBatch();
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
+    const vault = session.makeContract(vaultAddress, erc4626ABI);
+    vault.redeem(shares, remoteAddress, remoteAddress);
+    const calls = session.finish();
+
+    await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
+  },
   claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
     await null;
     if (isERC4626MorphoInstrumentId(ctx.poolKey)) {
