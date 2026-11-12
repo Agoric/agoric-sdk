@@ -1158,7 +1158,8 @@ const stepFlow = async (
     if (shareWithdrawal) {
       (move.src === shareWithdrawal.src &&
         move.dest === `@${chainOf(shareWithdrawal.src)}` &&
-        move.withdraw?.max === true &&
+        (move.withdraw?.max === true ||
+          move.withdraw?.amountOfShares === shareWithdrawal.shares) &&
         !move.claimRewards) ||
         Fail`share withdrawal evidence does not match movement ${q(i)}`;
       sameEvmAddress(

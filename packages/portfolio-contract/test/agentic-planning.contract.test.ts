@@ -351,9 +351,17 @@ const openDelegatedPortfolio = async (
 
 const withdrawalCases: Record<
   string,
-  { maximum?: boolean; replay?: boolean; legacyBalances?: boolean }
+  {
+    maximum?: boolean;
+    shares?: bigint;
+    replay?: boolean;
+    legacyBalances?: boolean;
+  }
 > = {
   'exact withdrawal emits asset calldata': {},
+  'exact share withdrawal redeems requested shares': {
+    shares: 4_000_000_000_000_000n,
+  },
   'maximum withdrawal redeems authenticated shares': { maximum: true },
   'full exit resumes after journal replay without resending redemption': {
     maximum: true,
@@ -365,9 +373,10 @@ const withdrawalCases: Record<
   },
 };
 
-for (const [description, { maximum, replay, legacyBalances }] of Object.entries(
-  withdrawalCases,
-)) {
+for (const [
+  description,
+  { maximum, shares, replay, legacyBalances },
+] of Object.entries(withdrawalCases)) {
   test(`delegated Morpho ${description}`, async t => {
     const fixture = await setupTest(t);
     const {
@@ -385,7 +394,8 @@ for (const [description, { maximum, replay, legacyBalances }] of Object.entries(
     const vaultAddress = contractsMock.Ethereum[instrument]!;
     const observedShares = 7_654_321_123_456_789n;
     const observedValue = 100_000_000n;
-    const observations: PlanObservations = maximum
+    const shareWithdrawal = maximum || shares !== undefined;
+    const observations: PlanObservations = shareWithdrawal
       ? {
           balances: {},
           holdings: [
@@ -426,9 +436,12 @@ for (const [description, { maximum, replay, legacyBalances }] of Object.entries(
               src: instrument,
               dest: '@Ethereum',
               // No positive proceeds minimum in this share-redemption case.
-              amount: usdc.make(maximum ? 0n : observedValue),
+              amount: usdc.make(shareWithdrawal ? 0n : observedValue),
               fee: bld.make(100n),
               ...(maximum && { withdraw: { max: true } }),
+              ...(shares !== undefined && {
+                withdraw: { amountOfShares: shares },
+              }),
             },
           ],
         },
@@ -463,8 +476,12 @@ for (const [description, { maximum, replay, legacyBalances }] of Object.entries(
         target: vaultAddress,
         data: encodeFunctionData({
           abi,
-          functionName: maximum ? 'redeem' : 'withdraw',
-          args: [maximum ? observedShares : observedValue, address, address],
+          functionName: shareWithdrawal ? 'redeem' : 'withdraw',
+          args: [
+            shares ?? (maximum ? observedShares : observedValue),
+            address,
+            address,
+          ],
         }),
       },
     ]);

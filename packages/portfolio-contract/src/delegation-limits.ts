@@ -207,7 +207,7 @@ type PlanOperation =
       debitValueUsd: bigint;
     }
   | {
-      kind: 'withdrawMax';
+      kind: 'redeemShares';
       src: ERC4626InstrumentId;
       dest: InterChainAccountRef;
       /** Minimum destination quantity, not the quantity removed from src. */
@@ -215,6 +215,7 @@ type PlanOperation =
       /** USD exposure removed from the source, independent of the minimum. */
       debitValueUsd: bigint;
       holding: TypedHoldingDetail & { valueUsd: bigint };
+      shares: bigint;
     }
   | {
       kind: 'claimRewards';
@@ -258,41 +259,48 @@ const decodePlan = (
     // Execution would use the instrument on the account's chain, so the two
     // chains must match for those checks to cover what actually happens.
     vetInstrumentAccountChain(movement);
-    if (observations.holdings?.length && withdraw?.max === true) {
+    if (
+      (observations.holdings?.length && withdraw?.max === true) ||
+      withdraw?.amountOfShares !== undefined
+    ) {
       if (
         !isERC4626MorphoInstrumentId(src) ||
         !isInterChainAccountRef(dest) ||
         dest !== `@${chainOf(src)}`
       ) {
-        throw Fail`maximum withdrawal requires a Morpho source and its chain account destination: ${q(src)} -> ${q(dest)}`;
+        throw Fail`share redemption requires a Morpho source and its chain account destination: ${q(src)} -> ${q(dest)}`;
       }
       if (claimRewards) {
-        throw Fail`maximum withdrawal cannot also claim rewards at ${q(src)}`;
+        throw Fail`share redemption cannot also claim rewards at ${q(src)}`;
       }
-      const candidates = observations.holdings.filter(
-        holding => holding.place === src && holding.kind === 'shares',
-      );
+      const candidates =
+        observations.holdings?.filter(
+          holding => holding.place === src && holding.kind === 'shares',
+        ) ?? [];
       if (candidates.length !== 1) {
-        throw Fail`maximum withdrawal requires one observed share holding at ${q(src)}; found ${q(candidates.length)}`;
+        throw Fail`share redemption requires one observed share holding at ${q(src)}; found ${q(candidates.length)}`;
       }
       const holding = candidates[0]!;
       const { valueUsd } = holding;
       if (valueUsd === undefined) {
         throw Fail`missing holding valuation for ${q(src)}`;
       }
-      const minimumShares = withdraw.amountOfShares ?? 0n;
-      holding.amount >= minimumShares ||
-        Fail`observed shares ${q(holding.amount)} at ${q(src)} are below minimum ${q(minimumShares)}`;
-      if (holding.amount === 0n && amount.value > 0n) {
+      const shares = withdraw?.amountOfShares ?? holding.amount;
+      shares <= holding.amount ||
+        Fail`requested shares ${q(shares)} exceed observed shares ${q(holding.amount)} at ${q(src)}`;
+      if (shares === 0n && amount.value > 0n) {
         throw Fail`empty share holding cannot meet proceeds minimum ${q(amount.value)} at ${q(src)}`;
       }
       return {
-        kind: 'withdrawMax',
+        kind: 'redeemShares',
         src,
         dest,
         amount,
-        debitValueUsd: valueUsd,
+        // Round down so the remaining source exposure is not understated.
+        debitValueUsd:
+          holding.amount === 0n ? 0n : (valueUsd * shares) / holding.amount,
         holding: { ...holding, valueUsd },
+        shares,
       };
     }
     if (!claimRewards) {
@@ -327,7 +335,7 @@ const bindShareWithdrawals = (
 ): Partial<Record<number, BoundShareWithdrawal>> => {
   const bound: Partial<Record<number, BoundShareWithdrawal>> = {};
   for (const [step, movement] of plan.flow.entries()) {
-    if (movement.kind !== 'withdrawMax') continue;
+    if (movement.kind !== 'redeemShares') continue;
     const vaultAddress = getVaultAddress?.(movement.src);
     if (!vaultAddress) {
       throw Fail`no configured vault for ${q(movement.src)}`;
@@ -340,7 +348,7 @@ const bindShareWithdrawals = (
     bound[step] = {
       src: movement.src,
       vaultAddress,
-      shares: movement.holding.amount,
+      shares: movement.shares,
     };
   }
   return harden(bound);
@@ -540,7 +548,7 @@ const projectPlanBalances = (
   const { flow } = plan;
   const remainingShares = new Map<InstrumentId, bigint>();
   for (const movement of flow) {
-    if (movement.kind === 'withdrawMax') {
+    if (movement.kind === 'redeemShares') {
       remainingShares.set(movement.src, movement.holding.amount);
     }
   }
@@ -567,10 +575,10 @@ const projectPlanBalances = (
       if (!movement || movement.kind === 'claimRewards') continue;
       const { src, debitValueUsd } = movement;
       debits.set(src, (debits.get(src) ?? 0n) + debitValueUsd);
-      if (movement.kind === 'withdrawMax') {
+      if (movement.kind === 'redeemShares') {
         shareDebits.set(
           movement.src,
-          (shareDebits.get(movement.src) ?? 0n) + movement.holding.amount,
+          (shareDebits.get(movement.src) ?? 0n) + movement.shares,
         );
       }
     }

@@ -13,8 +13,9 @@ authorize execution.
 
 The movement's `amount` is default-token units (micro-USDC) received at `dest`.
 It is a minimum if `max` is true or `amountOfShares` is supplied, otherwise exact.
-`amountOfShares` is raw share-token units: exact unless `max` is true. Without
-it, a position interprets the movement's `amount` in principal-token units.
+`amountOfShares` is an exact count of raw share-token units. It cannot appear
+with `max`, even when `max` is false. Without either option, a position
+interprets the movement's `amount` in principal-token units.
 
 Withdrawal options are additive. A contract that does not implement them can
 accept the structure and execute the movement's `amount` exactly, ignoring the
