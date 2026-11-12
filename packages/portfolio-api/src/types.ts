@@ -179,7 +179,7 @@ export type PlanObservations = {
   balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
   /**
    * Authenticated raw holdings. When present, `balances` is derived from their
-   * deprecated `balanceUsdc` (never from `valueUsd`).
+   * deprecated `balanceUsdc` (never from `valueUusd`).
    */
   holdings?: TypedHoldingDetail[];
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
@@ -219,7 +219,7 @@ export type LegacyHoldingDetail = {
  * Legacy balance-only entries retain their original resolved signed type;
  * typed fields are optional in that schema for compatibility, but must form a
  * complete typed holding when present. Optional-field presence is uniform per
- * signed struct type. The converters always include `valueUsd` for typed
+ * signed struct type. The converters always include `valueUusd` for typed
  * holdings on the wire, encoding an absent valuation as `-1n` and stripping
  * that sentinel when decoding. Never add unsigned holdings to a legacy
  * signature, or infer shares from either valuation field.
@@ -241,11 +241,10 @@ export type TypedHoldingDetail = {
   amount: bigint;
   /**
    * Valuation in micro-USD; absent if not observed, distinct from known zero.
-   * XXX The `valueUsd` name hides the 1e-6 USD unit; renaming this signed field requires a wire-format migration.
    * Known values range from `0n` through `2n ** 255n - 1n`. This is not a raw
    * token quantity and must not be added to `balanceUsdc`.
    */
-  valueUsd?: bigint;
+  valueUusd?: bigint;
   /**
    * @deprecated Transitional legacy valuation in micro-USDC, summed per place
    * into `PlanObservations['balances']` for consumers not yet reading typed

@@ -58,14 +58,14 @@ const makeEmptyAccountHoldings = (): TypedHoldingDetail[] => [
     kind: '$BLD',
     tokenAddress: zeroAddress,
     amount: 0n,
-    valueUsd: 0n,
+    valueUusd: 0n,
   },
   ...(['Arbitrum', 'Ethereum'] as const).map(chain => ({
     place: `@${chain}` as const,
     kind: 'token' as const,
     tokenAddress: contractsMock[chain].usdc,
     amount: 0n,
-    valueUsd: 0n,
+    valueUusd: 0n,
   })),
 ];
 
@@ -405,7 +405,7 @@ for (const [
               kind: 'shares',
               tokenAddress: vaultAddress,
               amount: observedShares,
-              valueUsd: observedValue,
+              valueUusd: observedValue,
             },
           ],
           instrumentTvls: {},
@@ -422,7 +422,7 @@ for (const [
       // They describe the same holdings and must not be counted twice.
       observations.holdings = observations.holdings!.map(holding => ({
         ...holding,
-        balanceUsdc: holding.valueUsd!,
+        balanceUsdc: holding.valueUusd!,
       }));
     }
     const agent = await openDelegatedPortfolio(

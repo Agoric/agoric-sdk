@@ -54,7 +54,7 @@ const sumPortions = (targetAllocation: TargetAllocation): bigint =>
  * These values measure exposure; they do not establish spendable quantities.
  * Legacy micro-USDC balances retain their existing one-for-one USD valuation.
  */
-const sumValueUsdByPlace = (
+const sumValueUusdByPlace = (
   observations: PlanObservations,
 ): Map<PortfolioBalancePlaceRef, bigint> => {
   const { holdings, balances } = observations;
@@ -68,11 +68,11 @@ const sumValueUsdByPlace = (
   }
   const result = new Map<PortfolioBalancePlaceRef, bigint>();
   const legacyBalances = new Map<string, bigint>();
-  for (const { place, valueUsd, balanceUsdc } of holdings) {
-    if (valueUsd === undefined) {
+  for (const { place, valueUusd, balanceUsdc } of holdings) {
+    if (valueUusd === undefined) {
       throw Fail`missing holding valuation for ${q(place)}`;
     }
-    result.set(place, (result.get(place) ?? 0n) + valueUsd);
+    result.set(place, (result.get(place) ?? 0n) + valueUusd);
     if (balanceUsdc !== undefined) {
       legacyBalances.set(
         place,
@@ -135,7 +135,7 @@ export const assertMandateForPlanObservations = (
   const portfolioValueMicroUsd =
     maxVaultShareBps === undefined
       ? 0n
-      : sumOptionalBigints([...sumValueUsdByPlace(observations).values()]);
+      : sumOptionalBigints([...sumValueUusdByPlace(observations).values()]);
 
   for (const [instrument, portion = 0n] of entries(targetAllocation)) {
     if (isInterChainAccountRef(instrument) || portion === 0n) continue;
@@ -196,7 +196,6 @@ harden(vetNoSwaps);
  * boundary instead of independently interpreting optional movement fields.
  * Preserve extensibility at the wire boundary; reject unsupported semantics
  * before producing a closed internal operation.
- * XXX `debitValueUsd` is in 1e-6 USD despite its name.
  */
 type PlanOperation =
   | {
@@ -204,7 +203,7 @@ type PlanOperation =
       src: PortfolioBalancePlaceRef;
       dest: PortfolioBalancePlaceRef;
       amount: MovementDesc['amount'];
-      debitValueUsd: bigint;
+      debitValueUusd: bigint;
     }
   | {
       kind: 'redeemShares';
@@ -212,9 +211,9 @@ type PlanOperation =
       dest: InterChainAccountRef;
       /** Minimum destination quantity, not the quantity removed from src. */
       amount: MovementDesc['amount'];
-      /** USD exposure removed from the source, independent of the minimum. */
-      debitValueUsd: bigint;
-      holding: TypedHoldingDetail & { valueUsd: bigint };
+      /** Micro-USD exposure removed from the source, independent of the minimum. */
+      debitValueUusd: bigint;
+      holding: TypedHoldingDetail & { valueUusd: bigint };
       shares: bigint;
     }
   | {
@@ -281,8 +280,8 @@ const decodePlan = (
         throw Fail`share redemption requires one observed share holding at ${q(src)}; found ${q(candidates.length)}`;
       }
       const holding = candidates[0]!;
-      const { valueUsd } = holding;
-      if (valueUsd === undefined) {
+      const { valueUusd } = holding;
+      if (valueUusd === undefined) {
         throw Fail`missing holding valuation for ${q(src)}`;
       }
       const shares = withdraw?.amountOfShares ?? holding.amount;
@@ -297,14 +296,14 @@ const decodePlan = (
         dest,
         amount,
         // Round down so the remaining source exposure is not understated.
-        debitValueUsd:
-          holding.amount === 0n ? 0n : (valueUsd * shares) / holding.amount,
-        holding: { ...holding, valueUsd },
+        debitValueUusd:
+          holding.amount === 0n ? 0n : (valueUusd * shares) / holding.amount,
+        holding: { ...holding, valueUusd },
         shares,
       };
     }
     if (!claimRewards) {
-      return { kind: 'move', src, dest, amount, debitValueUsd: amount.value };
+      return { kind: 'move', src, dest, amount, debitValueUusd: amount.value };
     }
 
     if (
@@ -396,7 +395,7 @@ export const vetObservationPlaces = (
       .filter(([, balance]) => balance !== 0n)
       .map(([place]) => place as PortfolioBalancePlaceRef),
     ...holdings
-      .filter(({ amount, valueUsd }) => amount !== 0n || valueUsd !== 0n)
+      .filter(({ amount, valueUusd }) => amount !== 0n || valueUusd !== 0n)
       .map(({ place }) => place),
   ]);
   const extra = [...nonempty].filter(place => !expected.has(place));
@@ -460,7 +459,7 @@ const vetPartialPlanAllocation = (
   plan: DecodedPlan,
   observations: PlanObservations,
 ) => {
-  const initialBalances = sumValueUsdByPlace(observations);
+  const initialBalances = sumValueUusdByPlace(observations);
   const totalBalance = sumOptionalBigints([...initialBalances.values()]);
   const totalPortions = sumPortions(targetAllocation);
   const { flow } = plan;
@@ -486,7 +485,7 @@ const vetPartialPlanAllocation = (
         if (movement.kind === 'claimRewards') return 0n;
         const { src, dest, amount } = movement;
         if (dest === place) return amount.value;
-        if (src === place) return -movement.debitValueUsd;
+        if (src === place) return -movement.debitValueUusd;
         return 0n;
       },
       index => [...(dependencies.get(index) ?? [])],
@@ -515,7 +514,7 @@ const projectPlanBalances = (
   observations: PlanObservations,
   getUsdcAddress?: GetUsdcAddress,
 ): Map<string, bigint> => {
-  const balances = sumValueUsdByPlace(observations);
+  const balances = sumValueUusdByPlace(observations);
   const remainingCash = new Map<InterChainAccountRef, bigint>();
   if (observations.holdings?.length) {
     for (const movement of plan.flow) {
@@ -539,7 +538,7 @@ const projectPlanBalances = (
       const holding = candidates[0]!;
       // Exact-movement exposure arithmetic currently assumes USDC at parity.
       // Reject other valuations rather than equating raw units with USD value.
-      if (holding.valueUsd !== holding.amount) {
+      if (holding.valueUusd !== holding.amount) {
         throw Fail`cash movement requires one-for-one USDC valuation at ${q(src)}`;
       }
       remainingCash.set(src, holding.amount);
@@ -573,8 +572,8 @@ const projectPlanBalances = (
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;
-      const { src, debitValueUsd } = movement;
-      debits.set(src, (debits.get(src) ?? 0n) + debitValueUsd);
+      const { src, debitValueUusd } = movement;
+      debits.set(src, (debits.get(src) ?? 0n) + debitValueUusd);
       if (movement.kind === 'redeemShares') {
         shareDebits.set(
           movement.src,
@@ -601,8 +600,8 @@ const projectPlanBalances = (
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;
-      const { src, dest, amount, debitValueUsd } = movement;
-      balances.set(src, (balances.get(src) ?? 0n) - debitValueUsd);
+      const { src, dest, amount, debitValueUusd } = movement;
+      balances.set(src, (balances.get(src) ?? 0n) - debitValueUusd);
       balances.set(dest, (balances.get(dest) ?? 0n) + amount.value);
       if (isInterChainAccountRef(src) && remainingCash.has(src)) {
         remainingCash.set(src, remainingCash.get(src)! - amount.value);
