@@ -74,16 +74,18 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
   const holding = {
     place: 'Aave_Base',
     kind: 'principal',
-    tokenAddress: address,
+    tokenId: address,
     amount: 0n,
   };
   for (const specimen of [
     holding,
-    { ...holding, valueUsd: 0n },
-    { ...holding, valueUsd: undefined },
-    { ...holding, valueUsd: 2n ** 255n - 1n },
+    { ...holding, valueUusd: 0n },
+    { ...holding, valueUusd: undefined },
+    { ...holding, valueUusd: 2n ** 255n - 1n },
     { ...holding, balanceUsdc: 0n },
     { ...holding, balanceUsdc: 1n },
+    { ...holding, place: '@noble', kind: 'token', tokenId: 'uusdc' },
+    { ...holding, place: '@Base', kind: '$ETH', tokenId: '' },
   ]) {
     t.true(matches(harden(specimen), HoldingDetailShape));
     t.true(
@@ -97,11 +99,14 @@ test('holding shapes distinguish unknown valuation, zero valuation and raw zero'
     { amount: undefined },
     { amount: -1n },
     { amount: 123 },
-    { valueUsd: -1n }, // the wire sentinel is not an application value
-    { valueUsd: -2n },
-    { valueUsd: -(2n ** 255n) },
-    { valueUsd: 2n ** 255n },
-    { valueUsd: 0 },
+    { valueUusd: -1n }, // the wire sentinel is not an application value
+    { valueUusd: -2n },
+    { valueUusd: -(2n ** 255n) },
+    { valueUusd: 2n ** 255n },
+    { valueUusd: 0 },
+    { valueUsd: 0n }, // obsolete field name, even though the units match
+    { tokenAddress: address }, // obsolete asset identifier field
+    { tokenId: 123 },
     { balanceUsdc: -2n },
     { balanceUsdc: '123' },
     { kind: 'unknown' },
@@ -125,7 +130,7 @@ test('legacy holding Shape requires a place and a nonnegative balance', t => {
     { place: '@Base' },
     { place: '@Base', balanceUsdc: -1n },
     { place: '@Base', balanceUsdc: 0n, extra: true },
-    { place: '@Base', balanceUsdc: 0n, valueUsd: 1n },
+    { place: '@Base', balanceUsdc: 0n, valueUusd: 1n },
   ]) {
     t.false(matches(harden(entry), HoldingDetailShape));
   }

@@ -32,13 +32,40 @@ existing offer boundaries and execution behavior remain unchanged.
 
 `PlanObservations` retains legacy aggregate `balances` and optionally carries
 `holdings: TypedHoldingDetail[]`. Each raw holding identifies `place`, `kind`,
-`tokenAddress`, and native-unit `amount`; `valueUsd` is optional micro-USD.
+`tokenId`, and raw asset-unit `amount`; `valueUusd` is optional micro-USD.
 `HoldingDetail` is the union of legacy balance entries and typed raw holdings.
 `HoldingDetailShape` and `PlanObservationsShape` check structural input;
-converters also validate place/kind compatibility, addresses, native-token zero
-addresses, integer ranges, and duplicate holding identities (case-insensitive
-addresses). `claimable-reward` belongs to an instrument; `claimed-reward`
-belongs to a chain account.
+converters also validate place/kind compatibility, canonical token identifiers,
+integer ranges, and duplicate `(place, kind, tokenId)` identities. Identity
+comparisons are exact: EVM contract addresses must be lowercase `0x` hex, while
+other chain identifiers retain their canonical spelling and case.
+`claimable-reward` belongs to an instrument; `claimed-reward` belongs to a chain
+account.
+
+`tokenId` identifies the asset locally to the chain implied by `place`; it does
+not repeat the chain as a full CAIP-19 identifier. EVM contract holdings use the
+lowercase contract address. Every Cosmos bank asset is an ordinary `token`
+holding with its raw bank denom, for example
+`{ place: '@noble', kind: 'token', tokenId: 'uusdc', amount: 1_000_000n }`.
+IBC and token-factory assets use their exact `ibc/…` or `factory/…` denoms.
+Different denoms remain distinct even when their display symbols match. Future
+chains can use their own identifiers, such as Solana base58 mint addresses.
+Resolve decimal scale from chain asset metadata for the identifier, never from
+a display symbol. `amount` is in raw base units.
+
+`$SYMBOL` is reserved for a chain's own coin on chains where other tokens are
+contracts, such as `$ETH`, `$AVAX`, or later `$SOL`. The nonempty symbol is its
+display symbol; `tokenId` is the empty string, not the zero address. Cosmos bank
+assets do not use `$` kinds. `$` kinds and Cosmos USDC are never reward-swap
+input.
+
+The signed `tokenId: string` field replaces `tokenAddress: address` in
+`YmaxObservation` domain version `1`. Nothing deployed or emitted typed
+holdings with the old field, so no contract upgrade or live migration is
+needed. SDK verifiers and YDS producers must adopt the schema together before
+enabling hybrid observations or contract consumers of `holdings`. Legacy
+balance-only signatures are unchanged. The converter checks identifier syntax
+but does not resolve chain asset metadata or establish execution support.
 
 Use the existing observation schema, kit, and converters from
 `./src/observation-messages.js`: `YmaxObservationMessageSchema`,
@@ -48,22 +75,23 @@ Use the existing observation schema, kit, and converters from
 which optional fields were included. Legacy balance-only messages retain their
 original signed field definitions. There are no separate v2 schema exports.
 
-In application data, an unknown valuation is an absent `valueUsd`, distinct
-from a known zero. EIP-712 cannot omit a field from only some instances of a
-struct type, so on the wire every typed holding carries `valueUsd` as an
-`int256`, with `VALUE_USD_UNKNOWN` (`-1n`) standing for an unknown valuation.
-`portfolioObservationsToEIP712` encodes an absent valuation as the sentinel and
-`portfolioObservationsFromEIP712` strips it; the sentinel never appears in
-`TypedHoldingDetail`. Known valuations must satisfy
-`0n <= value <= MAX_VALUE_USD` (`2n ** 255n - 1n`). Integer normalization works
-without Endo initialization.
+The micro-USD valuation field is `valueUusd` in both application data and signed
+holdings. In application data, an unknown valuation is an absent `valueUusd`,
+distinct from a known zero. EIP-712 cannot omit a field from only some instances
+of a struct type, so on the wire every typed holding carries `valueUusd` as an
+`int256`, with a sentinel `VALUE_UUSD_UNKNOWN` (`-1n`) standing for an unknown
+valuation. `portfolioObservationsToEIP712` encodes an absent valuation as the
+sentinel and `portfolioObservationsFromEIP712` strips it; the sentinel never
+appears in `TypedHoldingDetail`. Known valuations must satisfy `0n <= value <=
+MAX_VALUE_UUSD` (`2n ** 255n - 1n`). Integer normalization works without Endo
+initialization.
 
 Deprecated `balanceUsdc` remains optional unsigned `uint256` without a
 sentinel: include it on every raw holding or omit it from all of them. It is a
 transitional bridge for consumers that still read legacy `balances`: decoding
 typed holdings sums `balanceUsdc` per place into `balances`. Producers put the
 place's legacy balance on one holding per place and `0n` on the others.
-`valueUsd` never feeds `balances`. When authoring typed holdings, `balances`
+`valueUusd` never feeds `balances`. When authoring typed holdings, `balances`
 may be empty or must equal that derivation (as decoding returns); anything else
 is rejected rather than silently discarded.
 
