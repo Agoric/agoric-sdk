@@ -75,7 +75,10 @@ import type {
   AccountInfoFor,
   PortfolioKit,
 } from './portfolio.exo.ts';
-import type { BoundShareWithdrawal } from './delegation-limits.ts';
+import type {
+  BoundShareWithdrawal,
+  BoundPrincipalWithdrawal,
+} from './delegation-limits.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -123,6 +126,8 @@ import {
   type ProposalType,
 } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
+
+const MAXUINT256 = 2n ** 256n - 1n;
 
 const { keys, fromEntries } = Object;
 const { reduceProgressReports } = progressTrackerAsyncFlowUtils;
@@ -256,7 +261,9 @@ type FlowStepPowers = {
 
 export type ExecutePlanOptions = {
   /** Host-bound quantities from authenticated observations, never plan fields. */
-  shareWithdrawals?: Readonly<Partial<Record<number, BoundShareWithdrawal>>>;
+  shareWithdrawals?: Readonly<Record<number, BoundShareWithdrawal>>;
+  principalWithdrawals?: Readonly<Record<number, BoundPrincipalWithdrawal>>;
+
   evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
   // XXX consider using pattern matching for queued steps instead of src/dest.
   queuedSteps?: Array<
@@ -987,7 +994,10 @@ const stepFlow = async (
   config?: FlowConfig,
   options?: Pick<
     ExecutePlanOptions,
-    'queuedSteps' | 'evmDepositDetail' | 'shareWithdrawals'
+    | 'queuedSteps'
+    | 'evmDepositDetail'
+    | 'shareWithdrawals'
+    | 'principalWithdrawals'
   >,
 ) => {
   const features = config?.features;
@@ -1076,7 +1086,13 @@ const stepFlow = async (
   >(
     way: Way & { how: P },
     move: MovementDesc,
-    shareWithdrawal?: BoundShareWithdrawal,
+    {
+      shareWithdrawal,
+      principalWithdrawal,
+    }: {
+      shareWithdrawal?: BoundShareWithdrawal;
+      principalWithdrawal?: BoundPrincipalWithdrawal;
+    } = {},
   ): AssetMovement => {
     // The pool determines where the step runs. The account side of the way
     // must agree; wayFromSrcToDest already checked, so this guards its bugs.
@@ -1137,6 +1153,17 @@ const stepFlow = async (
           pImpl.redeem || Fail`${q(how)} does not support share redemption`;
           await pImpl.redeem!(evmCtx, shareWithdrawal.shares, gInfo, opts);
           return harden({ srcPos: pos });
+        } else if (principalWithdrawal) {
+          if (principalWithdrawal.amount === 0n) return harden({});
+          // Both Aave V3 and Compound Comet interpret max uint256 as the
+          // entire current underlying balance, including accrued interest.
+          await pImpl.withdraw(
+            evmCtx,
+            { ...amount, value: MAXUINT256 },
+            gInfo,
+            opts,
+          );
+          return harden({ srcPos: pos });
         } else {
           await pImpl.withdraw(evmCtx, amount, gInfo, opts);
           return harden({ srcPos: pos });
@@ -1154,7 +1181,28 @@ const stepFlow = async (
   moves.length > 0 || Fail`moves list must not be empty`;
 
   for (const [i, move] of moves.entries()) {
+    const principalWithdrawal = options?.principalWithdrawals?.[i];
     const shareWithdrawal = options?.shareWithdrawals?.[i];
+    if (principalWithdrawal) {
+      const { src, protocolAddress, tokenAddress } = principalWithdrawal;
+      const addresses = ctx.contracts[chainOf(src) as AxelarChain];
+      const configuredProtocol = src.startsWith('Aave_')
+        ? addresses?.aavePool
+        : src.startsWith('Compound_')
+          ? addresses?.compound
+          : undefined;
+      (move.src === src &&
+        move.dest === `@${chainOf(src)}` &&
+        move.withdraw?.max === true &&
+        move.amount.value === 0n &&
+        move.withdraw.amountOfShares === undefined &&
+        !move.claimRewards &&
+        !shareWithdrawal) ||
+        Fail`principal withdrawal evidence does not match movement ${q(i)}`;
+      (sameEvmAddress(protocolAddress, configuredProtocol) &&
+        sameEvmAddress(tokenAddress, addresses?.usdc)) ||
+        Fail`principal withdrawal configuration changed at ${q(src)}`;
+    }
     if (shareWithdrawal) {
       (move.src === shareWithdrawal.src &&
         move.dest === `@${chainOf(shareWithdrawal.src)}` &&
@@ -1174,6 +1222,7 @@ const stepFlow = async (
       getAssetPlaceRefKind(move.src) === 'pos' && !!move.claimRewards;
     move.amount.value > 0n ||
       isClaimRewards ||
+      !!principalWithdrawal ||
       !!shareWithdrawal ||
       Fail`movement amount must be positive in ${q(move)}`;
     const queuedStep = getQueuedStep(move);
@@ -1449,11 +1498,19 @@ const stepFlow = async (
       }
 
       case 'Compound':
-        todo.push(makeEVMProtocolStep(way as Way & { how: 'Compound' }, move));
+        todo.push(
+          makeEVMProtocolStep(way as Way & { how: 'Compound' }, move, {
+            principalWithdrawal,
+          }),
+        );
         break;
 
       case 'Aave':
-        todo.push(makeEVMProtocolStep(way as Way & { how: 'Aave' }, move));
+        todo.push(
+          makeEVMProtocolStep(way as Way & { how: 'Aave' }, move, {
+            principalWithdrawal,
+          }),
+        );
         break;
 
       case 'Beefy':
@@ -1462,11 +1519,9 @@ const stepFlow = async (
 
       case 'ERC4626':
         todo.push(
-          makeEVMProtocolStep(
-            way as Way & { how: 'ERC4626' },
-            move,
+          makeEVMProtocolStep(way as Way & { how: 'ERC4626' }, move, {
             shareWithdrawal,
-          ),
+          }),
         );
         break;
 
@@ -2289,6 +2344,9 @@ export const executePlan = (async (
       {
         queuedSteps,
         evmDepositDetail: options?.evmDepositDetail,
+        ...(options?.principalWithdrawals && {
+          principalWithdrawals: options.principalWithdrawals,
+        }),
         ...(options?.shareWithdrawals && {
           shareWithdrawals: options.shareWithdrawals,
         }),

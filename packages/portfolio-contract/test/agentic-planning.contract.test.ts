@@ -38,6 +38,8 @@ import {
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 
+const MAXUINT256 = 2n ** 256n - 1n;
+
 const AGENT_ADDRESS = 'agoric1andrewAgent' as const;
 /** The observation service's EOA, which signs portfolio observations. */
 const attestor = privateKeyToAccount(evmTrader1PrivateKey);
@@ -362,8 +364,8 @@ const withdrawalCases: Record<
   'exact share withdrawal redeems requested shares': {
     shares: 4_000_000_000_000_000n,
   },
-  'maximum withdrawal redeems authenticated shares': { maximum: true },
-  'full exit resumes after journal replay without resending redemption': {
+  'maximum withdrawal exits the authenticated position': { maximum: true },
+  'full exit resumes after journal replay without resending withdrawal': {
     maximum: true,
     replay: true,
   },
@@ -373,142 +375,188 @@ const withdrawalCases: Record<
   },
 };
 
-for (const [
-  description,
-  { maximum, shares, replay, legacyBalances },
-] of Object.entries(withdrawalCases)) {
-  test(`delegated Morpho ${description}`, async t => {
-    const fixture = await setupTest(t);
-    const {
-      outgoingTransferAt,
-      transmitVTransferEvent,
-      zoe,
-      creatorFacet,
-      portfolioRead,
-      usdc,
-      bld,
-      inspectLocalBridge,
-      replayPendingFlows,
-    } = fixture;
-    const instrument = 'ERC4626_morphoGauntletUsdcRwa_Ethereum';
-    const vaultAddress = contractsMock.Ethereum[instrument]!;
-    const observedShares = 7_654_321_123_456_789n;
-    const observedValue = 100_000_000n;
-    const shareWithdrawal = maximum || shares !== undefined;
-    const observations: PlanObservations = shareWithdrawal
-      ? {
-          balances: {},
-          holdings: [
-            ...makeEmptyAccountHoldings(),
-            {
-              place: instrument,
-              kind: 'shares',
-              tokenAddress: vaultAddress,
-              amount: observedShares,
-              valueUsd: observedValue,
+for (const instrument of [
+  'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+  'Aave_Ethereum',
+  'Compound_Ethereum',
+] as const) {
+  type ProtocolType = 'ERC4626' | 'Aave' | 'Compound';
+  const protocolType = instrument.replace(/_.*/, '') as ProtocolType;
+  for (const [description, inputs] of Object.entries(withdrawalCases)) {
+    const { maximum, shares, replay, legacyBalances } = inputs;
+    test(`delegated ${instrument} ${description}`, async t => {
+      const fixture = await setupTest(t);
+      const {
+        outgoingTransferAt,
+        transmitVTransferEvent,
+        zoe,
+        creatorFacet,
+        portfolioRead,
+        usdc,
+        bld,
+        inspectLocalBridge,
+        replayPendingFlows,
+      } = fixture;
+      const addresses = contractsMock.Ethereum;
+      const vaultAddress =
+        addresses[protocolType === 'ERC4626' ? instrument : 'usdc']!;
+      const protocolAddress = {
+        ERC4626: vaultAddress,
+        Aave: addresses.aavePool,
+        Compound: addresses.compound,
+      }[protocolType];
+      const observedShares = 7_654_321_123_456_789n;
+      const observedValue = 100_000_000n;
+      const shareWithdrawal = maximum || shares !== undefined;
+      const observations: PlanObservations = shareWithdrawal
+        ? {
+            balances: {},
+            holdings: [
+              ...makeEmptyAccountHoldings(),
+              {
+                place: instrument,
+                kind: protocolType === 'ERC4626' ? 'shares' : 'principal',
+                tokenAddress: vaultAddress,
+                amount: observedShares,
+                valueUsd: observedValue,
+              },
+            ],
+            instrumentTvls: {},
+          }
+        : {
+            balances: {
+              ...emptyAccountBalances,
+              [instrument]: observedValue,
             },
-          ],
-          instrumentTvls: {},
-        }
-      : {
-          balances: {
-            ...emptyAccountBalances,
-            [instrument]: observedValue,
+            instrumentTvls: {},
+          };
+      if (legacyBalances) {
+        // The shared decoder derives balances from these signed legacy fields.
+        // They describe the same holdings and must not be counted twice.
+        observations.holdings = observations.holdings!.map(holding => ({
+          ...holding,
+          balanceUsdc: holding.valueUsd!,
+        }));
+      }
+      const agent = await openDelegatedPortfolio(
+        fixture,
+        {
+          initialAllocation: [{ instrument, portion: 100n }],
+          targetAllocation: { [instrument]: 100n },
+          plan: {
+            flow: [
+              {
+                src: instrument,
+                dest: '@Ethereum',
+                // No positive proceeds minimum in this share-redemption case.
+                amount: usdc.make(shareWithdrawal ? 0n : observedValue),
+                fee: bld.make(100n),
+                ...(maximum && { withdraw: { max: true } }),
+                ...(shares !== undefined && {
+                  withdraw: { amountOfShares: shares },
+                }),
+              },
+            ],
           },
-          instrumentTvls: {},
-        };
-    if (legacyBalances) {
-      // The shared decoder derives balances from these signed legacy fields.
-      // They describe the same holdings and must not be counted twice.
-      observations.holdings = observations.holdings!.map(holding => ({
-        ...holding,
-        balanceUsdc: holding.valueUsd!,
-      }));
-    }
-    const agent = await openDelegatedPortfolio(
-      fixture,
-      {
-        initialAllocation: [{ instrument, portion: 100n }],
-        targetAllocation: { [instrument]: 100n },
-        plan: {
-          flow: [
-            {
-              src: instrument,
-              dest: '@Ethereum',
-              // No positive proceeds minimum in this share-redemption case.
-              amount: usdc.make(shareWithdrawal ? 0n : observedValue),
-              fee: bld.make(100n),
-              ...(maximum && { withdraw: { max: true } }),
-              ...(shares !== undefined && {
-                withdraw: { amountOfShares: shares },
-              }),
-            },
-          ],
         },
-      },
-      observations,
-      observedValue,
-    );
-    const flowKey = await agent.wake();
-    await pendingVstorageWrites();
-    await insistFlowHasNotFailed(portfolioRead, flowKey);
+        observations,
+        observedValue,
+      );
 
-    // Complete account creation so the withdrawal call can be emitted.
-    const resolver = await getResolverMakers(zoe, creatorFacet);
-    await transmitVTransferEvent('acknowledgementPacket', -1);
-    await settleTransaction(zoe, resolver, 0);
-    await pendingVstorageWrites();
-    await insistFlowHasNotFailed(portfolioRead, flowKey);
+      // Only ERC4626 supports share-based withdrawal.
+      if (shares !== undefined && protocolType !== 'ERC4626') {
+        await t.throwsAsync(async () => agent.wake(), {
+          message: /principal withdrawal does not support amountOfShares/,
+        });
+        return;
+      }
 
-    const { accountIdByChain } = await portfolioRead.getPortfolioStatus();
-    const remoteAddress = accountIdByChain.Ethereum?.split(':').at(-1);
-    assert(remoteAddress?.startsWith('0x'), 'Ethereum account was created');
-    const address = remoteAddress as `0x${string}`;
-    const { message } = outgoingTransferAt(-1);
-    const { id: withdrawalTxId, calls } = decodeMultiCalls(message.memo);
-    // Use the standard signatures independently of the adapter's ABI subset.
-    const abi = parseAbi([
-      'function redeem(uint256 shares, address receiver, address owner) returns (uint256)',
-      'function withdraw(uint256 assets, address receiver, address owner) returns (uint256)',
-    ]);
-    t.deepEqual(calls, [
-      {
-        target: vaultAddress,
-        data: encodeFunctionData({
-          abi,
-          functionName: shareWithdrawal ? 'redeem' : 'withdraw',
-          args: [
-            shares ?? (maximum ? observedShares : observedValue),
-            address,
-            address,
-          ],
-        }),
-      },
-    ]);
-    const flowPath =
-      `${publishedPortfolioPath(portfolioRead)}.flows.${flowKey}` as const;
-    t.is((await portfolioRead.readPublished(flowPath)).state, 'run');
+      const flowKey = await agent.wake();
+      await pendingVstorageWrites();
+      await insistFlowHasNotFailed(portfolioRead, flowKey);
 
-    await transmitVTransferEvent('acknowledgementPacket', -1);
-    await pendingVstorageWrites();
-    t.is(
-      (await portfolioRead.readPublished(flowPath)).state,
-      'run',
-      'transport acknowledgement does not confirm the withdrawal',
-    );
+      // Complete account creation so the withdrawal call can be emitted.
+      const resolver = await getResolverMakers(zoe, creatorFacet);
+      await transmitVTransferEvent('acknowledgementPacket', -1);
+      await settleTransaction(zoe, resolver, 0);
+      await pendingVstorageWrites();
+      await insistFlowHasNotFailed(portfolioRead, flowKey);
 
-    t.regex(withdrawalTxId, /^tx\d+$/);
-    if (replay) {
-      const trafficBeforeReplay = inspectLocalBridge();
-      t.true((await replayPendingFlows()) > 0);
-      t.deepEqual(inspectLocalBridge(), trafficBeforeReplay);
+      const { accountIdByChain } = await portfolioRead.getPortfolioStatus();
+      const remoteAddress = accountIdByChain.Ethereum?.split(':').at(-1);
+      assert(remoteAddress?.startsWith('0x'), 'Ethereum account was created');
+      const address = remoteAddress as `0x${string}`;
+      const { message } = outgoingTransferAt(-1);
+      const { id: withdrawalTxId, calls } = decodeMultiCalls(message.memo);
+      // Use the standard signatures independently of the adapter's ABI subset.
+      let expectCallData: string;
+      switch (protocolType) {
+        case 'ERC4626': {
+          const abi = parseAbi([
+            'function redeem(uint256 shares, address receiver, address owner) returns (uint256)',
+            'function withdraw(uint256 assets, address receiver, address owner) returns (uint256)',
+          ]);
+          const value = shares ?? (maximum ? observedShares : observedValue);
+          expectCallData = encodeFunctionData({
+            abi,
+            functionName: shareWithdrawal ? 'redeem' : 'withdraw',
+            args: [value, address, address],
+          });
+          break;
+        }
+        case 'Aave': {
+          const abi = parseAbi([
+            'function withdraw(address asset, uint256 amount, address to) returns (uint256)',
+          ]);
+          const value = maximum ? MAXUINT256 : observedValue;
+          expectCallData = encodeFunctionData({
+            abi,
+            functionName: 'withdraw',
+            args: [addresses.usdc, value, address],
+          });
+          break;
+        }
+        case 'Compound': {
+          const abi = parseAbi([
+            'function withdraw(address asset, uint256 amount)',
+          ]);
+          const value = maximum ? MAXUINT256 : observedValue;
+          expectCallData = encodeFunctionData({
+            abi,
+            functionName: 'withdraw',
+            args: [addresses.usdc, value],
+          });
+          break;
+        }
+        default:
+          throw Error(`Unexpected protocol type: ${protocolType}`);
+      }
+      t.deepEqual(calls, [{ target: protocolAddress, data: expectCallData }]);
+      const flowPath =
+        `${publishedPortfolioPath(portfolioRead)}.flows.${flowKey}` as const;
       t.is((await portfolioRead.readPublished(flowPath)).state, 'run');
-    }
-    await settleTransaction(zoe, resolver, Number(withdrawalTxId.slice(2)));
-    await pendingVstorageWrites();
-    t.is((await portfolioRead.readPublished(flowPath)).state, 'done');
-    t.deepEqual((await portfolioRead.getPortfolioStatus()).flowsRunning, {});
-  });
+
+      await transmitVTransferEvent('acknowledgementPacket', -1);
+      await pendingVstorageWrites();
+      t.is(
+        (await portfolioRead.readPublished(flowPath)).state,
+        'run',
+        'transport acknowledgement does not confirm the withdrawal',
+      );
+
+      t.regex(withdrawalTxId, /^tx\d+$/);
+      if (replay) {
+        const trafficBeforeReplay = inspectLocalBridge();
+        t.true((await replayPendingFlows()) > 0);
+        t.deepEqual(inspectLocalBridge(), trafficBeforeReplay);
+        t.is((await portfolioRead.readPublished(flowPath)).state, 'run');
+      }
+      await settleTransaction(zoe, resolver, Number(withdrawalTxId.slice(2)));
+      await pendingVstorageWrites();
+      t.is((await portfolioRead.readPublished(flowPath)).state, 'done');
+      t.deepEqual((await portfolioRead.getPortfolioStatus()).flowsRunning, {});
+    });
+  }
 }
 
 const promptInjectionScenario = async (t: ExecutionContext) => {
