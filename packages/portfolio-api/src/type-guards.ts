@@ -34,7 +34,7 @@ export type {
  * Application-level valuation: absent when unknown. The EIP-712 converters
  * own the wire sentinel; it is not accepted here.
  */
-const ValueUsdShape = M.and(M.nat(), M.lte(2n ** 255n - 1n));
+const ValueUusdShape = M.and(M.nat(), M.lte(2n ** 255n - 1n));
 
 export const TokenUsageShape = M.or('swapFrom', 'swapTo');
 harden(TokenUsageShape);
@@ -76,7 +76,7 @@ export const HoldingDetailV2Shape = M.splitRecord(
     tokenAddress: M.string(),
     amount: M.nat(),
   },
-  { valueUsd: ValueUsdShape, balanceUsdc: M.nat() },
+  { valueUusd: ValueUusdShape, balanceUsdc: M.nat() },
   {},
 );
 harden(HoldingDetailV2Shape);
