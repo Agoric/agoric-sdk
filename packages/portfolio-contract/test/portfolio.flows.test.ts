@@ -115,6 +115,8 @@ import {
   makeStorageTools,
 } from './supports.ts';
 
+const MAXUINT256 = 2n ** 256n - 1n;
+
 const expectUnhandled = makeExpectUnhandledRejectionMacro({
   test,
   importMetaUrl: import.meta.url,
@@ -237,29 +239,51 @@ const vaults = {
   replacement: { address: '0x0000000000000000000000000000000000000003' },
 } as const;
 
+type FullExitInstrument =
+  | typeof vaults.rwa.id
+  | 'Aave_Ethereum'
+  | 'Compound_Ethereum';
+
 const makeShareWithdrawalCase = ({
+  instrument = vaults.rwa.id as FullExitInstrument,
   minimumProceeds = 0n,
   observedShares = 50n,
 } = {}) => {
   const step1: MovementDesc = {
-    src: vaults.rwa.id,
+    src: instrument,
     dest: '@Ethereum',
     amount: make(USDC, minimumProceeds),
     withdraw: { max: true },
   };
-  const options: ExecutePlanOptions = {
-    shareWithdrawals: {
-      0: {
-        src: vaults.rwa.id,
-        vaultAddress: vaults.rwa.address,
-        shares: observedShares,
-      },
-    },
-  };
+  const options: ExecutePlanOptions =
+    instrument === vaults.rwa.id
+      ? {
+          shareWithdrawals: {
+            0: {
+              src: vaults.rwa.id,
+              vaultAddress: vaults.rwa.address,
+              shares: observedShares,
+            },
+          },
+        }
+      : {
+          principalWithdrawals: {
+            0: {
+              src: instrument,
+              protocolAddress: instrument.startsWith('Aave_')
+                ? contractsMock.Ethereum.aavePool
+                : contractsMock.Ethereum.compound,
+              tokenAddress: contractsMock.Ethereum.usdc,
+              amount: observedShares,
+            },
+          },
+        };
   return { step1, options };
 };
 
-const makeFullExitCase = async () => {
+const makeFullExitCase = async (
+  instrument: FullExitInstrument = vaults.rwa.id,
+) => {
   const { orch, ctx, offer, txResolver, resolverService, storage } = mocks(
     {},
     { Deposit: make(USDC, 1_000_000n) },
@@ -287,6 +311,7 @@ const makeFullExitCase = async () => {
     minimumProceeds?: bigint;
   }) => {
     const { step1, options } = makeShareWithdrawalCase({
+      instrument,
       minimumProceeds,
       observedShares,
     });
@@ -306,9 +331,15 @@ const makeFullExitCase = async () => {
     offer.log.flatMap(({ _method, opts }) => {
       if (_method !== 'transfer' || typeof opts?.memo !== 'string') return [];
       const { calls } = decodeFunctionCall(opts.memo, [
-        'redeem(uint256,address,address)',
+        instrument === vaults.rwa.id
+          ? 'redeem(uint256,address,address)'
+          : instrument.startsWith('Aave_')
+            ? 'withdraw(address,uint256,address)'
+            : 'withdraw(address,uint256)',
       ]);
-      return calls.map(call => call.args![0]);
+      return calls.map(
+        call => call.args![instrument === vaults.rwa.id ? 0 : 1],
+      );
     });
   return {
     kit,
@@ -4860,53 +4891,144 @@ test('Vault changes invalidate a pending share withdrawal before any transfer', 
   );
 });
 
-test('An observed empty position exits without a redemption transaction', async t => {
-  const { executeExit, redemptionQuantities } = await makeFullExitCase();
-  await executeExit({
-    observedShares: 0n,
-    minimumProceeds: 0n,
+for (const instrument of [
+  vaults.rwa.id,
+  'Aave_Ethereum',
+  'Compound_Ethereum',
+] as const) {
+  test(`${instrument}: An observed empty position exits without a redemption transaction`, async t => {
+    const { executeExit, redemptionQuantities } =
+      await makeFullExitCase(instrument);
+    await executeExit({
+      observedShares: 0n,
+      minimumProceeds: 0n,
+    });
+    t.deepEqual(redemptionQuantities(), []);
   });
-  t.deepEqual(redemptionQuantities(), []);
-});
 
-test('A failed full exit can be retried with refreshed share evidence', async t => {
-  const {
-    kit,
-    txResolver,
-    resolverService,
-    storage,
-    executeExit,
-    redemptionQuantities,
-  } = await makeFullExitCase();
-  const failed = t.throwsAsync(executeExit({ observedShares: 50n }), {
-    message: /Transaction failed/,
-  });
-  // Delivery succeeds; the remote redemption itself fails.
-  for (;;) {
-    const pending = await txResolver.findPending();
-    if (!pending.length) break;
-    for (const txId of pending) {
-      resolverService.settleTransaction({
-        txId,
-        status:
-          txResolver.getPublished(txId)?.type === 'GMP' ? 'failed' : 'success',
-      });
+  test(`${instrument}: A failed full exit can be retried with refreshed evidence`, async t => {
+    const {
+      kit,
+      txResolver,
+      resolverService,
+      storage,
+      executeExit,
+      redemptionQuantities,
+    } = await makeFullExitCase(instrument);
+    const failed = t.throwsAsync(executeExit({ observedShares: 50n }), {
+      message: /Transaction failed/,
+    });
+    // Delivery succeeds; the remote redemption itself fails.
+    for (;;) {
+      const pending = await txResolver.findPending();
+      if (!pending.length) break;
+      for (const txId of pending) {
+        resolverService.settleTransaction({
+          txId,
+          status:
+            txResolver.getPublished(txId)?.type === 'GMP'
+              ? 'failed'
+              : 'success',
+        });
+      }
     }
+    await failed;
+    const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+    const portfolioId = kit.reader.getPortfolioId();
+    t.is((await getFlowStatus(portfolioId, 1))?.state, 'fail');
+    t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
+
+    t.deepEqual(
+      redemptionQuantities(),
+      [instrument === vaults.rwa.id ? 50n : MAXUINT256],
+      'no automatic partial retry',
+    );
+    t.deepEqual(await txResolver.findPending(), []);
+
+    const retry = executeExit({ observedShares: 30n });
+    await txResolver.drainPending();
+    t.is(await retry, 'flow2');
+    t.is((await getFlowStatus(portfolioId, 2))?.state, 'done');
+    t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
+    t.deepEqual(
+      redemptionQuantities(),
+      instrument === vaults.rwa.id ? [50n, 30n] : [MAXUINT256, MAXUINT256],
+    );
+    t.deepEqual(await txResolver.findPending(), []);
+  });
+}
+
+for (const instrument of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
+  for (const change of [
+    'source',
+    'destination',
+    'minimum',
+    'shares',
+    'claim',
+    'unbound',
+    'protocol',
+    'token',
+  ] as const) {
+    test(`${instrument}: rejects ${change} mismatch before any transfer`, async t => {
+      const { orch, ctx, offer } = mocks();
+      const kit = await ctx.makePortfolioKit();
+      const { step1, options } = makeShareWithdrawalCase({ instrument });
+      const instruction = { ...options.principalWithdrawals![0]! };
+      options.principalWithdrawals = { 0: instruction };
+      switch (change) {
+        case 'source':
+          instruction.src = 'Aave_Base';
+          break;
+        case 'destination':
+          step1.dest = '@Arbitrum';
+          break;
+        case 'minimum':
+          step1.amount = make(USDC, 1n);
+          break;
+        case 'shares':
+          // @ts-expect-error
+          step1.withdraw = { max: true, amountOfShares: 0n };
+          break;
+        case 'claim':
+          step1.claimRewards = { tokens: [], minAmounts: [] };
+          break;
+        case 'unbound':
+          Object.assign(step1, {
+            principalWithdrawals: options.principalWithdrawals,
+          });
+          delete options.principalWithdrawals;
+          break;
+        case 'protocol':
+          instruction.protocolAddress = vaults.replacement.address;
+          break;
+        case 'token':
+          instruction.tokenAddress = vaults.replacement.address;
+          break;
+        default:
+          throw Error('unreachable');
+      }
+      await t.throwsAsync(
+        executePlan(
+          orch,
+          ctx,
+          offer.seat,
+          { flow: [step1] },
+          kit,
+          { type: 'rebalance' },
+          undefined,
+          DEFAULT_FLOW_CONFIG,
+          options,
+        ),
+        {
+          message:
+            /principal withdrawal evidence does not match movement|principal withdrawal configuration changed|movement amount must be positive/,
+        },
+      );
+      t.false(
+        offer.log.some(
+          ({ _method }) => _method === 'send' || _method === 'transfer',
+        ),
+      );
+    });
   }
-  await failed;
-  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
-  const portfolioId = kit.reader.getPortfolioId();
-  t.is((await getFlowStatus(portfolioId, 1))?.state, 'fail');
-  t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
-
-  t.deepEqual(redemptionQuantities(), [50n], 'no automatic partial retry');
-  t.deepEqual(await txResolver.findPending(), []);
-
-  const retry = executeExit({ observedShares: 30n });
-  await txResolver.drainPending();
-  t.is(await retry, 'flow2');
-  t.is((await getFlowStatus(portfolioId, 2))?.state, 'done');
-  t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
-  t.deepEqual(redemptionQuantities(), [50n, 30n]);
-  t.deepEqual(await txResolver.findPending(), []);
-});
+}

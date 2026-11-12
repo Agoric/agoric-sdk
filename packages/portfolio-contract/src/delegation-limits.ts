@@ -1,5 +1,6 @@
 /** @file Delegation limits and evidence checks for delegated portfolio operations. */
 import {
+  type AssetPlaceRef,
   type FundsFlowPlan,
   type MovementDesc,
   type InstrumentId,
@@ -203,17 +204,17 @@ type PlanOperation =
       amount: MovementDesc['amount'];
       debitValueMicroUsd: bigint;
     }
-  | {
-      kind: 'redeemShares';
-      src: ERC4626InstrumentId;
+  | ((
+      | { kind: 'redeemShares'; src: ERC4626InstrumentId; shares: bigint }
+      | { kind: 'withdrawMax'; src: InstrumentId }
+    ) & {
       dest: InterChainAccountRef;
       /** Minimum destination quantity, not the quantity removed from src. */
       amount: MovementDesc['amount'];
       /** Micro-USD exposure removed from the source, independent of proceeds. */
       debitValueMicroUsd: bigint;
       holding: TypedHoldingDetail & { valueUsd: bigint };
-      shares: bigint;
-    }
+    })
   | {
       kind: 'claimRewards';
       src: InstrumentId;
@@ -223,6 +224,11 @@ type PlanOperation =
 
 type DecodedPlan = Omit<FundsFlowPlan, 'flow'> & { flow: PlanOperation[] };
 
+/** Get the address associated with a protocol such as Aave or Compound. */
+type GetProtocolAddress = (
+  src: InstrumentId,
+) => TypedHoldingDetail['tokenAddress'] | undefined;
+
 /** Resolve USDC identity from contract configuration, not from observations. */
 type GetUsdcAddress = (
   account: InterChainAccountRef,
@@ -231,6 +237,12 @@ type GetUsdcAddress = (
 type GetVaultAddress = (
   src: ERC4626InstrumentId,
 ) => TypedHoldingDetail['tokenAddress'] | undefined;
+
+const instrumentSupportsWithdrawMax = (
+  src: AssetPlaceRef,
+): src is InstrumentId =>
+  isERC4626MorphoInstrumentId(src) ||
+  (isInstrumentId(src) && /^(Aave|Compound)_/.test(src));
 
 /**
  * Decode once so every balance check uses the same operation semantics.
@@ -257,47 +269,63 @@ const decodePlan = (
     // chains must match for those checks to cover what actually happens.
     vetInstrumentAccountChain(movement);
     if (
-      (observations.holdings?.length && withdraw?.max === true) ||
-      withdraw?.amountOfShares !== undefined
+      withdraw?.amountOfShares !== undefined ||
+      (observations.holdings?.length && withdraw?.max === true)
     ) {
-      if (
-        !isERC4626MorphoInstrumentId(src) ||
-        !isInterChainAccountRef(dest) ||
-        dest !== `@${chainOf(src)}`
-      ) {
-        throw Fail`share redemption requires a Morpho source and its chain account destination: ${q(src)} -> ${q(dest)}`;
-      }
-      if (claimRewards) {
-        throw Fail`share redemption cannot also claim rewards at ${q(src)}`;
-      }
-      const candidates =
-        observations.holdings?.filter(
-          holding => holding.place === src && holding.kind === 'shares',
-        ) ?? [];
-      if (candidates.length !== 1) {
-        throw Fail`share redemption requires one observed share holding at ${q(src)}; found ${q(candidates.length)}`;
-      }
+      let planOperationBase:
+        | { kind: 'redeemShares'; src: ERC4626InstrumentId; shares: bigint }
+        | { kind: 'withdrawMax'; src: InstrumentId; shares?: bigint };
+      const isDestValid =
+        isInterChainAccountRef(dest) && dest === `@${chainOf(src)}`;
+      const srcKind = isERC4626MorphoInstrumentId(src) ? 'shares' : 'principal';
+      const candidates = (observations.holdings ?? []).filter(
+        holding => holding.place === src && holding.kind === srcKind,
+      );
       const holding = candidates[0]!;
+      if (isERC4626MorphoInstrumentId(src)) {
+        if (!isDestValid) {
+          throw Fail`share redemption requires a Morpho source and its chain account destination: ${q(src)} -> ${q(dest)}`;
+        }
+        !claimRewards ||
+          Fail`share redemption cannot also claim rewards at ${q(src)}`;
+        candidates.length === 1 ||
+          Fail`share redemption requires one observed shares holding at ${q(src)}; found ${q(candidates.length)}`;
+        const shares = withdraw?.amountOfShares ?? holding.amount;
+        shares <= holding.amount ||
+          Fail`requested shares ${q(shares)} exceed observed shares ${q(holding.amount)} at ${q(src)}`;
+        planOperationBase = { kind: 'redeemShares', src, shares };
+      } else {
+        if (!isDestValid || !instrumentSupportsWithdrawMax(src)) {
+          throw Fail`maximum withdrawal requires a compatible source and its chain account destination: ${q(src)} -> ${q(dest)}`;
+        }
+        !claimRewards ||
+          Fail`maximum withdrawal cannot also claim rewards at ${q(src)}`;
+        withdraw?.amountOfShares === undefined ||
+          Fail`principal withdrawal does not support amountOfShares at ${q(src)}`;
+        candidates.length === 1 ||
+          Fail`maximum withdrawal requires one observed principal holding at ${q(src)}; found ${q(candidates.length)}`;
+        planOperationBase = { kind: 'withdrawMax', src };
+      }
       const { valueUsd } = holding;
       if (valueUsd === undefined) {
         throw Fail`missing holding valuation for ${q(src)}`;
       }
-      const shares = withdraw?.amountOfShares ?? holding.amount;
-      shares <= holding.amount ||
-        Fail`requested shares ${q(shares)} exceed observed shares ${q(holding.amount)} at ${q(src)}`;
+      const shares = planOperationBase.shares ?? holding.amount;
       if (shares === 0n && amount.value > 0n) {
-        throw Fail`empty share holding cannot meet proceeds minimum ${q(amount.value)} at ${q(src)}`;
+        throw Fail`empty ${b(srcKind)} holding cannot meet proceeds minimum ${q(amount.value)} at ${q(src)}`;
       }
       return {
-        kind: 'redeemShares',
-        src,
+        ...planOperationBase,
         dest,
         amount,
-        // Round down so the remaining source exposure is not understated.
-        debitValueMicroUsd:
-          holding.amount === 0n ? 0n : (valueUsd * shares) / holding.amount,
         holding: { ...holding, valueUsd },
-        shares,
+        debitValueMicroUsd:
+          srcKind === 'shares'
+            ? holding.amount === 0n
+              ? 0n
+              : // Round down so the remaining source exposure is not understated.
+                (valueUsd * shares) / holding.amount
+            : valueUsd,
       };
     }
     if (!claimRewards) {
@@ -331,32 +359,76 @@ export type BoundShareWithdrawal = Readonly<{
   shares: bigint;
 }>;
 
+export type BoundPrincipalWithdrawal = Readonly<{
+  src: InstrumentId;
+  protocolAddress: TypedHoldingDetail['tokenAddress'];
+  tokenAddress: TypedHoldingDetail['tokenAddress'];
+  /** Observed underlying quantity; zero skips an already empty position. */
+  amount: bigint;
+}>;
+
 /** Derive execution instructions from the same operations used by allocation checks. */
-const bindShareWithdrawals = (
+const bindMaxWithdrawals = (
   plan: DecodedPlan,
-  getVaultAddress?: GetVaultAddress,
-): Partial<Record<number, BoundShareWithdrawal>> => {
-  const bound: Partial<Record<number, BoundShareWithdrawal>> = {};
+  {
+    getProtocolAddress,
+    getVaultAddress,
+    getUsdcAddress,
+  }: {
+    getProtocolAddress?: GetProtocolAddress;
+    getVaultAddress?: GetVaultAddress;
+    getUsdcAddress?: GetUsdcAddress;
+  },
+): {
+  principalWithdrawals: Record<number, BoundPrincipalWithdrawal>;
+  shareWithdrawals: Record<number, BoundShareWithdrawal>;
+} => {
+  const principalWithdrawals: Record<number, BoundPrincipalWithdrawal> = {};
+  const shareWithdrawals: Record<number, BoundShareWithdrawal> = {};
   for (const [step, movement] of plan.flow.entries()) {
-    if (movement.kind !== 'redeemShares') continue;
-    const vaultAddress = getVaultAddress?.(movement.src);
-    if (!vaultAddress) {
-      throw Fail`no configured vault for ${q(movement.src)}`;
+    if (movement.kind !== 'redeemShares' && movement.kind !== 'withdrawMax') {
+      continue;
     }
-    sameEvmAddress(movement.holding.tokenAddress, vaultAddress) ||
-      Fail`observed share token ${q(movement.holding.tokenAddress)} does not match configured vault ${q(vaultAddress)} at ${q(movement.src)}`;
-    if (movement.amount.value > 0n) {
-      throw Fail`share redemption cannot yet enforce a positive proceeds minimum ${q(movement.amount.value)} at ${q(movement.src)}`;
+    const { src, dest, amount, holding } = movement;
+
+    if (isERC4626MorphoInstrumentId(src)) {
+      if (movement.kind !== 'redeemShares') {
+        throw Fail`internal: Morpho sources must implement maximum withdrawal by shares`;
+      }
+      const vaultAddress =
+        getVaultAddress?.(src) || Fail`no configured vault for ${q(src)}`;
+      sameEvmAddress(holding.tokenAddress, vaultAddress) ||
+        Fail`observed share token ${q(holding.tokenAddress)} does not match configured vault ${q(vaultAddress)} at ${q(src)}`;
+      if (amount.value > 0n) {
+        throw Fail`share redemption cannot yet enforce a positive proceeds minimum ${q(amount.value)} at ${q(src)}`;
+      }
+      shareWithdrawals[step] = {
+        src,
+        vaultAddress,
+        shares: movement.shares,
+      };
+    } else if (holding.kind === 'principal') {
+      const protocolAddress = getProtocolAddress?.(src);
+      const usdcAddress = getUsdcAddress?.(dest);
+      if (!protocolAddress || !usdcAddress) {
+        throw Fail`no configured protocol or USDC for ${q(src)}`;
+      }
+      sameEvmAddress(holding.tokenAddress, usdcAddress) ||
+        Fail`observed principal token does not match configured USDC at ${q(src)}`;
+      if (amount.value > 0n) {
+        throw Fail`principal withdrawal cannot yet enforce a positive proceeds minimum ${q(amount.value)} at ${q(src)}`;
+      }
+      principalWithdrawals[step] = {
+        src,
+        protocolAddress,
+        tokenAddress: usdcAddress,
+        amount: holding.amount,
+      };
     }
-    bound[step] = {
-      src: movement.src,
-      vaultAddress,
-      shares: movement.shares,
-    };
   }
-  return harden(bound);
+  return harden({ principalWithdrawals, shareWithdrawals });
 };
-harden(bindShareWithdrawals);
+harden(bindMaxWithdrawals);
 
 /** An investment requires principal or shares; rewards alone do not cover it. */
 const hasObservedBalance = (
@@ -549,10 +621,10 @@ const projectPlanBalances = (
     }
   }
   const { flow } = plan;
-  const remainingShares = new Map<InstrumentId, bigint>();
+  const remainingQuantities = new Map<InstrumentId, bigint>();
   for (const movement of flow) {
-    if (movement.kind === 'redeemShares') {
-      remainingShares.set(movement.src, movement.holding.amount);
+    if (movement.kind === 'redeemShares' || movement.kind === 'withdrawMax') {
+      remainingQuantities.set(movement.src, movement.holding.amount);
     }
   }
   const schedule = makeSchedule({
@@ -572,23 +644,28 @@ const projectPlanBalances = (
     const ready = schedule.ready();
 
     const debits = new Map<PortfolioBalancePlaceRef, bigint>();
-    const shareDebits = new Map<InstrumentId, bigint>();
+    const quantityDebits = new Map<InstrumentId, bigint>();
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;
       const { src, debitValueMicroUsd } = movement;
       debits.set(src, (debits.get(src) ?? 0n) + debitValueMicroUsd);
       if (movement.kind === 'redeemShares') {
-        shareDebits.set(
+        quantityDebits.set(
           movement.src,
-          (shareDebits.get(movement.src) ?? 0n) + movement.shares,
+          (quantityDebits.get(movement.src) ?? 0n) + movement.shares,
+        );
+      } else if (movement.kind === 'withdrawMax') {
+        quantityDebits.set(
+          movement.src,
+          (quantityDebits.get(movement.src) ?? 0n) + movement.holding.amount,
         );
       }
     }
-    for (const [src, debit] of shareDebits) {
-      const available = remainingShares.get(src) ?? 0n;
+    for (const [src, debit] of quantityDebits) {
+      const available = remainingQuantities.get(src) ?? 0n;
       available >= debit ||
-        Fail`unfunded share withdrawal from ${q(src)}: available ${q(available)} < requested ${q(debit)}`;
+        Fail`unfunded maximum withdrawal from ${q(src)}: available ${q(available)} < requested ${q(debit)}`;
     }
     for (const [src, debit] of debits.entries()) {
       if (isInterChainAccountRef(src) && remainingCash.has(src)) {
@@ -614,8 +691,8 @@ const projectPlanBalances = (
         remainingCash.set(dest, remainingCash.get(dest)! + amount.value);
       }
     }
-    for (const [src, debit] of shareDebits) {
-      remainingShares.set(src, remainingShares.get(src)! - debit);
+    for (const [src, debit] of quantityDebits) {
+      remainingQuantities.set(src, remainingQuantities.get(src)! - debit);
     }
     for (const ix of ready) {
       schedule.complete(ix);
@@ -662,10 +739,14 @@ export const vetPlanAllocation = (
 };
 harden(vetPlanAllocation);
 
-type VettedAllocationPlan = Readonly<{
-  commitNow: boolean;
-  shareWithdrawals?: ReturnType<typeof bindShareWithdrawals>;
-}>;
+type VettedAllocationPlan = Readonly<
+  { commitNow: boolean } & Partial<
+    Pick<
+      ReturnType<typeof bindMaxWithdrawals>,
+      'principalWithdrawals' | 'shareWithdrawals'
+    >
+  >
+>;
 
 /**
  * Vet a target allocation and optional execution plan against delegated
@@ -683,6 +764,7 @@ export const vetAllocationPlan = (
   plan: FundsFlowPlan | undefined,
   observations: PlanObservations | undefined,
   addresses: {
+    getProtocolAddress?: GetProtocolAddress;
     getUsdcAddress?: GetUsdcAddress;
     getVaultAddress?: GetVaultAddress;
   } = {},
@@ -698,12 +780,13 @@ export const vetAllocationPlan = (
     addresses.getUsdcAddress,
   );
   assertMandateForPlanObservations(permissions, targetAllocation, observations);
-  const shareWithdrawals = bindShareWithdrawals(
+  const { principalWithdrawals, shareWithdrawals } = bindMaxWithdrawals(
     decodedPlan,
-    addresses.getVaultAddress,
+    addresses,
   );
   return harden({
     commitNow: true,
+    ...(keys(principalWithdrawals).length && { principalWithdrawals }),
     ...(keys(shareWithdrawals).length && { shareWithdrawals }),
   });
 };

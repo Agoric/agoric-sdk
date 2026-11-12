@@ -50,7 +50,7 @@ const makeHoldingObservations = (
   instrumentTvls: PlanObservations['instrumentTvls'] = {},
 ): PlanObservations => ({ balances: {}, holdings, instrumentTvls });
 
-const makeMaximumWithdrawalCase = ({
+const makeMorphoMaximumWithdrawalCase = ({
   shareQuantity = 50n,
   valueUsd = 100_000_000n,
   minimumProceeds = 0n,
@@ -755,7 +755,7 @@ test('balance observations report all missing places together', t => {
 });
 
 test('Observed holdings account for every location used by the plan', t => {
-  const { instrument, shares, movement } = makeMaximumWithdrawalCase();
+  const { instrument, shares, movement } = makeMorphoMaximumWithdrawalCase();
   const cash = makeHolding({
     place: '@Ethereum',
     kind: 'token',
@@ -786,7 +786,7 @@ test('Observed holdings account for every location used by the plan', t => {
 });
 
 test('Observed holdings must not be mistaken for an empty portfolio', t => {
-  const { checkAllocation } = makeMaximumWithdrawalCase({
+  const { checkAllocation } = makeMorphoMaximumWithdrawalCase({
     valueUsd: 100_000_000n,
   });
   t.throws(() => checkAllocation({ Aave_Ethereum: 100n }, { flow: [] }), {
@@ -1642,7 +1642,7 @@ const additiveWithdrawCases: [string, WithdrawParams | undefined][] = [
 ];
 
 test('A maximum withdrawal removes share exposure, not just its proceeds minimum', t => {
-  const { checkAllocation } = makeMaximumWithdrawalCase({
+  const { checkAllocation } = makeMorphoMaximumWithdrawalCase({
     valueUsd: 100_000_000n,
     minimumProceeds: 0n,
   });
@@ -1650,7 +1650,7 @@ test('A maximum withdrawal removes share exposure, not just its proceeds minimum
 });
 
 test('Redeeming some shares leaves their remaining value at the source', t => {
-  const { movement, checkAllocation } = makeMaximumWithdrawalCase({
+  const { movement, checkAllocation } = makeMorphoMaximumWithdrawalCase({
     shareQuantity: 50n,
     valueUsd: 100_000_000n,
   });
@@ -1665,10 +1665,12 @@ test('Redeeming some shares leaves their remaining value at the source', t => {
 });
 
 test('A full exit can be followed by investing cash already in the account', t => {
-  const { shares, movement, checkAllocation } = makeMaximumWithdrawalCase({
-    valueUsd: 100_000_000n,
-    minimumProceeds: 0n,
-  });
+  const { shares, movement, checkAllocation } = makeMorphoMaximumWithdrawalCase(
+    {
+      valueUsd: 100_000_000n,
+      minimumProceeds: 0n,
+    },
+  );
   const cash = 20_000_000n;
   const withCash = makeHoldingObservations([
     shares,
@@ -1801,7 +1803,7 @@ for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
   });
 
   test(`A full exit cannot treat unobserved investments as empty (${investment})`, t => {
-    const { instrument, shares, movement } = makeMaximumWithdrawalCase();
+    const { instrument, shares, movement } = makeMorphoMaximumWithdrawalCase();
     const observations = makeHoldingObservations([
       shares,
       makeHolding({
@@ -1850,7 +1852,7 @@ for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
 
 test('Redemption binds observed shares to the configured vault', t => {
   const { instrument, shares, observations, movement } =
-    makeMaximumWithdrawalCase({ shareQuantity: 50n });
+    makeMorphoMaximumWithdrawalCase({ shareQuantity: 50n });
   const plan = {
     flow: [{ ...movement, shareWithdrawals: { shares: 999n } }],
   };
@@ -1907,10 +1909,12 @@ test('Redemption binds observed shares to the configured vault', t => {
 });
 
 test('Only minimum redemption proceeds count toward final portfolio value', t => {
-  const { shares, movement, checkAllocation } = makeMaximumWithdrawalCase({
-    valueUsd: 100_000_000n,
-    minimumProceeds: 0n,
-  });
+  const { shares, movement, checkAllocation } = makeMorphoMaximumWithdrawalCase(
+    {
+      valueUsd: 100_000_000n,
+      minimumProceeds: 0n,
+    },
+  );
   const withOtherPosition = makeHoldingObservations([
     shares,
     makeHolding({
@@ -1935,11 +1939,12 @@ test('Only minimum redemption proceeds count toward final portfolio value', t =>
 });
 
 test('An empty share holding can meet only zero withdrawal minimums', t => {
-  const { instrument, movement, checkAllocation } = makeMaximumWithdrawalCase({
-    shareQuantity: 0n,
-    valueUsd: 0n,
-    minimumProceeds: 0n,
-  });
+  const { instrument, movement, checkAllocation } =
+    makeMorphoMaximumWithdrawalCase({
+      shareQuantity: 0n,
+      valueUsd: 0n,
+      minimumProceeds: 0n,
+    });
   t.notThrows(() => checkAllocation({ [instrument]: 100n }));
   t.throws(
     () =>
@@ -1947,17 +1952,17 @@ test('An empty share holding can meet only zero withdrawal minimums', t => {
         { [instrument]: 100n },
         { flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] },
       ),
-    { message: /empty share holding cannot meet proceeds minimum/ },
+    { message: /empty shares holding cannot meet proceeds minimum/ },
   );
 });
 
 test('Share withdrawals cannot exceed the observed shares', t => {
   const { instrument, shares, observations, movement, checkAllocation } =
-    makeMaximumWithdrawalCase({ shareQuantity: 50n });
+    makeMorphoMaximumWithdrawalCase({ shareQuantity: 50n });
   t.throws(
     () =>
       checkAllocation({ [instrument]: 100n }, { flow: [movement, movement] }),
-    { message: /unfunded share withdrawal.*50/ },
+    { message: /unfunded maximum withdrawal.*50/ },
   );
   t.throws(
     () =>
@@ -1984,14 +1989,14 @@ test('Share withdrawals cannot exceed the observed shares', t => {
           { flow: [movement] },
           { ...observations, holdings },
         ),
-      { message: /share redemption requires one observed share holding/ },
+      { message: /share redemption requires one observed shares holding/ },
     );
   }
 });
 
 test('A maximum share withdrawal leaves reward exposure at the source', t => {
   const { instrument, shares, movement, checkAllocation } =
-    makeMaximumWithdrawalCase();
+    makeMorphoMaximumWithdrawalCase();
   t.throws(
     () =>
       checkAllocation(
@@ -2012,7 +2017,8 @@ test('A maximum share withdrawal leaves reward exposure at the source', t => {
 });
 
 test('Maximum Morpho withdrawals target the position’s own chain account', t => {
-  const { instrument, movement, checkAllocation } = makeMaximumWithdrawalCase();
+  const { instrument, movement, checkAllocation } =
+    makeMorphoMaximumWithdrawalCase();
   t.throws(
     () =>
       checkAllocation(
@@ -2021,9 +2027,10 @@ test('Maximum Morpho withdrawals target the position’s own chain account', t =
       ),
     { message: /lives on "Ethereum", not "Arbitrum"/ },
   );
-  for (const [src, dest] of [
-    [instrument, 'Aave_Ethereum'],
-    ['Aave_Ethereum', '@Ethereum'],
+  for (const [src, dest, operationDesc] of [
+    [instrument, 'Aave_Ethereum', 'share redemption'],
+    // This source is ERC 4626 but *not* Morpho.
+    ['ERC4626_vaultU2_Ethereum', '@Ethereum', 'maximum withdrawal'],
   ] as const) {
     t.throws(
       () =>
@@ -2032,8 +2039,9 @@ test('Maximum Morpho withdrawals target the position’s own chain account', t =
           { flow: [{ ...movement, src, dest }] },
         ),
       {
-        message:
-          /share redemption requires a Morpho source and its chain account destination/,
+        message: RegExp(
+          `${operationDesc} requires a \\w+ source and its chain account destination`,
+        ),
       },
     );
   }
@@ -2169,3 +2177,189 @@ test('withdraw options introduce no protocol-specific admission rule', t => {
     ),
   );
 });
+
+for (const instrument of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
+  const principal = makeHolding({
+    place: instrument,
+    kind: 'principal',
+    amount: 123n,
+    valueUsd: 100_000_000n,
+  });
+  const movement: MovementDesc = {
+    src: instrument,
+    dest: '@Ethereum',
+    amount: { brand: USDC, value: 0n },
+    withdraw: { max: true },
+  };
+  const observations = makeHoldingObservations([principal]);
+  const addresses = {
+    getUsdcAddress: () => holdingTokens.usdc,
+    getProtocolAddress: () => holdingTokens.vault,
+  };
+  const vet = (
+    plan: FundsFlowPlan = { flow: [movement] },
+    evidence = observations,
+    configuration = addresses,
+  ) =>
+    vetAllocationPlan(
+      { allocation: {} },
+      { '@Ethereum': 1n },
+      plan,
+      evidence,
+      configuration,
+    );
+
+  test(`${instrument}: full exit binds principal and removes its entire USD exposure`, t => {
+    const submitted = {
+      flow: [{ ...movement, principalWithdrawals: { amount: 999n } }],
+    };
+    t.deepEqual(vet(submitted), {
+      commitNow: true,
+      principalWithdrawals: {
+        0: {
+          src: instrument,
+          protocolAddress: holdingTokens.vault,
+          tokenAddress: holdingTokens.usdc,
+          amount: 123n,
+        },
+      },
+    });
+    t.notThrows(() =>
+      vet(
+        undefined,
+        makeHoldingObservations([{ ...principal, amount: 0n, valueUsd: 0n }]),
+      ),
+    );
+    for (const order of [undefined, []]) {
+      t.throws(() => vet({ flow: [movement, movement], order }), {
+        message: /unfunded maximum withdrawal/,
+      });
+      // Quantity reservation must still work when the position has no USD value.
+      t.throws(
+        () =>
+          vet(
+            { flow: [movement, movement], order },
+            makeHoldingObservations([{ ...principal, valueUsd: 0n }]),
+          ),
+        { message: /unfunded maximum withdrawal/ },
+      );
+    }
+  });
+
+  test(`${instrument}: full exit requires one valued principal holding of configured USDC`, t => {
+    for (const holdings of [
+      [{ ...principal, kind: 'shares' as const }],
+      [{ ...principal, kind: 'claimable-reward' as const }],
+      [principal, principal],
+    ]) {
+      t.throws(() => vet(undefined, makeHoldingObservations(holdings)), {
+        message: /requires one observed principal holding/,
+      });
+    }
+    t.throws(
+      () =>
+        vet(
+          undefined,
+          makeHoldingObservations([{ ...principal, valueUsd: undefined }]),
+        ),
+      { message: /missing holding valuation/ },
+    );
+    t.throws(
+      () =>
+        vet(
+          undefined,
+          makeHoldingObservations([
+            { ...principal, tokenAddress: holdingTokens.reward },
+          ]),
+        ),
+      { message: /observed principal token does not match configured USDC/ },
+    );
+    for (const configuration of [
+      { ...addresses, getUsdcAddress: undefined },
+      { ...addresses, getProtocolAddress: undefined },
+    ]) {
+      t.throws(
+        () =>
+          vetAllocationPlan(
+            { allocation: {} },
+            { '@Ethereum': 1n },
+            { flow: [movement] },
+            observations,
+            configuration,
+          ),
+        { message: /no configured protocol or USDC/ },
+      );
+    }
+  });
+
+  test(`${instrument}: full exit leaves rewards at the source`, t => {
+    t.throws(
+      () =>
+        vet(
+          undefined,
+          makeHoldingObservations([
+            principal,
+            makeHolding({
+              place: instrument,
+              kind: 'claimable-reward',
+              amount: 20n,
+              valueUsd: 20_000_000n,
+            }),
+          ]),
+        ),
+      { message: /plan final balance exceeds target allocation.*20000000/ },
+    );
+  });
+
+  test(`${instrument}: full exit rejects payout minimums, share quantities and reward claims`, t => {
+    t.throws(
+      () =>
+        vet({ flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] }),
+      { message: /cannot yet enforce a positive proceeds minimum/ },
+    );
+    t.throws(
+      () =>
+        vet({
+          // @ts-expect-error
+          flow: [{ ...movement, withdraw: { max: true, amountOfShares: 0n } }],
+        }),
+      { message: /principal withdrawal does not support amountOfShares/ },
+    );
+    t.throws(
+      () =>
+        vet({
+          flow: [{ ...movement, claimRewards: { tokens: [], minAmounts: [] } }],
+        }),
+      { message: /maximum withdrawal cannot also claim rewards/ },
+    );
+    t.throws(() => vet({ flow: [{ ...movement, dest: '@Arbitrum' }] }), {
+      message: /lives on "Ethereum", not "Arbitrum"/,
+    });
+    t.throws(() => vet({ flow: [{ ...movement, dest: 'Aave_Ethereum' }] }), {
+      message:
+        /self-movement|requires a compatible source and its chain account destination/,
+    });
+  });
+
+  test(`${instrument}: only existing USDC can fund movements following a full exit`, t => {
+    const cash = makeHolding({
+      place: '@Ethereum',
+      kind: 'token',
+      amount: 20_000_000n,
+      valueUsd: 20_000_000n,
+    });
+    const evidence = makeHoldingObservations([principal, cash]);
+    const transfer = (value: bigint): MovementDesc => ({
+      src: '@Ethereum',
+      dest: '@Arbitrum',
+      amount: { brand: USDC, value },
+    });
+    t.notThrows(() =>
+      vet({ flow: [movement, transfer(cash.amount)] }, evidence),
+    );
+    t.throws(
+      () => vet({ flow: [movement, transfer(cash.amount + 1n)] }, evidence),
+      { message: /unfunded USDC movement/ },
+    );
+  });
+}

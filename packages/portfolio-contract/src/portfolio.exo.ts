@@ -800,6 +800,14 @@ export const preparePortfolioKit = (
               {
                 getUsdcAddress: account =>
                   contracts[chainOf(account) as AxelarChain]?.usdc,
+                getProtocolAddress: src => {
+                  const addresses = contracts[chainOf(src) as AxelarChain];
+                  return src.startsWith('Aave_')
+                    ? addresses?.aavePool
+                    : src.startsWith('Compound_')
+                      ? addresses?.compound
+                      : undefined;
+                },
                 getVaultAddress: src =>
                   contracts[chainOf(src) as AxelarChain]?.[src],
               },
@@ -817,7 +825,7 @@ export const preparePortfolioKit = (
             vetObservationPlaces(currentBalancePlaces, plan, observations);
             vettedPlan = vetPlan();
           }
-          const { shareWithdrawals } = vettedPlan ?? {};
+          const { shareWithdrawals, principalWithdrawals } = vettedPlan ?? {};
 
           // Check and reserve synchronously, after any observation verification.
           insistLatestFlowFinished(this.state);
@@ -842,7 +850,10 @@ export const preparePortfolioKit = (
             undefined,
             startedFlow,
             undefined,
-            shareWithdrawals && { shareWithdrawals },
+            (shareWithdrawals || principalWithdrawals) && {
+              ...(shareWithdrawals && { shareWithdrawals }),
+              ...(principalWithdrawals && { principalWithdrawals }),
+            },
           );
 
           const { flowId } = startedFlow;
