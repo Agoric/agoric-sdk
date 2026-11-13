@@ -22,6 +22,7 @@ import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { EvmWalletOperationType } from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import { makeTokenIdKey } from '@agoric/portfolio-api/src/places.js';
 import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
 import {
   computeTargetBalances,
@@ -195,7 +196,8 @@ export const pickAutoClaimSources = (
     const usdcFromTokenRates = exchangeRates.filter(
       rate =>
         `${rate.evmChainId}` === evmChainId &&
-        rate.sourceToken === tokenId &&
+        makeTokenIdKey(rate.sourceToken, `@${chainName}`) ===
+          makeTokenIdKey(tokenId, `@${chainName}`) &&
         rate.targetDenom === 'USDC',
     );
     if (!usdcFromTokenRates.length) continue;

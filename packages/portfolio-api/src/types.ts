@@ -225,8 +225,9 @@ type NonNativeHoldingKind = Exclude<HoldingKind, `$${string}`>;
  * Solana mint. `$SYMBOL` holdings use the empty string. Do not substitute
  * a display symbol or repeat the chain as a CAIP-19 identifier. Resolve
  * decimal scale from chain asset metadata for this identifier. Preserve its
- * spelling for storage, signing, and chain operations; compare token IDs
- * case-insensitively using `tokenId?.toLowerCase()` on both sides.
+ * spelling for storage, signing, and chain operations. Compare token IDs using
+ * `makeTokenIdKey(tokenId, place)`: EVM `0x` identifiers compare in lowercase;
+ * non-EVM identifiers compare case-sensitively.
  */
 type HoldingIdentity =
   | {
@@ -249,12 +250,12 @@ type HoldingIdentity =
  * One authenticated raw holding, independent of its USD valuation.
  *
  * The identity is `(place, kind, tokenId)`: compare `place` and `kind` exactly
- * and `tokenId` case-insensitively, across all chains. EVM addresses must be
- * lowercase hex; other chain identifiers retain their canonical spelling
- * (including case) when stored and signed. Multiple holdings may share a
- * place, including multiple reward tokens, but duplicate identities are
- * rejected. Instrument
- * holdings appear under the instrument, not again under its chain account.
+ * and compare `tokenId` using its chain-aware canonical key. EVM addresses
+ * must be lowercase hex; other chain identifiers compare case-sensitively
+ * and retain their canonical spelling when stored and signed. Multiple holdings
+ * may share a place, including multiple reward tokens, but duplicate identities
+ * are rejected. Instrument holdings appear under the instrument, not again
+ * under its chain account.
  * Missing holdings are unobserved and must never be treated as zero.
  *
  * Signed observations use the shared `YmaxObservation` version-1 schema.

@@ -42,6 +42,7 @@ import {
   isInstrumentId,
   isPortfolioBalancePlaceRef,
   maybeChainOf,
+  getCanonicalHoldingKey,
 } from './places.ts';
 import type {
   PlanObservations,
@@ -279,11 +280,11 @@ const assertTypedHoldings: (
         `holding kind ${kind} has an incompatible token identifier`,
       );
     }
-    const identity = JSON.stringify([place, kind, tokenId?.toLowerCase()]);
-    if (identities.has(identity)) {
-      throw TypeError(`duplicate holding identity ${identity}`);
+    const holdingKey = getCanonicalHoldingKey({ place, kind, tokenId });
+    if (identities.has(holdingKey)) {
+      throw TypeError(`duplicate holding identity ${holdingKey}`);
     }
-    identities.add(identity);
+    identities.add(holdingKey);
     assertUint256(amount, 'amount');
     if (
       valueUusd !== undefined &&

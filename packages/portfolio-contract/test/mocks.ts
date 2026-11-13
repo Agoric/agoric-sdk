@@ -439,9 +439,12 @@ export const chainMetadataMock = harden({
     caipChainId: 'eip155:43114',
     chainName: 'Avalanche',
     tokenMetadataById: {
-      [makeTokenIdKey(avalancheRwd.tokenId)]: avalancheRwd,
-      [makeTokenIdKey(avalancheDai.tokenId)]: avalancheDai,
-      [makeTokenIdKey(avalancheUsdc.tokenId)]: avalancheUsdc,
+      [makeTokenIdKey(avalancheRwd.tokenId, `@${avalancheRwd.chainName}`)]:
+        avalancheRwd,
+      [makeTokenIdKey(avalancheDai.tokenId, `@${avalancheDai.chainName}`)]:
+        avalancheDai,
+      [makeTokenIdKey(avalancheUsdc.tokenId, `@${avalancheUsdc.chainName}`)]:
+        avalancheUsdc,
     },
   },
 } as const satisfies ChainTokenMetadata);

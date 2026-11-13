@@ -84,8 +84,9 @@ test('extractTokenMetadataListFromYds supports yds shapes', t => {
       caipChainId: reward.caipChainId,
       chainName: reward.chainName,
       tokenMetadataById: {
-        [makeTokenIdKey(reward.tokenId)]: reward,
-        [makeTokenIdKey(stableToken.tokenId)]: stableToken,
+        [makeTokenIdKey(reward.tokenId, `@${reward.chainName}`)]: reward,
+        [makeTokenIdKey(stableToken.tokenId, `@${stableToken.chainName}`)]:
+          stableToken,
       },
     },
   });
@@ -99,17 +100,32 @@ test('collateTokenMetadata supports arrays of token metadata', t => {
       caipChainId: reward.caipChainId,
       chainName: reward.chainName,
       tokenMetadataById: {
-        [makeTokenIdKey(reward.tokenId)]: reward,
+        [makeTokenIdKey(reward.tokenId, `@${reward.chainName}`)]: reward,
       },
     },
     Base: {
       caipChainId: 'eip155:8453',
       chainName: 'Base',
       tokenMetadataById: {
-        [makeTokenIdKey(reward2.tokenId)]: reward2,
+        [makeTokenIdKey(reward2.tokenId, `@${reward2.chainName}`)]: reward2,
       },
     },
   });
+});
+
+test('collateTokenMetadata preserves case-distinct non-EVM 0x identifiers', t => {
+  const token = {
+    ...reward,
+    chainName: 'noble',
+    caipChainId: 'cosmos:noble-1',
+    tokenId: '0xAbCd',
+  };
+  const lower = { ...token, tokenId: '0xabcd' };
+  const metadata = collateTokenMetadata([token, lower]);
+  t.deepEqual(Object.keys(metadata.noble.tokenMetadataById).sort(), [
+    '0xAbCd',
+    '0xabcd',
+  ]);
 });
 
 test('withMetadata merges configured reward token metadata', t => {
@@ -125,7 +141,7 @@ test('withMetadata merges configured reward token metadata', t => {
   const withTokens = withMetadata(config, {
     Arbitrum: {
       tokenMetadataById: {
-        [makeTokenIdKey(reward.tokenId)]: reward,
+        [makeTokenIdKey(reward.tokenId, `@${reward.chainName}`)]: reward,
       },
     },
   });
@@ -133,8 +149,9 @@ test('withMetadata merges configured reward token metadata', t => {
   const metadata = withTokens.chainMetadata.Arbitrum;
   assert(metadata);
   t.deepEqual(metadata.tokenMetadataById, {
-    [makeTokenIdKey(stableToken.tokenId)]: stableToken,
-    [makeTokenIdKey(reward.tokenId)]: reward,
+    [makeTokenIdKey(stableToken.tokenId, `@${stableToken.chainName}`)]:
+      stableToken,
+    [makeTokenIdKey(reward.tokenId, `@${reward.chainName}`)]: reward,
   });
   t.false(
     Object.hasOwn(withTokens.axelarConfig.Arbitrum.contracts, 'rewardTokens'),
