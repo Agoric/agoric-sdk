@@ -266,14 +266,13 @@ const assertTypedHoldings: (
     if (
       typeof tokenId !== 'string' ||
       /\s/.test(tokenId) ||
-      (!isNative && isEvmPlace && !/^0x[0-9a-f]{40}$/.test(tokenId)) ||
-      (/^0x/i.test(tokenId) && !/^0x[0-9a-f]{40}$/.test(tokenId))
+      (!isNative && isEvmPlace && !/^0x[0-9a-f]{40}$/.test(tokenId))
     ) {
       throw TypeError(`invalid holding token identifier ${String(tokenId)}`);
     }
     if (
       isNative !== (tokenId === '') ||
-      /^0x0{40}$/.test(tokenId) ||
+      (isEvmPlace && /^0x0{40}$/.test(tokenId)) ||
       (isNative && !isEvmPlace)
     ) {
       throw TypeError(
