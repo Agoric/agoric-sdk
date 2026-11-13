@@ -1907,6 +1907,25 @@ test('Redemption binds observed shares to the configured vault', t => {
   );
 });
 
+test('Maximum withdrawal requires observed shares, even with legacy balances', t => {
+  const { instrument, movement } = makeMaximumWithdrawalCase();
+  const observations: PlanObservations = {
+    balances: { [instrument]: 50n, '@Ethereum': 0n },
+    instrumentTvls: {},
+  };
+  t.throws(
+    () =>
+      vetAllocationPlan(
+        { allocation: {} },
+        { [instrument]: 100n },
+        { flow: [movement] },
+        observations,
+        { getVaultAddress: () => holdingTokens.vault },
+      ),
+    { message: /share redemption requires one observed share holding/ },
+  );
+});
+
 test('Only minimum redemption proceeds count toward final portfolio value', t => {
   const { shares, movement, checkAllocation } = makeMaximumWithdrawalCase({
     valueUusd: 100_000_000n,

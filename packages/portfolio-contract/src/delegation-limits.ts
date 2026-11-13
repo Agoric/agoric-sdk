@@ -232,6 +232,7 @@ type GetVaultAddress = (src: ERC4626InstrumentId) => EvmAddress | undefined;
 /**
  * Decode once so every balance check uses the same operation semantics.
  * Legacy balance observations retain the existing exact-amount fallback.
+ * Share withdrawals require observed share quantities.
  */
 const decodePlan = (
   plan: FundsFlowPlan,
@@ -254,7 +255,8 @@ const decodePlan = (
     // chains must match for those checks to cover what actually happens.
     vetInstrumentAccountChain(movement);
     if (
-      (observations.holdings?.length && withdraw?.max === true) ||
+      (withdraw?.max === true &&
+        (observations.holdings?.length || isERC4626MorphoInstrumentId(src))) ||
       withdraw?.amountOfShares !== undefined
     ) {
       if (
