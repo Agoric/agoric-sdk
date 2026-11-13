@@ -42,6 +42,7 @@ import {
   isInstrumentId,
   isPortfolioBalancePlaceRef,
   maybeChainOf,
+  matchHoldingTokenId,
 } from './places.ts';
 import type {
   PlanObservations,
@@ -225,7 +226,7 @@ const toSafeNumber = (value: bigint, what: string): number => {
 const assertTypedHoldings: (
   holdings: readonly TypedHoldingDetail[],
 ) => asserts holdings is TypedHoldingDetail[] = holdings => {
-  const identities = new Set<string>();
+  const identities = new Map<string, string[]>();
   for (const {
     place,
     kind,
@@ -261,7 +262,7 @@ const assertTypedHoldings: (
     const isEvmPlace = isEvmChain(maybeChainOf(place));
     // EIP-712 strings do not normalize addresses. Reject non-canonical hex
     // in signed data. Other chains retain their local identifiers, e.g. Cosmos
-    // denoms or Solana mints. Identity comparisons fold case on every chain.
+    // denoms or Solana mints. Only EVM identity comparisons fold case.
     if (
       typeof tokenId !== 'string' ||
       /\s/.test(tokenId) ||
@@ -279,11 +280,20 @@ const assertTypedHoldings: (
         `holding kind ${kind} has an incompatible token identifier`,
       );
     }
-    const identity = JSON.stringify([place, kind, tokenId?.toLowerCase()]);
-    if (identities.has(identity)) {
-      throw TypeError(`duplicate holding identity ${identity}`);
+    const location = JSON.stringify([place, kind]);
+    const tokenIds = identities.get(location) ?? [];
+    if (
+      tokenIds.some(
+        seen =>
+          seen === tokenId || matchHoldingTokenId({ place, tokenId }, seen),
+      )
+    ) {
+      throw TypeError(
+        `duplicate holding identity ${JSON.stringify([place, kind, tokenId])}`,
+      );
     }
-    identities.add(identity);
+    tokenIds.push(tokenId);
+    identities.set(location, tokenIds);
     assertUint256(amount, 'amount');
     if (
       valueUusd !== undefined &&

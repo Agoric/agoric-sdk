@@ -19,6 +19,7 @@ import type {
   InterChainAccountRef,
   LocalChainAccountRef,
   PortfolioBalancePlaceRef,
+  TypedHoldingDetail,
   WithdrawToChainRef,
 } from './types.js';
 
@@ -387,3 +388,26 @@ const evmChains = deepFreeze({
 export const isEvmChain = (specimen: unknown): boolean =>
   typeof specimen === 'string' && Object.hasOwn(evmChains, specimen);
 deepFreeze(isEvmChain);
+
+/** Compare nonempty token IDs, ignoring case only for EVM IDs with a 0x payload. */
+export const matchHoldingTokenId = (
+  holding: Pick<TypedHoldingDetail, 'place' | 'tokenId'>,
+  tokenId: string,
+): boolean => {
+  if (!holding.tokenId || !tokenId) return false;
+  if (isEvmChain(maybeChainOf(holding.place))) {
+    if (
+      !holding.tokenId.startsWith('0x') ||
+      !tokenId.startsWith('0x') ||
+      holding.tokenId.length < 3 ||
+      tokenId.length < 3
+    ) {
+      return false;
+    }
+    const lcaseHoldingTokenId = holding.tokenId?.toLowerCase();
+    const lcaseTokenId = tokenId?.toLowerCase();
+    return lcaseHoldingTokenId === lcaseTokenId;
+  }
+  return holding.tokenId === tokenId;
+};
+deepFreeze(matchHoldingTokenId);

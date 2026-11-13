@@ -225,8 +225,9 @@ type NonNativeHoldingKind = Exclude<HoldingKind, `$${string}`>;
  * Solana mint. `$SYMBOL` holdings use the empty string. Do not substitute
  * a display symbol or repeat the chain as a CAIP-19 identifier. Resolve
  * decimal scale from chain asset metadata for this identifier. Preserve its
- * spelling for storage, signing, and chain operations; compare token IDs
- * case-insensitively using `tokenId?.toLowerCase()` on both sides.
+ * spelling for storage, signing, and chain operations. Compare token IDs with
+ * `matchHoldingTokenId` from places: case-insensitively for EVM chains and
+ * exactly for other chains.
  */
 type HoldingIdentity =
   | {
@@ -249,7 +250,8 @@ type HoldingIdentity =
  * One authenticated raw holding, independent of its USD valuation.
  *
  * The identity is `(place, kind, tokenId)`: compare `place` and `kind` exactly
- * and `tokenId` case-insensitively, across all chains. EVM addresses must be
+ * and `tokenId` using `matchHoldingTokenId`: case-insensitively for EVM chains,
+ * exactly for other chains. EVM addresses must be
  * lowercase hex; other chain identifiers retain their canonical spelling
  * (including case) when stored and signed. Multiple holdings may share a
  * place, including multiple reward tokens, but duplicate identities are

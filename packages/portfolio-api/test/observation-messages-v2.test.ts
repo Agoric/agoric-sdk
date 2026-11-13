@@ -194,7 +194,7 @@ test('chain-local token identifiers round trip in one signed schema', t => {
   });
 });
 
-test('holding identities fold token ID case while signed data preserves spelling', t => {
+test('non-EVM holding identities preserve token ID case in comparisons and signatures', t => {
   for (const tokenId of [
     'uUSDC',
     `ibc/${'ABCDEF12'.repeat(8)}`,
@@ -204,22 +204,19 @@ test('holding identities fold token ID case while signed data preserves spelling
     const lower = { ...entry, tokenId: tokenId.toLowerCase() };
     t.deepEqual(decode([entry]).observations.holdings, [entry]);
     t.deepEqual(decode([lower]).observations.holdings, [lower]);
-    t.throws(() => messageFor([entry, lower]), {
-      message: /duplicate holding identity/,
-    });
+    t.deepEqual(decode([entry, lower]).observations.holdings, [entry, lower]);
     const message = readMessage(messageFor([entry]).message);
-    t.throws(
-      () =>
-        portfolioObservationsFromEIP712({
-          ...message,
-          holdings: [
-            ...message.holdings,
-            { ...message.holdings[0]!, tokenId: lower.tokenId },
-          ],
-        }),
-      { message: /duplicate holding identity/ },
+    t.deepEqual(
+      portfolioObservationsFromEIP712({
+        ...message,
+        holdings: [
+          ...message.holdings,
+          { ...message.holdings[0]!, tokenId: lower.tokenId },
+        ],
+      }).observations.holdings,
+      [entry, lower],
     );
-    // Case-insensitive identity does not authorize changes to signed strings.
+    // Both spellings are preserved in signed data.
     t.not(
       hashTypedData(messageFor([entry]) as any),
       hashTypedData(messageFor([lower]) as any),
@@ -380,6 +377,24 @@ test('chain classification handles registered and unresolved instrument places',
 });
 
 test('native coin holdings require an opted-in EVM account', t => {
+  const native: HoldingDetail = {
+    place: '@Base',
+    kind: '$ETH',
+    tokenId: '',
+    amount: 0n,
+  };
+  t.throws(() => messageFor([native, native]), {
+    message: /duplicate holding identity/,
+  });
+  const message = readMessage(messageFor([native]).message);
+  t.throws(
+    () =>
+      portfolioObservationsFromEIP712({
+        ...message,
+        holdings: [...message.holdings, ...message.holdings],
+      }),
+    { message: /duplicate holding identity/ },
+  );
   for (const place of ['@agoric', '@noble', '@osmosis', '@UnknownChain']) {
     const entry = {
       ...nobleUsdc,
