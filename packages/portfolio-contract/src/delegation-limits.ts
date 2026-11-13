@@ -398,7 +398,10 @@ export const vetObservationPlaces = (
       .filter(([, balance]) => balance !== 0n)
       .map(([place]) => place as PortfolioBalancePlaceRef),
     ...holdings
-      .filter(({ amount, valueUusd }) => amount !== 0n || valueUusd !== 0n)
+      .filter(
+        ({ amount, valueUusd }) =>
+          amount !== 0n || (valueUusd !== undefined && valueUusd !== 0n),
+      )
       .map(({ place }) => place),
   ]);
   const extra = [...nonempty].filter(place => !expected.has(place));

@@ -778,11 +778,8 @@ test('Observed holdings account for every location used by the plan', t => {
   });
   const extra = { ...cash, place: '@Base' } as const;
   t.notThrows(() => check([shares, cash, extra]));
-  for (const change of [
-    { amount: 1n },
-    { valueUusd: 1n },
-    { valueUusd: undefined },
-  ]) {
+  t.notThrows(() => check([shares, cash, { ...extra, valueUusd: undefined }]));
+  for (const change of [{ amount: 1n }, { valueUusd: 1n }]) {
     t.throws(() => check([shares, cash, { ...extra, ...change }]), {
       message: 'unexpected balance observation for ["@Base"]',
     });
