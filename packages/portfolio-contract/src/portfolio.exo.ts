@@ -2113,17 +2113,8 @@ export const preparePortfolioKit = (
          * behaves like `SimpleRebalance`: the planner supplies the steps.
          * The facet is kept because durable kits can't drop facets, and
          * invitations made before the upgrade still target it.
-         *
-         * A rebalance plan doesn't use the offer's funds, so reject a
-         * proposal that gives or wants any: Deposit and Withdraw handle
-         * those. Check here rather than in the invitation's proposal shape,
-         * since invitations made before the upgrade keep their old shape.
          */
         handle(seat: ZCFSeat, offerArgs: unknown): FlowKey {
-          insistAgoricOwned(this.state);
-          const { give, want } = seat.getProposal();
-          (keys(give).length === 0 && keys(want).length === 0) ||
-            Fail`Rebalance offers can't give or want funds; use Deposit or Withdraw`;
           return this.facets.simpleRebalanceHandler.handle(seat, offerArgs);
         },
       },
@@ -2152,6 +2143,13 @@ export const preparePortfolioKit = (
       simpleRebalanceHandler: {
         handle(seat: ZCFSeat, offerArgs: unknown): FlowKey {
           insistAgoricOwned(this.state);
+          // A rebalance plan doesn't use the offer's funds, so reject a
+          // proposal that gives or wants any: Deposit and Withdraw handle
+          // those. Check here rather than in the invitation's proposal shape,
+          // since invitations made before an upgrade keep their old shape.
+          const { give, want } = seat.getProposal();
+          (keys(give).length === 0 && keys(want).length === 0) ||
+            Fail`Rebalance offers can't give or want funds; use Deposit or Withdraw`;
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           const { manager } = this.facets;
 

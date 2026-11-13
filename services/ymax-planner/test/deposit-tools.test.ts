@@ -38,6 +38,7 @@ import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { q, Fail } from '@endo/errors';
 import { Far } from '@endo/pass-style';
 import PROD_NETWORK from '@agoric/portfolio-api/src/network/prod-network.js';
+import { TargetBalanceError } from '@agoric/portfolio-api/src/target-balances.js';
 import type { EvmAddress } from '@agoric/fast-usdc';
 import { assetList as nobleAssetList } from 'chain-registry/mainnet/noble/index.js';
 import type { InstrumentBlocks } from '../src/instrument-status.ts';
@@ -128,6 +129,108 @@ for (const op of ['deposit', 'rebalance', 'withdraw'] as const) {
         { amount: { value: scale6(op === 'deposit' ? 29 : 9) } },
       );
     }
+  });
+}
+
+test('withdraw planning partially satisfies a request using available liquidity', async t => {
+  const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    currentBalances: {
+      Aave_Ethereum: makeDeposit(scale6(100)),
+      Compound_Ethereum: makeDeposit(scale6(100)),
+    },
+    instrumentLiquidity: {
+      Aave_Ethereum: scale6(10),
+      Compound_Ethereum: scale6(20),
+    },
+    amount: makeDeposit(scale6(50)),
+    toChain: 'Ethereum',
+  });
+  arrayIsLike(t, plan.flow, [
+    { dest: '@Ethereum' },
+    { dest: '@Ethereum' },
+    { src: '@Ethereum', dest: '-Ethereum', amount: makeDeposit(scale6(27)) },
+  ]);
+  t.deepEqual(
+    plan.flow.find(m => m.src === 'Aave_Ethereum')?.amount,
+    makeDeposit(scale6(9)),
+  );
+  t.deepEqual(
+    plan.flow.find(m => m.src === 'Compound_Ethereum')?.amount,
+    makeDeposit(scale6(18)),
+  );
+});
+
+test('withdraw planning rejects when all liquidity is unavailable', async t => {
+  await t.throwsAsync(
+    planWithdrawFromAllocations({
+      ...plannerContext,
+      currentBalances: {
+        Aave_Ethereum: makeDeposit(scale6(100)),
+        Compound_Ethereum: makeDeposit(scale6(100)),
+      },
+      instrumentLiquidity: { Aave_Ethereum: 0n, Compound_Ethereum: 0n },
+      amount: makeDeposit(scale6(50)),
+      toChain: 'Ethereum',
+    }),
+    { instanceOf: TargetBalanceError, message: /No funds/ },
+  );
+});
+
+{
+  const prodContext = {
+    ...plannerContext,
+    network: { ...PROD_NETWORK, debug: false },
+  };
+  const payoutTo = (plan: { flow: MovementDesc[] }, dest: AssetPlaceRef) =>
+    plan.flow
+      .filter(m => m.dest === dest)
+      .reduce((v, m) => v + m.amount.value, 0n);
+
+  test('AGO-535: partial withdrawal leaves unmovable remote dust behind', async t => {
+    const plan = await planWithdrawFromAllocations({
+      ...prodContext,
+      currentBalances: {
+        '@Arbitrum': makeDeposit(scale6(0.5)),
+        '@Avalanche': makeDeposit(scale6(0.5)),
+        '@Base': makeDeposit(scale6(98.5)),
+        '@Ethereum': makeDeposit(scale6(0.5)),
+      },
+      amount: makeDeposit(scale6(99)),
+      toChain: 'Base',
+    });
+    t.is(payoutTo(plan, '-Base'), scale6(98.5));
+  });
+
+  test('partial withdrawal omits remote liquidity below the bridge minimum', async t => {
+    const plan = await planWithdrawFromAllocations({
+      ...prodContext,
+      currentBalances: {
+        Aave_Base: makeDeposit(scale6(100)),
+        Aave_Ethereum: makeDeposit(scale6(100)),
+      },
+      instrumentLiquidity: {
+        Aave_Base: scale6(0.5),
+        Aave_Ethereum: scale6(10),
+      },
+      amount: makeDeposit(scale6(50)),
+      toChain: 'Ethereum',
+    });
+    t.is(payoutTo(plan, '-Ethereum'), scale6(9));
+  });
+
+  test('withdrawal tops up a sub-minimum remote remainder from the destination', async t => {
+    const plan = await planWithdrawFromAllocations({
+      ...prodContext,
+      currentBalances: {
+        Aave_Ethereum: makeDeposit(scale6(1000)),
+        '@Base': makeDeposit(scale6(100)),
+      },
+      targetAllocation: { Aave_Ethereum: 1n },
+      amount: makeDeposit(scale6(100.5)),
+      toChain: 'Base',
+    });
+    t.is(payoutTo(plan, '-Base'), scale6(100.5));
   });
 }
 
@@ -1614,9 +1717,7 @@ for (const [title, usdcOverdraft] of Object.entries({
     ['dynamic', undefined, dynamicBlocks],
   ];
   for (const [kind, staticBlockWithdrawReason, instrumentBlocks] of cases) {
-    // TODO(AGO-535): Both of these scenarios should withdraw 50 USDC.
-    const testFn = usdcOverdraft === 0 ? test : test.failing;
-    testFn(`${title}, ${kind}`, async t => {
+    test(`${title}, ${kind}`, async t => {
       const network: NetworkSpec = harden({
         ...plannerContext.network,
         pools: [

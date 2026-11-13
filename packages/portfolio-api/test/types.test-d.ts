@@ -27,6 +27,7 @@ import type {
   WithdrawParams,
   PlanObservations,
   HoldingDetail,
+  TypedHoldingDetail,
   HoldingKind,
   PortfolioBalancePlaceRef,
   PortfolioKey,
@@ -129,21 +130,50 @@ expectNotAssignable<HoldingKind>('share');
 const rawHolding = {
   place: 'ERC4626_morphoGauntletUsdcPrimeV2_Base',
   kind: 'shares',
-  tokenAddress: '0x1234',
+  tokenId: '0x1234',
   amount: 0n,
-  valueUsd: undefined,
+  valueUusd: undefined,
   balanceUsdc: undefined,
 } as const;
 expectAssignable<HoldingDetail>(rawHolding);
-expectAssignable<HoldingDetail>({ ...rawHolding, valueUsd: 0n });
-expectAssignable<HoldingDetail>({ ...rawHolding, valueUsd: undefined });
-expectNotAssignable<HoldingDetail>({ ...rawHolding, valueUsd: 1 });
+expectAssignable<HoldingDetail>({ ...rawHolding, valueUusd: 0n });
+expectAssignable<HoldingDetail>({ ...rawHolding, valueUusd: undefined });
+expectNotAssignable<HoldingDetail>({ ...rawHolding, valueUusd: 1 });
 expectAssignable<HoldingDetail>({ ...rawHolding, balanceUsdc: undefined });
 expectNotAssignable<HoldingDetail>({ ...rawHolding, balanceUsdc: 1 });
 expectNotAssignable<HoldingDetail>({ ...rawHolding, amount: 123 });
+expectAssignable<HoldingDetail>({
+  ...rawHolding,
+  place: '@noble',
+  kind: 'token',
+  tokenId: 'uusdc',
+});
+expectNotAssignable<HoldingDetail>({ ...rawHolding, tokenId: 123 });
+expectNotAssignable<HoldingDetail>({ ...rawHolding, tokenId: 'uusdc' });
+expectAssignable<HoldingDetail>({
+  ...rawHolding,
+  place: '@Base',
+  kind: '$ETH',
+  tokenId: '',
+});
 expectNotAssignable<HoldingDetail>({
   ...rawHolding,
-  tokenAddress: 'not-an-address',
+  place: '@Base',
+  kind: '$ETH',
+  tokenId: '0x1234',
+});
+declare const typedHolding: TypedHoldingDetail;
+if (typedHolding.place === '@Base' && typedHolding.kind === 'token') {
+  expectType<EvmAddress>(typedHolding.tokenId);
+}
+if (typedHolding.place === '@noble' && typedHolding.kind === 'token') {
+  expectType<string>(typedHolding.tokenId);
+}
+expectNotAssignable<HoldingDetail>({
+  ...rawHolding,
+  place: '@noble',
+  kind: '$USDC',
+  tokenId: '',
 });
 expectAssignable<PlanObservations>({
   balances: {},

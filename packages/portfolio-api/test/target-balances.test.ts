@@ -134,17 +134,61 @@ test('withdrawal fallback respects liquidity caps below the soft minimum', t => 
   });
 });
 
-test('insufficient liquidity never produces an over-limit withdrawal', t => {
+test('insufficient liquidity produces a partial withdrawal within the limit', t => {
   const targets = computeTargetBalances({
     brand,
     currentBalances: { Aave_Ethereum: amount, Compound_Ethereum: amount },
     balanceDelta: -half.value,
     network: tinyNetwork,
     instrumentLiquidity: { Aave_Ethereum: 0n, Compound_Ethereum: scale6(10) },
+    withdrawalLiquidityLimitBps: 9_000n, // 90%
+  });
+  t.deepEqual(targets, { Compound_Ethereum: makeAmount(scale6(91)) });
+});
+
+test('partial withdrawal combines hub funds and liquidity below the soft minimum', t => {
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances: {
+      '@Ethereum': makeAmount(scale6(2)),
+      Aave_Ethereum: amount,
+      Compound_Ethereum: amount,
+    },
+    balanceDelta: -half.value,
+    network: tinyNetwork,
+    instrumentLiquidity: {
+      Aave_Ethereum: scale6(0.5),
+      Compound_Ethereum: scale6(10),
+    },
     withdrawalLiquidityLimitBps: 9_000n,
   });
-  t.deepEqual(targets, {});
+  t.deepEqual(targets, {
+    '@Ethereum': makeAmount(0n),
+    Aave_Ethereum: makeAmount(scale6(99.55)),
+    Compound_Ethereum: makeAmount(scale6(91)),
+  });
 });
+
+for (const blocked of [false, true]) {
+  test(`withdrawal with no available funds returns no changes, blocked=${blocked}`, t => {
+    const targets = computeTargetBalances({
+      brand,
+      currentBalances: { Aave_Ethereum: amount, Compound_Ethereum: amount },
+      balanceDelta: -half.value,
+      network: tinyNetwork,
+      instrumentLiquidity: blocked
+        ? undefined
+        : { Aave_Ethereum: 0n, Compound_Ethereum: 0n },
+      instrumentBlocks: {
+        noDepositInstruments: new Set(),
+        noWithdrawInstruments: new Set(
+          blocked ? ['Aave_Ethereum', 'Compound_Ethereum'] : [],
+        ),
+      },
+    });
+    t.deepEqual(targets, {});
+  });
+}
 
 test('liquidity limits do not cap hub withdrawals or instruments without data', t => {
   const targets = computeTargetBalances({
@@ -253,3 +297,96 @@ const netChangeOf = (
     });
   }
 }
+
+test('partial withdrawal prefers the destination chain and skips unmovable remote dust', t => {
+  // AGO-535 "cannot transfer across chains"
+  const currentBalances = {
+    '@Base': makeAmount(scale6(98.5)),
+    '@Ethereum': makeAmount(scale6(0.5)),
+  };
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances,
+    balanceDelta: -scale6(99),
+    withdrawToChain: 'Base',
+    network: twoChainNetwork,
+  });
+  t.deepEqual(targets, { '@Base': makeAmount(0n) });
+});
+
+test('partial withdrawal omits remote liquidity below the route minimum', t => {
+  const currentBalances = {
+    Aave_Base: makeAmount(scale6(100)),
+    Aave_Ethereum: makeAmount(scale6(100)),
+  };
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances,
+    balanceDelta: -scale6(50),
+    withdrawToChain: 'Ethereum',
+    network: twoChainNetwork,
+    instrumentLiquidity: { Aave_Base: scale6(0.5), Aave_Ethereum: scale6(10) },
+    withdrawalLiquidityLimitBps: 9_000n,
+  });
+  t.deepEqual(targets, { Aave_Ethereum: makeAmount(scale6(91)) });
+});
+
+test('partial withdrawal uses remote funds that can be moved', t => {
+  const currentBalances = {
+    Aave_Base: makeAmount(scale6(100)),
+    Aave_Ethereum: makeAmount(scale6(100)),
+  };
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances,
+    balanceDelta: -scale6(50),
+    withdrawToChain: 'Ethereum',
+    network: twoChainNetwork,
+    instrumentLiquidity: { Aave_Base: scale6(5), Aave_Ethereum: scale6(10) },
+    withdrawalLiquidityLimitBps: 9_000n,
+  });
+  t.deepEqual(targets, {
+    Aave_Base: makeAmount(scale6(95.5)),
+    Aave_Ethereum: makeAmount(scale6(91)),
+  });
+});
+
+for (const routed of [true, false]) {
+  test(`partial withdrawal ${routed ? 'uses' : 'ignores'} a remote chain ${routed ? 'with' : 'without'} a route`, t => {
+    const targets = computeTargetBalances({
+      brand,
+      currentBalances: {
+        '@Base': makeAmount(scale6(98.5)),
+        Aave_Ethereum: makeAmount(scale6(50)),
+      },
+      balanceDelta: -scale6(100),
+      withdrawToChain: 'Base',
+      network: routed ? twoChainNetwork : { ...twoChainNetwork, links: [] },
+      instrumentLiquidity: { Aave_Ethereum: scale6(1) },
+    });
+    t.deepEqual(targets, {
+      '@Base': makeAmount(0n),
+      ...(routed && { Aave_Ethereum: makeAmount(scale6(49)) }),
+    });
+  });
+}
+
+test('partial-withdrawal fallback shifts from the destination to meet a remote route minimum', t => {
+  // The destination chain alone falls 0.50 short, which is below the remote
+  // route minimum, so move 1 from the remote chain and 99.50 locally.
+  const targets = computeTargetBalances({
+    brand,
+    currentBalances: {
+      Aave_Ethereum: makeAmount(scale6(1000)),
+      '@Base': makeAmount(scale6(100)),
+    },
+    targetAllocation: { Aave_Ethereum: 1n },
+    balanceDelta: -scale6(100.5),
+    withdrawToChain: 'Base',
+    network: twoChainNetwork,
+  });
+  t.deepEqual(targets, {
+    '@Base': makeAmount(scale6(0.5)),
+    Aave_Ethereum: makeAmount(scale6(999)),
+  });
+});

@@ -179,7 +179,7 @@ export type PlanObservations = {
   balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
   /**
    * Authenticated raw holdings. When present, `balances` is derived from their
-   * deprecated `balanceUsdc` (never from `valueUsd`).
+   * deprecated `balanceUsdc` (never from `valueUusd`).
    */
   holdings?: TypedHoldingDetail[];
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
@@ -190,7 +190,12 @@ export type PlanObservations = {
  * vault shares; `principal` identifies instrument principal (for example Aave
  * or Compound). `claimable-reward` belongs to an instrument, while
  * `claimed-reward` and other `token` holdings belong to a chain account.
- * Native tokens use `$` followed by a nonempty symbol, such as `$ETH`.
+ * Cosmos bank assets are ordinary `token` holdings, e.g. Noble USDC has
+ * `kind: 'token', tokenId: 'uusdc'`. `$SYMBOL` is reserved for a chain's own
+ * coin on chains where other tokens are contracts (such as `$ETH`, `$AVAX`,
+ * or later `$SOL`); it uses an empty `tokenId`. The nonempty symbol is the
+ * coin's display symbol. `$` holdings and Cosmos USDC are never reward-swap
+ * input.
  */
 export type HoldingKind =
   | 'shares'
@@ -206,20 +211,53 @@ export type LegacyHoldingDetail = {
   balanceUsdc: bigint;
 };
 
+type EvmHoldingPlace = Extract<
+  PortfolioBalancePlaceRef,
+  `@${AxelarChain}` | `${string}_${AxelarChain}`
+>;
+type NonNativeHoldingKind = Exclude<HoldingKind, `$${string}`>;
+
+/**
+ * Token identifier local to the chain implied by `place`: a lowercase EVM
+ * contract address (vault for shares, underlying token for principal,
+ * rewards, or ERC-20 holdings), a raw Cosmos bank denom (e.g. `uusdc`,
+ * `ibc/…`, `factory/…`), or another chain's canonical identifier such as a
+ * Solana mint. `$SYMBOL` holdings use the empty string. Do not substitute
+ * a display symbol or repeat the chain as a CAIP-19 identifier. Resolve
+ * decimal scale from chain asset metadata for this identifier.
+ */
+type HoldingIdentity =
+  | {
+      place: EvmHoldingPlace;
+      kind: NonNativeHoldingKind;
+      tokenId: EvmAddress;
+    }
+  | {
+      place: Exclude<PortfolioBalancePlaceRef, EvmHoldingPlace>;
+      kind: NonNativeHoldingKind;
+      tokenId: string;
+    }
+  | {
+      place: `@${AxelarChain}`;
+      kind: `$${string}`;
+      tokenId: '';
+    };
+
 /**
  * One authenticated raw holding, independent of its USD valuation.
  *
- * The identity is `(place, kind, tokenAddress)`, with case-insensitive EVM
- * addresses. Multiple holdings may share a place, including multiple reward
- * tokens, but duplicate identities are rejected. Instrument holdings appear
- * under the instrument, not again under its chain account. Missing holdings
- * are unobserved and must never be treated as zero.
+ * The identity is `(place, kind, tokenId)`, compared exactly. EVM addresses
+ * must be lowercase hex; other chain identifiers retain their canonical
+ * spelling (including case). Multiple holdings may share a place, including
+ * multiple reward tokens, but duplicate identities are rejected. Instrument
+ * holdings appear under the instrument, not again under its chain account.
+ * Missing holdings are unobserved and must never be treated as zero.
  *
  * Signed observations use the shared `YmaxObservation` version-1 schema.
  * Legacy balance-only entries retain their original resolved signed type;
  * typed fields are optional in that schema for compatibility, but must form a
  * complete typed holding when present. Optional-field presence is uniform per
- * signed struct type. The converters always include `valueUsd` for typed
+ * signed struct type. The converters always include `valueUusd` for typed
  * holdings on the wire, encoding an absent valuation as `-1n` and stripping
  * that sentinel when decoding. Never add unsigned holdings to a legacy
  * signature, or infer shares from either valuation field.
@@ -228,16 +266,8 @@ export type LegacyHoldingDetail = {
  * typed holdings with transitional `balanceUsdc`; consumers then adopt typed
  * holdings before legacy balances and balance-only entries are retired.
  */
-export type TypedHoldingDetail = {
-  /** Instrument place or chain account, as required by the holding kind. */
-  place: PortfolioBalancePlaceRef;
-  kind: HoldingKind;
-  /**
-   * Vault address for shares; underlying token address for principal, rewards,
-   * and other ERC-20 holdings. Native tokens use the zero address.
-   */
-  tokenAddress: EvmAddress;
-  /** Native token units, independent of USD valuation. Zero is observed zero. */
+export type TypedHoldingDetail = HoldingIdentity & {
+  /** Raw asset units, independent of USD valuation. Zero is observed zero. */
   amount: bigint;
   /**
    * Valuation in micro-USD; absent if not observed, distinct from known zero.
@@ -245,7 +275,7 @@ export type TypedHoldingDetail = {
    * Known values range from `0n` through `2n ** 255n - 1n`. This is not a raw
    * token quantity and must not be added to `balanceUsdc`.
    */
-  valueUsd?: bigint;
+  valueUusd?: bigint;
   /**
    * @deprecated Transitional legacy valuation in micro-USDC, summed per place
    * into `PlanObservations['balances']` for consumers not yet reading typed
