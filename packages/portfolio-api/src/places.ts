@@ -40,13 +40,20 @@ export type TokenUsage = 'swapFrom' | 'swapTo';
 
 export type TokenIdKey = TypeTag<string, 'TokenIdKey'>;
 
+/**
+ * Canonicalize a token ID for comparison using its place's chain.
+ * Supply place when known; omitting it preserves legacy 0x lowercasing.
+ */
 export const makeTokenIdKey = (
   tokenId: string,
   place?: unknown,
 ): TokenIdKey => {
+  if (typeof tokenId !== 'string') {
+    throw TypeError('tokenId must be a string');
+  }
   // Canonical lowercase tokenIdKey on unspecified place or EVM.
   const probablyEvm = place == null || isEvmChain(maybeChainOf(place));
-  if (probablyEvm && tokenId?.startsWith('0x')) {
+  if (probablyEvm && tokenId.startsWith('0x')) {
     return tokenId.toLowerCase() as TokenIdKey;
   }
   return tokenId as TokenIdKey;

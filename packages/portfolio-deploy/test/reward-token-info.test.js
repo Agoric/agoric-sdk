@@ -128,6 +128,21 @@ test('collateTokenMetadata preserves case-distinct non-EVM 0x identifiers', t =>
   ]);
 });
 
+test('collateTokenMetadata rejects missing token IDs on every chain', t => {
+  for (const chainName of ['Arbitrum', 'noble']) {
+    for (const tokenId of [undefined, null]) {
+      const malformed = {
+        ...reward,
+        chainName,
+        tokenId: /** @type {string} */ (/** @type {unknown} */ (tokenId)),
+      };
+      t.throws(() => collateTokenMetadata([malformed]), {
+        instanceOf: TypeError,
+      });
+    }
+  }
+});
+
 test('withMetadata merges configured reward token metadata', t => {
   const config = harden(
     /** @type {const} */ ({

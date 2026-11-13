@@ -46,6 +46,17 @@ test('holding keys delegate token canonicalization to their place', t => {
   }
 });
 
+test('token keys reject non-string identifiers regardless of place', t => {
+  for (const place of [undefined, null, '@Base', '@noble', 'UnknownVault']) {
+    for (const tokenId of [undefined, null, 0, {}, []]) {
+      t.throws(() => makeTokenIdKey(tokenId as unknown as string, place), {
+        instanceOf: TypeError,
+      });
+    }
+    t.is<string, string>(makeTokenIdKey('', place), '');
+  }
+});
+
 test('optional chain lookup preserves registered mappings and syntactic fallback', t => {
   for (const [place, expected] of [
     ['USDN', 'noble'],
