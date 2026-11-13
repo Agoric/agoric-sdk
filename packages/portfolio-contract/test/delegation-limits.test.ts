@@ -2089,6 +2089,92 @@ test('A bounded exit can leave proceeds in cash or redeploy them', t => {
   );
 });
 
+test('A bounded exit from one side of a split allocation is admitted', t => {
+  const minimumProceeds = 99_900_000n;
+  const { shares, movement } = makeMaximumWithdrawalCase({ minimumProceeds });
+  const zeroPrincipal = (place: 'Aave_Ethereum' | 'Compound_Ethereum') =>
+    makeHolding({ place, kind: 'principal', amount: 0n, valueUusd: 0n });
+  const observations = makeHoldingObservations([
+    shares,
+    makeHolding({
+      place: 'Aave_Ethereum',
+      kind: 'principal',
+      amount: 100_000_000n,
+      valueUusd: 100_000_000n,
+    }),
+    makeHolding({
+      place: '@Ethereum',
+      kind: 'token',
+      amount: 0n,
+      valueUusd: 0n,
+    }),
+    zeroPrincipal('Compound_Ethereum'),
+  ]);
+  const vet = (target: TargetAllocation, plan: FundsFlowPlan) =>
+    vetAllocationPlan({ allocation: {} }, target, plan, observations, {
+      getUsdcTokenId: () => holdingTokens.usdc,
+      getVaultAddress: () => holdingTokens.vault,
+      hasMinimumRedemptionContracts: () => true,
+    });
+  const expectedBinding = {
+    kind: 'redeemShares',
+    src: movement.src,
+    vaultAddress: holdingTokens.vault,
+    shares: shares.amount,
+    minimumProceeds,
+  };
+
+  // Exit to cash.
+  t.deepEqual(
+    vet({ Aave_Ethereum: 50n, '@Ethereum': 50n }, { flow: [movement] })
+      .boundSteps?.[0],
+    expectedBinding,
+  );
+  // Exit now, redeploy later.
+  t.deepEqual(
+    vet({ Aave_Ethereum: 50n, Compound_Ethereum: 50n }, { flow: [movement] })
+      .boundSteps?.[0],
+    expectedBinding,
+  );
+  // Exit and redeploy in one plan.
+  t.deepEqual(
+    vet(
+      { Aave_Ethereum: 50n, Compound_Ethereum: 50n },
+      {
+        flow: [
+          movement,
+          {
+            src: '@Ethereum',
+            dest: 'Compound_Ethereum',
+            amount: { brand: USDC, value: minimumProceeds },
+          },
+        ],
+        order: [[1, [0]]],
+      },
+    ).boundSteps?.[0],
+    expectedBinding,
+  );
+  // Redeploying more than the enforced minimum is unfunded.
+  t.throws(
+    () =>
+      vet(
+        { Aave_Ethereum: 50n, Compound_Ethereum: 50n },
+        {
+          flow: [
+            movement,
+            {
+              src: '@Ethereum',
+              dest: 'Compound_Ethereum',
+              amount: { brand: USDC, value: minimumProceeds + 1n },
+            },
+          ],
+          order: [[1, [0]]],
+        },
+      ),
+    { message: /unfunded/ },
+  );
+});
+
 test('An empty share holding can meet only zero withdrawal minimums', t => {
   const { instrument, movement, checkAllocation } = makeMaximumWithdrawalCase({
     shareQuantity: 0n,
