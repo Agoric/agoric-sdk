@@ -6,6 +6,7 @@ import {
   getCanonicalHoldingKey,
   isEvmChain,
   makeTokenIdKey,
+  matchHoldingTokenId,
   maybeChainOf,
 } from '../src/places.ts';
 import type { AssetPlaceRef } from '../src/types.ts';
@@ -55,6 +56,36 @@ test('token keys reject non-string identifiers regardless of place', t => {
     }
     t.is<string, string>(makeTokenIdKey('', place), '');
   }
+});
+
+test('token ID matching uses chain context and requires nonempty identifiers', t => {
+  for (const place of ['@Base', 'Aave_Base'] as const) {
+    t.true(matchHoldingTokenId({ place, tokenId: '0xAbCd' }, '0xabcd'));
+    for (const [left, right] of [
+      ['', ''],
+      ['', '0xabcd'],
+      ['0xabcd', ''],
+      ['0x', '0x'],
+      ['0x', '0xabcd'],
+      ['0xabcd', '0x'],
+      ['0Xabcd', '0xabcd'],
+      ['0xabcd', '0Xabcd'],
+    ]) {
+      t.false(matchHoldingTokenId({ place, tokenId: left }, right));
+    }
+  }
+  for (const place of ['@noble', 'USDN'] as const) {
+    for (const tokenId of ['ibc/ABCDEF', 'factory/issuer/MyToken', '0xAbCd']) {
+      t.true(matchHoldingTokenId({ place, tokenId }, tokenId));
+      t.false(matchHoldingTokenId({ place, tokenId }, tokenId.toLowerCase()));
+      t.false(matchHoldingTokenId({ place, tokenId }, ''));
+      t.false(matchHoldingTokenId({ place, tokenId: '' }, tokenId));
+    }
+    t.false(matchHoldingTokenId({ place, tokenId: '' }, ''));
+  }
+  t.false(
+    matchHoldingTokenId({ place: '@Base', kind: '$ETH', tokenId: '' }, ''),
+  );
 });
 
 test('optional chain lookup preserves registered mappings and syntactic fallback', t => {

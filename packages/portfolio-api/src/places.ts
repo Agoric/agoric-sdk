@@ -426,7 +426,10 @@ export const getCanonicalHoldingKey = (
 };
 deepFreeze(getCanonicalHoldingKey);
 
-/** Compare nonempty token IDs, requiring a 0x payload for EVM IDs. */
+/**
+ * Compare nonempty token IDs, requiring a 0x payload for EVM IDs.
+ * Empty native `$SYMBOL` identifiers never match, even each other.
+ */
 export const matchHoldingTokenId = (
   holding: Pick<TypedHoldingDetail, 'place' | 'tokenId'> & {
     kind?: TypedHoldingDetail['kind'];
