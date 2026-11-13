@@ -468,6 +468,7 @@ export const preparePortfolioKit = (
     portfoliosNode,
     marshaller,
     usdcBrand,
+    agoricUsdcDenom,
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
@@ -506,6 +507,7 @@ export const preparePortfolioKit = (
     portfoliosNode: ERemote<StorageNode>;
     marshaller: ERemote<EMarshaller>;
     usdcBrand: Brand<'nat'>;
+    agoricUsdcDenom?: string;
     eip155ChainIdToAxelarChain: {
       [chainId in `${number | bigint}`]?: AxelarChain;
     };
@@ -798,8 +800,10 @@ export const preparePortfolioKit = (
               plan,
               observations,
               {
-                getUsdcAddress: account =>
-                  contracts[chainOf(account) as AxelarChain]?.usdc,
+                getUsdcTokenId: account =>
+                  account === '@agoric'
+                    ? agoricUsdcDenom
+                    : contracts[chainOf(account) as AxelarChain]?.usdc,
                 getVaultAddress: src =>
                   contracts[chainOf(src) as AxelarChain]?.[src],
               },

@@ -15,6 +15,7 @@ import {
   matchHoldingTokenId,
   type ERC4626InstrumentId,
 } from '@agoric/portfolio-api/src/places.js';
+import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
 import {
   isERC4626MorphoInstrumentId,
   isInstrumentId,
@@ -225,7 +226,7 @@ type PlanOperation =
 type DecodedPlan = Omit<FundsFlowPlan, 'flow'> & { flow: PlanOperation[] };
 
 /** Resolve USDC identity from contract configuration, not from observations. */
-type GetUsdcAddress = (account: InterChainAccountRef) => EvmAddress | undefined;
+type GetUsdcTokenId = (account: InterChainAccountRef) => string | undefined;
 
 type GetVaultAddress = (src: ERC4626InstrumentId) => EvmAddress | undefined;
 
@@ -518,7 +519,7 @@ const vetPartialPlanAllocation = (
 const projectPlanBalances = (
   plan: DecodedPlan,
   observations: PlanObservations,
-  getUsdcAddress?: GetUsdcAddress,
+  getUsdcTokenId?: GetUsdcTokenId,
 ): Map<string, bigint> => {
   const balances = sumValueUusdByPlace(observations);
   const remainingCash = new Map<InterChainAccountRef, bigint>();
@@ -530,13 +531,14 @@ const projectPlanBalances = (
         throw Fail`portfolio checks cannot yet project exact withdrawals from observed holdings at ${q(src)}`;
       }
       if (remainingCash.has(src)) continue;
-      const usdcAddress = getUsdcAddress?.(src);
-      if (!usdcAddress) throw Fail`no configured USDC token at ${q(src)}`;
+      const usdcTokenId =
+        src === '@noble' ? UsdcTokenIds.mainnet.noble : getUsdcTokenId?.(src);
+      if (!usdcTokenId) throw Fail`no configured USDC token at ${q(src)}`;
       const candidates = observations.holdings.filter(
         holding =>
           holding.place === src &&
           holding.kind === 'token' &&
-          matchHoldingTokenId(holding, usdcAddress),
+          matchHoldingTokenId(holding, usdcTokenId),
       );
       if (candidates.length !== 1) {
         throw Fail`cash movement requires one observed USDC holding at ${q(src)}`;
@@ -640,7 +642,7 @@ export const vetPlanAllocation = (
   targetAllocation: TargetAllocation,
   plan: FundsFlowPlan,
   observations: PlanObservations,
-  getUsdcAddress?: GetUsdcAddress,
+  getUsdcTokenId?: GetUsdcTokenId,
 ): DecodedPlan => {
   const decodedPlan = decodePlan(plan, observations);
   for (const { kind } of decodedPlan.flow) {
@@ -656,7 +658,7 @@ export const vetPlanAllocation = (
   const balances = projectPlanBalances(
     decodedPlan,
     observations,
-    getUsdcAddress,
+    getUsdcTokenId,
   );
   vetAllocationCeilings(balances, targetAllocation);
   vetPartialPlanAllocation(targetAllocation, decodedPlan, observations);
@@ -685,7 +687,7 @@ export const vetAllocationPlan = (
   plan: FundsFlowPlan | undefined,
   observations: PlanObservations | undefined,
   addresses: {
-    getUsdcAddress?: GetUsdcAddress;
+    getUsdcTokenId?: GetUsdcTokenId;
     getVaultAddress?: GetVaultAddress;
   } = {},
 ): VettedAllocationPlan => {
@@ -697,7 +699,7 @@ export const vetAllocationPlan = (
     targetAllocation,
     plan,
     observations,
-    addresses.getUsdcAddress,
+    addresses.getUsdcTokenId,
   );
   assertMandateForPlanObservations(permissions, targetAllocation, observations);
   const shareWithdrawals = bindShareWithdrawals(

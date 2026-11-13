@@ -1724,13 +1724,13 @@ test('Cash movements spend observed USDC, not other holdings’ USD value', t =>
   const check = (
     plan: FundsFlowPlan,
     cashHolding = cash,
-    getUsdcAddress = (): EvmAddress | undefined => holdingTokens.usdc,
+    getUsdcTokenId = (): string | undefined => holdingTokens.usdc,
   ) =>
     vetPlanAllocation(
       {},
       plan,
       makeHoldingObservations([cashHolding, reward]),
-      getUsdcAddress,
+      getUsdcTokenId,
     );
 
   t.notThrows(() => check({ flow: [transfer(20_000_000n)] }));
@@ -1761,6 +1761,40 @@ test('Cash movements spend observed USDC, not other holdings’ USD value', t =>
     message: /no configured USDC token/,
   });
 });
+
+for (const [src, tokenId] of [
+  ['@noble', 'uusdc'],
+  ['@agoric', 'ibc/AGORIC_USDC_DENOM'],
+] as const) {
+  test(`${src} cash movements spend observed USDC`, t => {
+    const observations = makeHoldingObservations([
+      {
+        place: src,
+        kind: 'token',
+        tokenId,
+        amount: 20_000_000n,
+        valueUusd: 20_000_000n,
+      },
+    ]);
+    const plan: FundsFlowPlan = {
+      flow: [
+        {
+          src,
+          dest: '@Ethereum',
+          amount: { brand: USDC, value: 10_000_000n },
+        },
+      ],
+    };
+    t.notThrows(() =>
+      vetPlanAllocation(
+        {},
+        plan,
+        observations,
+        src === '@agoric' ? () => tokenId : undefined,
+      ),
+    );
+  });
+}
 
 for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
   test(`Observing rewards does not establish how much is already invested (${investment})`, t => {

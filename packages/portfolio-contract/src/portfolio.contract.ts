@@ -808,6 +808,7 @@ export const contract = async (
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
+    agoricUsdcDenom: ctx1.usdc.denom,
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
