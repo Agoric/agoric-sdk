@@ -260,8 +260,8 @@ const assertTypedHoldings: (
     }
     const isEvmPlace = isEvmChain(maybeChainOf(place));
     // EIP-712 strings do not normalize addresses. Reject non-canonical hex
-    // so signatures and exact identity comparisons agree. Other chains use
-    // their exact local identifiers, e.g. Cosmos denoms or Solana mints.
+    // in signed data. Other chains retain their local identifiers, e.g. Cosmos
+    // denoms or Solana mints. Identity comparisons fold case on every chain.
     if (
       typeof tokenId !== 'string' ||
       /\s/.test(tokenId) ||
@@ -279,7 +279,7 @@ const assertTypedHoldings: (
         `holding kind ${kind} has an incompatible token identifier`,
       );
     }
-    const identity = JSON.stringify([place, kind, tokenId]);
+    const identity = JSON.stringify([place, kind, tokenId?.toLowerCase()]);
     if (identities.has(identity)) {
       throw TypeError(`duplicate holding identity ${identity}`);
     }
