@@ -25,7 +25,7 @@ import type { MapStore } from '@agoric/store';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
 import { E, Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import { encodeFunctionData, parseAbi, zeroAddress } from 'viem';
+import { encodeFunctionData, parseAbi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { decodeMultiCalls } from './abi-utils.ts';
@@ -55,17 +55,17 @@ const emptyAccountBalances = harden({
 const makeEmptyAccountHoldings = (): TypedHoldingDetail[] => [
   {
     place: '@agoric',
-    kind: '$BLD',
-    tokenAddress: zeroAddress,
+    kind: 'token',
+    tokenId: 'ubld',
     amount: 0n,
-    valueUsd: 0n,
+    valueUusd: 0n,
   },
   ...(['Arbitrum', 'Ethereum'] as const).map(chain => ({
     place: `@${chain}` as const,
     kind: 'token' as const,
-    tokenAddress: contractsMock[chain].usdc,
+    tokenId: contractsMock[chain].usdc.toLowerCase() as `0x${string}`,
     amount: 0n,
-    valueUsd: 0n,
+    valueUusd: 0n,
   })),
 ];
 
@@ -403,9 +403,9 @@ for (const [
             {
               place: instrument,
               kind: 'shares',
-              tokenAddress: vaultAddress,
+              tokenId: vaultAddress.toLowerCase() as `0x${string}`,
               amount: observedShares,
-              valueUsd: observedValue,
+              valueUusd: observedValue,
             },
           ],
           instrumentTvls: {},
@@ -422,7 +422,7 @@ for (const [
       // They describe the same holdings and must not be counted twice.
       observations.holdings = observations.holdings!.map(holding => ({
         ...holding,
-        balanceUsdc: holding.valueUsd!,
+        balanceUsdc: holding.valueUusd!,
       }));
     }
     const agent = await openDelegatedPortfolio(

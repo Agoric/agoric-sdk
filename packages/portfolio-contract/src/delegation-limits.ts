@@ -14,13 +14,13 @@ import {
   chainOf,
   type ERC4626InstrumentId,
 } from '@agoric/portfolio-api/src/places.js';
-import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import {
   isERC4626MorphoInstrumentId,
   isInstrumentId,
   isInterChainAccountRef,
   isPortfolioBalancePlaceRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
+import type { Address as EvmAddress } from 'abitype';
 import { b, Fail, q } from '@endo/errors';
 import { vetInstrumentAccountChain } from './flow-plan-places.ts';
 import { maxWeightClosure } from './max-weight-closure.ts';
@@ -53,7 +53,7 @@ const sumPortions = (targetAllocation: TargetAllocation): bigint =>
  * Sum observed values by portfolio location, in micro-USD.
  * These values measure exposure; they do not establish spendable quantities.
  */
-const sumValueMicroUsdByPlace = (
+const sumValueUusdByPlace = (
   observations: PlanObservations,
 ): Map<PortfolioBalancePlaceRef, bigint> => {
   const { holdings, balances } = observations;
@@ -68,11 +68,11 @@ const sumValueMicroUsdByPlace = (
   }
   const result = new Map<PortfolioBalancePlaceRef, bigint>();
   const legacyBalances = new Map<string, bigint>();
-  for (const { place, valueUsd, balanceUsdc } of holdings) {
-    if (valueUsd === undefined) {
+  for (const { place, valueUusd, balanceUsdc } of holdings) {
+    if (valueUusd === undefined) {
       throw Fail`missing holding valuation for ${q(place)}`;
     }
-    result.set(place, (result.get(place) ?? 0n) + valueUsd);
+    result.set(place, (result.get(place) ?? 0n) + valueUusd);
     if (balanceUsdc !== undefined) {
       legacyBalances.set(
         place,
@@ -130,10 +130,10 @@ export const assertMandateForPlanObservations = (
   const { minVaultTvlUsd, maxVaultShareBps } = allocation;
   if (minVaultTvlUsd === undefined && maxVaultShareBps === undefined) return;
   const totalPortions = sumPortions(targetAllocation);
-  const portfolioValueMicroUsd =
+  const portfolioValueUusd =
     maxVaultShareBps === undefined
       ? 0n
-      : sumOptionalBigints([...sumValueMicroUsdByPlace(observations).values()]);
+      : sumOptionalBigints([...sumValueUusdByPlace(observations).values()]);
 
   for (const [instrument, portion = 0n] of entries(targetAllocation)) {
     if (isInterChainAccountRef(instrument) || portion === 0n) continue;
@@ -147,12 +147,12 @@ export const assertMandateForPlanObservations = (
     if (maxVaultShareBps !== undefined) {
       totalPortions > 0n ||
         Fail`mandate.maxVaultShare.zeroTotal:${q(instrument)}`;
-      portfolioValueMicroUsd * portion * 10_000n <=
+      portfolioValueUusd * portion * 10_000n <=
         status.tvlUsd *
           MICRO_USDC_PER_USD *
           totalPortions *
           BigInt(maxVaultShareBps) ||
-        Fail`mandate.maxVaultShare:${q(instrument)}: portion ${q(portion)} of total ${q(totalPortions)} with portfolio value ${q(portfolioValueMicroUsd)} micro-USD exceeds maxVaultShareBps ${q(maxVaultShareBps)} of vault tvlUsd ${q(status.tvlUsd)}`;
+        Fail`mandate.maxVaultShare:${q(instrument)}: portion ${q(portion)} of total ${q(totalPortions)} with portfolio value ${q(portfolioValueUusd)} micro-USD exceeds maxVaultShareBps ${q(maxVaultShareBps)} of vault tvlUsd ${q(status.tvlUsd)}`;
     }
   }
 };
@@ -201,7 +201,7 @@ type PlanOperation =
       src: PortfolioBalancePlaceRef;
       dest: PortfolioBalancePlaceRef;
       amount: MovementDesc['amount'];
-      debitValueMicroUsd: bigint;
+      debitValueUusd: bigint;
     }
   | {
       kind: 'redeemShares';
@@ -210,8 +210,8 @@ type PlanOperation =
       /** Minimum destination quantity, not the quantity removed from src. */
       amount: MovementDesc['amount'];
       /** Micro-USD exposure removed from the source, independent of proceeds. */
-      debitValueMicroUsd: bigint;
-      holding: TypedHoldingDetail & { valueUsd: bigint };
+      debitValueUusd: bigint;
+      holding: TypedHoldingDetail & { valueUusd: bigint };
       shares: bigint;
     }
   | {
@@ -224,13 +224,9 @@ type PlanOperation =
 type DecodedPlan = Omit<FundsFlowPlan, 'flow'> & { flow: PlanOperation[] };
 
 /** Resolve USDC identity from contract configuration, not from observations. */
-type GetUsdcAddress = (
-  account: InterChainAccountRef,
-) => TypedHoldingDetail['tokenAddress'] | undefined;
+type GetUsdcAddress = (account: InterChainAccountRef) => EvmAddress | undefined;
 
-type GetVaultAddress = (
-  src: ERC4626InstrumentId,
-) => TypedHoldingDetail['tokenAddress'] | undefined;
+type GetVaultAddress = (src: ERC4626InstrumentId) => EvmAddress | undefined;
 
 /**
  * Decode once so every balance check uses the same operation semantics.
@@ -278,8 +274,8 @@ const decodePlan = (
         throw Fail`share redemption requires one observed share holding at ${q(src)}; found ${q(candidates.length)}`;
       }
       const holding = candidates[0]!;
-      const { valueUsd } = holding;
-      if (valueUsd === undefined) {
+      const { valueUusd } = holding;
+      if (valueUusd === undefined) {
         throw Fail`missing holding valuation for ${q(src)}`;
       }
       const shares = withdraw?.amountOfShares ?? holding.amount;
@@ -294,9 +290,9 @@ const decodePlan = (
         dest,
         amount,
         // Round down so the remaining source exposure is not understated.
-        debitValueMicroUsd:
-          holding.amount === 0n ? 0n : (valueUsd * shares) / holding.amount,
-        holding: { ...holding, valueUsd },
+        debitValueUusd:
+          holding.amount === 0n ? 0n : (valueUusd * shares) / holding.amount,
+        holding: { ...holding, valueUusd },
         shares,
       };
     }
@@ -306,7 +302,7 @@ const decodePlan = (
         src,
         dest,
         amount,
-        debitValueMicroUsd: amount.value,
+        debitValueUusd: amount.value,
       };
     }
 
@@ -327,7 +323,7 @@ const decodePlan = (
 
 export type BoundShareWithdrawal = Readonly<{
   src: ERC4626InstrumentId;
-  vaultAddress: TypedHoldingDetail['tokenAddress'];
+  vaultAddress: EvmAddress;
   shares: bigint;
 }>;
 
@@ -343,8 +339,8 @@ const bindShareWithdrawals = (
     if (!vaultAddress) {
       throw Fail`no configured vault for ${q(movement.src)}`;
     }
-    sameEvmAddress(movement.holding.tokenAddress, vaultAddress) ||
-      Fail`observed share token ${q(movement.holding.tokenAddress)} does not match configured vault ${q(vaultAddress)} at ${q(movement.src)}`;
+    movement.holding.tokenId?.toLowerCase() === vaultAddress.toLowerCase() ||
+      Fail`observed share token ${q(movement.holding.tokenId)} does not match configured vault ${q(vaultAddress)} at ${q(movement.src)}`;
     if (movement.amount.value > 0n) {
       throw Fail`share redemption cannot yet enforce a positive proceeds minimum ${q(movement.amount.value)} at ${q(movement.src)}`;
     }
@@ -399,7 +395,7 @@ export const vetObservationPlaces = (
       .filter(([, balance]) => balance !== 0n)
       .map(([place]) => place as PortfolioBalancePlaceRef),
     ...holdings
-      .filter(({ amount, valueUsd }) => amount !== 0n || valueUsd !== 0n)
+      .filter(({ amount, valueUusd }) => amount !== 0n || valueUusd !== 0n)
       .map(({ place }) => place),
   ]);
   const extra = [...nonempty].filter(place => !expected.has(place));
@@ -463,7 +459,7 @@ const vetPartialPlanAllocation = (
   plan: DecodedPlan,
   observations: PlanObservations,
 ) => {
-  const initialBalances = sumValueMicroUsdByPlace(observations);
+  const initialBalances = sumValueUusdByPlace(observations);
   const totalBalance = sumOptionalBigints([...initialBalances.values()]);
   const totalPortions = sumPortions(targetAllocation);
   const { flow } = plan;
@@ -489,7 +485,7 @@ const vetPartialPlanAllocation = (
         if (movement.kind === 'claimRewards') return 0n;
         const { src, dest, amount } = movement;
         if (dest === place) return amount.value;
-        if (src === place) return -movement.debitValueMicroUsd;
+        if (src === place) return -movement.debitValueUusd;
         return 0n;
       },
       index => [...(dependencies.get(index) ?? [])],
@@ -518,7 +514,7 @@ const projectPlanBalances = (
   observations: PlanObservations,
   getUsdcAddress?: GetUsdcAddress,
 ): Map<string, bigint> => {
-  const balances = sumValueMicroUsdByPlace(observations);
+  const balances = sumValueUusdByPlace(observations);
   const remainingCash = new Map<InterChainAccountRef, bigint>();
   if (observations.holdings?.length) {
     for (const movement of plan.flow) {
@@ -534,7 +530,7 @@ const projectPlanBalances = (
         holding =>
           holding.place === src &&
           holding.kind === 'token' &&
-          sameEvmAddress(holding.tokenAddress, usdcAddress),
+          holding.tokenId?.toLowerCase() === usdcAddress.toLowerCase(),
       );
       if (candidates.length !== 1) {
         throw Fail`cash movement requires one observed USDC holding at ${q(src)}`;
@@ -542,7 +538,7 @@ const projectPlanBalances = (
       const holding = candidates[0]!;
       // Exact-movement exposure arithmetic currently assumes USDC at parity.
       // Reject other valuations rather than equating raw units with USD value.
-      if (holding.valueUsd !== holding.amount) {
+      if (holding.valueUusd !== holding.amount) {
         throw Fail`cash movement requires one-for-one USDC valuation at ${q(src)}`;
       }
       remainingCash.set(src, holding.amount);
@@ -576,8 +572,8 @@ const projectPlanBalances = (
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;
-      const { src, debitValueMicroUsd } = movement;
-      debits.set(src, (debits.get(src) ?? 0n) + debitValueMicroUsd);
+      const { src, debitValueUusd } = movement;
+      debits.set(src, (debits.get(src) ?? 0n) + debitValueUusd);
       if (movement.kind === 'redeemShares') {
         shareDebits.set(
           movement.src,
@@ -604,8 +600,8 @@ const projectPlanBalances = (
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;
-      const { src, dest, amount, debitValueMicroUsd } = movement;
-      balances.set(src, (balances.get(src) ?? 0n) - debitValueMicroUsd);
+      const { src, dest, amount, debitValueUusd } = movement;
+      balances.set(src, (balances.get(src) ?? 0n) - debitValueUusd);
       balances.set(dest, (balances.get(dest) ?? 0n) + amount.value);
       if (isInterChainAccountRef(src) && remainingCash.has(src)) {
         remainingCash.set(src, remainingCash.get(src)! - amount.value);

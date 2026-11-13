@@ -1,6 +1,7 @@
 /** @file Tests for delegated portfolio mandates and plan evidence. */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { Address as EvmAddress } from 'abitype';
 import { makeIssuerKit, type NatValue } from '@agoric/ertp';
 import { fc, testProp } from '@fast-check/ava';
 import type {
@@ -34,10 +35,13 @@ const holdingTokens = {
 } as const;
 
 const makeHolding = (
-  detail: Omit<TypedHoldingDetail, 'tokenAddress'>,
-): TypedHoldingDetail => ({
+  detail: Omit<
+    Extract<TypedHoldingDetail, { tokenId: `0x${string}` }>,
+    'tokenId'
+  >,
+) => ({
   ...detail,
-  tokenAddress:
+  tokenId:
     detail.kind === 'shares'
       ? holdingTokens.vault
       : detail.kind === 'claimable-reward'
@@ -52,7 +56,7 @@ const makeHoldingObservations = (
 
 const makeMaximumWithdrawalCase = ({
   shareQuantity = 50n,
-  valueUsd = 100_000_000n,
+  valueUusd = 100_000_000n,
   minimumProceeds = 0n,
 } = {}) => {
   const instrument = 'ERC4626_morphoGauntletUsdcRwa_Ethereum' as const;
@@ -60,7 +64,7 @@ const makeMaximumWithdrawalCase = ({
     place: instrument,
     kind: 'shares',
     amount: shareQuantity,
-    valueUsd,
+    valueUusd,
   });
   const observations = makeHoldingObservations([shares]);
   const movement: MovementDesc = {
@@ -760,7 +764,7 @@ test('Observed holdings account for every location used by the plan', t => {
     place: '@Ethereum',
     kind: 'token',
     amount: 0n,
-    valueUsd: 0n,
+    valueUusd: 0n,
   });
   const plan = { flow: [movement] };
   const check = (holdings: TypedHoldingDetail[]) =>
@@ -776,8 +780,8 @@ test('Observed holdings account for every location used by the plan', t => {
   t.notThrows(() => check([shares, cash, extra]));
   for (const change of [
     { amount: 1n },
-    { valueUsd: 1n },
-    { valueUsd: undefined },
+    { valueUusd: 1n },
+    { valueUusd: undefined },
   ]) {
     t.throws(() => check([shares, cash, { ...extra, ...change }]), {
       message: 'unexpected balance observation for ["@Base"]',
@@ -787,7 +791,7 @@ test('Observed holdings account for every location used by the plan', t => {
 
 test('Observed holdings must not be mistaken for an empty portfolio', t => {
   const { checkAllocation } = makeMaximumWithdrawalCase({
-    valueUsd: 100_000_000n,
+    valueUusd: 100_000_000n,
   });
   t.throws(() => checkAllocation({ Aave_Ethereum: 100n }, { flow: [] }), {
     message:
@@ -807,14 +811,14 @@ for (const [instrument, kind] of [
           place: instrument,
           kind,
           amount: 123n,
-          valueUsd: 40_000_000n,
+          valueUusd: 40_000_000n,
           balanceUsdc: 1n,
         }),
         makeHolding({
           place: instrument,
           kind: 'claimable-reward',
           amount: 456n,
-          valueUsd: 60_000_000n,
+          valueUusd: 60_000_000n,
           balanceUsdc: 1n,
         }),
       ],
@@ -853,7 +857,7 @@ for (const [instrument, kind] of [
             ...observations,
             holdings: observations.holdings!.map(holding => ({
               ...holding,
-              valueUsd: undefined,
+              valueUusd: undefined,
             })),
           },
         ),
@@ -1643,7 +1647,7 @@ const additiveWithdrawCases: [string, WithdrawParams | undefined][] = [
 
 test('A maximum withdrawal removes share exposure, not just its proceeds minimum', t => {
   const { checkAllocation } = makeMaximumWithdrawalCase({
-    valueUsd: 100_000_000n,
+    valueUusd: 100_000_000n,
     minimumProceeds: 0n,
   });
   t.notThrows(() => checkAllocation({ Aave_Ethereum: 100n }));
@@ -1652,7 +1656,7 @@ test('A maximum withdrawal removes share exposure, not just its proceeds minimum
 test('Redeeming some shares leaves their remaining value at the source', t => {
   const { movement, checkAllocation } = makeMaximumWithdrawalCase({
     shareQuantity: 50n,
-    valueUsd: 100_000_000n,
+    valueUusd: 100_000_000n,
   });
   t.throws(
     () =>
@@ -1666,7 +1670,7 @@ test('Redeeming some shares leaves their remaining value at the source', t => {
 
 test('A full exit can be followed by investing cash already in the account', t => {
   const { shares, movement, checkAllocation } = makeMaximumWithdrawalCase({
-    valueUsd: 100_000_000n,
+    valueUusd: 100_000_000n,
     minimumProceeds: 0n,
   });
   const cash = 20_000_000n;
@@ -1676,13 +1680,13 @@ test('A full exit can be followed by investing cash already in the account', t =
       place: '@Ethereum',
       kind: 'token',
       amount: cash,
-      valueUsd: cash,
+      valueUusd: cash,
     }),
     makeHolding({
       place: 'Aave_Ethereum',
       kind: 'principal',
       amount: 0n,
-      valueUsd: 0n,
+      valueUusd: 0n,
     }),
   ]);
   const plan: FundsFlowPlan = {
@@ -1704,16 +1708,16 @@ test('Cash movements spend observed USDC, not other holdings’ USD value', t =>
     place: '@Ethereum',
     kind: 'token',
     amount: 20_000_000n,
-    valueUsd: 20_000_000n,
+    valueUusd: 20_000_000n,
   });
   const reward: TypedHoldingDetail = {
     ...makeHolding({
       place: '@Ethereum',
       kind: 'claimed-reward',
       amount: 100_000_000n,
-      valueUsd: 100_000_000n,
+      valueUusd: 100_000_000n,
     }),
-    tokenAddress: holdingTokens.reward,
+    tokenId: holdingTokens.reward,
   };
   const transfer = (value: bigint): MovementDesc => ({
     src: '@Ethereum',
@@ -1723,8 +1727,7 @@ test('Cash movements spend observed USDC, not other holdings’ USD value', t =>
   const check = (
     plan: FundsFlowPlan,
     cashHolding = cash,
-    getUsdcAddress = (): TypedHoldingDetail['tokenAddress'] | undefined =>
-      holdingTokens.usdc,
+    getUsdcAddress = (): EvmAddress | undefined => holdingTokens.usdc,
   ) =>
     vetPlanAllocation(
       {},
@@ -1749,12 +1752,12 @@ test('Cash movements spend observed USDC, not other holdings’ USD value', t =>
     () =>
       check(
         { flow: [transfer(1n)] },
-        { ...cash, tokenAddress: holdingTokens.otherVault },
+        { ...cash, tokenId: holdingTokens.otherVault },
       ),
     { message: /requires one observed USDC holding/ },
   );
   t.throws(
-    () => check({ flow: [transfer(1n)] }, { ...cash, valueUsd: 19_000_000n }),
+    () => check({ flow: [transfer(1n)] }, { ...cash, valueUusd: 19_000_000n }),
     { message: /requires one-for-one USDC valuation/ },
   );
   t.throws(() => check({ flow: [transfer(1n)] }, cash, () => undefined), {
@@ -1770,13 +1773,13 @@ for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
         place: '@Ethereum',
         kind: 'token',
         amount: cash,
-        valueUsd: cash,
+        valueUusd: cash,
       }),
       makeHolding({
         place: investment,
         kind: 'claimable-reward',
         amount: 0n,
-        valueUsd: 0n,
+        valueUusd: 0n,
       }),
     ]);
     const plan: FundsFlowPlan = {
@@ -1808,7 +1811,7 @@ for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
         place: '@Ethereum',
         kind: 'token',
         amount: 0n,
-        valueUsd: 0n,
+        valueUusd: 0n,
       }),
       // This is an existing investment. Only its rewards have been observed;
       // its principal could still exceed the proposed zero allocation.
@@ -1816,7 +1819,7 @@ for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
         place: investment,
         kind: 'claimable-reward',
         amount: 0n,
-        valueUsd: 0n,
+        valueUusd: 0n,
       }),
     ]);
     const plan = { flow: [movement] };
@@ -1824,10 +1827,10 @@ for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
       ...observations,
       holdings: observations.holdings!.map(holding => ({
         ...holding,
-        balanceUsdc: holding.valueUsd!,
+        balanceUsdc: holding.valueUusd!,
       })),
       balances: {
-        [instrument]: shares.valueUsd!,
+        [instrument]: shares.valueUusd!,
         '@Ethereum': 0n,
         [investment]: 0n,
       },
@@ -1858,9 +1861,7 @@ test('Redemption binds observed shares to the configured vault', t => {
   const vet = (
     submitted: FundsFlowPlan = plan,
     evidence = observations,
-    getVaultAddress: () =>
-      | TypedHoldingDetail['tokenAddress']
-      | undefined = configuredVault,
+    getVaultAddress: () => EvmAddress | undefined = configuredVault,
   ) =>
     vetAllocationPlan(
       { allocation: {} },
@@ -1889,7 +1890,7 @@ test('Redemption binds observed shares to the configured vault', t => {
       vet(
         plan,
         makeHoldingObservations([
-          { ...shares, tokenAddress: holdingTokens.otherVault },
+          { ...shares, tokenId: holdingTokens.otherVault },
         ]),
       ),
     { message: /observed share token.*does not match configured vault/ },
@@ -1908,7 +1909,7 @@ test('Redemption binds observed shares to the configured vault', t => {
 
 test('Only minimum redemption proceeds count toward final portfolio value', t => {
   const { shares, movement, checkAllocation } = makeMaximumWithdrawalCase({
-    valueUsd: 100_000_000n,
+    valueUusd: 100_000_000n,
     minimumProceeds: 0n,
   });
   const withOtherPosition = makeHoldingObservations([
@@ -1917,7 +1918,7 @@ test('Only minimum redemption proceeds count toward final portfolio value', t =>
       place: 'Aave_Ethereum',
       kind: 'principal',
       amount: 100_000_000n,
-      valueUsd: 100_000_000n,
+      valueUusd: 100_000_000n,
     }),
   ]);
   const target = { Aave_Ethereum: 50n, Compound_Ethereum: 50n };
@@ -1937,7 +1938,7 @@ test('Only minimum redemption proceeds count toward final portfolio value', t =>
 test('An empty share holding can meet only zero withdrawal minimums', t => {
   const { instrument, movement, checkAllocation } = makeMaximumWithdrawalCase({
     shareQuantity: 0n,
-    valueUsd: 0n,
+    valueUusd: 0n,
     minimumProceeds: 0n,
   });
   t.notThrows(() => checkAllocation({ [instrument]: 100n }));
@@ -1973,7 +1974,7 @@ test('Share withdrawals cannot exceed the observed shares', t => {
       shares,
       {
         ...shares,
-        tokenAddress: holdingTokens.otherVault,
+        tokenId: holdingTokens.otherVault,
       },
     ],
   ]) {
@@ -2003,7 +2004,7 @@ test('A maximum share withdrawal leaves reward exposure at the source', t => {
             place: instrument,
             kind: 'claimable-reward',
             amount: 20n,
-            valueUsd: 20_000_000n,
+            valueUusd: 20_000_000n,
           }),
         ]),
       ),

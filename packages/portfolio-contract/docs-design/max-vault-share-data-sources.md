@@ -5,7 +5,7 @@
 A maximum-vault-share mandate judges the proposed allocation weight:
 
 ```text
-portfolioValueMicroUsd * instrumentPortion
+portfolioValueUusd * instrumentPortion
   <= instrumentTvlUsd * totalPortions * maxVaultShareBps * 100
 ```
 

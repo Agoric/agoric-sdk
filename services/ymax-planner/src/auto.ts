@@ -195,7 +195,7 @@ export const pickAutoClaimSources = (
     const usdcFromTokenRates = exchangeRates.filter(
       rate =>
         `${rate.evmChainId}` === evmChainId &&
-        rate.sourceToken === tokenId &&
+        rate.sourceToken?.toLowerCase() === tokenId?.toLowerCase() &&
         rate.targetDenom === 'USDC',
     );
     if (!usdcFromTokenRates.length) continue;
