@@ -12,6 +12,7 @@ import {
 } from '@agoric/portfolio-api';
 import {
   chainOf,
+  matchHoldingTokenId,
   type ERC4626InstrumentId,
 } from '@agoric/portfolio-api/src/places.js';
 import {
@@ -339,7 +340,7 @@ const bindShareWithdrawals = (
     if (!vaultAddress) {
       throw Fail`no configured vault for ${q(movement.src)}`;
     }
-    movement.holding.tokenId?.toLowerCase() === vaultAddress.toLowerCase() ||
+    matchHoldingTokenId(movement.holding, vaultAddress) ||
       Fail`observed share token ${q(movement.holding.tokenId)} does not match configured vault ${q(vaultAddress)} at ${q(movement.src)}`;
     if (movement.amount.value > 0n) {
       throw Fail`share redemption cannot yet enforce a positive proceeds minimum ${q(movement.amount.value)} at ${q(movement.src)}`;
@@ -530,7 +531,7 @@ const projectPlanBalances = (
         holding =>
           holding.place === src &&
           holding.kind === 'token' &&
-          holding.tokenId?.toLowerCase() === usdcAddress.toLowerCase(),
+          matchHoldingTokenId(holding, usdcAddress),
       );
       if (candidates.length !== 1) {
         throw Fail`cash movement requires one observed USDC holding at ${q(src)}`;
