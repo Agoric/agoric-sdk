@@ -4788,6 +4788,7 @@ test('A withdrawal cannot use another position’s observed shares', async t => 
         src: vaults.u2.id,
         vaultAddress: vaults.u2.address,
         shares: 50n,
+        minimumProceeds: 1n,
       },
     },
   };

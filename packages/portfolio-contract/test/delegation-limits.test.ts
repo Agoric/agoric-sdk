@@ -1954,6 +1954,24 @@ test('Redemption binds observed shares to the configured vault', t => {
       },
     },
   );
+  t.deepEqual(
+    vet({
+      flow: [
+        {
+          ...movement,
+          withdraw: { amountOfShares: 20n },
+          amount: { brand: USDC, value: 1n },
+        },
+      ],
+    }).boundSteps?.[0],
+    {
+      kind: 'redeemShares',
+      src: instrument,
+      vaultAddress: holdingTokens.vault,
+      shares: 20n,
+      minimumProceeds: 1n,
+    },
+  );
   t.throws(
     () =>
       vetAllocationPlan(
