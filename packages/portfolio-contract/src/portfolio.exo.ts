@@ -806,6 +806,13 @@ export const preparePortfolioKit = (
                     : contracts[chainOf(account) as AxelarChain]?.usdc,
                 getVaultAddress: src =>
                   contracts[chainOf(src) as AxelarChain]?.[src],
+                hasMinimumRedemptionContracts: src => {
+                  const chainContracts = contracts[chainOf(src) as AxelarChain];
+                  return !!(
+                    chainContracts?.morphoBundler3 &&
+                    chainContracts.morphoGeneralAdapter1
+                  );
+                },
               },
             );
           // Pre-signed plans can be checked completely before assigning a flow.
@@ -821,7 +828,7 @@ export const preparePortfolioKit = (
             vetObservationPlaces(currentBalancePlaces, plan, observations);
             vettedPlan = vetPlan();
           }
-          const { shareWithdrawals } = vettedPlan ?? {};
+          const { boundSteps } = vettedPlan ?? {};
 
           // Check and reserve synchronously, after any observation verification.
           insistLatestFlowFinished(this.state);
@@ -846,7 +853,7 @@ export const preparePortfolioKit = (
             undefined,
             startedFlow,
             undefined,
-            shareWithdrawals && { shareWithdrawals },
+            boundSteps && { boundSteps },
           );
 
           const { flowId } = startedFlow;

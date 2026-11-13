@@ -267,6 +267,8 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
       remoteAccountRouter: M.string(),
       remoteAccountImplementation: M.string(),
       oneInchRouter: M.string(),
+      morphoBundler3: M.string(),
+      morphoGeneralAdapter1: M.string(),
     },
   );
 
@@ -329,6 +331,9 @@ export type EVMContractAddresses = {
   walletHelper: `0x${string}`;
   /** 1inch AggregationRouterV6; mainnet-only (1inch has no testnet support) */
   oneInchRouter?: `0x${string}`;
+  /** Morpho's atomic minimum-price redemption path. */
+  morphoBundler3?: `0x${string}`;
+  morphoGeneralAdapter1?: `0x${string}`;
 } & Partial<BeefyContracts> &
   Partial<ERC4626Contracts>;
 

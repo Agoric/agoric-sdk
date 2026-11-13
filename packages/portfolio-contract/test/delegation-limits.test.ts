@@ -1886,7 +1886,7 @@ test('Redemption binds observed shares to the configured vault', t => {
   const { instrument, shares, observations, movement } =
     makeMaximumWithdrawalCase({ shareQuantity: 50n });
   const plan = {
-    flow: [{ ...movement, shareWithdrawals: { shares: 999n } }],
+    flow: [{ ...movement, boundSteps: { shares: 999n } }],
   };
   const configuredVault = () => holdingTokens.vault;
   const vet = (
@@ -1899,20 +1899,30 @@ test('Redemption binds observed shares to the configured vault', t => {
       { [instrument]: 100n },
       submitted,
       evidence,
-      { getVaultAddress },
+      { getVaultAddress, hasMinimumRedemptionContracts: () => true },
     );
   t.deepEqual(vet(), {
     commitNow: true,
-    shareWithdrawals: {
-      0: { src: instrument, vaultAddress: holdingTokens.vault, shares: 50n },
+    boundSteps: {
+      0: {
+        kind: 'redeemShares',
+        src: instrument,
+        vaultAddress: holdingTokens.vault,
+        shares: 50n,
+      },
     },
   });
   t.deepEqual(
     vet({ flow: [{ ...movement, withdraw: { amountOfShares: 20n } }] }),
     {
       commitNow: true,
-      shareWithdrawals: {
-        0: { src: instrument, vaultAddress: holdingTokens.vault, shares: 20n },
+      boundSteps: {
+        0: {
+          kind: 'redeemShares',
+          src: instrument,
+          vaultAddress: holdingTokens.vault,
+          shares: 20n,
+        },
       },
     },
   );
@@ -1929,12 +1939,39 @@ test('Redemption binds observed shares to the configured vault', t => {
   t.throws(() => vet(plan, observations, () => undefined), {
     message: /no configured vault/,
   });
-  t.throws(
-    () => vet({ flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] }),
+  t.deepEqual(
+    vet({ flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] }),
     {
-      message:
-        /share redemption cannot yet enforce a positive proceeds minimum/,
+      commitNow: true,
+      boundSteps: {
+        0: {
+          kind: 'redeemShares',
+          src: instrument,
+          vaultAddress: holdingTokens.vault,
+          shares: 50n,
+          minimumProceeds: 1n,
+        },
+      },
     },
+  );
+  t.throws(
+    () =>
+      vetAllocationPlan(
+        { allocation: {} },
+        { [instrument]: 100n },
+        { flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] },
+        observations,
+        { getVaultAddress: configuredVault },
+      ),
+    { message: /minimum redemption contracts not configured/ },
+  );
+  t.throws(
+    () =>
+      vet(
+        { flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] },
+        makeHoldingObservations([{ ...shares, amount: 10n ** 27n + 1n }]),
+      ),
+    { message: /shares.*exceed.*minimum/ },
   );
 });
 
@@ -1944,17 +1981,19 @@ test('Maximum withdrawal requires observed shares, even with legacy balances', t
     balances: { [instrument]: 50n, '@Ethereum': 0n },
     instrumentTvls: {},
   };
-  t.throws(
-    () =>
-      vetAllocationPlan(
-        { allocation: {} },
-        { [instrument]: 100n },
-        { flow: [movement] },
-        observations,
-        { getVaultAddress: () => holdingTokens.vault },
-      ),
-    { message: /share redemption requires one observed share holding/ },
-  );
+  for (const value of [0n, 25n]) {
+    t.throws(
+      () =>
+        vetAllocationPlan(
+          { allocation: {} },
+          { [instrument]: 100n },
+          { flow: [{ ...movement, amount: { brand: USDC, value } }] },
+          observations,
+          { getVaultAddress: () => holdingTokens.vault },
+        ),
+      { message: /share redemption requires one observed share holding/ },
+    );
+  }
 });
 
 test('Only minimum redemption proceeds count toward final portfolio value', t => {
@@ -1982,6 +2021,53 @@ test('Only minimum redemption proceeds count toward final portfolio value', t =>
       { flow: [{ ...movement, amount: { brand: USDC, value: 100_000_000n } }] },
       withOtherPosition,
     ),
+  );
+});
+
+test('A bounded exit can leave proceeds in cash or redeploy them', t => {
+  const { shares, movement } = makeMaximumWithdrawalCase({
+    minimumProceeds: 50_000_000n,
+  });
+  const observations = makeHoldingObservations([
+    shares,
+    makeHolding({
+      place: '@Ethereum',
+      kind: 'token',
+      amount: 0n,
+      valueUusd: 0n,
+    }),
+    makeHolding({
+      place: 'Aave_Ethereum',
+      kind: 'principal',
+      amount: 0n,
+      valueUusd: 0n,
+    }),
+  ]);
+  const vet = (plan: FundsFlowPlan) =>
+    vetAllocationPlan(
+      { allocation: {} },
+      { Aave_Ethereum: 100n },
+      plan,
+      observations,
+      {
+        getUsdcTokenId: () => holdingTokens.usdc,
+        getVaultAddress: () => holdingTokens.vault,
+        hasMinimumRedemptionContracts: () => true,
+      },
+    );
+  t.notThrows(() => vet({ flow: [movement] }));
+  t.notThrows(() =>
+    vet({
+      flow: [
+        movement,
+        {
+          src: '@Ethereum',
+          dest: 'Aave_Ethereum',
+          amount: { brand: USDC, value: 30_000_000n },
+        },
+      ],
+      order: [[1, [0]]],
+    }),
   );
 });
 

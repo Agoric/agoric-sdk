@@ -47,6 +47,10 @@ import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'abitype';
 import type { Assertions } from 'ava';
 import { erc20ABI } from '../src/interfaces/erc20.ts';
+import {
+  bundler3ABI,
+  generalAdapter1ABI,
+} from '../src/interfaces/morpho-bundler3.ts';
 import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
 import {
   provideEVMAccount,
@@ -248,11 +252,13 @@ const makeShareWithdrawalCase = ({
     withdraw: { max: true },
   };
   const options: ExecutePlanOptions = {
-    shareWithdrawals: {
+    boundSteps: {
       0: {
+        kind: 'redeemShares',
         src: vaults.rwa.id,
         vaultAddress: vaults.rwa.address,
         shares: observedShares,
+        ...(minimumProceeds > 0n && { minimumProceeds }),
       },
     },
   };
@@ -312,6 +318,7 @@ const makeFullExitCase = async () => {
     });
   return {
     kit,
+    log: offer.log,
     txResolver,
     resolverService,
     storage,
@@ -4775,8 +4782,9 @@ test('A withdrawal cannot use another position’s observed shares', async t => 
   const kit = await ctx.makePortfolioKit();
   const { step1 } = makeShareWithdrawalCase({ minimumProceeds: 1n });
   const options: ExecutePlanOptions = {
-    shareWithdrawals: {
+    boundSteps: {
       0: {
+        kind: 'redeemShares',
         src: vaults.u2.id,
         vaultAddress: vaults.u2.address,
         shares: 50n,
@@ -4810,7 +4818,7 @@ test('A zero proceeds minimum requires authenticated share instructions', async 
   const { step1, options } = makeShareWithdrawalCase({ minimumProceeds: 0n });
   const submittedStep = {
     ...step1,
-    shareWithdrawals: options.shareWithdrawals,
+    boundSteps: options.boundSteps,
   };
   await t.throwsAsync(
     executePlan(orch, ctx, offer.seat, { flow: [submittedStep] }, kit, {
@@ -4909,4 +4917,58 @@ test('A failed full exit can be retried with refreshed share evidence', async t 
   t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
   t.deepEqual(redemptionQuantities(), [50n, 30n]);
   t.deepEqual(await txResolver.findPending(), []);
+});
+
+test('A positive redemption minimum is checked in the remote account batch', async t => {
+  const { executeExit, txResolver, log } = await makeFullExitCase();
+  const done = executeExit({ observedShares: 50n, minimumProceeds: 25n });
+  await txResolver.drainPending();
+  await done;
+
+  const memo = log.findLast(
+    ({ _method, opts }) =>
+      _method === 'transfer' && typeof opts?.memo === 'string',
+  )?.opts?.memo;
+  t.truthy(memo);
+  const { calls } = decodeMultiCalls(memo!);
+  t.is(calls.length, 2);
+  t.is(calls[0].target.toLowerCase(), vaults.rwa.address.toLowerCase());
+  const approval = decodeFunctionData({ abi: erc20ABI, data: calls[0].data });
+  t.is(approval.functionName, 'approve');
+  t.deepEqual(approval.args, [
+    contractsMock.Ethereum.morphoGeneralAdapter1,
+    50n,
+  ]);
+
+  t.is(
+    calls[1].target.toLowerCase(),
+    contractsMock.Ethereum.morphoBundler3.toLowerCase(),
+  );
+  t.true(calls[1].data.startsWith('0x374f435d'));
+  const multicall = decodeFunctionData({
+    abi: bundler3ABI,
+    data: calls[1].data,
+  });
+  t.is(multicall.functionName, 'multicall');
+  const [bundle] = multicall.args;
+  t.is(bundle.length, 1);
+  const [call] = bundle;
+  t.is(
+    call.to.toLowerCase(),
+    contractsMock.Ethereum.morphoGeneralAdapter1.toLowerCase(),
+  );
+  t.is(call.value, 0n);
+  t.false(call.skipRevert);
+  t.is(call.callbackHash, `0x${'0'.repeat(64)}`);
+  t.true(call.data.startsWith('0xa7f6e606'));
+  const redeem = decodeFunctionData({
+    abi: generalAdapter1ABI,
+    data: call.data,
+  });
+  t.deepEqual(redeem.args?.slice(0, 3), [
+    vaults.rwa.address,
+    50n,
+    5n * 10n ** 26n,
+  ]);
+  t.is(redeem.args?.[3], redeem.args?.[4]);
 });

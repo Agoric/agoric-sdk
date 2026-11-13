@@ -325,18 +325,23 @@ const decodePlan = (
   });
 };
 
-export type BoundShareWithdrawal = Readonly<{
+export type BoundStep = Readonly<{
+  kind: 'redeemShares';
   src: ERC4626InstrumentId;
   vaultAddress: EvmAddress;
   shares: bigint;
+  minimumProceeds?: bigint;
 }>;
 
+const MAX_MINIMUM_BEARING_SHARES = 10n ** 27n;
+
 /** Derive execution instructions from the same operations used by allocation checks. */
-const bindShareWithdrawals = (
+const bindSteps = (
   plan: DecodedPlan,
   getVaultAddress?: GetVaultAddress,
-): Partial<Record<number, BoundShareWithdrawal>> => {
-  const bound: Partial<Record<number, BoundShareWithdrawal>> = {};
+  hasMinimumRedemptionContracts?: (src: ERC4626InstrumentId) => boolean,
+): Partial<Record<number, BoundStep>> => {
+  const bound: Partial<Record<number, BoundStep>> = {};
   for (const [step, movement] of plan.flow.entries()) {
     if (movement.kind !== 'redeemShares') continue;
     const vaultAddress = getVaultAddress?.(movement.src);
@@ -345,18 +350,24 @@ const bindShareWithdrawals = (
     }
     matchHoldingTokenId(movement.holding, vaultAddress) ||
       Fail`observed share token ${q(movement.holding.tokenId)} does not match configured vault ${q(vaultAddress)} at ${q(movement.src)}`;
-    if (movement.amount.value > 0n) {
-      throw Fail`share redemption cannot yet enforce a positive proceeds minimum ${q(movement.amount.value)} at ${q(movement.src)}`;
+    const minimumProceeds = movement.amount.value;
+    if (minimumProceeds > 0n) {
+      hasMinimumRedemptionContracts?.(movement.src) ||
+        Fail`Morpho minimum redemption contracts not configured for ${q(movement.src)}`;
+      (movement.shares > 0n && movement.shares <= MAX_MINIMUM_BEARING_SHARES) ||
+        Fail`shares ${q(movement.shares)} exceed the range for enforcing a minimum at ${q(movement.src)}`;
     }
     bound[step] = {
+      kind: 'redeemShares',
       src: movement.src,
       vaultAddress,
       shares: movement.shares,
+      ...(minimumProceeds > 0n && { minimumProceeds }),
     };
   }
   return harden(bound);
 };
-harden(bindShareWithdrawals);
+harden(bindSteps);
 
 /** An investment requires principal or shares; rewards alone do not cover it. */
 const hasObservedBalance = (
@@ -668,7 +679,7 @@ harden(vetPlanAllocation);
 
 type VettedAllocationPlan = Readonly<{
   commitNow: boolean;
-  shareWithdrawals?: ReturnType<typeof bindShareWithdrawals>;
+  boundSteps?: ReturnType<typeof bindSteps>;
 }>;
 
 /**
@@ -689,6 +700,7 @@ export const vetAllocationPlan = (
   addresses: {
     getUsdcTokenId?: GetUsdcTokenId;
     getVaultAddress?: GetVaultAddress;
+    hasMinimumRedemptionContracts?: (src: ERC4626InstrumentId) => boolean;
   } = {},
 ): VettedAllocationPlan => {
   assertMandateForAllocation(permissions, targetAllocation);
@@ -702,13 +714,14 @@ export const vetAllocationPlan = (
     addresses.getUsdcTokenId,
   );
   assertMandateForPlanObservations(permissions, targetAllocation, observations);
-  const shareWithdrawals = bindShareWithdrawals(
+  const boundSteps = bindSteps(
     decodedPlan,
     addresses.getVaultAddress,
+    addresses.hasMinimumRedemptionContracts,
   );
   return harden({
     commitNow: true,
-    ...(keys(shareWithdrawals).length && { shareWithdrawals }),
+    ...(keys(boundSteps).length && { boundSteps }),
   });
 };
 harden(vetAllocationPlan);

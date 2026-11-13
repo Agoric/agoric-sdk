@@ -75,7 +75,7 @@ import type {
   AccountInfoFor,
   PortfolioKit,
 } from './portfolio.exo.ts';
-import type { BoundShareWithdrawal } from './delegation-limits.ts';
+import type { BoundStep } from './delegation-limits.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -223,6 +223,7 @@ export type ProtocolDetail<
     ctx: CTX,
     shares: bigint,
     dest: AccountInfoFor[C],
+    minimumProceeds: bigint,
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
   claimRewards?: (
@@ -256,7 +257,7 @@ type FlowStepPowers = {
 
 export type ExecutePlanOptions = {
   /** Host-bound quantities from authenticated observations, never plan fields. */
-  shareWithdrawals?: Readonly<Partial<Record<number, BoundShareWithdrawal>>>;
+  boundSteps?: Readonly<Partial<Record<number, BoundStep>>>;
   evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
   // XXX consider using pattern matching for queued steps instead of src/dest.
   queuedSteps?: Array<
@@ -987,7 +988,7 @@ const stepFlow = async (
   config?: FlowConfig,
   options?: Pick<
     ExecutePlanOptions,
-    'queuedSteps' | 'evmDepositDetail' | 'shareWithdrawals'
+    'queuedSteps' | 'evmDepositDetail' | 'boundSteps'
   >,
 ) => {
   const features = config?.features;
@@ -1076,7 +1077,7 @@ const stepFlow = async (
   >(
     way: Way & { how: P },
     move: MovementDesc,
-    shareWithdrawal?: BoundShareWithdrawal,
+    boundStep?: BoundStep,
   ): AssetMovement => {
     // The pool determines where the step runs. The account side of the way
     // must agree; wayFromSrcToDest already checked, so this guards its bugs.
@@ -1132,10 +1133,16 @@ const stepFlow = async (
           // Rewards land in the user's remote address as separate tokens;
           // the pool position is unchanged.
           return harden({});
-        } else if (shareWithdrawal) {
-          if (shareWithdrawal.shares === 0n) return harden({});
+        } else if (boundStep?.kind === 'redeemShares') {
+          if (boundStep.shares === 0n) return harden({});
           pImpl.redeem || Fail`${q(how)} does not support share redemption`;
-          await pImpl.redeem!(evmCtx, shareWithdrawal.shares, gInfo, opts);
+          await pImpl.redeem!(
+            evmCtx,
+            boundStep.shares,
+            gInfo,
+            boundStep.minimumProceeds ?? 0n,
+            opts,
+          );
           return harden({ srcPos: pos });
         } else {
           await pImpl.withdraw(evmCtx, amount, gInfo, opts);
@@ -1154,19 +1161,21 @@ const stepFlow = async (
   moves.length > 0 || Fail`moves list must not be empty`;
 
   for (const [i, move] of moves.entries()) {
-    const shareWithdrawal = options?.shareWithdrawals?.[i];
-    if (shareWithdrawal) {
-      (move.src === shareWithdrawal.src &&
-        move.dest === `@${chainOf(shareWithdrawal.src)}` &&
+    const boundStep = options?.boundSteps?.[i];
+    if (boundStep && boundStep.kind !== 'redeemShares') {
+      throw Fail`unsupported bound step ${q(boundStep.kind)} at movement ${q(i)}`;
+    }
+    if (boundStep?.kind === 'redeemShares') {
+      (move.src === boundStep.src &&
+        move.dest === `@${chainOf(boundStep.src)}` &&
         (move.withdraw?.max === true ||
-          move.withdraw?.amountOfShares === shareWithdrawal.shares) &&
+          move.withdraw?.amountOfShares === boundStep.shares) &&
+        move.amount.value === (boundStep.minimumProceeds ?? 0n) &&
         !move.claimRewards) ||
         Fail`share withdrawal evidence does not match movement ${q(i)}`;
       sameEvmAddress(
-        shareWithdrawal.vaultAddress,
-        ctx.contracts[chainOf(shareWithdrawal.src) as AxelarChain]?.[
-          shareWithdrawal.src
-        ],
+        boundStep.vaultAddress,
+        ctx.contracts[chainOf(boundStep.src) as AxelarChain]?.[boundStep.src],
       ) ||
         Fail`share withdrawal vault no longer matches configuration at ${q(move.src)}`;
     }
@@ -1174,7 +1183,7 @@ const stepFlow = async (
       getAssetPlaceRefKind(move.src) === 'pos' && !!move.claimRewards;
     move.amount.value > 0n ||
       isClaimRewards ||
-      !!shareWithdrawal ||
+      boundStep?.kind === 'redeemShares' ||
       Fail`movement amount must be positive in ${q(move)}`;
     const queuedStep = getQueuedStep(move);
     if (queuedStep) {
@@ -1462,11 +1471,7 @@ const stepFlow = async (
 
       case 'ERC4626':
         todo.push(
-          makeEVMProtocolStep(
-            way as Way & { how: 'ERC4626' },
-            move,
-            shareWithdrawal,
-          ),
+          makeEVMProtocolStep(way as Way & { how: 'ERC4626' }, move, boundStep),
         );
         break;
 
@@ -2289,8 +2294,8 @@ export const executePlan = (async (
       {
         queuedSteps,
         evmDepositDetail: options?.evmDepositDetail,
-        ...(options?.shareWithdrawals && {
-          shareWithdrawals: options.shareWithdrawals,
+        ...(options?.boundSteps && {
+          boundSteps: options.boundSteps,
         }),
       },
     );
