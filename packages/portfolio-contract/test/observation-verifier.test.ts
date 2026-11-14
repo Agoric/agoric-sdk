@@ -79,6 +79,77 @@ test('verifies observations signed by the attestor', async t => {
   });
 });
 
+test('verifies chain-local holding identities and micro-USD valuations', async t => {
+  const content: PortfolioObservationsContent = harden({
+    ...observation,
+    observations: {
+      balances: {},
+      holdings: [
+        {
+          place: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+          kind: 'shares',
+          tokenId: '0x1234567890abcdef1234567890abcdef12345678',
+          amount: 7_000_000_000_000_000_000n,
+          valueUusd: 100_000_000n,
+        },
+        {
+          place: '@noble',
+          kind: 'token',
+          tokenId: 'uusdc',
+          amount: 2_000_000n,
+          valueUusd: 2_000_000n,
+        },
+        {
+          place: '@Ethereum',
+          kind: '$ETH',
+          tokenId: '',
+          amount: 1_000_000_000_000_000n,
+        },
+        {
+          place: '@agoric',
+          kind: 'token',
+          tokenId: 'ubld',
+          amount: 0n,
+          valueUusd: 0n,
+        },
+      ],
+      instrumentTvls: {},
+    },
+  });
+  const message = ymaxObservationMessageKit.getStandaloneOperationData(
+    {
+      ...portfolioObservationsToEIP712(content),
+      nonce: ISSUED_AT,
+      deadline: ISSUED_AT + OBSERVATION_LIFETIME,
+    },
+    'PortfolioObservations',
+    CHAIN_ID,
+    ROUTER,
+  );
+  const signed = await sign(message);
+  t.deepEqual(await verify(signed), {
+    ...content,
+    issuedAt: ISSUED_AT,
+    deadline: ISSUED_AT + OBSERVATION_LIFETIME,
+  });
+
+  // Both the chain-local identifier and valuation must remain authenticated.
+  for (const change of [{ tokenId: 'ubld' }, { valueUusd: 3_000_000n }]) {
+    await t.throwsAsync(
+      verify({
+        ...signed,
+        message: {
+          ...signed.message,
+          holdings: signed.message.holdings.map((holding, index) =>
+            index === 1 ? { ...holding, ...change } : holding,
+          ),
+        },
+      }),
+      { message: /observations not signed by the attestor/ },
+    );
+  }
+});
+
 test('accepts observations issued at the maximum age', async t => {
   const issuedAt = NOW - MAX_OBSERVATION_AGE_SECONDS;
   const verified = await verify(

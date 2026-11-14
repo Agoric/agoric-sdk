@@ -60,6 +60,7 @@ import {
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import { chainOf } from '@agoric/portfolio-api/src/places.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { EVow } from '@agoric/vow';
@@ -74,6 +75,7 @@ import type {
   AccountInfoFor,
   PortfolioKit,
 } from './portfolio.exo.ts';
+import type { BoundStep } from './delegation-limits.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -216,6 +218,14 @@ export type ProtocolDetail<
     dest: AccountInfoFor[C],
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
+  /** Redeem a raw share quantity into the position's chain account. */
+  redeem?: (
+    ctx: CTX,
+    shares: bigint,
+    dest: AccountInfoFor[C],
+    minimumProceeds: bigint,
+    ...optsArgs: [OrchestrationOptions?]
+  ) => Promise<void>;
   claimRewards?: (
     ctx: CTX,
     dest: AccountInfoFor[C],
@@ -245,7 +255,9 @@ type FlowStepPowers = {
   updatePhase: (txIds: TxId[]) => void;
 };
 
-type ExecutePlanOptions = {
+export type ExecutePlanOptions = {
+  /** Host-bound quantities from authenticated observations, never plan fields. */
+  boundSteps?: Readonly<Partial<Record<number, BoundStep>>>;
   evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
   // XXX consider using pattern matching for queued steps instead of src/dest.
   queuedSteps?: Array<
@@ -974,7 +986,10 @@ const stepFlow = async (
   flowId: number,
   flowReporter: FlowReporter,
   config?: FlowConfig,
-  options?: Pick<ExecutePlanOptions, 'queuedSteps' | 'evmDepositDetail'>,
+  options?: Pick<
+    ExecutePlanOptions,
+    'queuedSteps' | 'evmDepositDetail' | 'boundSteps'
+  >,
 ) => {
   const features = config?.features;
   const { queuedSteps, evmDepositDetail } = options ?? {};
@@ -1062,6 +1077,7 @@ const stepFlow = async (
   >(
     way: Way & { how: P },
     move: MovementDesc,
+    boundStep?: BoundStep,
   ): AssetMovement => {
     // The pool determines where the step runs. The account side of the way
     // must agree; wayFromSrcToDest already checked, so this guards its bugs.
@@ -1117,6 +1133,17 @@ const stepFlow = async (
           // Rewards land in the user's remote address as separate tokens;
           // the pool position is unchanged.
           return harden({});
+        } else if (boundStep?.kind === 'redeemShares') {
+          if (boundStep.shares === 0n) return harden({});
+          pImpl.redeem || Fail`${q(how)} does not support share redemption`;
+          await pImpl.redeem!(
+            evmCtx,
+            boundStep.shares,
+            gInfo,
+            boundStep.minimumProceeds ?? 0n,
+            opts,
+          );
+          return harden({ srcPos: pos });
         } else {
           await pImpl.withdraw(evmCtx, amount, gInfo, opts);
           return harden({ srcPos: pos });
@@ -1134,10 +1161,29 @@ const stepFlow = async (
   moves.length > 0 || Fail`moves list must not be empty`;
 
   for (const [i, move] of moves.entries()) {
+    const boundStep = options?.boundSteps?.[i];
+    if (boundStep && boundStep.kind !== 'redeemShares') {
+      throw Fail`unsupported bound step ${q(boundStep.kind)} at movement ${q(i)}`;
+    }
+    if (boundStep?.kind === 'redeemShares') {
+      (move.src === boundStep.src &&
+        move.dest === `@${chainOf(boundStep.src)}` &&
+        (move.withdraw?.max === true ||
+          move.withdraw?.amountOfShares === boundStep.shares) &&
+        move.amount.value === (boundStep.minimumProceeds ?? 0n) &&
+        !move.claimRewards) ||
+        Fail`share withdrawal evidence does not match movement ${q(i)}`;
+      sameEvmAddress(
+        boundStep.vaultAddress,
+        ctx.contracts[chainOf(boundStep.src) as AxelarChain]?.[boundStep.src],
+      ) ||
+        Fail`share withdrawal vault no longer matches configuration at ${q(move.src)}`;
+    }
     const isClaimRewards =
       getAssetPlaceRefKind(move.src) === 'pos' && !!move.claimRewards;
     move.amount.value > 0n ||
       isClaimRewards ||
+      boundStep?.kind === 'redeemShares' ||
       Fail`movement amount must be positive in ${q(move)}`;
     const queuedStep = getQueuedStep(move);
     if (queuedStep) {
@@ -1424,7 +1470,9 @@ const stepFlow = async (
         break;
 
       case 'ERC4626':
-        todo.push(makeEVMProtocolStep(way as Way & { how: 'ERC4626' }, move));
+        todo.push(
+          makeEVMProtocolStep(way as Way & { how: 'ERC4626' }, move, boundStep),
+        );
         break;
 
       case 'withdrawToEVM': {
@@ -2243,7 +2291,13 @@ export const executePlan = (async (
       flowId,
       flowReporter,
       config,
-      { queuedSteps, evmDepositDetail: options?.evmDepositDetail },
+      {
+        queuedSteps,
+        evmDepositDetail: options?.evmDepositDetail,
+        ...(options?.boundSteps && {
+          boundSteps: options.boundSteps,
+        }),
+      },
     );
     return `flow${flowId}`;
   } catch (err) {

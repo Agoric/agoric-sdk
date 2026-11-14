@@ -317,6 +317,8 @@ export const contractsMock = {
   },
   Ethereum: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    morphoBundler3: '0x6566194141eefa99Af43Bb5Aa71460Ca2Dc90245',
+    morphoGeneralAdapter1: '0x4A6c312ec70E8747a587EE860a0353cd42Be0aE0',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',

@@ -452,8 +452,8 @@ export const matchHoldingTokenId = (
   }
 
   return (
-    getCanonicalHoldingKey(holding) ===
-    getCanonicalHoldingKey({ ...holding, tokenId })
+    makeTokenIdKey(holdingTokenId, holding.place) ===
+    makeTokenIdKey(tokenId, holding.place)
   );
 };
 deepFreeze(matchHoldingTokenId);

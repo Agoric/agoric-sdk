@@ -668,6 +668,8 @@ const mainnetContracts = {
   },
   Ethereum: {
     aavePool: aaveAddresses.mainnet.Ethereum,
+    morphoBundler3: '0x6566194141eefa99Af43Bb5Aa71460Ca2Dc90245',
+    morphoGeneralAdapter1: '0x4A6c312ec70E8747a587EE860a0353cd42Be0aE0',
     cctpRelayer,
     compound: compoundAddresses.mainnet.Ethereum,
     compoundRewardsController:
@@ -741,6 +743,8 @@ const mainnetContracts = {
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
+    morphoBundler3: '0xFBCd3C258feB131D8E038F2A3a670A7bE0507C05',
+    morphoGeneralAdapter1: '0x79481C87f24A3C4332442A2E9faaf675e5F141f0',
     cctpRelayer,
     compound: compoundAddresses.mainnet.Optimism,
     compoundRewardsController:
@@ -768,6 +772,8 @@ const mainnetContracts = {
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
+    morphoBundler3: '0x1FA4431bC113D308beE1d46B0e98Cb805FB48C13',
+    morphoGeneralAdapter1: '0x9954aFB60BB5A222714c478ac86990F221788B88',
     cctpRelayer,
     compound: compoundAddresses.mainnet.Arbitrum,
     compoundRewardsController:
@@ -799,6 +805,8 @@ const mainnetContracts = {
   },
   Base: {
     aavePool: aaveAddresses.mainnet.Base,
+    morphoBundler3: '0x6BFd8137e702540E7A42B74178A4a49Ba43920C4',
+    morphoGeneralAdapter1: '0xb98c948CFA24072e58935BC004a8A7b376AE746A',
     cctpRelayer,
     compound: compoundAddresses.mainnet.Base,
     compoundRewardsController: compoundRewardsControllerAddresses.mainnet.Base,

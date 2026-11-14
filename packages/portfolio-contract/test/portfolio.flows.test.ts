@@ -47,6 +47,10 @@ import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'abitype';
 import type { Assertions } from 'ava';
 import { erc20ABI } from '../src/interfaces/erc20.ts';
+import {
+  bundler3ABI,
+  generalAdapter1ABI,
+} from '../src/interfaces/morpho-bundler3.ts';
 import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
 import {
   provideEVMAccount,
@@ -68,6 +72,7 @@ import {
   executePlan as rawExecutePlan,
   openPortfolio as rawOpenPortfolio,
   wayFromSrcToDest,
+  type ExecutePlanOptions,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { swapRewardToStable, type EVMContext } from '../src/pos-evm.flows.ts';
@@ -224,6 +229,103 @@ const openWithPlan = async (
 
 const { make } = AmountMath;
 const { keys } = Object;
+const vaults = {
+  rwa: {
+    id: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+    address: contractsMock.Ethereum.ERC4626_morphoGauntletUsdcRwa_Ethereum!,
+  },
+  u2: {
+    id: 'ERC4626_vaultU2_Ethereum',
+    address: contractsMock.Ethereum.ERC4626_vaultU2_Ethereum!,
+  },
+  replacement: { address: '0x0000000000000000000000000000000000000003' },
+} as const;
+
+const makeShareWithdrawalCase = ({
+  minimumProceeds = 0n,
+  observedShares = 50n,
+} = {}) => {
+  const step1: MovementDesc = {
+    src: vaults.rwa.id,
+    dest: '@Ethereum',
+    amount: make(USDC, minimumProceeds),
+    withdraw: { max: true },
+  };
+  const options: ExecutePlanOptions = {
+    boundSteps: {
+      0: {
+        kind: 'redeemShares',
+        src: vaults.rwa.id,
+        vaultAddress: vaults.rwa.address,
+        shares: observedShares,
+        ...(minimumProceeds > 0n && { minimumProceeds }),
+      },
+    },
+  };
+  return { step1, options };
+};
+
+const makeFullExitCase = async () => {
+  const { orch, ctx, offer, txResolver, resolverService, storage } = mocks(
+    {},
+    { Deposit: make(USDC, 1_000_000n) },
+  );
+  const kit = await ctx.makePortfolioKit();
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const accountP = provideEVMAccount(
+    'Ethereum',
+    axelarCCTPConfig.Ethereum,
+    { chain: await orch.getChain('axelar'), fee: 100n },
+    kit.reader.getLocalAccount(),
+    ctx,
+    kit,
+  );
+  await offer.factoryPK.promise;
+  await txResolver.drainPending();
+  const accountInfo = await accountP;
+  await accountInfo.ready;
+  offer.log.length = 0;
+  const executeExit = ({
+    observedShares,
+    minimumProceeds = 0n,
+  }: {
+    observedShares: bigint;
+    minimumProceeds?: bigint;
+  }) => {
+    const { step1, options } = makeShareWithdrawalCase({
+      minimumProceeds,
+      observedShares,
+    });
+    return executePlan(
+      orch,
+      ctx,
+      makeMockSeat({}, undefined, offer.log),
+      { flow: [{ ...step1, fee: make(BLD, 100n) }] },
+      kit,
+      { type: 'rebalance' },
+      undefined,
+      DEFAULT_FLOW_CONFIG,
+      options,
+    );
+  };
+  const redemptionQuantities = () =>
+    offer.log.flatMap(({ _method, opts }) => {
+      if (_method !== 'transfer' || typeof opts?.memo !== 'string') return [];
+      const { calls } = decodeFunctionCall(opts.memo, [
+        'redeem(uint256,address,address)',
+      ]);
+      return calls.map(call => call.args![0]);
+    });
+  return {
+    kit,
+    log: offer.log,
+    txResolver,
+    resolverService,
+    storage,
+    executeExit,
+    redemptionQuantities,
+  };
+};
 /* eslint-disable no-underscore-dangle */
 /* We use _method to get it to sort before other properties. */
 
@@ -4676,4 +4778,201 @@ test('EVM-to-EVM CCTP does not provision a Noble forwarding account', async t =>
       event._method === 'transfer' && event.address?.chainId === nobleId,
   );
   t.falsy(registration, 'direct EVM-to-EVM CCTP must not register an NFA');
+});
+
+test('A withdrawal cannot use another position’s observed shares', async t => {
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const { step1 } = makeShareWithdrawalCase({ minimumProceeds: 1n });
+  const options: ExecutePlanOptions = {
+    boundSteps: {
+      0: {
+        kind: 'redeemShares',
+        src: vaults.u2.id,
+        vaultAddress: vaults.u2.address,
+        shares: 50n,
+        minimumProceeds: 1n,
+      },
+    },
+  };
+  await t.throwsAsync(
+    executePlan(
+      orch,
+      ctx,
+      offer.seat,
+      { flow: [step1] },
+      kit,
+      { type: 'rebalance' },
+      undefined,
+      DEFAULT_FLOW_CONFIG,
+      options,
+    ),
+    { message: /share withdrawal evidence does not match movement/ },
+  );
+  t.false(
+    offer.log.some(
+      ({ _method }) => _method === 'send' || _method === 'transfer',
+    ),
+  );
+});
+
+test('A zero proceeds minimum requires authenticated share instructions', async t => {
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const { step1, options } = makeShareWithdrawalCase({ minimumProceeds: 0n });
+  const submittedStep = {
+    ...step1,
+    boundSteps: options.boundSteps,
+  };
+  await t.throwsAsync(
+    executePlan(orch, ctx, offer.seat, { flow: [submittedStep] }, kit, {
+      type: 'rebalance',
+    }),
+    { message: /movement amount must be positive/ },
+  );
+  t.false(
+    offer.log.some(
+      ({ _method }) => _method === 'send' || _method === 'transfer',
+    ),
+  );
+});
+
+test('Vault changes invalidate a pending share withdrawal before any transfer', async t => {
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const { step1, options } = makeShareWithdrawalCase({ minimumProceeds: 0n });
+  const changedContext = {
+    ...ctx,
+    contracts: {
+      ...ctx.contracts,
+      Ethereum: {
+        ...ctx.contracts.Ethereum,
+        [vaults.rwa.id]: vaults.replacement.address,
+      },
+    },
+  };
+  await t.throwsAsync(
+    executePlan(
+      orch,
+      changedContext,
+      offer.seat,
+      { flow: [step1] },
+      kit,
+      { type: 'rebalance' },
+      undefined,
+      DEFAULT_FLOW_CONFIG,
+      options,
+    ),
+    { message: /share withdrawal vault no longer matches configuration/ },
+  );
+  t.false(
+    offer.log.some(
+      ({ _method }) => _method === 'send' || _method === 'transfer',
+    ),
+  );
+});
+
+test('An observed empty position exits without a redemption transaction', async t => {
+  const { executeExit, redemptionQuantities } = await makeFullExitCase();
+  await executeExit({
+    observedShares: 0n,
+    minimumProceeds: 0n,
+  });
+  t.deepEqual(redemptionQuantities(), []);
+});
+
+test('A failed full exit can be retried with refreshed share evidence', async t => {
+  const {
+    kit,
+    txResolver,
+    resolverService,
+    storage,
+    executeExit,
+    redemptionQuantities,
+  } = await makeFullExitCase();
+  const failed = t.throwsAsync(executeExit({ observedShares: 50n }), {
+    message: /Transaction failed/,
+  });
+  // Delivery succeeds; the remote redemption itself fails.
+  for (;;) {
+    const pending = await txResolver.findPending();
+    if (!pending.length) break;
+    for (const txId of pending) {
+      resolverService.settleTransaction({
+        txId,
+        status:
+          txResolver.getPublished(txId)?.type === 'GMP' ? 'failed' : 'success',
+      });
+    }
+  }
+  await failed;
+  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+  const portfolioId = kit.reader.getPortfolioId();
+  t.is((await getFlowStatus(portfolioId, 1))?.state, 'fail');
+  t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
+
+  t.deepEqual(redemptionQuantities(), [50n], 'no automatic partial retry');
+  t.deepEqual(await txResolver.findPending(), []);
+
+  const retry = executeExit({ observedShares: 30n });
+  await txResolver.drainPending();
+  t.is(await retry, 'flow2');
+  t.is((await getFlowStatus(portfolioId, 2))?.state, 'done');
+  t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
+  t.deepEqual(redemptionQuantities(), [50n, 30n]);
+  t.deepEqual(await txResolver.findPending(), []);
+});
+
+test('A positive redemption minimum is checked in the remote account batch', async t => {
+  const { executeExit, txResolver, log } = await makeFullExitCase();
+  const done = executeExit({ observedShares: 50n, minimumProceeds: 25n });
+  await txResolver.drainPending();
+  await done;
+
+  const memo = log.findLast(
+    ({ _method, opts }) =>
+      _method === 'transfer' && typeof opts?.memo === 'string',
+  )?.opts?.memo;
+  t.truthy(memo);
+  const { calls } = decodeMultiCalls(memo!);
+  t.is(calls.length, 2);
+  t.is(calls[0].target.toLowerCase(), vaults.rwa.address.toLowerCase());
+  const approval = decodeFunctionData({ abi: erc20ABI, data: calls[0].data });
+  t.is(approval.functionName, 'approve');
+  t.deepEqual(approval.args, [
+    contractsMock.Ethereum.morphoGeneralAdapter1,
+    50n,
+  ]);
+
+  t.is(
+    calls[1].target.toLowerCase(),
+    contractsMock.Ethereum.morphoBundler3.toLowerCase(),
+  );
+  t.true(calls[1].data.startsWith('0x374f435d'));
+  const multicall = decodeFunctionData({
+    abi: bundler3ABI,
+    data: calls[1].data,
+  });
+  t.is(multicall.functionName, 'multicall');
+  const [bundle] = multicall.args;
+  t.is(bundle.length, 1);
+  const [call] = bundle;
+  t.is(
+    call.to.toLowerCase(),
+    contractsMock.Ethereum.morphoGeneralAdapter1.toLowerCase(),
+  );
+  t.is(call.value, 0n);
+  t.false(call.skipRevert);
+  t.is(call.callbackHash, `0x${'0'.repeat(64)}`);
+  t.true(call.data.startsWith('0xa7f6e606'));
+  const redeem = decodeFunctionData({
+    abi: generalAdapter1ABI,
+    data: call.data,
+  });
+  t.deepEqual(redeem.args?.slice(0, 3), [
+    vaults.rwa.address,
+    50n,
+    5n * 10n ** 26n,
+  ]);
+  t.is(redeem.args?.[3], redeem.args?.[4]);
 });

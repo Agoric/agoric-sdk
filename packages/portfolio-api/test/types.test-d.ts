@@ -49,7 +49,8 @@ expectAssignable<WithdrawParams>({});
 expectAssignable<WithdrawParams>({ max: false });
 expectAssignable<WithdrawParams>({ max: true });
 expectAssignable<WithdrawParams>({ amountOfShares: 0n });
-expectAssignable<WithdrawParams>({ max: true, amountOfShares: 123n });
+expectNotAssignable<WithdrawParams>({ max: false, amountOfShares: 0n });
+expectNotAssignable<WithdrawParams>({ max: true, amountOfShares: 0n });
 expectNotAssignable<WithdrawParams>({ max: 'yes' });
 expectNotAssignable<WithdrawParams>({ amountOfShares: 123 });
 expectNotAssignable<WithdrawParams>({ amountOfShares: '123' });
@@ -78,7 +79,7 @@ const futureMovement = {
   src: 'FutureVault_FutureChain',
   dest: '@FutureChain',
   amount: natAmount,
-  withdraw: { max: true, amountOfShares: 0n },
+  withdraw: { amountOfShares: 0n },
   futureField: { version: 2 },
 } as const;
 expectAssignable<MovementDescExt>(numericMovement);

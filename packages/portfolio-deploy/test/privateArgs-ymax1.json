@@ -1338,7 +1338,9 @@
       "walletHelper": "0x16e0e17f315eC5F2A1af92bB1A71754D667F8E70",
       "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
       "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537",
-      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae",
+      "morphoBundler3": "0x1FA4431bC113D308beE1d46B0e98Cb805FB48C13",
+      "morphoGeneralAdapter1": "0x9954aFB60BB5A222714c478ac86990F221788B88"
     },
     "Avalanche": {
       "Beefy_re7_Avalanche": "0xdA640bE4588C469C9DB45D082B36913490924c08",
@@ -1391,7 +1393,9 @@
       "walletHelper": "0xE0aFf709b7A6Cdf476738b86354D17bd334eB516",
       "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
       "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537",
-      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae",
+      "morphoBundler3": "0x6BFd8137e702540E7A42B74178A4a49Ba43920C4",
+      "morphoGeneralAdapter1": "0xb98c948CFA24072e58935BC004a8A7b376AE746A"
     },
     "Ethereum": {
       "Beefy_morphoGauntletUsdc_Ethereum": "0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0",
@@ -1437,7 +1441,9 @@
       "walletHelper": "0x",
       "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
       "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537",
-      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae",
+      "morphoBundler3": "0x6566194141eefa99Af43Bb5Aa71460Ca2Dc90245",
+      "morphoGeneralAdapter1": "0x4A6c312ec70E8747a587EE860a0353cd42Be0aE0"
     },
     "Optimism": {
       "Beefy_compoundUsdc_Optimism": "0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F",
@@ -1461,7 +1467,9 @@
       "walletHelper": "0x",
       "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
       "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537",
-      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae",
+      "morphoBundler3": "0xFBCd3C258feB131D8E038F2A3a670A7bE0507C05",
+      "morphoGeneralAdapter1": "0x79481C87f24A3C4332442A2E9faaf675e5F141f0"
     }
   },
   "gmpAddresses": {

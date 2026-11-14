@@ -34,7 +34,7 @@ import {
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
-import { makeEvmAbiCallBatch } from './evm-facade.ts';
+import { makeEvmAbiCallBatch, makeEvmContract } from './evm-facade.ts';
 import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
 import { beefyVaultABI } from './interfaces/beefy.ts';
 import {
@@ -44,6 +44,10 @@ import {
 import { erc20ABI } from './interfaces/erc20.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
 import { merkleDistributorABI } from './interfaces/merkle-distributor.ts';
+import {
+  bundler3ABI,
+  generalAdapter1ABI,
+} from './interfaces/morpho-bundler3.ts';
 import { getOneInchSwapArgs, oneInchRouterABI } from './interfaces/one-inch.ts';
 import {
   tokenMessengerABI,
@@ -611,6 +615,49 @@ export const ERC4626Protocol = {
       assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
     const vault = session.makeContract(vaultAddress, erc4626ABI);
     vault.withdraw(amount.value, remoteAddress, remoteAddress);
+    const calls = session.finish();
+
+    await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
+  },
+  redeem: async (ctx, shares, dest, minimumProceeds, ...optsArgs) => {
+    const { addresses: a, poolKey } = ctx;
+    const { remoteAddress } = dest;
+    const session = makeEvmAbiCallBatch();
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
+    if (minimumProceeds > 0n) {
+      const { morphoBundler3, morphoGeneralAdapter1 } = a;
+      if (!morphoBundler3 || !morphoGeneralAdapter1) {
+        throw Fail`Morpho minimum redemption contracts not configured for ${q(poolKey)}`;
+      }
+      (shares > 0n && shares <= 10n ** 27n) ||
+        Fail`shares ${q(shares)} exceed the range for enforcing a minimum`;
+      const vault = session.makeContract(vaultAddress, erc20ABI);
+      vault.approve(morphoGeneralAdapter1, shares);
+      const adapter = makeEvmContract(generalAdapter1ABI);
+      const redeemData = adapter.erc4626Redeem(
+        vaultAddress,
+        shares,
+        (minimumProceeds * 10n ** 27n) / shares,
+        remoteAddress,
+        remoteAddress,
+      );
+      const bundler = session.makeContract(morphoBundler3, bundler3ABI);
+      bundler.multicall([
+        {
+          to: morphoGeneralAdapter1,
+          data: redeemData,
+          value: 0n,
+          skipRevert: false,
+          callbackHash:
+            '0x0000000000000000000000000000000000000000000000000000000000000000',
+        },
+      ]);
+    } else {
+      const vault = session.makeContract(vaultAddress, erc4626ABI);
+      vault.redeem(shares, remoteAddress, remoteAddress);
+    }
     const calls = session.finish();
 
     await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
