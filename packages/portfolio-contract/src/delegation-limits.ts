@@ -266,16 +266,13 @@ const decodePlan = (
       ) {
         throw Fail`share redemption requires a Morpho source and its chain account destination: ${q(src)} -> ${q(dest)}`;
       }
-      if (claimRewards) {
-        throw Fail`share redemption cannot also claim rewards at ${q(src)}`;
-      }
-      const candidates =
-        observations.holdings?.filter(
-          holding => holding.place === src && holding.kind === 'shares',
-        ) ?? [];
-      if (candidates.length !== 1) {
-        throw Fail`share redemption requires one observed share holding at ${q(src)}; found ${q(candidates.length)}`;
-      }
+      !claimRewards ||
+        Fail`share redemption cannot also claim rewards at ${q(src)}`;
+      const candidates = (observations.holdings || []).filter(
+        holding => holding.place === src && holding.kind === 'shares',
+      );
+      candidates.length === 1 ||
+        Fail`share redemption requires one observed share holding at ${q(src)}; found ${q(candidates.length)}`;
       const holding = candidates[0]!;
       const { valueUusd } = holding;
       if (valueUusd === undefined) {
@@ -284,9 +281,9 @@ const decodePlan = (
       const shares = withdraw?.amountOfShares ?? holding.amount;
       shares <= holding.amount ||
         Fail`requested shares ${q(shares)} exceed observed shares ${q(holding.amount)} at ${q(src)}`;
-      if (shares === 0n && amount.value > 0n) {
-        throw Fail`empty share holding cannot meet proceeds minimum ${q(amount.value)} at ${q(src)}`;
-      }
+      amount.value === 0n ||
+        shares > 0n ||
+        Fail`empty share holding cannot meet proceeds minimum ${q(amount.value)} at ${q(src)}`;
       return {
         kind: 'redeemShares',
         src,
