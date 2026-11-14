@@ -218,6 +218,14 @@ export type ProtocolDetail<
     dest: AccountInfoFor[C],
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
+  /** Redeem a raw share quantity into the position's chain account. */
+  redeem?: (
+    ctx: CTX,
+    shares: bigint,
+    dest: AccountInfoFor[C],
+    minimumProceeds: bigint,
+    ...optsArgs: [OrchestrationOptions?]
+  ) => Promise<void>;
   claimRewards?: (
     ctx: CTX,
     dest: AccountInfoFor[C],
@@ -1126,6 +1134,17 @@ const stepFlow = async (
           // Rewards land in the user's remote address as separate tokens;
           // the pool position is unchanged.
           return harden({});
+        } else if (boundStep?.kind === 'redeemShares') {
+          if (boundStep.shares === 0n) return harden({});
+          pImpl.redeem || Fail`${q(how)} does not support share redemption`;
+          await pImpl.redeem!(
+            evmCtx,
+            boundStep.shares,
+            gInfo,
+            boundStep.minimumProceeds ?? 0n,
+            opts,
+          );
+          return harden({ srcPos: pos });
         } else {
           await pImpl.withdraw(evmCtx, amount, gInfo, opts);
           return harden({ srcPos: pos });

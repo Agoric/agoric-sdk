@@ -4965,3 +4965,108 @@ test('Vault changes invalidate a pending share withdrawal before any transfer', 
     ),
   );
 });
+
+test('An observed empty position exits without a redemption transaction', async t => {
+  const { executeExit, redemptionQuantities } = await makeFullExitCase();
+  await executeExit({
+    observedShares: 0n,
+    minimumProceeds: 0n,
+  });
+  t.deepEqual(redemptionQuantities(), []);
+});
+
+test('A failed full exit can be retried with refreshed share evidence', async t => {
+  const {
+    kit,
+    txResolver,
+    resolverService,
+    storage,
+    executeExit,
+    redemptionQuantities,
+  } = await makeFullExitCase();
+  const failed = t.throwsAsync(executeExit({ observedShares: 50n }), {
+    message: /Transaction failed/,
+  });
+  // Delivery succeeds; the remote redemption itself fails.
+  for (;;) {
+    const pending = await txResolver.findPending();
+    if (!pending.length) break;
+    for (const txId of pending) {
+      resolverService.settleTransaction({
+        txId,
+        status:
+          txResolver.getPublished(txId)?.type === 'GMP' ? 'failed' : 'success',
+      });
+    }
+  }
+  await failed;
+  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+  const portfolioId = kit.reader.getPortfolioId();
+  t.is((await getFlowStatus(portfolioId, 1))?.state, 'fail');
+  t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
+
+  t.deepEqual(redemptionQuantities(), [50n], 'no automatic partial retry');
+  t.deepEqual(await txResolver.findPending(), []);
+
+  const retry = executeExit({ observedShares: 30n });
+  await txResolver.drainPending();
+  t.is(await retry, 'flow2');
+  t.is((await getFlowStatus(portfolioId, 2))?.state, 'done');
+  t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
+  t.deepEqual(redemptionQuantities(), [50n, 30n]);
+  t.deepEqual(await txResolver.findPending(), []);
+});
+
+test('A positive redemption minimum is checked in the remote account batch', async t => {
+  const { executeExit, txResolver, log } = await makeFullExitCase();
+  const done = executeExit({ observedShares: 50n, minimumProceeds: 25n });
+  await txResolver.drainPending();
+  await done;
+
+  const memo = log.findLast(
+    ({ _method, opts }) =>
+      _method === 'transfer' && typeof opts?.memo === 'string',
+  )?.opts?.memo;
+  t.truthy(memo);
+  const { calls } = decodeMultiCalls(memo!);
+  t.is(calls.length, 2);
+  t.is(calls[0].target.toLowerCase(), vaults.rwa.address.toLowerCase());
+  const approval = decodeFunctionData({ abi: erc20ABI, data: calls[0].data });
+  t.is(approval.functionName, 'approve');
+  t.deepEqual(approval.args, [
+    contractsMock.Ethereum.morphoGeneralAdapter1,
+    50n,
+  ]);
+
+  t.is(
+    calls[1].target.toLowerCase(),
+    contractsMock.Ethereum.morphoBundler3.toLowerCase(),
+  );
+  t.true(calls[1].data.startsWith('0x374f435d'));
+  const multicall = decodeFunctionData({
+    abi: bundler3ABI,
+    data: calls[1].data,
+  });
+  t.is(multicall.functionName, 'multicall');
+  const [bundle] = multicall.args;
+  t.is(bundle.length, 1);
+  const [call] = bundle;
+  t.is(
+    call.to.toLowerCase(),
+    contractsMock.Ethereum.morphoGeneralAdapter1.toLowerCase(),
+  );
+  t.is(call.value, 0n);
+  t.false(call.skipRevert);
+  t.is(call.callbackHash, `0x${'0'.repeat(64)}`);
+  t.true(call.data.startsWith('0xa7f6e606'));
+  const redeem = decodeFunctionData({
+    abi: generalAdapter1ABI,
+    data: call.data,
+  });
+  t.deepEqual(redeem.args?.slice(0, 3), [
+    vaults.rwa.address,
+    50n,
+    5n * 10n ** 26n,
+  ]);
+  t.is(redeem.args?.[3], redeem.args?.[4]);
+});
