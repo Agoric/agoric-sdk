@@ -150,7 +150,7 @@ export const getDefaultChainTokenMetadata = cluster => {
         decimals: 6,
         usage: ['swapTo'],
       });
-      tokenMetadataById[makeTokenIdKey(usdcTokenId)] = token;
+      tokenMetadataById[makeTokenIdKey(usdcTokenId, `@${chainName}`)] = token;
     }
 
     chainMetadata[chainName] = {
@@ -201,7 +201,7 @@ export const collateTokenMetadata = tms => {
 
     provideLazyRecord(
       chainEntry.tokenMetadataById,
-      makeTokenIdKey(token.tokenId),
+      makeTokenIdKey(token.tokenId, `@${chainName}`),
       () => token,
     );
   }
@@ -342,9 +342,9 @@ export const makeExtractTokenMetadataFromYds = config => {
      * @param {TokenMetadata} tm
      */
     const upsertTokenMetadata = tm => {
-      const { caipChainId, tokenId } = tm;
+      const { caipChainId, chainName, tokenId } = tm;
       const key = /** @type {TokenMetadataKey} */ (
-        keyFromStrings([caipChainId, makeTokenIdKey(tokenId)])
+        keyFromStrings([caipChainId, makeTokenIdKey(tokenId, `@${chainName}`)])
       );
       const existing = metadataForTokenId.get(key);
       metadataForTokenId.set(key, {

@@ -2804,7 +2804,10 @@ test('swap rejects unconfigured token values', async t => {
         ...chainMetadataMock.Avalanche,
         tokenMetadataById: {
           ...chainMetadataMock.Avalanche.tokenMetadataById,
-          [makeTokenIdKey(extraSwapToToken.tokenId)]: extraSwapToToken,
+          [makeTokenIdKey(
+            extraSwapToToken.tokenId,
+            `@${extraSwapToToken.chainName}`,
+          )]: extraSwapToToken,
         },
       },
     }),

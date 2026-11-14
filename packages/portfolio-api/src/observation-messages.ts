@@ -42,7 +42,7 @@ import {
   isInstrumentId,
   isPortfolioBalancePlaceRef,
   maybeChainOf,
-  matchHoldingTokenId,
+  getCanonicalHoldingKey,
 } from './places.ts';
 import type {
   PlanObservations,
@@ -226,7 +226,7 @@ const toSafeNumber = (value: bigint, what: string): number => {
 const assertTypedHoldings: (
   holdings: readonly TypedHoldingDetail[],
 ) => asserts holdings is TypedHoldingDetail[] = holdings => {
-  const identities = new Map<string, string[]>();
+  const identities = new Set<string>();
   for (const {
     place,
     kind,
@@ -262,38 +262,28 @@ const assertTypedHoldings: (
     const isEvmPlace = isEvmChain(maybeChainOf(place));
     // EIP-712 strings do not normalize addresses. Reject non-canonical hex
     // in signed data. Other chains retain their local identifiers, e.g. Cosmos
-    // denoms or Solana mints. Only EVM identity comparisons fold case.
+    // denoms or Solana mints. Identity keys canonicalize only EVM identifiers.
     if (
       typeof tokenId !== 'string' ||
       /\s/.test(tokenId) ||
-      (!isNative && isEvmPlace && !/^0x[0-9a-f]{40}$/.test(tokenId)) ||
-      (/^0x/i.test(tokenId) && !/^0x[0-9a-f]{40}$/.test(tokenId))
+      (!isNative && isEvmPlace && !/^0x[0-9a-f]{40}$/.test(tokenId))
     ) {
       throw TypeError(`invalid holding token identifier ${String(tokenId)}`);
     }
     if (
       isNative !== (tokenId === '') ||
-      /^0x0{40}$/.test(tokenId) ||
+      (isEvmPlace && /^0x0{40}$/.test(tokenId)) ||
       (isNative && !isEvmPlace)
     ) {
       throw TypeError(
         `holding kind ${kind} has an incompatible token identifier`,
       );
     }
-    const location = JSON.stringify([place, kind]);
-    const tokenIds = identities.get(location) ?? [];
-    if (
-      tokenIds.some(
-        seen =>
-          seen === tokenId || matchHoldingTokenId({ place, tokenId }, seen),
-      )
-    ) {
-      throw TypeError(
-        `duplicate holding identity ${JSON.stringify([place, kind, tokenId])}`,
-      );
+    const holdingKey = getCanonicalHoldingKey({ place, kind, tokenId });
+    if (identities.has(holdingKey)) {
+      throw TypeError(`duplicate holding identity ${holdingKey}`);
     }
-    tokenIds.push(tokenId);
-    identities.set(location, tokenIds);
+    identities.add(holdingKey);
     assertUint256(amount, 'amount');
     if (
       valueUusd !== undefined &&

@@ -107,7 +107,8 @@
     "viem@npm:^2.31.0": "patch:viem@npm%3A2.41.2#~/.yarn/patches/viem-npm-2.41.2.patch",
     "viem@npm:^2.41.2": "patch:viem@npm%3A2.41.2#~/.yarn/patches/viem-npm-2.41.2.patch",
     "@endo/init@npm:^1.1.13": "patch:@endo/init@npm%3A1.1.13#~/.yarn/patches/@endo-init-npm-1.1.13-1e5953990d.patch",
-    "better-sqlite3": "~12.10.0"
+    "better-sqlite3": "~12.10.0",
+    "sigstore@npm:^4.0.0": "patch:sigstore@npm%3A4.1.0#~/.yarn/patches/sigstore-npm-4.1.0-c356de95f4.patch"
   },
   "dependenciesMeta": {
     "better-sqlite3": {

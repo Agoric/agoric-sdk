@@ -154,8 +154,8 @@ const assertSwapTokensConfigured = (
   chainName: AxelarChain,
 ) => {
   const { tokenMetadataById = {} } = chainMetadata[chainName] || {};
-  const tokenInKey = makeTokenIdKey(tokenIn);
-  const tokenOutKey = makeTokenIdKey(tokenOut);
+  const tokenInKey = makeTokenIdKey(tokenIn, `@${chainName}`);
+  const tokenOutKey = makeTokenIdKey(tokenOut, `@${chainName}`);
   tokenMetadataById[tokenInKey]?.usage?.includes('swapFrom') ||
     Fail`swap tokenIn ${q(tokenIn)} is not configured as a source token on ${q(chainName)}`;
   tokenInKey !== tokenOutKey ||
@@ -176,7 +176,8 @@ const getDefaultSwapToTokenId = (
     ([tokenId, metadata]) => metadata.usage?.includes('swapTo') && tokenId,
   );
   if (swapTo.length === 1) return swapTo[0] as `0x${string}`;
-  const fallbackTokenKey = fallbackTokenId && makeTokenIdKey(fallbackTokenId);
+  const fallbackTokenKey =
+    fallbackTokenId && makeTokenIdKey(fallbackTokenId, `@${chainName}`);
   if (fallbackTokenKey) {
     const fallbackTokenMetadata = tokenMetadataById[fallbackTokenKey];
     if (fallbackTokenMetadata?.usage?.includes('swapTo')) {

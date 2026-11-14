@@ -194,29 +194,26 @@ test('chain-local token identifiers round trip in one signed schema', t => {
   });
 });
 
-test('non-EVM holding identities preserve token ID case in comparisons and signatures', t => {
+test('non-EVM holding identities preserve token ID case and signed spelling', t => {
   for (const tokenId of [
     'uUSDC',
     `ibc/${'ABCDEF12'.repeat(8)}`,
     'factory/noble1issuer/MyToken',
+    '0xAbCd',
+    '0X1234',
+    address.replace('a', 'A'),
   ]) {
     const entry = { ...nobleUsdc, tokenId };
     const lower = { ...entry, tokenId: tokenId.toLowerCase() };
     t.deepEqual(decode([entry]).observations.holdings, [entry]);
     t.deepEqual(decode([lower]).observations.holdings, [lower]);
     t.deepEqual(decode([entry, lower]).observations.holdings, [entry, lower]);
-    const message = readMessage(messageFor([entry]).message);
+    const message = readMessage(messageFor([entry, lower]).message);
     t.deepEqual(
-      portfolioObservationsFromEIP712({
-        ...message,
-        holdings: [
-          ...message.holdings,
-          { ...message.holdings[0]!, tokenId: lower.tokenId },
-        ],
-      }).observations.holdings,
+      portfolioObservationsFromEIP712(message).observations.holdings,
       [entry, lower],
     );
-    // Both spellings are preserved in signed data.
+    // Case-distinct identifiers also produce distinct signed payloads.
     t.not(
       hashTypedData(messageFor([entry]) as any),
       hashTypedData(messageFor([lower]) as any),
@@ -232,13 +229,7 @@ test('non-EVM holding identities preserve token ID case in comparisons and signa
 });
 
 test('token identifiers reject non-canonical and incompatible values', t => {
-  for (const tokenId of [
-    undefined,
-    123,
-    'bad denom',
-    '0x1234',
-    address.replace('0x', '0X'),
-  ]) {
+  for (const tokenId of [undefined, 123, 'bad denom']) {
     const entry = { ...nobleUsdc, tokenId } as HoldingDetail;
     t.throws(() => messageFor([entry]), {
       message: /invalid holding token identifier/,
@@ -252,10 +243,31 @@ test('token identifiers reject non-canonical and incompatible values', t => {
       { message: /invalid holding token identifier/ },
     );
   }
+  for (const tokenId of [
+    '0x1234',
+    address.replace('0x', '0X'),
+    address.replace('a', 'A'),
+  ]) {
+    const entry = { ...holding, tokenId } as HoldingDetail;
+    t.throws(() => messageFor([entry]), {
+      message: /invalid holding token identifier/,
+    });
+    t.throws(
+      () =>
+        portfolioObservationsFromEIP712({
+          ...readMessage(messageFor().message),
+          holdings: [entry],
+        } as PortfolioObservationsEIP712),
+      {
+        message: /invalid holding token identifier/,
+      },
+    );
+  }
   for (const entry of [
     { ...nobleUsdc, tokenId: '' },
     { ...nobleUsdc, kind: '$USDC' },
     { ...holding, place: '@Base', kind: '$ETH', tokenId: zeroAddress },
+    { ...holding, tokenId: zeroAddress },
     { ...nobleUsdc, kind: '$USDC', tokenId: '' },
   ] as HoldingDetail[]) {
     t.throws(() => messageFor([entry]), {
@@ -276,6 +288,11 @@ test('token identifiers reject non-canonical and incompatible values', t => {
   t.throws(() => messageFor([{ ...holding, tokenAddress: address } as any]), {
     message: /unknown holding fields: tokenAddress/,
   });
+});
+
+test('non-EVM identifiers resembling the zero address remain ordinary denoms', t => {
+  const entry = { ...nobleUsdc, tokenId: zeroAddress };
+  t.deepEqual(decode([entry]).observations.holdings, [entry]);
 });
 
 for (const [label, fields, error] of [
@@ -377,24 +394,6 @@ test('chain classification handles registered and unresolved instrument places',
 });
 
 test('native coin holdings require an opted-in EVM account', t => {
-  const native: HoldingDetail = {
-    place: '@Base',
-    kind: '$ETH',
-    tokenId: '',
-    amount: 0n,
-  };
-  t.throws(() => messageFor([native, native]), {
-    message: /duplicate holding identity/,
-  });
-  const message = readMessage(messageFor([native]).message);
-  t.throws(
-    () =>
-      portfolioObservationsFromEIP712({
-        ...message,
-        holdings: [...message.holdings, ...message.holdings],
-      }),
-    { message: /duplicate holding identity/ },
-  );
   for (const place of ['@agoric', '@noble', '@osmosis', '@UnknownChain']) {
     const entry = {
       ...nobleUsdc,

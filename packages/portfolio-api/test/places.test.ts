@@ -3,12 +3,90 @@ import '@endo/init/debug.js';
 import test from 'ava';
 import { AxelarChain } from '../src/constants.js';
 import {
+  getCanonicalHoldingKey,
   isEvmChain,
-  maybeChainOf,
+  makeTokenIdKey,
   matchHoldingTokenId,
+  maybeChainOf,
 } from '../src/places.ts';
-import type { AssetPlaceRef, PortfolioBalancePlaceRef } from '../src/types.ts';
+import type { AssetPlaceRef } from '../src/types.ts';
 import { runWithoutLockdown } from './without-lockdown.ts';
+
+test('token keys use place context while preserving the unspecified-place fallback', t => {
+  const tokenId = '0xAbCd';
+  for (const place of [undefined, null, '@Base', 'Aave_Base']) {
+    t.is<string, string>(makeTokenIdKey(tokenId, place), '0xabcd');
+  }
+  for (const place of ['@noble', 'USDN', '<Cash>', 'UnknownVault', {}, 42]) {
+    t.is<string, string>(makeTokenIdKey(tokenId, place), tokenId);
+  }
+  t.is<string, string>(
+    makeTokenIdKey('factory/issuer/MyToken', '@noble'),
+    'factory/issuer/MyToken',
+  );
+  t.is<string, string>(makeTokenIdKey('NotHex', '@Base'), 'NotHex');
+});
+
+test('holding keys delegate token canonicalization to their place', t => {
+  for (const place of ['@Base', '@noble'] as const) {
+    const holding = { place, kind: 'token' as const, tokenId: '0xAbCd' };
+    const lower = { ...holding, tokenId: '0xabcd' };
+    if (place === '@Base') {
+      t.is(getCanonicalHoldingKey(holding), getCanonicalHoldingKey(lower));
+    } else {
+      t.not(getCanonicalHoldingKey(holding), getCanonicalHoldingKey(lower));
+    }
+    t.not(
+      getCanonicalHoldingKey(holding),
+      getCanonicalHoldingKey({ ...holding, kind: 'claimed-reward' }),
+    );
+    t.not(
+      getCanonicalHoldingKey(holding),
+      getCanonicalHoldingKey({ tokenId: holding.tokenId }),
+    );
+  }
+});
+
+test('token keys reject non-string identifiers regardless of place', t => {
+  for (const place of [undefined, null, '@Base', '@noble', 'UnknownVault']) {
+    for (const tokenId of [undefined, null, 0, {}, []]) {
+      t.throws(() => makeTokenIdKey(tokenId as unknown as string, place), {
+        instanceOf: TypeError,
+      });
+    }
+    t.is<string, string>(makeTokenIdKey('', place), '');
+  }
+});
+
+test('token ID matching uses chain context and requires nonempty identifiers', t => {
+  for (const place of ['@Base', 'Aave_Base'] as const) {
+    t.true(matchHoldingTokenId({ place, tokenId: '0xAbCd' }, '0xabcd'));
+    for (const [left, right] of [
+      ['', ''],
+      ['', '0xabcd'],
+      ['0xabcd', ''],
+      ['0x', '0x'],
+      ['0x', '0xabcd'],
+      ['0xabcd', '0x'],
+      ['0Xabcd', '0xabcd'],
+      ['0xabcd', '0Xabcd'],
+    ]) {
+      t.false(matchHoldingTokenId({ place, tokenId: left }, right));
+    }
+  }
+  for (const place of ['@noble', 'USDN'] as const) {
+    for (const tokenId of ['ibc/ABCDEF', 'factory/issuer/MyToken', '0xAbCd']) {
+      t.true(matchHoldingTokenId({ place, tokenId }, tokenId));
+      t.false(matchHoldingTokenId({ place, tokenId }, tokenId.toLowerCase()));
+      t.false(matchHoldingTokenId({ place, tokenId }, ''));
+      t.false(matchHoldingTokenId({ place, tokenId: '' }, tokenId));
+    }
+    t.false(matchHoldingTokenId({ place, tokenId: '' }, ''));
+  }
+  t.false(
+    matchHoldingTokenId({ place: '@Base', kind: '$ETH', tokenId: '' }, ''),
+  );
+});
 
 test('optional chain lookup preserves registered mappings and syntactic fallback', t => {
   for (const [place, expected] of [
@@ -54,66 +132,13 @@ test('shared chain helpers are frozen and usable without lockdown', async t => {
   await t.notThrowsAsync(
     runWithoutLockdown(`
     const { strict: assert } = await import('node:assert');
-    const { maybeChainOf, isEvmChain, matchHoldingTokenId } = await import('@agoric/portfolio-api/src/places.js');
+    const { maybeChainOf, isEvmChain } = await import('@agoric/portfolio-api/src/places.js');
     assert.equal(maybeChainOf('USDN'), 'noble');
     assert.equal(maybeChainOf('UnknownVault'), null);
     assert.equal(isEvmChain(maybeChainOf('Aave_Base')), true);
     assert.equal(isEvmChain(null), false);
     assert.equal(Object.isFrozen(maybeChainOf), true);
     assert.equal(Object.isFrozen(isEvmChain), true);
-    assert.equal(Object.isFrozen(matchHoldingTokenId), true);
-    assert.equal(matchHoldingTokenId({ place: '@Base', tokenId: '0xABCD' }, '0xabcd'), true);
-    assert.equal(matchHoldingTokenId({ place: '@noble', tokenId: 'ibc/ABC' }, 'ibc/abc'), false);
   `),
   );
-});
-
-test('holding token IDs match case-insensitively only on EVM chains', t => {
-  for (const place of [
-    '@Base',
-    'Aave_Ethereum',
-    'FutureVault_Arbitrum',
-  ] as const) {
-    const holding = {
-      place: place as PortfolioBalancePlaceRef,
-      tokenId: '0xAbCd',
-    };
-    t.true(matchHoldingTokenId(holding, '0xabcd'));
-    t.true(matchHoldingTokenId({ ...holding, tokenId: '0xabcd' }, '0xAbCd'));
-    t.false(matchHoldingTokenId(holding, '0xabce'));
-  }
-  for (const place of [
-    '@noble',
-    'USDN',
-    '@agoric',
-    'UnknownVault',
-    '@Solana',
-  ] as const) {
-    const holding = {
-      place: place as PortfolioBalancePlaceRef,
-      tokenId: 'ibc/ABCDEF1234',
-    };
-    t.true(matchHoldingTokenId(holding, 'ibc/ABCDEF1234'));
-    t.false(matchHoldingTokenId(holding, 'ibc/abcdef1234'));
-    t.false(matchHoldingTokenId(holding, 'ibc/ABCDEF1235'));
-  }
-});
-
-test('holding token ID matching rejects empty IDs and EVM IDs without a 0x payload', t => {
-  for (const place of ['@Base', '@noble'] as const) {
-    for (const [holdingTokenId, tokenId] of [
-      ['', ''],
-      ['', '0xabc'],
-      ['0xabc', ''],
-    ] as const) {
-      t.false(matchHoldingTokenId({ place, tokenId: holdingTokenId }, tokenId));
-    }
-  }
-  for (const invalid of ['a', '0', '0x', 'abc', '0Xabc']) {
-    t.false(matchHoldingTokenId({ place: '@Base', tokenId: invalid }, invalid));
-    t.false(matchHoldingTokenId({ place: '@Base', tokenId: invalid }, '0xabc'));
-    t.false(matchHoldingTokenId({ place: '@Base', tokenId: '0xabc' }, invalid));
-    t.true(matchHoldingTokenId({ place: '@noble', tokenId: invalid }, invalid));
-  }
-  t.true(matchHoldingTokenId({ place: '@Base', tokenId: '0xa' }, '0xA'));
 });
