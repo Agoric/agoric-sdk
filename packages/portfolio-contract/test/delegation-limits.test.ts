@@ -1789,6 +1789,203 @@ for (const [src, tokenId] of [
   });
 }
 
+for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
+  test(`Observing rewards does not establish how much is already invested (${investment})`, t => {
+    const cash = 20_000_000n;
+    const observations = makeHoldingObservations([
+      makeHolding({
+        place: '@Ethereum',
+        kind: 'token',
+        amount: cash,
+        valueUusd: cash,
+      }),
+      makeHolding({
+        place: investment,
+        kind: 'claimable-reward',
+        amount: 0n,
+        valueUusd: 0n,
+      }),
+    ]);
+    const plan: FundsFlowPlan = {
+      flow: [
+        {
+          src: '@Ethereum',
+          dest: investment,
+          amount: { brand: USDC, value: cash },
+        },
+      ],
+    };
+    t.throws(
+      () =>
+        vetPlanAllocation(
+          { [investment]: 100n },
+          plan,
+          observations,
+          () => holdingTokens.usdc,
+        ),
+      { message: new RegExp(`missing.*${investment}`) },
+    );
+  });
+
+  test(`A full exit cannot treat unobserved investments as empty (${investment})`, t => {
+    const { instrument, shares, movement } = makeMaximumWithdrawalCase();
+    const observations = makeHoldingObservations([
+      shares,
+      makeHolding({
+        place: '@Ethereum',
+        kind: 'token',
+        amount: 0n,
+        valueUusd: 0n,
+      }),
+      // This is an existing investment. Only its rewards have been observed;
+      // its principal could still exceed the proposed zero allocation.
+      makeHolding({
+        place: investment,
+        kind: 'claimable-reward',
+        amount: 0n,
+        valueUusd: 0n,
+      }),
+    ]);
+    const plan = { flow: [movement] };
+    const withLegacyBalances: PlanObservations = {
+      ...observations,
+      holdings: observations.holdings!.map(holding => ({
+        ...holding,
+        balanceUsdc: holding.valueUusd!,
+      })),
+      balances: {
+        [instrument]: shares.valueUusd!,
+        '@Ethereum': 0n,
+        [investment]: 0n,
+      },
+    };
+    for (const evidence of [observations, withLegacyBalances]) {
+      t.throws(
+        () => {
+          vetObservationPlaces(
+            [instrument, investment, '@Ethereum'],
+            plan,
+            evidence,
+          );
+          vetPlanAllocation({ [instrument]: 100n }, plan, evidence);
+        },
+        { message: new RegExp(`missing.*${investment}`) },
+      );
+    }
+  });
+}
+
+test('Redemption binds observed shares to the configured vault', t => {
+  const { instrument, shares, observations, movement } =
+    makeMaximumWithdrawalCase({ shareQuantity: 50n });
+  const plan = {
+    flow: [{ ...movement, boundSteps: { shares: 999n } }],
+  };
+  const configuredVault = () => holdingTokens.vault;
+  const vet = (
+    submitted: FundsFlowPlan = plan,
+    evidence = observations,
+    getVaultAddress: () => EvmAddress | undefined = configuredVault,
+  ) =>
+    vetAllocationPlan(
+      { allocation: {} },
+      { [instrument]: 100n },
+      submitted,
+      evidence,
+      { getVaultAddress, hasMinimumRedemptionContracts: () => true },
+    );
+  t.deepEqual(vet(), {
+    commitNow: true,
+    boundSteps: {
+      0: {
+        kind: 'redeemShares',
+        src: instrument,
+        vaultAddress: holdingTokens.vault,
+        shares: 50n,
+      },
+    },
+  });
+  t.deepEqual(
+    vet({ flow: [{ ...movement, withdraw: { amountOfShares: 20n } }] }),
+    {
+      commitNow: true,
+      boundSteps: {
+        0: {
+          kind: 'redeemShares',
+          src: instrument,
+          vaultAddress: holdingTokens.vault,
+          shares: 20n,
+        },
+      },
+    },
+  );
+  t.throws(
+    () =>
+      vet(
+        plan,
+        makeHoldingObservations([
+          { ...shares, tokenId: holdingTokens.otherVault },
+        ]),
+      ),
+    { message: /observed share token.*does not match configured vault/ },
+  );
+  t.throws(() => vet(plan, observations, () => undefined), {
+    message: /no configured vault/,
+  });
+  t.deepEqual(
+    vet({ flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] }),
+    {
+      commitNow: true,
+      boundSteps: {
+        0: {
+          kind: 'redeemShares',
+          src: instrument,
+          vaultAddress: holdingTokens.vault,
+          shares: 50n,
+          minimumProceeds: 1n,
+        },
+      },
+    },
+  );
+  t.deepEqual(
+    vet({
+      flow: [
+        {
+          ...movement,
+          withdraw: { amountOfShares: 20n },
+          amount: { brand: USDC, value: 1n },
+        },
+      ],
+    }).boundSteps?.[0],
+    {
+      kind: 'redeemShares',
+      src: instrument,
+      vaultAddress: holdingTokens.vault,
+      shares: 20n,
+      minimumProceeds: 1n,
+    },
+  );
+  t.throws(
+    () =>
+      vetAllocationPlan(
+        { allocation: {} },
+        { [instrument]: 100n },
+        { flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] },
+        observations,
+        { getVaultAddress: configuredVault },
+      ),
+    { message: /minimum redemption contracts not configured/ },
+  );
+  t.throws(
+    () =>
+      vet(
+        { flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] },
+        makeHoldingObservations([{ ...shares, amount: 10n ** 27n + 1n }]),
+      ),
+    { message: /shares.*exceed.*minimum/ },
+  );
+});
+
 for (const [label, withdraw] of additiveWithdrawCases) {
   test(`withdraw is additive to exact-amount allocation validation: ${label}`, t => {
     const plan: FundsFlowPlan = harden({

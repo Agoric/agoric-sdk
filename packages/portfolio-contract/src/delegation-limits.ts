@@ -324,7 +324,66 @@ const decodePlan = (
   });
 };
 
-/** Require every current or plan-referenced balance; allow only zero-balance extras. */
+export type BoundStep = Readonly<{
+  kind: 'redeemShares';
+  src: ERC4626InstrumentId;
+  vaultAddress: EvmAddress;
+  shares: bigint;
+  minimumProceeds?: bigint;
+}>;
+
+const MAX_MINIMUM_BEARING_SHARES = 10n ** 27n;
+
+/** Derive execution instructions from the same operations used by allocation checks. */
+const bindSteps = (
+  plan: DecodedPlan,
+  getVaultAddress?: GetVaultAddress,
+  hasMinimumRedemptionContracts?: (src: ERC4626InstrumentId) => boolean,
+): Partial<Record<number, BoundStep>> => {
+  const bound: Partial<Record<number, BoundStep>> = {};
+  for (const [step, movement] of plan.flow.entries()) {
+    if (movement.kind !== 'redeemShares') continue;
+    const vaultAddress = getVaultAddress?.(movement.src);
+    if (!vaultAddress) {
+      throw Fail`no configured vault for ${q(movement.src)}`;
+    }
+    matchHoldingTokenId(movement.holding, vaultAddress) ||
+      Fail`observed share token ${q(movement.holding.tokenId)} does not match configured vault ${q(vaultAddress)} at ${q(movement.src)}`;
+    const minimumProceeds = movement.amount.value;
+    if (minimumProceeds > 0n) {
+      hasMinimumRedemptionContracts?.(movement.src) ||
+        Fail`Morpho minimum redemption contracts not configured for ${q(movement.src)}`;
+      (movement.shares > 0n && movement.shares <= MAX_MINIMUM_BEARING_SHARES) ||
+        Fail`shares ${q(movement.shares)} exceed the range for enforcing a minimum at ${q(movement.src)}`;
+    }
+    bound[step] = {
+      kind: 'redeemShares',
+      src: movement.src,
+      vaultAddress,
+      shares: movement.shares,
+      ...(minimumProceeds > 0n && { minimumProceeds }),
+    };
+  }
+  return harden(bound);
+};
+harden(bindSteps);
+
+/** An investment requires principal or shares; rewards alone do not cover it. */
+const hasObservedBalance = (
+  place: PortfolioBalancePlaceRef,
+  observations: PlanObservations,
+): boolean => {
+  if (!observations.holdings?.length) {
+    return observations.balances[place] !== undefined;
+  }
+  return observations.holdings.some(
+    ({ place: holdingPlace, kind }) =>
+      holdingPlace === place &&
+      (!isInstrumentId(place) || kind === 'principal' || kind === 'shares'),
+  );
+};
+
+/** Require every current or plan-referenced place; allow only known-empty extras. */
 export const vetObservationPlaces = (
   currentPlaces: Iterable<PortfolioBalancePlaceRef>,
   plan: FundsFlowPlan,
@@ -636,13 +695,31 @@ export const vetAllocationPlan = (
   targetAllocation: TargetAllocation,
   plan: FundsFlowPlan | undefined,
   observations: PlanObservations | undefined,
-): boolean => {
+  addresses: {
+    getUsdcTokenId?: GetUsdcTokenId;
+    getVaultAddress?: GetVaultAddress;
+    hasMinimumRedemptionContracts?: (src: ERC4626InstrumentId) => boolean;
+  } = {},
+): VettedAllocationPlan => {
   assertMandateForAllocation(permissions, targetAllocation);
-  if (!plan) return !needsObservations(permissions);
+  if (!plan) return harden({ commitNow: !needsObservations(permissions) });
 
   if (!observations) throw Fail`allocation plan requires observations`;
-  vetPlanAllocation(targetAllocation, plan, observations);
+  const decodedPlan = vetPlanAllocation(
+    targetAllocation,
+    plan,
+    observations,
+    addresses.getUsdcTokenId,
+  );
   assertMandateForPlanObservations(permissions, targetAllocation, observations);
-  return true;
+  const boundSteps = bindSteps(
+    decodedPlan,
+    addresses.getVaultAddress,
+    addresses.hasMinimumRedemptionContracts,
+  );
+  return harden({
+    commitNow: true,
+    ...(keys(boundSteps).length && { boundSteps }),
+  });
 };
 harden(vetAllocationPlan);
