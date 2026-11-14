@@ -4,6 +4,10 @@ ARG REGISTRY=ghcr.io
 
 FROM $REGISTRY/$REPO:$TAG
 
+# The selected SDK tag may predate the CVE-2026-98432 mitigation. This only
+# reduces exposure; the host kernel still needs to be patched and rebooted.
+ENV GODEBUG="${GODEBUG:-},multipathtcp=0"
+
 WORKDIR /usr/src/agoric-sdk/packages/deployment
 
 COPY ./scripts/install-deps.sh scripts/
