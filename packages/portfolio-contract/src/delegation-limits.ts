@@ -8,13 +8,20 @@ import {
   type PortfolioBalancePlaceRef,
   type PortfolioPermissions,
   type TargetAllocation,
+  type TypedHoldingDetail,
 } from '@agoric/portfolio-api';
-import { chainOf } from '@agoric/portfolio-api/src/places.js';
 import {
+  chainOf,
+  matchHoldingTokenId,
+  type ERC4626InstrumentId,
+} from '@agoric/portfolio-api/src/places.js';
+import {
+  isERC4626MorphoInstrumentId,
   isInstrumentId,
   isInterChainAccountRef,
   isPortfolioBalancePlaceRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
+import type { Address as EvmAddress } from 'abitype';
 import { b, Fail, q } from '@endo/errors';
 import { vetInstrumentAccountChain } from './flow-plan-places.ts';
 import { maxWeightClosure } from './max-weight-closure.ts';
@@ -42,6 +49,47 @@ const sumOptionalBigints = (bigints: Array<bigint | undefined>): bigint =>
 /** Sum allocation portions, treating omitted portions as zero. */
 const sumPortions = (targetAllocation: TargetAllocation): bigint =>
   sumOptionalBigints(values(targetAllocation));
+
+/**
+ * Sum observed values by portfolio location, in micro-USD.
+ * These values measure exposure; they do not establish spendable quantities.
+ */
+const sumValueUusdByPlace = (
+  observations: PlanObservations,
+): Map<PortfolioBalancePlaceRef, bigint> => {
+  const { holdings, balances } = observations;
+  if (!holdings?.length) {
+    // Legacy micro-USDC balances are treated as micro-USD at parity.
+    return new Map(
+      entries(balances).map(([place, balance]) => [
+        place as PortfolioBalancePlaceRef,
+        balance ?? 0n,
+      ]),
+    );
+  }
+  const result = new Map<PortfolioBalancePlaceRef, bigint>();
+  const legacyBalances = new Map<string, bigint>();
+  for (const { place, valueUusd, balanceUsdc } of holdings) {
+    if (valueUusd === undefined) {
+      throw Fail`missing holding valuation for ${q(place)}`;
+    }
+    result.set(place, (result.get(place) ?? 0n) + valueUusd);
+    if (balanceUsdc !== undefined) {
+      legacyBalances.set(
+        place,
+        (legacyBalances.get(place) ?? 0n) + balanceUsdc,
+      );
+    }
+  }
+  // Transitional balances repeat the signed legacy fields; never count both.
+  const given = entries(balances).filter(([, value]) => value !== undefined);
+  if (given.length > 0) {
+    (given.length === legacyBalances.size &&
+      given.every(([place, value]) => legacyBalances.get(place) === value)) ||
+      Fail`aggregate balances must match the balanceUsdc of observed holdings`;
+  }
+  return result;
+};
 
 /**
  * Check a proposed allocation against the current delegation permissions.
@@ -83,9 +131,10 @@ export const assertMandateForPlanObservations = (
   const { minVaultTvlUsd, maxVaultShareBps } = allocation;
   if (minVaultTvlUsd === undefined && maxVaultShareBps === undefined) return;
   const totalPortions = sumPortions(targetAllocation);
-  const portfolioValueMicroUsd = sumOptionalBigints(
-    values(observations.balances),
-  );
+  const portfolioValueUusd =
+    maxVaultShareBps === undefined
+      ? 0n
+      : sumOptionalBigints([...sumValueUusdByPlace(observations).values()]);
 
   for (const [instrument, portion = 0n] of entries(targetAllocation)) {
     if (isInterChainAccountRef(instrument) || portion === 0n) continue;
@@ -99,12 +148,12 @@ export const assertMandateForPlanObservations = (
     if (maxVaultShareBps !== undefined) {
       totalPortions > 0n ||
         Fail`mandate.maxVaultShare.zeroTotal:${q(instrument)}`;
-      portfolioValueMicroUsd * portion * 10_000n <=
+      portfolioValueUusd * portion * 10_000n <=
         status.tvlUsd *
           MICRO_USDC_PER_USD *
           totalPortions *
           BigInt(maxVaultShareBps) ||
-        Fail`mandate.maxVaultShare:${q(instrument)}: portion ${q(portion)} of total ${q(totalPortions)} with portfolio value ${q(portfolioValueMicroUsd)} micro-USD exceeds maxVaultShareBps ${q(maxVaultShareBps)} of vault tvlUsd ${q(status.tvlUsd)}`;
+        Fail`mandate.maxVaultShare:${q(instrument)}: portion ${q(portion)} of total ${q(totalPortions)} with portfolio value ${q(portfolioValueUusd)} micro-USD exceeds maxVaultShareBps ${q(maxVaultShareBps)} of vault tvlUsd ${q(status.tvlUsd)}`;
     }
   }
 };
@@ -163,12 +212,24 @@ type PlanOperation =
 
 type DecodedPlan = Omit<FundsFlowPlan, 'flow'> & { flow: PlanOperation[] };
 
-/** Decode once so every balance check uses the same operation semantics. */
-const decodePlan = (plan: FundsFlowPlan): DecodedPlan => {
+/** Resolve USDC identity from contract configuration, not from observations. */
+type GetUsdcTokenId = (account: InterChainAccountRef) => string | undefined;
+
+type GetVaultAddress = (src: ERC4626InstrumentId) => EvmAddress | undefined;
+
+/**
+ * Decode once so every balance check uses the same operation semantics.
+ * Legacy balance observations retain the existing exact-amount fallback.
+ * Share withdrawals require observed share quantities.
+ */
+const decodePlan = (
+  plan: FundsFlowPlan,
+  observations: PlanObservations,
+): DecodedPlan => {
   // Swap output values are not yet available to mandate analysis.
   vetNoSwaps(plan);
   const flow = plan.flow.map((movement): PlanOperation => {
-    const { src, dest, amount, claimRewards } = movement;
+    const { src, dest, amount, claimRewards, withdraw } = movement;
     if (!isPortfolioBalancePlaceRef(src)) {
       throw Fail`allocation plan does not support deposit or withdrawal place ${q(src)}`;
     }
@@ -291,12 +352,7 @@ const vetPartialPlanAllocation = (
   plan: DecodedPlan,
   observations: PlanObservations,
 ) => {
-  const initialBalances = new Map<string, bigint>(
-    entries(observations.balances).map(([place, balance]) => [
-      place,
-      balance ?? 0n,
-    ]),
-  );
+  const initialBalances = sumValueUusdByPlace(observations);
   const totalBalance = sumOptionalBigints([...initialBalances.values()]);
   const totalPortions = sumPortions(targetAllocation);
   const { flow } = plan;
@@ -349,14 +405,45 @@ const vetPartialPlanAllocation = (
 const projectPlanBalances = (
   plan: DecodedPlan,
   observations: PlanObservations,
+  getUsdcTokenId?: GetUsdcTokenId,
 ): Map<string, bigint> => {
-  const balances = new Map<string, bigint>(
-    entries(observations.balances).map(([place, balance]) => [
-      place,
-      balance ?? 0n,
-    ]),
-  );
+  const balances = sumValueUusdByPlace(observations);
+  const remainingCash = new Map<InterChainAccountRef, bigint>();
+  if (observations.holdings?.length) {
+    for (const movement of plan.flow) {
+      if (movement.kind !== 'move') continue;
+      const { src } = movement;
+      if (!isInterChainAccountRef(src)) {
+        throw Fail`portfolio checks cannot yet project exact withdrawals from observed holdings at ${q(src)}`;
+      }
+      if (remainingCash.has(src)) continue;
+      const usdcTokenId = getUsdcTokenId?.(src);
+      if (!usdcTokenId) throw Fail`no configured USDC token at ${q(src)}`;
+      const candidates = observations.holdings.filter(
+        holding =>
+          holding.place === src &&
+          holding.kind === 'token' &&
+          matchHoldingTokenId(holding, usdcTokenId),
+      );
+      if (candidates.length !== 1) {
+        throw Fail`cash movement requires one observed USDC holding at ${q(src)}`;
+      }
+      const holding = candidates[0]!;
+      // Exact-movement exposure arithmetic currently assumes USDC at parity.
+      // Reject other valuations rather than equating raw units with USD value.
+      if (holding.valueUusd !== holding.amount) {
+        throw Fail`cash movement requires one-for-one USDC valuation at ${q(src)}`;
+      }
+      remainingCash.set(src, holding.amount);
+    }
+  }
   const { flow } = plan;
+  const remainingShares = new Map<InstrumentId, bigint>();
+  for (const movement of flow) {
+    if (movement.kind === 'redeemShares') {
+      remainingShares.set(movement.src, movement.holding.amount);
+    }
+  }
   const schedule = makeSchedule({
     taskQty: flow.length,
     order: plan.order ?? fullOrder(flow.length),
@@ -426,18 +513,29 @@ export const vetPlanAllocation = (
   // is deferred during controlled ymax0 testing; enforce it before opening
   // plan submission to untrusted agents.
   vetNoNewPositions(targetAllocation, plan);
-  const balances = projectPlanBalances(decodedPlan, observations);
+  const balances = projectPlanBalances(
+    decodedPlan,
+    observations,
+    getUsdcTokenId,
+  );
   vetAllocationCeilings(balances, targetAllocation);
   vetPartialPlanAllocation(targetAllocation, decodedPlan, observations);
+  return decodedPlan;
 };
 harden(vetPlanAllocation);
+
+type VettedAllocationPlan = Readonly<{
+  commitNow: boolean;
+  boundSteps?: ReturnType<typeof bindSteps>;
+}>;
 
 /**
  * Vet a target allocation and optional execution plan against delegated
  * permissions and the attested observations of the portfolio.
  *
- * @returns Whether the target allocation can be committed immediately. `false`
- * means observation-dependent permissions require a later plan.
+ * @returns The policy commit decision and execution instructions bound to the
+ * plan that passed allocation checks. `commitNow: false` means observation-
+ * dependent permissions require a later plan.
  * @throws {Error} if the allocation, plan, or observations violate the
  * delegated permissions, or if a plan lacks observations
  */
