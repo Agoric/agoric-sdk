@@ -1043,6 +1043,7 @@ const stepFlow = async (
       feeAccount,
       nobleForwardingChannel,
       ...(move.detail ? { detail: move.detail } : {}),
+      ...(features ? { features } : {}),
     });
     return evmCtx;
   };

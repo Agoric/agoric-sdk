@@ -29,6 +29,7 @@ import {
   isERC4626MorphoInstrumentId,
   makeTokenIdKey,
   type ChainTokenMetadata,
+  type FlowFeatures,
   type MovementDesc,
 } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
@@ -94,6 +95,11 @@ export type EVMContext = {
   resolverClient: GuestInterface<ResolverKit['client']>;
   nobleForwardingChannel: `channel-${number}`;
   detail?: MovementDesc['detail'];
+  /**
+   * Features of the flow this step belongs to. Flows replaying from before a
+   * feature was introduced don't have it, so gate new host interactions on it.
+   */
+  features?: FlowFeatures;
 };
 
 const trace = makeTracer('GMPF');
