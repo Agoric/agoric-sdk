@@ -394,11 +394,13 @@ export const CCTPv2 = {
 
     const calls = session.finish();
 
-    const { txId, result } = ctx.resolverClient.createPendingTx({
+    const { resolverClient } = ctx;
+    const trackCctpBurn = !!ctx.features?.trackCctpBurn;
+    const cctpTxMeta = harden({
       type: TxType.CCTP_TO_EVM,
-      destinationAddress: `${dest.chainId}:${dest.remoteAddress}`,
+      destinationAddress: `${dest.chainId}:${dest.remoteAddress}` as AccountId,
       amountValue: amount.value,
-      sourceAddress: `${src.chainId}:${src.remoteAddress}`,
+      sourceAddress: `${src.chainId}:${src.remoteAddress}` as AccountId,
       cctpVersion: 2,
       ...(destinationCallerAddress
         ? {
@@ -407,10 +409,30 @@ export const CCTPv2 = {
           }
         : {}),
     });
+    const { txId, result } = resolverClient.createPendingTx(cctpTxMeta);
 
-    const sent = sendGMPContractCall(ctx, src, calls, ...optsArgs);
+    // Without trackCctpBurn, keep the exact host interactions of flows created
+    // before that feature, for replay fidelity.
+    const gmpCtx: GMPCallContext = trackCctpBurn
+      ? {
+          ...ctx,
+          onGmpTxId: burnTxId =>
+            resolverClient.updateTxMeta(
+              txId,
+              harden({ ...cctpTxMeta, burnTxId }),
+            ),
+        }
+      : ctx;
+    const sent = sendGMPContractCall(gmpCtx, src, calls, ...optsArgs);
     appendTxIds(optsArgs[0]?.progressTracker, [txId]);
-    await sent;
+    await (trackCctpBurn
+      ? sent.catch(reason => {
+          // The burn was not executed, so the CCTP transfer will never happen.
+          (result as unknown as Promise<void>).catch(() => {});
+          resolverClient.unsubscribe(txId, `burn failed: ${reason}`);
+          throw reason;
+        })
+      : sent);
     await result;
 
     traceTransfer('transfer complete');
