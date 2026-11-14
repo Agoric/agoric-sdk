@@ -2168,6 +2168,126 @@ test('A bounded exit from one side of a split allocation is admitted', t => {
   );
 });
 
+test('An empty share holding can meet only zero withdrawal minimums', t => {
+  const { instrument, movement, checkAllocation } = makeMaximumWithdrawalCase({
+    shareQuantity: 0n,
+    valueUusd: 0n,
+    minimumProceeds: 0n,
+  });
+  t.notThrows(() => checkAllocation({ [instrument]: 100n }));
+  t.throws(
+    () =>
+      checkAllocation(
+        { [instrument]: 100n },
+        { flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] },
+      ),
+    { message: /empty share holding cannot meet proceeds minimum/ },
+  );
+});
+
+test('Share withdrawals cannot exceed the observed shares', t => {
+  const { instrument, shares, observations, movement, checkAllocation } =
+    makeMaximumWithdrawalCase({ shareQuantity: 50n });
+  t.throws(
+    () =>
+      checkAllocation({ [instrument]: 100n }, { flow: [movement, movement] }),
+    { message: /unfunded share withdrawal.*50/ },
+  );
+  t.throws(
+    () =>
+      checkAllocation(
+        { [instrument]: 100n },
+        { flow: [{ ...movement, withdraw: { amountOfShares: 51n } }] },
+      ),
+    { message: /requested shares.*51.*observed shares.*50/ },
+  );
+  for (const holdings of [
+    [{ ...shares, kind: 'principal' as const }],
+    [
+      shares,
+      {
+        ...shares,
+        tokenId: holdingTokens.otherVault,
+      },
+    ],
+  ]) {
+    t.throws(
+      () =>
+        checkAllocation(
+          { [instrument]: 100n },
+          { flow: [movement] },
+          { ...observations, holdings },
+        ),
+      { message: /share redemption requires one observed share holding/ },
+    );
+  }
+});
+
+test('A maximum share withdrawal leaves reward exposure at the source', t => {
+  const { instrument, shares, movement, checkAllocation } =
+    makeMaximumWithdrawalCase();
+  t.throws(
+    () =>
+      checkAllocation(
+        { Aave_Ethereum: 100n },
+        { flow: [movement] },
+        makeHoldingObservations([
+          shares,
+          makeHolding({
+            place: instrument,
+            kind: 'claimable-reward',
+            amount: 20n,
+            valueUusd: 20_000_000n,
+          }),
+        ]),
+      ),
+    { message: /plan final balance exceeds target allocation.*20000000/ },
+  );
+});
+
+test('Maximum Morpho withdrawals target the position’s own chain account', t => {
+  const { instrument, movement, checkAllocation } = makeMaximumWithdrawalCase();
+  t.throws(
+    () =>
+      checkAllocation(
+        { [instrument]: 100n },
+        { flow: [{ ...movement, dest: '@Arbitrum' }] },
+      ),
+    { message: /lives on "Ethereum", not "Arbitrum"/ },
+  );
+  for (const [src, dest] of [
+    [instrument, 'Aave_Ethereum'],
+    ['Aave_Ethereum', '@Ethereum'],
+  ] as const) {
+    t.throws(
+      () =>
+        checkAllocation(
+          { [instrument]: 100n, Aave_Ethereum: 0n },
+          { flow: [{ ...movement, src, dest }] },
+        ),
+      {
+        message:
+          /share redemption requires a Morpho source and its chain account destination/,
+      },
+    );
+  }
+  t.throws(
+    () =>
+      checkAllocation(
+        { [instrument]: 100n },
+        {
+          flow: [
+            {
+              ...movement,
+              claimRewards: { tokens: [], minAmounts: [] },
+            },
+          ],
+        },
+      ),
+    { message: /share redemption cannot also claim rewards/ },
+  );
+});
+
 for (const [label, withdraw] of additiveWithdrawCases) {
   test(`withdraw is additive to exact-amount allocation validation: ${label}`, t => {
     const plan: FundsFlowPlan = harden({
@@ -2228,7 +2348,7 @@ test('withdraw options do not reserve the source or change exact downstream fund
         src: 'Aave_Base',
         dest: '@Base',
         amount: { brand: USDC, value: 50_000_000n },
-        withdraw: { amountOfShares: 1n },
+        withdraw: { max: false },
       },
     ],
   };
