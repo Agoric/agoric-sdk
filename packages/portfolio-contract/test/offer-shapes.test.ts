@@ -978,10 +978,6 @@ test('movement Shape accepts additive withdraw params and requires an amount', t
     base,
     { ...base, withdraw: {} },
     { ...base, withdraw: { amountOfShares: 0n } },
-    {
-      ...base,
-      withdraw: { max: true, amountOfShares: 123n },
-    },
     { ...base, withdraw: { max: false } },
     {
       ...base,
@@ -998,6 +994,10 @@ test('movement Shape accepts additive withdraw params and requires an amount', t
     invalidMax: { ...base, withdraw: { max: 'yes' } },
     negativeSrcAmount: { ...base, withdraw: { amountOfShares: -1n } },
     invalidSrcAmount: { ...base, withdraw: { amountOfShares: 123 } },
+    bothWithdrawOptions: {
+      ...base,
+      withdraw: { max: false, amountOfShares: 0n },
+    },
     obsoleteToken: { ...base, withdraw: { srcToken: `0x${'1'.repeat(40)}` } },
     obsoleteKind: { ...base, withdraw: { srcKind: 'shares' } },
     obsoleteAmount: { ...base, withdraw: { srcAmount: 0n } },
@@ -1036,12 +1036,6 @@ test('movement Ext Shape accepts future places while validating known withdrawal
     { withdraw: {} },
     { withdraw: { max: false } },
     { withdraw: { max: true } },
-    {
-      withdraw: {
-        max: true,
-        amountOfShares: 0n,
-      },
-    },
     { fee: bld.make(1n), detail: { gas: 1n }, futureField: { version: 2 } },
   ]) {
     const specimen = harden({ ...base, ...fields });
@@ -1073,6 +1067,7 @@ test('movement Ext Shape accepts future places while validating known withdrawal
     badToken: { withdraw: { srcToken: 1n } },
     negativeSourceAmount: { withdraw: { amountOfShares: -1n } },
     badSourceAmount: { withdraw: { amountOfShares: 1 } },
+    bothWithdrawOptions: { withdraw: { max: true, amountOfShares: 0n } },
     unknownWithdrawalField: { withdraw: { force: true } },
   })) {
     t.false(matches(harden({ ...base, ...fields }), shape), name);
