@@ -37,8 +37,11 @@ existing offer boundaries and execution behavior remain unchanged.
 `HoldingDetailShape` and `PlanObservationsShape` check structural input;
 converters also validate place/kind compatibility, canonical token identifiers,
 integer ranges, and duplicate `(place, kind, tokenId)` identities. Identity
-comparisons are exact: EVM contract addresses must be lowercase `0x` hex, while
-other chain identifiers retain their canonical spelling and case.
+comparisons use exact `place` and `kind` values and chain-aware canonical
+`tokenId` keys via `makeTokenIdKey(tokenId, place)`. EVM `0x` identifiers compare
+in lowercase; non-EVM identifiers compare with their original case. EVM
+contract addresses are stored as lowercase `0x` hex; other chain identifiers
+retain their canonical spelling and case for signing and chain operations.
 `claimable-reward` belongs to an instrument; `claimed-reward` belongs to a chain
 account.
 
@@ -47,7 +50,9 @@ not repeat the chain as a full CAIP-19 identifier. EVM contract holdings use the
 lowercase contract address. Every Cosmos bank asset is an ordinary `token`
 holding with its raw bank denom, for example
 `{ place: '@noble', kind: 'token', tokenId: 'uusdc', amount: 1_000_000n }`.
-IBC and token-factory assets use their exact `ibc/…` or `factory/…` denoms.
+IBC and token-factory assets preserve their `ibc/…` or `factory/…` denoms,
+including uppercase hashes such as `ibc/123456789ABCDEF`. These denoms compare
+case-sensitively.
 Different denoms remain distinct even when their display symbols match. Future
 chains can use their own identifiers, such as Solana base58 mint addresses.
 Resolve decimal scale from chain asset metadata for the identifier, never from

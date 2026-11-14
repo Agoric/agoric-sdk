@@ -42,6 +42,7 @@ import {
   isInstrumentId,
   isPortfolioBalancePlaceRef,
   maybeChainOf,
+  getCanonicalHoldingKey,
 } from './places.ts';
 import type {
   PlanObservations,
@@ -260,30 +261,29 @@ const assertTypedHoldings: (
     }
     const isEvmPlace = isEvmChain(maybeChainOf(place));
     // EIP-712 strings do not normalize addresses. Reject non-canonical hex
-    // so signatures and exact identity comparisons agree. Other chains use
-    // their exact local identifiers, e.g. Cosmos denoms or Solana mints.
+    // in signed data. Other chains retain their local identifiers, e.g. Cosmos
+    // denoms or Solana mints. Identity keys canonicalize only EVM identifiers.
     if (
       typeof tokenId !== 'string' ||
       /\s/.test(tokenId) ||
-      (!isNative && isEvmPlace && !/^0x[0-9a-f]{40}$/.test(tokenId)) ||
-      (/^0x/i.test(tokenId) && !/^0x[0-9a-f]{40}$/.test(tokenId))
+      (!isNative && isEvmPlace && !/^0x[0-9a-f]{40}$/.test(tokenId))
     ) {
       throw TypeError(`invalid holding token identifier ${String(tokenId)}`);
     }
     if (
       isNative !== (tokenId === '') ||
-      /^0x0{40}$/.test(tokenId) ||
+      (isEvmPlace && /^0x0{40}$/.test(tokenId)) ||
       (isNative && !isEvmPlace)
     ) {
       throw TypeError(
         `holding kind ${kind} has an incompatible token identifier`,
       );
     }
-    const identity = JSON.stringify([place, kind, tokenId]);
-    if (identities.has(identity)) {
-      throw TypeError(`duplicate holding identity ${identity}`);
+    const holdingKey = getCanonicalHoldingKey({ place, kind, tokenId });
+    if (identities.has(holdingKey)) {
+      throw TypeError(`duplicate holding identity ${holdingKey}`);
     }
-    identities.add(identity);
+    identities.add(holdingKey);
     assertUint256(amount, 'amount');
     if (
       valueUusd !== undefined &&
