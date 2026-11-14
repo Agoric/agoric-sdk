@@ -290,6 +290,7 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 
 	basicManager.AddQueryCommands(qcmd)
 	basicManager.AddTxCommands(tcmd)
+	addGovSimulateProposalCommand(tcmd, ac, encodingConfig)
 	rootCmd.AddCommand(
 		server.StatusCommand(),
 		qcmd,
@@ -345,6 +346,7 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxsByEventsCmd(),
 		server.QueryBlocksCmd(),
 		authcmd.QueryTxCmd(),
+		server.QueryBlockResultsCmd(),
 	)
 
 	return cmd
@@ -369,6 +371,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetBroadcastCommand(),
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
+		authcmd.GetSimulateCmd(),
 		flags.LineBreak,
 		vestingcli.GetTxCmd(address.NewBech32Codec(sdk.Bech32PrefixAccAddr)),
 	)
