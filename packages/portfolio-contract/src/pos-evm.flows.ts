@@ -65,6 +65,7 @@ import {
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
+import type { TxId } from './resolver/types.ts';
 import type { PoolKey, EVMContractAddressesMap } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
 import {
@@ -100,6 +101,15 @@ export type EVMContext = {
    * feature was introduced don't have it, so gate new host interactions on it.
    */
   features?: FlowFeatures;
+};
+
+/** Context for sending a GMP contract call. */
+export type GMPCallContext = EVMContext & {
+  /**
+   * Called with the txId of the GMP tx registered for this call, before it is
+   * sent.
+   */
+  onGmpTxId?: (txId: TxId) => void;
 };
 
 const trace = makeTracer('GMPF');
