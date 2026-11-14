@@ -23,6 +23,8 @@ export const DEFAULT_FLOW_CONFIG = {
   features: {
     /** Enable ProgressTracker support in new flows. */
     useProgressTracker: true,
+    /** Link CCTPv2 txs to their burn tx and fail them with it. */
+    trackCctpBurn: true,
   },
 };
 harden(DEFAULT_FLOW_CONFIG);
@@ -207,6 +209,7 @@ export const FlowFeaturesShape = M.splitRecord(
   {
     useProgressTracker: M.boolean(),
     experimentalSwap: ExperimentalSwapShape,
+    trackCctpBurn: M.boolean(),
   },
 );
 

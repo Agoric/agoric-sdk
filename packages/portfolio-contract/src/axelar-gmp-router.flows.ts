@@ -54,7 +54,7 @@ import {
   predictRemoteAccountAddress,
 } from './utils/evm-orch-router.ts';
 import { appendTxIds } from './utils/traffic.ts';
-import type { EVMContext } from './pos-evm.flows.ts';
+import type { EVMContext, GMPCallContext } from './pos-evm.flows.ts';
 
 const trace = makeTracer('GMPRF');
 
@@ -68,7 +68,7 @@ export type GMPAccountStatus = GMPAccountInfo & {
 const gmpRouterContract = makeEvmContract(remoteAccountAxelarRouterABI);
 
 export const sendGMPRouterInstruction = async <T extends SupportedOperations>(
-  ctx: Omit<EVMContext, 'feeAccount'> & {
+  ctx: Omit<GMPCallContext, 'feeAccount'> & {
     feeAccount: EVMContext['feeAccount'] | Promise<EVMContext['feeAccount']>;
     progressTracker: ProgressTracker;
     remoteAccount: GMPAccountInfo;
@@ -136,6 +136,7 @@ export const sendGMPRouterInstruction = async <T extends SupportedOperations>(
 
   try {
     appendTxIds(progressTracker, [txId]);
+    ctx.onGmpTxId?.(txId);
 
     // We should never get here if router config is invalid
     const { remoteAccountFactory } = addresses;
@@ -491,7 +492,7 @@ export const provideEVMAccount = (
  * Sends a GMP call to execute contract calls on a remote smart wallet.
  */
 export const sendGMPContractCall = async (
-  ctx: EVMContext,
+  ctx: GMPCallContext,
   gmpAcct: GMPAccountInfo,
   calls: ContractCall[],
   ...optsArgs: [OrchestrationOptions?]

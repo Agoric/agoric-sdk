@@ -96,6 +96,7 @@ const PublishedTxShapes: Record<string, TypedPattern<PublishedTx>> = harden({
       sourceAddress: AccountIdShape,
       cctpVersion: M.number(),
       destinationCaller: AccountIdShape,
+      burnTxId: M.string(),
       ...optionalPublishedTxProps,
     },
     {},

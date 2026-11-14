@@ -70,7 +70,11 @@ import {
   wayFromSrcToDest,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
-import { swapRewardToStable, type EVMContext } from '../src/pos-evm.flows.ts';
+import {
+  CCTPv2,
+  swapRewardToStable,
+  type EVMContext,
+} from '../src/pos-evm.flows.ts';
 import {
   agoricToNoble,
   makeSwapLockMessages,
@@ -3860,8 +3864,98 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
     cctpV2Tx.destinationCaller,
     `eip155:10:${contractsMock.Optimism.cctpRelayer}`,
   );
+  t.regex(cctpV2Tx.burnTxId, /^tx\d+$/, 'CCTPv2 tx links its burn tx');
+  const [burnTx] = storage
+    .getDeserialized(`published.ymax0.pendingTxs.${cctpV2Tx.burnTxId}`)
+    .slice(-1) as any[];
+  t.true(
+    ['GMP', 'ROUTED_GMP'].includes(burnTx.type),
+    `burn tx is a GMP: ${burnTx.type}`,
+  );
+  t.is(burnTx.status, 'success');
   await documentStorageSchema(t, storage, docOpts);
 });
+
+const cctpV2BurnFailureTest = test.macro({
+  title: (_providedTitle = '', trackCctpBurn: boolean, useRouter: boolean) =>
+    `CCTPv2 ${trackCctpBurn ? 'fails' : 'leaves pending'} its tx when the burn GMP fails (${useRouter ? 'routed' : 'legacy'})`,
+  async exec(t, trackCctpBurn: boolean, useRouter: boolean) {
+    const { resolverClient, storage, makeProgressTracker } = mocks({});
+    const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
+    const ctx = {
+      feeAccount: {
+        getAddress: () => lcaAddress,
+        send: async () => {
+          throw Error('fee send failed');
+        },
+      },
+      lca: { getAddress: () => lcaAddress, transfer: async () => {} },
+      gmpFee: { denom: 'uaxl', value: 100n },
+      gmpChain: {
+        getChainInfo: async () => ({ chainId: 'axelar-testnet-lisbon-3' }),
+      },
+      gmpAddresses,
+      resolverClient,
+      axelarIds: axelarIdsMock,
+      addresses: contractsMock.Base,
+      contracts: contractsMock,
+      nobleForwardingChannel: 'channel-0',
+      ...(trackCctpBurn ? { features: { trackCctpBurn } } : {}),
+    } as unknown as EVMContext;
+
+    const remoteAddress = '0x1234567890AbcdEF1234567890aBcdef12345678';
+    const src = {
+      namespace: 'eip155',
+      chainName: 'Base',
+      remoteAddress,
+      chainId: 'eip155:8453',
+      ...(useRouter
+        ? { routerFactory: contractsMock.Base.remoteAccountFactory }
+        : {}),
+    } as const;
+    const dest = {
+      namespace: 'eip155',
+      chainName: 'Optimism',
+      remoteAddress,
+      chainId: 'eip155:10',
+    } as const;
+
+    await t.throwsAsync(
+      () =>
+        CCTPv2.apply(ctx, make(USDC, 1_000_000n), src as any, dest as any, {
+          progressTracker: makeProgressTracker(),
+        }),
+      { message: 'fee send failed' },
+    );
+    await eventLoopIteration();
+
+    const cctpTxs = storage.getDeserialized(
+      'published.ymax0.pendingTxs.tx0',
+    ) as any[];
+    const gmpTx = (
+      storage.getDeserialized('published.ymax0.pendingTxs.tx1') as any[]
+    ).at(-1);
+    t.is(cctpTxs[0].type, 'CCTP_TO_EVM');
+    t.is(gmpTx.type, useRouter ? 'ROUTED_GMP' : 'GMP');
+    t.is(gmpTx.status, 'failed');
+
+    const last = cctpTxs.at(-1);
+    if (trackCctpBurn) {
+      t.is(last.burnTxId, 'tx1', 'links the burn GMP tx');
+      t.is(last.status, 'failed', 'CCTP tx failed with its burn');
+      t.regex(last.rejectionReason, /burn failed: .*fee send failed/);
+    } else {
+      t.false('burnTxId' in last, 'no link without trackCctpBurn');
+      t.is(last.status, 'pending', 'pre-feature behavior preserved');
+      t.is(cctpTxs.length, 1, 'no extra writes without trackCctpBurn');
+    }
+  },
+});
+
+test(expectUnhandled(1, cctpV2BurnFailureTest), true, false);
+test(cctpV2BurnFailureTest, true, true);
+test(expectUnhandled(1, cctpV2BurnFailureTest), false, false);
+test(cctpV2BurnFailureTest, false, true);
 
 const sendGMPContractCallTest = test.macro({
   title: (providedTitle = '', useRouter: boolean) =>

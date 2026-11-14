@@ -29,6 +29,7 @@ import {
   isERC4626MorphoInstrumentId,
   makeTokenIdKey,
   type ChainTokenMetadata,
+  type FlowFeatures,
   type MovementDesc,
 } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
@@ -64,6 +65,7 @@ import {
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
+import type { TxId } from './resolver/types.ts';
 import type { PoolKey, EVMContractAddressesMap } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
 import {
@@ -94,6 +96,20 @@ export type EVMContext = {
   resolverClient: GuestInterface<ResolverKit['client']>;
   nobleForwardingChannel: `channel-${number}`;
   detail?: MovementDesc['detail'];
+  /**
+   * Features of the flow this step belongs to. Flows replaying from before a
+   * feature was introduced don't have it, so gate new host interactions on it.
+   */
+  features?: FlowFeatures;
+};
+
+/** Context for sending a GMP contract call. */
+export type GMPCallContext = EVMContext & {
+  /**
+   * Called with the txId of the GMP tx registered for this call, before it is
+   * sent.
+   */
+  onGmpTxId?: (txId: TxId) => void;
 };
 
 const trace = makeTracer('GMPF');
@@ -378,11 +394,13 @@ export const CCTPv2 = {
 
     const calls = session.finish();
 
-    const { txId, result } = ctx.resolverClient.createPendingTx({
+    const { resolverClient } = ctx;
+    const trackCctpBurn = !!ctx.features?.trackCctpBurn;
+    const cctpTxMeta = harden({
       type: TxType.CCTP_TO_EVM,
-      destinationAddress: `${dest.chainId}:${dest.remoteAddress}`,
+      destinationAddress: `${dest.chainId}:${dest.remoteAddress}` as AccountId,
       amountValue: amount.value,
-      sourceAddress: `${src.chainId}:${src.remoteAddress}`,
+      sourceAddress: `${src.chainId}:${src.remoteAddress}` as AccountId,
       cctpVersion: 2,
       ...(destinationCallerAddress
         ? {
@@ -391,10 +409,30 @@ export const CCTPv2 = {
           }
         : {}),
     });
+    const { txId, result } = resolverClient.createPendingTx(cctpTxMeta);
 
-    const sent = sendGMPContractCall(ctx, src, calls, ...optsArgs);
+    // Without trackCctpBurn, keep the exact host interactions of flows created
+    // before that feature, for replay fidelity.
+    const gmpCtx: GMPCallContext = trackCctpBurn
+      ? {
+          ...ctx,
+          onGmpTxId: burnTxId =>
+            resolverClient.updateTxMeta(
+              txId,
+              harden({ ...cctpTxMeta, burnTxId }),
+            ),
+        }
+      : ctx;
+    const sent = sendGMPContractCall(gmpCtx, src, calls, ...optsArgs);
     appendTxIds(optsArgs[0]?.progressTracker, [txId]);
-    await sent;
+    await (trackCctpBurn
+      ? sent.catch(reason => {
+          // The burn was not executed, so the CCTP transfer will never happen.
+          (result as unknown as Promise<void>).catch(() => {});
+          resolverClient.unsubscribe(txId, `burn failed: ${reason}`);
+          throw reason;
+        })
+      : sent);
     await result;
 
     traceTransfer('transfer complete');

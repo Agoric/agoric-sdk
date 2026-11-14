@@ -36,6 +36,11 @@ export type FlowFeatures = {
   useProgressTracker?: boolean;
   /** Enable experimental swap feature. */
   experimentalSwap?: boolean;
+  /**
+   * Link a CCTPv2 `CCTP_TO_EVM` tx to the tx that sends its burn (via
+   * `burnTxId`), and fail it when that burn fails to be sent or executed.
+   */
+  trackCctpBurn?: boolean;
 };
 
 /**
