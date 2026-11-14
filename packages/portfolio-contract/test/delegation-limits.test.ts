@@ -1986,6 +1986,188 @@ test('Redemption binds observed shares to the configured vault', t => {
   );
 });
 
+test('Maximum withdrawal requires observed shares, even with legacy balances', t => {
+  const { instrument, movement } = makeMaximumWithdrawalCase();
+  const observations: PlanObservations = {
+    balances: { [instrument]: 50n, '@Ethereum': 0n },
+    instrumentTvls: {},
+  };
+  for (const value of [0n, 25n]) {
+    t.throws(
+      () =>
+        vetAllocationPlan(
+          { allocation: {} },
+          { [instrument]: 100n },
+          { flow: [{ ...movement, amount: { brand: USDC, value } }] },
+          observations,
+          { getVaultAddress: () => holdingTokens.vault },
+        ),
+      { message: /share redemption requires one observed share holding/ },
+    );
+  }
+});
+
+test('Only minimum redemption proceeds count toward final portfolio value', t => {
+  const { shares, movement, checkAllocation } = makeMaximumWithdrawalCase({
+    valueUusd: 100_000_000n,
+    minimumProceeds: 0n,
+  });
+  const withOtherPosition = makeHoldingObservations([
+    shares,
+    makeHolding({
+      place: 'Aave_Ethereum',
+      kind: 'principal',
+      amount: 100_000_000n,
+      valueUusd: 100_000_000n,
+    }),
+  ]);
+  const target = { Aave_Ethereum: 50n, Compound_Ethereum: 50n };
+  t.throws(
+    () => checkAllocation(target, { flow: [movement] }, withOtherPosition),
+    { message: /plan final balance exceeds target allocation.*Aave_Ethereum/ },
+  );
+  t.notThrows(() =>
+    checkAllocation(
+      target,
+      { flow: [{ ...movement, amount: { brand: USDC, value: 100_000_000n } }] },
+      withOtherPosition,
+    ),
+  );
+});
+
+test('A bounded exit can leave proceeds in cash or redeploy them', t => {
+  const { shares, movement } = makeMaximumWithdrawalCase({
+    minimumProceeds: 50_000_000n,
+  });
+  const observations = makeHoldingObservations([
+    shares,
+    makeHolding({
+      place: '@Ethereum',
+      kind: 'token',
+      amount: 0n,
+      valueUusd: 0n,
+    }),
+    makeHolding({
+      place: 'Aave_Ethereum',
+      kind: 'principal',
+      amount: 0n,
+      valueUusd: 0n,
+    }),
+  ]);
+  const vet = (plan: FundsFlowPlan) =>
+    vetAllocationPlan(
+      { allocation: {} },
+      { Aave_Ethereum: 100n },
+      plan,
+      observations,
+      {
+        getUsdcTokenId: () => holdingTokens.usdc,
+        getVaultAddress: () => holdingTokens.vault,
+        hasMinimumRedemptionContracts: () => true,
+      },
+    );
+  t.notThrows(() => vet({ flow: [movement] }));
+  t.notThrows(() =>
+    vet({
+      flow: [
+        movement,
+        {
+          src: '@Ethereum',
+          dest: 'Aave_Ethereum',
+          amount: { brand: USDC, value: 30_000_000n },
+        },
+      ],
+      order: [[1, [0]]],
+    }),
+  );
+});
+
+test('A bounded exit from one side of a split allocation is admitted', t => {
+  const minimumProceeds = 99_900_000n;
+  const { shares, movement } = makeMaximumWithdrawalCase({ minimumProceeds });
+  const zeroPrincipal = (place: 'Aave_Ethereum' | 'Compound_Ethereum') =>
+    makeHolding({ place, kind: 'principal', amount: 0n, valueUusd: 0n });
+  const observations = makeHoldingObservations([
+    shares,
+    makeHolding({
+      place: 'Aave_Ethereum',
+      kind: 'principal',
+      amount: 100_000_000n,
+      valueUusd: 100_000_000n,
+    }),
+    makeHolding({
+      place: '@Ethereum',
+      kind: 'token',
+      amount: 0n,
+      valueUusd: 0n,
+    }),
+    zeroPrincipal('Compound_Ethereum'),
+  ]);
+  const vet = (target: TargetAllocation, plan: FundsFlowPlan) =>
+    vetAllocationPlan({ allocation: {} }, target, plan, observations, {
+      getUsdcTokenId: () => holdingTokens.usdc,
+      getVaultAddress: () => holdingTokens.vault,
+      hasMinimumRedemptionContracts: () => true,
+    });
+  const expectedBinding = {
+    kind: 'redeemShares',
+    src: movement.src,
+    vaultAddress: holdingTokens.vault,
+    shares: shares.amount,
+    minimumProceeds,
+  };
+
+  // Exit to cash.
+  t.deepEqual(
+    vet({ Aave_Ethereum: 50n, '@Ethereum': 50n }, { flow: [movement] })
+      .boundSteps?.[0],
+    expectedBinding,
+  );
+  // Exit now, redeploy later.
+  t.deepEqual(
+    vet({ Aave_Ethereum: 50n, Compound_Ethereum: 50n }, { flow: [movement] })
+      .boundSteps?.[0],
+    expectedBinding,
+  );
+  // Exit and redeploy in one plan.
+  t.deepEqual(
+    vet(
+      { Aave_Ethereum: 50n, Compound_Ethereum: 50n },
+      {
+        flow: [
+          movement,
+          {
+            src: '@Ethereum',
+            dest: 'Compound_Ethereum',
+            amount: { brand: USDC, value: minimumProceeds },
+          },
+        ],
+        order: [[1, [0]]],
+      },
+    ).boundSteps?.[0],
+    expectedBinding,
+  );
+  // Redeploying more than the enforced minimum is unfunded.
+  t.throws(
+    () =>
+      vet(
+        { Aave_Ethereum: 50n, Compound_Ethereum: 50n },
+        {
+          flow: [
+            movement,
+            {
+              src: '@Ethereum',
+              dest: 'Compound_Ethereum',
+              amount: { brand: USDC, value: minimumProceeds + 1n },
+            },
+          ],
+          order: [[1, [0]]],
+        },
+      ),
+    { message: /unfunded/ },
+  );
+});
+
 for (const [label, withdraw] of additiveWithdrawCases) {
   test(`withdraw is additive to exact-amount allocation validation: ${label}`, t => {
     const plan: FundsFlowPlan = harden({
