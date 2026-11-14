@@ -9,7 +9,7 @@
  * case of mismatch.
  *
  * @param {Pick<Assertions, 'fail' | 'is' | 'deepEqual' | 'like' | 'regex'>} t
- * @param {unknown[]} array
+ * @param {readonly unknown[]} array
  * @param {unknown[]} expected
  * @param {string} [message]
  */
