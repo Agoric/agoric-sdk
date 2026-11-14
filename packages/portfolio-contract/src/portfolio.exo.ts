@@ -59,6 +59,7 @@ import {
   AxelarChain,
   PortfolioPlannerAgent,
   SupportedChain,
+  UsdcTokenIds,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import {
@@ -803,7 +804,9 @@ export const preparePortfolioKit = (
                 getUsdcTokenId: account =>
                   account === '@agoric'
                     ? agoricUsdcDenom
-                    : contracts[chainOf(account) as AxelarChain]?.usdc,
+                    : account === '@noble'
+                      ? UsdcTokenIds.mainnet.noble
+                      : contracts[chainOf(account) as AxelarChain]?.usdc,
                 getVaultAddress: src =>
                   contracts[chainOf(src) as AxelarChain]?.[src],
                 hasMinimumRedemptionContracts: src => {

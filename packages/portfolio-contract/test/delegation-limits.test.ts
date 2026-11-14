@@ -1785,14 +1785,7 @@ for (const [src, tokenId] of [
         },
       ],
     };
-    t.notThrows(() =>
-      vetPlanAllocation(
-        {},
-        plan,
-        observations,
-        src === '@agoric' ? () => tokenId : undefined,
-      ),
-    );
+    t.notThrows(() => vetPlanAllocation({}, plan, observations, () => tokenId));
   });
 }
 

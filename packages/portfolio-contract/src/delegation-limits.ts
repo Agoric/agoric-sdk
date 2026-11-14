@@ -15,7 +15,6 @@ import {
   matchHoldingTokenId,
   type ERC4626InstrumentId,
 } from '@agoric/portfolio-api/src/places.js';
-import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
 import {
   isERC4626MorphoInstrumentId,
   isInstrumentId,
@@ -542,8 +541,7 @@ const projectPlanBalances = (
         throw Fail`portfolio checks cannot yet project exact withdrawals from observed holdings at ${q(src)}`;
       }
       if (remainingCash.has(src)) continue;
-      const usdcTokenId =
-        src === '@noble' ? UsdcTokenIds.mainnet.noble : getUsdcTokenId?.(src);
+      const usdcTokenId = getUsdcTokenId?.(src);
       if (!usdcTokenId) throw Fail`no configured USDC token at ${q(src)}`;
       const candidates = observations.holdings.filter(
         holding =>
