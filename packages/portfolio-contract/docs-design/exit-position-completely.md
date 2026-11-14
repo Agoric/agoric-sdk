@@ -8,7 +8,7 @@ Base account. He has delegated planning to his agent, as in the
 100 USDC position and plans a full withdrawal. Yield raises its value to
 100.25 USDC before execution.
 
-This is a proposed actor simulation for
+This actor simulation follows
 [AGO-1575](https://linear.app/agoric/issue/AGO-1575/design-for-exit-position-completely).
 
 ```mermaid
@@ -34,11 +34,11 @@ sequenceDiagram
   O-->>A: signedObservations<br/>includes holdings: [{ place: 'MorphoV2', kind: 'shares',<br/>tokenId: vaultAddress, amount: ownedShares,<br/>valueUusd: 100_000_000n }, ...]
   A-->>P: setTargetAllocation({<br/>plan: { flow: [withdrawal] },<br/>signedObservations, ...<br/>})
   P-->>P: observations = verifyPortfolioObservations(signedObservations)
-  Note over P: Check context and mandate<br/>Full-exit support is proposed
+  Note over P: Check context and mandate<br/>Bind verified shares and minimum proceeds
   P-->>A: flowKey
-  Note over P: Proposed: select verified share holding and enforce minimum proceeds
-  P-->>E: vault.redeem(ownedShares,<br/>remoteAddress, remoteAddress)
-  Note over P,E: Assume pipelined vault calls through the remote account<br/>Encoding, Axelar delivery and router dispatch elided
+  Note over P: Use the bound share count and enforce minimum proceeds
+  P-->>E: approve GA1 for ownedShares;<br/>Bundler3.multicall(GA1.erc4626Redeem(...))
+  Note over P,E: Batched calls run through the remote account<br/>Encoding, Axelar delivery and router dispatch elided
   Note over E: Full liquidity and unchanged shares<br/>Redeem yields 100.25 USDC in this account
   E-->>P: success
   Note over P,E: Delivered by the resolver observing OperationResult<br/>and submitting an authorized SettleTransaction offer
@@ -108,48 +108,40 @@ sequenceDiagram
    redemption quantity nor an execution-time guarantee. Fixed downstream
    amounts still undergo funding and allocation checks.
 
-   Withdrawal parameters are additive: the API and contract Shapes accept them
-   before execution implements their semantics (AGO-1614). The current contract
-   ignores the options during allocation analysis and executes `amount` exactly.
-   This is a reasonable fallback for a request whose destination amount is a
-   minimum; `amount: 0` may fail validation. Acceptance or successful execution
-   does not establish that a maximum withdrawal or source-token request was
-   honored.
-
-   Implementing the options will require authenticated `shares` or `principal`
-   holdings to resolve source-token identity and value raw quantities. A USDC
-   valuation alone does not establish that identity. The target behavior must
-   distinguish raw source units from destination micro-USDC.
+   For `withdraw.max` or `withdraw.amountOfShares`, validation selects the
+   authenticated share holding, checks its vault address against configuration,
+   and passes the share count and minimum proceeds to `executePlan` as a bound
+   step. A USDC valuation alone cannot establish share identity or quantity.
 
 9. **Return the flow key.** The contract allocates the key. This reply precedes
    execution completion and does not prove that the position is empty.
 
-10. **Redeem through the RemoteAccount.** Assume the contract can pipeline vault
-    calls through its account capability. Select the authenticated `shares` entry
-    for the source instrument and configured vault address, and use its raw
-    `amount` as `ownedShares` in
-    `redeem(ownedShares, remoteAddress, remoteAddress)`.
-    Today, observations are used for plan validation and are not forwarded to
-    `executePlan`; that internal handoff is a proposed implementation change.
-    Execution must also enforce the requested minimum proceeds. If a protocol
-    cannot enforce a nonzero minimum, add an appropriate atomic guard (see
-    AGO-643) or reject that request before sending a funds-moving transaction;
-    an attested valuation alone is insufficient. Observed empty shares are a
-    no-op only when the minimum is zero. A positive minimum on an empty position
-    fails. Encoding, Axelar delivery, and authorized router dispatch are elided.
+10. **Redeem through the RemoteAccount.** `executePlan` receives the bound share
+    count and minimum proceeds. For a positive minimum, it sends a vault-share
+    approval for Morpho GeneralAdapter1 followed by a Bundler3 `multicall` of
+    `erc4626Redeem`. The adapter enforces the minimum in the same transaction.
+    With a zero minimum, it calls the vault's `redeem` directly. Encoding,
+    Axelar delivery, and authorized router dispatch are elided.
+
+    If the bound share count is zero, the minimum must also be zero. The step
+    sends no transaction and debits no position. It completes like an ordinary
+    step, allowing dependent steps and the flow to finish; published flow steps
+    do not mark it as skipped.
 
     `acctBase` is the per-portfolio chain account in the system map;
     `RemoteAccount` is its concrete EVM counterpart. The vault sees that account
-    as caller, share owner, and USDC receiver. The relevant Morpho ABI is:
+    as share owner and USDC receiver. For a positive minimum, GeneralAdapter1
+    calls the vault after the account approves its shares; with a zero minimum,
+    the account calls the vault directly. The relevant Morpho ABI is:
 
     ```solidity
     function redeem(uint256 shares, address receiver, address onBehalf)
         external returns (uint256 assets);
     ```
 
-    YMax's current [`erc4626ABI`](../src/interfaces/erc4626.ts) has only
-    `deposit` and `withdraw`; add `redeem` for this route. Morpho publishes the
-    full [Vault V2 interface](https://github.com/morpho-org/vault-v2/blob/main/src/interfaces/IVaultV2.sol).
+    YMax's [`erc4626ABI`](../src/interfaces/erc4626.ts) includes `redeem`.
+    Morpho publishes the full
+    [Vault V2 interface](https://github.com/morpho-org/vault-v2/blob/main/src/interfaces/IVaultV2.sol).
     The example vault address in
     [`axelar-configs.js`](../../portfolio-deploy/src/axelar-configs.js) is
     `0x050cE30b927Da55177A4914EC73480238BAD56f0`; this is a repository reference,
@@ -177,6 +169,12 @@ sequenceDiagram
     downstream movements use their original amounts, with
     surplus cash available for a later plan. No automatic sweep or replanning
     is introduced.
+
+    Position out-flow accounting records the movement's `amount`, which is the
+    requested minimum for share redemption, rather than the actual proceeds.
+    A full exit with a zero minimum therefore records zero out-flow even when
+    it redeems shares. Fresh observations, not that out-flow record, establish
+    the remaining position and cash balances.
 
 ## Liquidity assessment and recovery
 
