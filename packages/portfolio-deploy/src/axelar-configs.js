@@ -685,6 +685,7 @@ const mainnetContracts = {
     permit2: permit2Addresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
     tokenMessengerV2: mainnetTokenMessengerV2.Ethereum.Address,
+    universalRouter: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
     aaveUSDC: aaveUsdcAddresses.mainnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Ethereum,
     Beefy_morphoGauntletUsdc_Ethereum:
@@ -760,6 +761,7 @@ const mainnetContracts = {
     permit2: permit2Addresses.mainnet.Optimism,
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
     tokenMessengerV2: mainnetTokenMessengerV2['OP Mainnet'].Address,
+    universalRouter: '0xCb1355ff08Ab38bBCE60111F1bb2B784bE25D7e8',
     aaveUSDC: aaveUsdcAddresses.mainnet.Optimism,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Optimism,
     Beefy_compoundUsdc_Optimism:
@@ -789,6 +791,7 @@ const mainnetContracts = {
     permit2: permit2Addresses.mainnet.Arbitrum,
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
     tokenMessengerV2: mainnetTokenMessengerV2.Arbitrum.Address,
+    universalRouter: '0x5E325eDA8064b456f4781070C0738d849c824258',
     aaveUSDC: aaveUsdcAddresses.mainnet.Arbitrum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Arbitrum,
     Beefy_compoundUsdc_Arbitrum:
@@ -821,6 +824,7 @@ const mainnetContracts = {
     permit2: permit2Addresses.mainnet.Base,
     tokenMessenger: mainnetTokenMessenger.Base.Address,
     tokenMessengerV2: mainnetTokenMessengerV2.Base.Address,
+    universalRouter: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
     aaveUSDC: aaveUsdcAddresses.mainnet.Base,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Base,
     Beefy_morphoSeamlessUsdc_Base:

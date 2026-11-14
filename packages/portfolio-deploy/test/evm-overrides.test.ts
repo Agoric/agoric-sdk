@@ -215,10 +215,12 @@ test('ymax0 contract addresses match golden snapshot', async t => {
     'oneInchRouter',
     'morphoBundler3',
     'morphoGeneralAdapter1',
+    'universalRouter',
   ];
   for (const chain of ['Ethereum', 'Optimism', 'Arbitrum', 'Base']) {
     t.truthy(golden.contracts[chain].morphoBundler3);
     t.truthy(golden.contracts[chain].morphoGeneralAdapter1);
+    t.truthy(golden.contracts[chain].universalRouter);
   }
   checkContracts(t, golden, computed, shareFields, 'ymax0');
 });
@@ -241,10 +243,12 @@ test('ymax1 contract addresses match golden snapshot', async t => {
     'remoteAccountRouter',
     'morphoBundler3',
     'morphoGeneralAdapter1',
+    'universalRouter',
   ];
   for (const chain of ['Ethereum', 'Optimism', 'Arbitrum', 'Base']) {
     t.truthy(golden.contracts[chain].morphoBundler3);
     t.truthy(golden.contracts[chain].morphoGeneralAdapter1);
+    t.truthy(golden.contracts[chain].universalRouter);
   }
   checkContracts(t, golden, computed, instanceFields, 'ymax1');
 });
