@@ -40,13 +40,9 @@ export const TokenUsageShape = M.or('swapFrom', 'swapTo');
 harden(TokenUsageShape);
 
 /** Structural withdrawal parameters; route and holding identity need decoding. */
-export const WithdrawParamsShape: CastedPattern<WithdrawParams> = M.splitRecord(
-  {},
-  {
-    max: M.boolean(),
-    amountOfShares: M.nat(),
-  },
-  {},
+export const WithdrawParamsShape: CastedPattern<WithdrawParams> = M.or(
+  M.splitRecord({}, { max: M.boolean() }, {}),
+  M.splitRecord({}, { amountOfShares: M.nat() }, {}),
 );
 harden(WithdrawParamsShape);
 

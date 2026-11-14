@@ -18,7 +18,6 @@ test('withdraw parameters preserve omitted, false and zero values', t => {
     { max: true },
     { amountOfShares: 0n },
     { amountOfShares: 123n },
-    { max: true, amountOfShares: 0n },
   ])
     t.true(matches(harden(params), WithdrawParamsShape));
   for (const params of [
@@ -28,6 +27,8 @@ test('withdraw parameters preserve omitted, false and zero values', t => {
     { srcAmount: 0n },
     { amountOfShares: 1 },
     { amountOfShares: -1n },
+    { max: false, amountOfShares: 0n },
+    { max: true, amountOfShares: 0n },
     { srcKind: '$ETH' },
     { srcKind: 'share' },
     { srcAmount: 1 },

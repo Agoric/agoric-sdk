@@ -6,20 +6,21 @@ API shared between on-chain contract and external clients
 
 Movements use `withdraw?: WithdrawParams` without parameterizing `MovementDesc`
 or `FundsFlowPlan`. The shared `WithdrawParamsShape` checks structural input:
-optional `max` and nonnegative bigint `amountOfShares`.
+an optional boolean `max` or an optional nonnegative bigint `amountOfShares`,
+but not both.
 Consumers implementing these options must also validate source/destination
 routes and the selected holding's identity. A Shape match alone does not
 authorize execution.
 
 The movement's `amount` is default-token units (micro-USDC) received at `dest`.
 It is a minimum if `max` is true or `amountOfShares` is supplied, otherwise exact.
-`amountOfShares` is raw share-token units: exact unless `max` is true. Without
-it, a position interprets the movement's `amount` in principal-token units.
+`amountOfShares` is an exact count of raw share-token units. It cannot appear
+with `max`, even when `max` is false. Without either option, a position
+interprets the movement's `amount` in principal-token units.
 
-Withdrawal options are additive. A contract that does not implement them can
-accept the structure and execute the movement's `amount` exactly, ignoring the
-options. This is the current contract's fallback; `amount: 0` may fail
-validation. API acceptance does not imply full-exit or share-quantity support.
+Withdrawal options are additive to the plan format. An older contract may
+accept them but execute the movement's `amount` exactly. API acceptance alone
+does not establish support for the requested withdrawal semantics.
 
 `MovementDescExt` and `FundsFlowPlanExt` provide forward-compatible structural
 input types. They allow future source/destination place strings and additional
