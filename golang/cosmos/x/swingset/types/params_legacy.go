@@ -7,6 +7,11 @@ var (
 	ParamStoreKeyBeansPerUnit                     = []byte("beans_per_unit")
 	ParamStoreKeyBootstrapVatConfig               = []byte("bootstrap_vat_config")
 	ParamStoreKeyFeeUnitPrice                     = []byte("fee_unit_price")
+	ParamStoreKeyMsgTypeBeansPerUnit              = []byte("msg_type_beans_per_unit")
+	ParamStoreKeyBeanFeeBurnFraction              = []byte("bean_fee_burn_fraction")
+	ParamStoreKeyBeanFeeCollector                 = []byte("bean_fee_collector")
+	ParamStoreKeyMinGasPrice                      = []byte("min_gas_price")
+	ParamStoreKeyFeeUnitPriceAlternatives         = []byte("fee_unit_price_alternatives")
 	ParamStoreKeyPowerFlagFees                    = []byte("power_flag_fees")
 	ParamStoreKeyQueueMax                         = []byte("queue_max")
 	ParamStoreKeyVatCleanupBudget                 = []byte("vat_cleanup_budget")
@@ -26,6 +31,11 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamStoreKeyBeansPerUnit, &p.BeansPerUnit, validateBeansPerUnit),
 		paramtypes.NewParamSetPair(ParamStoreKeyFeeUnitPrice, &p.FeeUnitPrice, validateFeeUnitPrice),
+		paramtypes.NewParamSetPair(ParamStoreKeyMsgTypeBeansPerUnit, &p.MsgTypeBeansPerUnit, validateMsgTypeBeansPerUnit),
+		paramtypes.NewParamSetPair(ParamStoreKeyBeanFeeBurnFraction, &p.BeanFeeBurnFraction, validateBeanFeeBurnFraction),
+		paramtypes.NewParamSetPair(ParamStoreKeyBeanFeeCollector, &p.BeanFeeCollector, validateBeanFeeCollector),
+		paramtypes.NewParamSetPair(ParamStoreKeyMinGasPrice, &p.MinGasPrice, validateMinGasPrice),
+		paramtypes.NewParamSetPair(ParamStoreKeyFeeUnitPriceAlternatives, &p.FeeUnitPriceAlternatives, validateFeeUnitPriceAlternatives),
 		paramtypes.NewParamSetPair(ParamStoreKeyBootstrapVatConfig, &p.BootstrapVatConfig, validateBootstrapVatConfig),
 		paramtypes.NewParamSetPair(ParamStoreKeyPowerFlagFees, &p.PowerFlagFees, validatePowerFlagFees),
 		paramtypes.NewParamSetPair(ParamStoreKeyQueueMax, &p.QueueMax, validateQueueMax),

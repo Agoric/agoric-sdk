@@ -30,7 +30,7 @@ type AccountKeeper interface {
 // BankKeeper defines the expected interface for the bank module keeper
 type BankKeeper interface {
 	GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins
-	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
 }
 
 // VstorageKeeper defines the expected interface for the vstorage module keeper
@@ -47,9 +47,6 @@ type VstorageKeeper interface {
 }
 
 type SwingSetKeeper interface {
-	GetBeansPerUnit(ctx sdk.Context) map[string]sdkmath.Uint
-	ChargeBeans(ctx sdk.Context, beansPerUnit map[string]sdkmath.Uint, addr sdk.AccAddress, beans sdkmath.Uint) error
 	IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error)
 	GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) SmartWalletState
-	ChargeForSmartWallet(ctx sdk.Context, beansPerUnit map[string]sdkmath.Uint, addr sdk.AccAddress) error
 }
