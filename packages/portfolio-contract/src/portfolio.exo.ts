@@ -59,6 +59,7 @@ import {
   AxelarChain,
   PortfolioPlannerAgent,
   SupportedChain,
+  UsdcTokenIds,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import {
@@ -66,6 +67,7 @@ import {
   type TargetAllocation as EIP712Allocation,
   type YmaxFullDomain,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { chainOf } from '@agoric/portfolio-api/src/places.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { MapStore } from '@agoric/store';
 import type { TimerService, TimestampRecord } from '@agoric/time';
@@ -467,6 +469,7 @@ export const preparePortfolioKit = (
     portfoliosNode,
     marshaller,
     usdcBrand,
+    agoricUsdcDenom,
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
@@ -505,6 +508,7 @@ export const preparePortfolioKit = (
     portfoliosNode: ERemote<StorageNode>;
     marshaller: ERemote<EMarshaller>;
     usdcBrand: Brand<'nat'>;
+    agoricUsdcDenom?: string;
     eip155ChainIdToAxelarChain: {
       [chainId in `${number | bigint}`]?: AxelarChain;
     };
@@ -790,9 +794,33 @@ export const preparePortfolioKit = (
           }
           const observations = verifiedObservations?.observations;
           const { permissions } = delegation;
+          const vetPlan = () =>
+            vetAllocationPlan(
+              permissions,
+              targetAllocation,
+              plan,
+              observations,
+              {
+                getUsdcTokenId: account =>
+                  account === '@agoric'
+                    ? agoricUsdcDenom
+                    : account === '@noble'
+                      ? UsdcTokenIds.mainnet.noble
+                      : contracts[chainOf(account) as AxelarChain]?.usdc,
+                getVaultAddress: src =>
+                  contracts[chainOf(src) as AxelarChain]?.[src],
+                hasMinimumRedemptionContracts: src => {
+                  const chainContracts = contracts[chainOf(src) as AxelarChain];
+                  return !!(
+                    chainContracts?.morphoBundler3 &&
+                    chainContracts.morphoGeneralAdapter1
+                  );
+                },
+              },
+            );
           // Pre-signed plans can be checked completely before assigning a flow.
           // Requests for a planner-supplied plan retain the existing lifecycle.
-          let vettedCommit: boolean | undefined;
+          let vettedPlan: ReturnType<typeof vetAllocationPlan> | undefined;
           if (plan && observations) {
             const currentBalancePlaces = harden([
               ...[...this.state.accounts.keys()].map(
@@ -801,13 +829,9 @@ export const preparePortfolioKit = (
               ...this.state.positions.keys(),
             ]);
             vetObservationPlaces(currentBalancePlaces, plan, observations);
-            vettedCommit = vetAllocationPlan(
-              permissions,
-              targetAllocation,
-              plan,
-              observations,
-            );
+            vettedPlan = vetPlan();
           }
+          const { boundSteps } = vettedPlan ?? {};
 
           // Check and reserve synchronously, after any observation verification.
           insistLatestFlowFinished(this.state);
@@ -825,18 +849,19 @@ export const preparePortfolioKit = (
           const startedFlow = manager.startFlow(flowDetail);
           // Rely on platform-level unhandled Vow reporting rather than ad-hoc
           // contract logging. See https://github.com/Agoric/agoric-sdk/issues/10576
-          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
+          void executePlan(
+            inertSeat,
+            {},
+            this.facets,
+            undefined,
+            startedFlow,
+            undefined,
+            boundSteps && { boundSteps },
+          );
 
           const { flowId } = startedFlow;
           try {
-            const commitNow =
-              vettedCommit ??
-              vetAllocationPlan(
-                permissions,
-                targetAllocation,
-                plan,
-                observations,
-              );
+            const { commitNow } = vettedPlan ?? vetPlan();
             if (commitNow) {
               const resultingPolicyVersion =
                 manager.updateTargetAllocation(targetAllocation);
