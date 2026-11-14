@@ -213,15 +213,24 @@ export const vetObservationPlaces = (
     }
   }
 
-  const observed = new Set(
-    keys(observations.balances) as PortfolioBalancePlaceRef[],
+  const holdings = observations.holdings ?? [];
+  const missing = [...expected].filter(
+    place => !hasObservedBalance(place, observations),
   );
-  const missing = [...expected].filter(place => !observed.has(place));
   missing.length === 0 || Fail`missing balance observation for ${q(missing)}`;
-  // Nonzero extras would inflate the portfolio total used by mandate checks.
-  const extra = [...observed].filter(
-    place => !expected.has(place) && observations.balances[place] !== 0n,
-  );
+  // Do not omit raw quantities or unknown valuations from the evidence check.
+  const nonempty = new Set<PortfolioBalancePlaceRef>([
+    ...entries(observations.balances)
+      .filter(([, balance]) => balance !== 0n)
+      .map(([place]) => place as PortfolioBalancePlaceRef),
+    ...holdings
+      .filter(
+        ({ amount, valueUusd }) =>
+          amount !== 0n || (valueUusd !== undefined && valueUusd !== 0n),
+      )
+      .map(({ place }) => place),
+  ]);
+  const extra = [...nonempty].filter(place => !expected.has(place));
   extra.length === 0 || Fail`unexpected balance observation for ${q(extra)}`;
 };
 harden(vetObservationPlaces);

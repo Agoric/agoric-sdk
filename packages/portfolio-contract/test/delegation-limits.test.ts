@@ -1,6 +1,7 @@
 /** @file Tests for delegated portfolio mandates and plan evidence. */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { Address as EvmAddress } from 'abitype';
 import { makeIssuerKit, type NatValue } from '@agoric/ertp';
 import { fc, testProp } from '@fast-check/ava';
 import type {
@@ -10,20 +11,75 @@ import type {
   PlanObservations,
   PortfolioBalancePlaceRef,
   TargetAllocation,
+  TypedHoldingDetail,
   WithdrawParams,
 } from '@agoric/portfolio-api';
 import { chainOf, isInstrumentId } from '@agoric/portfolio-api/src/places.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
-  vetAllocationPlan,
   vetObservationPlaces,
+  vetAllocationPlan,
   vetPlanAllocation,
 } from '../src/delegation-limits.ts';
 import type { MovementDesc } from '../src/type-guards-steps.ts';
 import { makeSchedule } from '../src/schedule-order.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
+
+const holdingTokens = {
+  vault: `0x${'1'.repeat(40)}`,
+  usdc: `0x${'2'.repeat(40)}`,
+  reward: `0x${'3'.repeat(40)}`,
+  otherVault: `0x${'4'.repeat(40)}`,
+} as const;
+
+const makeHolding = (
+  detail: Omit<
+    Extract<TypedHoldingDetail, { tokenId: `0x${string}` }>,
+    'tokenId'
+  >,
+) => ({
+  ...detail,
+  tokenId:
+    detail.kind === 'shares'
+      ? holdingTokens.vault
+      : detail.kind === 'claimable-reward'
+        ? holdingTokens.reward
+        : holdingTokens.usdc,
+});
+
+const makeHoldingObservations = (
+  holdings: TypedHoldingDetail[],
+  instrumentTvls: PlanObservations['instrumentTvls'] = {},
+): PlanObservations => ({ balances: {}, holdings, instrumentTvls });
+
+const makeMaximumWithdrawalCase = ({
+  shareQuantity = 50n,
+  valueUusd = 100_000_000n,
+  minimumProceeds = 0n,
+} = {}) => {
+  const instrument = 'ERC4626_morphoGauntletUsdcRwa_Ethereum' as const;
+  const shares = makeHolding({
+    place: instrument,
+    kind: 'shares',
+    amount: shareQuantity,
+    valueUusd,
+  });
+  const observations = makeHoldingObservations([shares]);
+  const movement: MovementDesc = {
+    src: instrument,
+    dest: '@Ethereum',
+    amount: { brand: USDC, value: minimumProceeds },
+    withdraw: { max: true },
+  };
+  const checkAllocation = (
+    target: TargetAllocation,
+    plan: FundsFlowPlan = { flow: [movement] },
+    evidence = observations,
+  ) => vetPlanAllocation(target, plan, evidence, () => holdingTokens.usdc);
+  return { instrument, shares, observations, movement, checkAllocation };
+};
 
 const staticObservations = harden({
   balances: {
@@ -700,6 +756,34 @@ test('balance observations report all missing places together', t => {
       ),
     { message: /missing balance observation.*Aave_Base.*Compound_Base/ },
   );
+});
+
+test('Observed holdings account for every location used by the plan', t => {
+  const { instrument, shares, movement } = makeMaximumWithdrawalCase();
+  const cash = makeHolding({
+    place: '@Ethereum',
+    kind: 'token',
+    amount: 0n,
+    valueUusd: 0n,
+  });
+  const plan = { flow: [movement] };
+  const check = (holdings: TypedHoldingDetail[]) =>
+    vetObservationPlaces([instrument], plan, makeHoldingObservations(holdings));
+  t.notThrows(() => check([shares, cash]));
+  t.throws(() => check([shares]), {
+    message: /missing balance observation.*@Ethereum/,
+  });
+  t.throws(() => check([cash]), {
+    message: /missing balance observation.*ERC4626_morpho/,
+  });
+  const extra = { ...cash, place: '@Base' } as const;
+  t.notThrows(() => check([shares, cash, extra]));
+  t.notThrows(() => check([shares, cash, { ...extra, valueUusd: undefined }]));
+  for (const change of [{ amount: 1n }, { valueUusd: 1n }]) {
+    t.throws(() => check([shares, cash, { ...extra, ...change }]), {
+      message: 'unexpected balance observation for ["@Base"]',
+    });
+  }
 });
 
 test('balance observations report all nonzero extra places together', t => {
