@@ -1640,9 +1640,154 @@ const additiveWithdrawCases: [string, WithdrawParams | undefined][] = [
   ['empty', {}],
   ['false max', { max: false }],
   ['true max', { max: true }],
-  ['source quantity', { amountOfShares: 10n ** 24n }],
-  ['source quantity minimum', { max: true, amountOfShares: 10n ** 24n }],
 ];
+
+test('A maximum withdrawal removes share exposure, not just its proceeds minimum', t => {
+  const { checkAllocation } = makeMaximumWithdrawalCase({
+    valueUusd: 100_000_000n,
+    minimumProceeds: 0n,
+  });
+  t.notThrows(() => checkAllocation({ Aave_Ethereum: 100n }));
+});
+
+test('Redeeming some shares leaves their remaining value at the source', t => {
+  const { movement, checkAllocation } = makeMaximumWithdrawalCase({
+    shareQuantity: 50n,
+    valueUusd: 100_000_000n,
+  });
+  t.throws(
+    () =>
+      checkAllocation(
+        { Aave_Ethereum: 100n },
+        { flow: [{ ...movement, withdraw: { amountOfShares: 20n } }] },
+      ),
+    { message: /plan final balance exceeds target allocation.*60000000/ },
+  );
+});
+
+test('A full exit can be followed by investing cash already in the account', t => {
+  const { shares, movement, checkAllocation } = makeMaximumWithdrawalCase({
+    valueUusd: 100_000_000n,
+    minimumProceeds: 0n,
+  });
+  const cash = 20_000_000n;
+  const withCash = makeHoldingObservations([
+    shares,
+    makeHolding({
+      place: '@Ethereum',
+      kind: 'token',
+      amount: cash,
+      valueUusd: cash,
+    }),
+    makeHolding({
+      place: 'Aave_Ethereum',
+      kind: 'principal',
+      amount: 0n,
+      valueUusd: 0n,
+    }),
+  ]);
+  const plan: FundsFlowPlan = {
+    flow: [
+      movement,
+      {
+        src: '@Ethereum',
+        dest: 'Aave_Ethereum',
+        amount: { brand: USDC, value: cash },
+      },
+    ],
+  };
+  // The investment uses existing USDC, without relying on redemption proceeds.
+  t.notThrows(() => checkAllocation({ Aave_Ethereum: 100n }, plan, withCash));
+});
+
+test('Cash movements spend observed USDC, not other holdings’ USD value', t => {
+  const cash = makeHolding({
+    place: '@Ethereum',
+    kind: 'token',
+    amount: 20_000_000n,
+    valueUusd: 20_000_000n,
+  });
+  const reward: TypedHoldingDetail = {
+    ...makeHolding({
+      place: '@Ethereum',
+      kind: 'claimed-reward',
+      amount: 100_000_000n,
+      valueUusd: 100_000_000n,
+    }),
+    tokenId: holdingTokens.reward,
+  };
+  const transfer = (value: bigint): MovementDesc => ({
+    src: '@Ethereum',
+    dest: '@Arbitrum',
+    amount: { brand: USDC, value },
+  });
+  const check = (
+    plan: FundsFlowPlan,
+    cashHolding = cash,
+    getUsdcTokenId = (): string | undefined => holdingTokens.usdc,
+  ) =>
+    vetPlanAllocation(
+      {},
+      plan,
+      makeHoldingObservations([cashHolding, reward]),
+      getUsdcTokenId,
+    );
+
+  t.notThrows(() => check({ flow: [transfer(20_000_000n)] }));
+  t.throws(() => check({ flow: [transfer(21_000_000n)] }), {
+    message: /unfunded USDC movement.*20000000.*21000000/,
+  });
+  // Both sequential and concurrent transfers consume the same raw cash budget.
+  for (const order of [undefined, []]) {
+    t.throws(
+      () =>
+        check({ flow: [transfer(15_000_000n), transfer(15_000_000n)], order }),
+      { message: /unfunded USDC movement/ },
+    );
+  }
+  t.throws(
+    () =>
+      check(
+        { flow: [transfer(1n)] },
+        { ...cash, tokenId: holdingTokens.otherVault },
+      ),
+    { message: /requires one observed USDC holding/ },
+  );
+  t.throws(
+    () => check({ flow: [transfer(1n)] }, { ...cash, valueUusd: 19_000_000n }),
+    { message: /requires one-for-one USDC valuation/ },
+  );
+  t.throws(() => check({ flow: [transfer(1n)] }, cash, () => undefined), {
+    message: /no configured USDC token/,
+  });
+});
+
+for (const [src, tokenId] of [
+  ['@noble', 'uusdc'],
+  ['@agoric', 'ibc/AGORIC_USDC_DENOM'],
+] as const) {
+  test(`${src} cash movements spend observed USDC`, t => {
+    const observations = makeHoldingObservations([
+      {
+        place: src,
+        kind: 'token',
+        tokenId,
+        amount: 20_000_000n,
+        valueUusd: 20_000_000n,
+      },
+    ]);
+    const plan: FundsFlowPlan = {
+      flow: [
+        {
+          src,
+          dest: '@Ethereum',
+          amount: { brand: USDC, value: 10_000_000n },
+        },
+      ],
+    };
+    t.notThrows(() => vetPlanAllocation({}, plan, observations, () => tokenId));
+  });
+}
 
 for (const [label, withdraw] of additiveWithdrawCases) {
   test(`withdraw is additive to exact-amount allocation validation: ${label}`, t => {
