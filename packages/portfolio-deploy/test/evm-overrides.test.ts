@@ -213,7 +213,13 @@ test('ymax0 contract addresses match golden snapshot', async t => {
     'tokenMessenger',
     'tokenMessengerV2',
     'oneInchRouter',
+    'morphoBundler3',
+    'morphoGeneralAdapter1',
   ];
+  for (const chain of ['Ethereum', 'Optimism', 'Arbitrum', 'Base']) {
+    t.truthy(golden.contracts[chain].morphoBundler3);
+    t.truthy(golden.contracts[chain].morphoGeneralAdapter1);
+  }
   checkContracts(t, golden, computed, shareFields, 'ymax0');
 });
 
@@ -233,7 +239,13 @@ test('ymax1 contract addresses match golden snapshot', async t => {
     'remoteAccountFactory',
     'remoteAccountImplementation',
     'remoteAccountRouter',
+    'morphoBundler3',
+    'morphoGeneralAdapter1',
   ];
+  for (const chain of ['Ethereum', 'Optimism', 'Arbitrum', 'Base']) {
+    t.truthy(golden.contracts[chain].morphoBundler3);
+    t.truthy(golden.contracts[chain].morphoGeneralAdapter1);
+  }
   checkContracts(t, golden, computed, instanceFields, 'ymax1');
 });
 
