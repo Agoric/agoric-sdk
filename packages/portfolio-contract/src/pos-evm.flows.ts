@@ -55,7 +55,10 @@ import {
   tokenMessengerABI,
   tokenMessengerV2ABI,
 } from './interfaces/token-messenger.ts';
-import { universalRouterABI } from './interfaces/universal-router.ts';
+import {
+  universalRouterABI,
+  balanceCheckErc20Schema,
+} from './interfaces/universal-router.ts';
 import { walletHelperABI } from './interfaces/wallet-helper.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -503,8 +506,6 @@ export const swapRewardToStable = async (
 };
 harden(swapRewardToStable);
 
-const BALANCE_CHECK_ERC20 = '0x0e' as const;
-
 const addMinimumBalanceCheck = (
   session: ReturnType<typeof makeEvmAbiCallBatch>,
   ctx: EVMContext,
@@ -518,15 +519,12 @@ const addMinimumBalanceCheck = (
     Fail`Universal Router not configured for minimum withdrawal`;
   const universalRouter = session.makeContract(router, universalRouterABI);
   // No allow-revert bit: the whole batch fails.
-  universalRouter.execute(BALANCE_CHECK_ERC20, [
-    encodeAbiParameters(
-      [
-        { type: 'address', name: 'owner' },
-        { type: 'address', name: 'token' },
-        { type: 'uint256', name: 'minBalance' },
-      ],
-      [owner, token, minimum],
-    ),
+  universalRouter.execute(balanceCheckErc20Schema.commandByte, [
+    encodeAbiParameters(balanceCheckErc20Schema.inputs, [
+      owner,
+      token,
+      minimum,
+    ]),
   ]);
 };
 
