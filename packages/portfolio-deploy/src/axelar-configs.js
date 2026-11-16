@@ -646,6 +646,8 @@ const oneInchRouter = '0x111111125421cA6dc452d289314280a0f8842A65';
 const mainnetContracts = {
   Avalanche: {
     aavePool: aaveAddresses.mainnet.Avalanche,
+    morphoBundler3: '0x708e04d46D82d8f1D0A70a3Aa0a780F27fcb3F92',
+    morphoGeneralAdapter1: '0x8BcC016Ab7334A16DCcbEE9AB3FD6E52fEb29E96',
     compound: '0x', // TODO
     compoundRewardsController: '0x', // TODO
     depositFactory: depositFactoryAddresses.mainnet.Avalanche,
@@ -659,6 +661,7 @@ const mainnetContracts = {
     permit2: permit2Addresses.mainnet.Avalanche,
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
     tokenMessengerV2: mainnetTokenMessengerV2.Avalanche.Address,
+    universalRouter: '0x4Dae2f939ACf50408e13d58534Ff8c2776d45265',
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
     Beefy_re7_Avalanche: beefyVaultAddresses.re7.mainnet.Avalanche,

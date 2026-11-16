@@ -1363,7 +1363,10 @@
       "usdc": "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
       "walletHelper": "0x",
       "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
-      "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537"
+      "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537",
+      "morphoBundler3": "0x708e04d46D82d8f1D0A70a3Aa0a780F27fcb3F92",
+      "morphoGeneralAdapter1": "0x8BcC016Ab7334A16DCcbEE9AB3FD6E52fEb29E96",
+      "universalRouter": "0x4Dae2f939ACf50408e13d58534Ff8c2776d45265"
     },
     "Base": {
       "Beefy_morphoSeamlessUsdc_Base": "0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A",
