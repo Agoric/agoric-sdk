@@ -20,7 +20,6 @@ import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   decodeFunctionData,
   decodeAbiParameters,
-  parseAbiParameters,
   getAbiItem,
   getAddress,
   toFunctionSelector,
@@ -56,7 +55,10 @@ import {
   generalAdapter1ABI,
 } from '../src/interfaces/morpho-bundler3.ts';
 import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
-import { universalRouterABI } from '../src/interfaces/universal-router.ts';
+import {
+  universalRouterABI,
+  balanceCheckErc20Schema,
+} from '../src/interfaces/universal-router.ts';
 import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
@@ -346,6 +348,7 @@ const makeFullExitCase = async (
     });
   return {
     kit,
+    remoteAddress: accountInfo.remoteAddress,
     log: offer.log,
     txResolver,
     resolverService,
@@ -5118,7 +5121,8 @@ const principalFullExits = {
 };
 for (const [src, expectations] of typedEntries(principalFullExits)) {
   test(`${src} guarded full withdrawal batches balance check before max`, async t => {
-    const { executeExit, txResolver, log } = await makeFullExitCase(src);
+    const { executeExit, txResolver, log, remoteAddress } =
+      await makeFullExitCase(src);
     const done = executeExit({ observedShares: 100n, minimumProceeds: 99n });
     await txResolver.drainPending();
     await done;
@@ -5141,8 +5145,13 @@ for (const [src, expectations] of typedEntries(principalFullExits)) {
     const [commands, inputs] = check.args;
     t.is(commands, '0x0e', 'BALANCE_CHECK_ERC20');
     const [owner, token, minimum] = decodeAbiParameters(
-      parseAbiParameters('address, address, uint256'),
+      balanceCheckErc20Schema.inputs,
       inputs[0],
+    );
+    t.is(
+      owner,
+      getAddress(remoteAddress),
+      'balance check reads the portfolio account',
     );
     t.is(token.toLowerCase(), expectations.token.toLowerCase());
     t.is(minimum, 99n);
