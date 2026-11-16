@@ -68,6 +68,7 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail, q } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
+import { getPrincipalWithdrawalProtocol } from './principal-withdrawal.ts';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type {
@@ -215,6 +216,13 @@ export type ProtocolDetail<
   withdraw: (
     ctx: CTX,
     amount: NatAmount,
+    dest: AccountInfoFor[C],
+    ...optsArgs: [OrchestrationOptions?]
+  ) => Promise<void>;
+  /** Withdraw all principal, atomically enforcing a minimum payout. */
+  withdrawMax?: (
+    ctx: CTX,
+    minimumProceeds: bigint,
     dest: AccountInfoFor[C],
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
@@ -1145,6 +1153,17 @@ const stepFlow = async (
             opts,
           );
           return harden({ srcPos: pos });
+        } else if (boundStep?.kind === 'withdrawMax') {
+          if (boundStep.amount === 0n) return harden({});
+          pImpl.withdrawMax ||
+            Fail`${q(how)} does not support maximum withdrawal`;
+          await pImpl.withdrawMax!(
+            evmCtx,
+            boundStep.minimumProceeds ?? 0n,
+            gInfo,
+            opts,
+          );
+          return harden({ srcPos: pos });
         } else {
           await pImpl.withdraw(evmCtx, amount, gInfo, opts);
           return harden({ srcPos: pos });
@@ -1163,8 +1182,12 @@ const stepFlow = async (
 
   for (const [i, move] of moves.entries()) {
     const boundStep = options?.boundSteps?.[i];
-    if (boundStep && boundStep.kind !== 'redeemShares') {
-      throw Fail`unsupported bound step ${q(boundStep.kind)} at movement ${q(i)}`;
+    if (
+      boundStep &&
+      boundStep?.kind !== 'redeemShares' &&
+      boundStep?.kind !== 'withdrawMax'
+    ) {
+      throw Fail`unsupported bound step ${q((boundStep as any).kind)} at movement ${q(i)}`;
     }
     if (boundStep?.kind === 'redeemShares') {
       (move.src === boundStep.src &&
@@ -1172,7 +1195,8 @@ const stepFlow = async (
         (move.withdraw?.max === true ||
           move.withdraw?.amountOfShares === boundStep.shares) &&
         move.amount.value === (boundStep.minimumProceeds ?? 0n) &&
-        !move.claimRewards) ||
+        !move.claimRewards &&
+        !move.swap) ||
         Fail`share withdrawal evidence does not match movement ${q(i)}`;
       sameEvmAddress(
         boundStep.vaultAddress,
@@ -1180,12 +1204,34 @@ const stepFlow = async (
       ) ||
         Fail`share withdrawal vault no longer matches configuration at ${q(move.src)}`;
     }
+    if (boundStep?.kind === 'withdrawMax') {
+      (move.src === boundStep.src &&
+        move.dest === `@${chainOf(boundStep.src)}` &&
+        move.withdraw?.max === true &&
+        move.withdraw.amountOfShares === undefined &&
+        move.amount.value === (boundStep.minimumProceeds ?? 0n) &&
+        (move.amount.value === 0n || boundStep.amount > 0n) &&
+        !move.claimRewards &&
+        !move.swap) ||
+        Fail`principal withdrawal evidence does not match movement ${q(i)}`;
+      const protocol = getPrincipalWithdrawalProtocol(boundStep.src);
+      const addresses = ctx.contracts[chainOf(boundStep.src) as AxelarChain];
+      (protocol &&
+        sameEvmAddress(
+          boundStep.protocolAddress,
+          addresses?.[protocol.addressKey],
+        ) &&
+        sameEvmAddress(boundStep.tokenAddress, addresses?.usdc)) ||
+        Fail`principal withdrawal configuration no longer matches at ${q(move.src)}`;
+    }
     const isClaimRewards =
       getAssetPlaceRefKind(move.src) === 'pos' && !!move.claimRewards;
     move.amount.value > 0n ||
       isClaimRewards ||
-      boundStep?.kind === 'redeemShares' ||
+      !!boundStep ||
       Fail`movement amount must be positive in ${q(move)}`;
+    move.amount.value >= 0n ||
+      Fail`movement amount must be non-negative in ${q(move)}`;
     const queuedStep = getQueuedStep(move);
     if (queuedStep) {
       const maybeChain =
@@ -1459,11 +1505,19 @@ const stepFlow = async (
       }
 
       case 'Compound':
-        todo.push(makeEVMProtocolStep(way as Way & { how: 'Compound' }, move));
+        todo.push(
+          makeEVMProtocolStep(
+            way as Way & { how: 'Compound' },
+            move,
+            boundStep,
+          ),
+        );
         break;
 
       case 'Aave':
-        todo.push(makeEVMProtocolStep(way as Way & { how: 'Aave' }, move));
+        todo.push(
+          makeEVMProtocolStep(way as Way & { how: 'Aave' }, move, boundStep),
+        );
         break;
 
       case 'Beefy':

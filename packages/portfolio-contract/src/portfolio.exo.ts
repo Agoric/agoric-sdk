@@ -82,6 +82,10 @@ import { M } from '@endo/patterns';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address as EvmAddress } from 'abitype';
 import {
+  getPrincipalWithdrawalProtocol,
+  hasMinimumRedemptionContracts,
+} from './principal-withdrawal.ts';
+import {
   preparePortfolioDelegationKit,
   type PortfolioDelegationClient,
 } from './delegation.exo.ts';
@@ -807,14 +811,17 @@ export const preparePortfolioKit = (
                     : account === '@noble'
                       ? UsdcTokenIds.mainnet.noble
                       : contracts[chainOf(account) as AxelarChain]?.usdc,
+                getProtocolAddress: src => {
+                  const protocol = getPrincipalWithdrawalProtocol(src);
+                  const addressKey = protocol?.addressKey;
+                  if (!addressKey) return undefined;
+                  return contracts[chainOf(src) as AxelarChain]?.[addressKey];
+                },
                 getVaultAddress: src =>
                   contracts[chainOf(src) as AxelarChain]?.[src],
                 hasMinimumRedemptionContracts: src => {
                   const chainContracts = contracts[chainOf(src) as AxelarChain];
-                  return !!(
-                    chainContracts?.morphoBundler3 &&
-                    chainContracts.morphoGeneralAdapter1
-                  );
+                  return hasMinimumRedemptionContracts(src, chainContracts);
                 },
               },
             );

@@ -269,6 +269,7 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
       oneInchRouter: M.string(),
       morphoBundler3: M.string(),
       morphoGeneralAdapter1: M.string(),
+      universalRouter: M.string(),
     },
   );
 
@@ -334,6 +335,8 @@ export type EVMContractAddresses = {
   /** Morpho's atomic minimum-price redemption path. */
   morphoBundler3?: `0x${string}`;
   morphoGeneralAdapter1?: `0x${string}`;
+  /** Uniswap Universal Router supporting BALANCE_CHECK_ERC20. */
+  universalRouter?: `0x${string}`;
 } & Partial<BeefyContracts> &
   Partial<ERC4626Contracts>;
 
