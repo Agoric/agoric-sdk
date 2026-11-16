@@ -154,6 +154,12 @@ export interface MockLogEvent {
 export const mocks = (
   errs: Record<string, Error | Map<string, Error>> = {},
   give: ProposalType['openPortfolio']['give'] = {},
+  portfolioPowers: Partial<
+    Pick<
+      Parameters<typeof preparePortfolioKit>[1],
+      'verifyPortfolioObservations'
+    >
+  > = {},
 ) => {
   const throwIfErr = (key: string, name: string = '') => {
     let err = errs[key];
@@ -584,6 +590,7 @@ export const mocks = (
     eip155ChainIdToAxelarChain,
     contracts: contractsMock,
     walletBytecode: ctx1.walletBytecode,
+    ...portfolioPowers,
     ...(null as any),
   });
   const makePortfolioKitGuest = (opts?: { sourceAccountId?: AccountId }) =>
