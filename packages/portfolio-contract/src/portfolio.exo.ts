@@ -34,7 +34,6 @@ import {
   type FlowKey,
   type FlowStatus,
   type FundsFlowPlan,
-  type FundsFlow,
   type PlanObservations,
   type PortfolioAgentGrantee,
   type PortfolioAgentStatus,
@@ -67,6 +66,7 @@ import {
   type TargetAllocation as EIP712Allocation,
   type YmaxFullDomain,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { SignedPortfolioObservations } from '@agoric/portfolio-api/src/observation-messages.js';
 import { chainOf } from '@agoric/portfolio-api/src/places.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { MapStore } from '@agoric/store';
@@ -89,11 +89,14 @@ import {
   preparePortfolioDelegationKit,
   type PortfolioDelegationClient,
 } from './delegation.exo.ts';
+import type { FlowPlanResult, ResolvedFlowPlan } from './execution-plan.ts';
 import { vetFlowPlanPlaces } from './flow-plan-places.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
+  bindObservedFlowPlan,
+  vetNoNewPositions,
   needsObservations,
   vetAllocationPlan,
   vetObservationPlaces,
@@ -197,8 +200,15 @@ type MaybeResolvedVowKit<T> =
   | (Omit<VowKit<T>, 'resolver'> & { resolver?: undefined });
 
 type RunningFlowDetail = {
-  sync: MaybeResolvedVowKit<FundsFlow>;
+  sync: MaybeResolvedVowKit<FlowPlanResult>;
 } & FlowDetail;
+
+const flowPlanContext = (detail: FlowDetail, isEvmPortfolio: boolean) => ({
+  flowType: detail.type,
+  isEvmPortfolio,
+  ...(detail.type === 'deposit' && { fromChain: detail.fromChain }),
+  ...(detail.type === 'withdraw' && { toChain: detail.toChain }),
+});
 
 type PendingOwnerTransfer = PortfolioPendingOwnerTransfer & {
   /** settles the `TransferOwnershipToEVM` offer result */
@@ -485,7 +495,7 @@ export const preparePortfolioKit = (
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
       flowDetail?: FlowDetail,
-      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
+      startedFlow?: { stepsP: Vow<FlowPlanResult>; flowId: number },
       config?: FlowConfig,
       options?: unknown,
     ) => Vow<unknown>;
@@ -841,7 +851,6 @@ export const preparePortfolioKit = (
             vetObservationPlaces(currentBalancePlaces, plan, observations);
             vettedPlan = vetPlan();
           }
-          const { boundSteps } = vettedPlan ?? {};
 
           // Check and reserve synchronously, after any observation verification.
           insistLatestFlowFinished(this.state);
@@ -859,15 +868,7 @@ export const preparePortfolioKit = (
           const startedFlow = manager.startFlow(flowDetail);
           // Rely on platform-level unhandled Vow reporting rather than ad-hoc
           // contract logging. See https://github.com/Agoric/agoric-sdk/issues/10576
-          void executePlan(
-            inertSeat,
-            {},
-            this.facets,
-            undefined,
-            startedFlow,
-            undefined,
-            boundSteps && { boundSteps },
-          );
+          void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
           try {
@@ -881,7 +882,15 @@ export const preparePortfolioKit = (
               );
             }
             if (plan) {
-              this.facets.planner.resolveFlowPlan(flowId, plan);
+              this.facets.manager.resolveExecutionPlan(
+                flowId,
+                harden({
+                  plan,
+                  ...(vettedPlan?.boundSteps && {
+                    boundSteps: vettedPlan.boundSteps,
+                  }),
+                }),
+              );
             }
           } catch (reason) {
             const message =
@@ -1166,7 +1175,92 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
         },
         resolveFlowPlan(flowId: number, steps: MovementDesc[] | FundsFlowPlan) {
-          this.facets.manager.resolveExecutionPlan(flowId, steps);
+          this.facets.manager.resolveExecutionPlan(
+            flowId,
+            harden({ plan: steps }),
+          );
+        },
+        /** Prompt verification; re-read policy and flow authority after it settles. */
+        resolveObservedFlowPlan(
+          flowId: number,
+          plan: FundsFlowPlan,
+          signedObservations: SignedPortfolioObservations,
+          policyVersion: number,
+          rebalanceCount: number,
+        ) {
+          return vowTools.asVow(async () => {
+            mustMatch(plan, offerArgsShapes.plan);
+            const verified =
+              await verifyPortfolioObservations(signedObservations);
+            this.facets.reader.checkVersion(policyVersion, rebalanceCount);
+            verified.portfolioId === this.state.portfolioId ||
+              Fail`observations are for another portfolio`;
+            (verified.syncState.policyVersion === policyVersion &&
+              verified.syncState.rebalanceCount === rebalanceCount) ||
+              Fail`observations sync state does not match`;
+            const detail = this.state.flowsRunning.get(flowId);
+            detail.sync.resolver || Fail`flow has already been resolved`;
+            vetFlowPlanPlaces(
+              flowPlanContext(detail, !!this.state.sourceAccountId),
+              plan,
+            );
+            const pending =
+              detail.type === 'rebalance' &&
+              detail.initiatingOperation?.type === 'setTargetAllocation' &&
+              detail.initiatingOperation.status === 'pending'
+                ? detail.initiatingOperation.targetAllocation
+                : undefined;
+            const target = pending ?? this.state.targetAllocation ?? {};
+            const permissions = detail.agent
+              ? (this.state.delegations?.get(
+                  Number(stripPrefix('agent', detail.agent)),
+                ).permissions ?? Fail`missing flow mandate`)
+              : { allocation: true };
+            vetObservationPlaces(
+              harden([
+                ...[...this.state.accounts.keys()].map(
+                  chain => `@${chain}` as const,
+                ),
+                ...this.state.positions.keys(),
+              ]),
+              plan,
+              verified.observations,
+            );
+            const ownerTransfer =
+              !detail.agent &&
+              (detail.type === 'deposit' || detail.type === 'withdraw');
+            // Owner funding/payout places are outside allocation-plan accounting.
+            // Preserve the ordinary privileged-planner checks while deriving only
+            // the observation-bound operations from the authenticated evidence.
+            if (ownerTransfer) vetNoNewPositions(target, plan);
+            const boundSteps = ownerTransfer
+              ? bindObservedFlowPlan(
+                  plan,
+                  verified.observations,
+                  planBindingAddresses,
+                )
+              : vetAllocationPlan(
+                  permissions,
+                  target,
+                  plan,
+                  verified.observations,
+                  planBindingAddresses,
+                ).boundSteps;
+            const accepted = this.facets.planner.validateAndCommitPlanPolicy(
+              flowId,
+              verified.observations,
+              policyVersion,
+              rebalanceCount,
+            );
+            this.facets.planner.submitVersion(
+              accepted.policyVersion,
+              accepted.rebalanceCount,
+            );
+            this.facets.manager.resolveExecutionPlan(
+              flowId,
+              harden({ plan, ...(boundSteps && { boundSteps }) }),
+            );
+          });
         },
         rejectFlowPlan(flowId: number, reason: string) {
           const { flowsRunning } = this.state;
@@ -1358,7 +1452,9 @@ export const preparePortfolioKit = (
             this.facets.reporter.publishStatus();
           }
         },
-        resolveExecutionPlan(flowId: number, steps: MovementDesc[] | FundsFlowPlan) {
+        /** Only trusted contract code may associate derived bindings with a plan. */
+        resolveExecutionPlan(flowId: number, resolved: ResolvedFlowPlan) {
+          const { plan: steps } = resolved;
           const { flowsRunning } = this.state;
           const detail = flowsRunning.get(flowId);
           const { resolver, ...sync } = detail.sync;
@@ -1367,14 +1463,7 @@ export const preparePortfolioKit = (
           }
           try {
             vetFlowPlanPlaces(
-              {
-                flowType: detail.type,
-                isEvmPortfolio: !!this.state.sourceAccountId,
-                ...(detail.type === 'deposit' && {
-                  fromChain: detail.fromChain,
-                }),
-                ...(detail.type === 'withdraw' && { toChain: detail.toChain }),
-              },
+              flowPlanContext(detail, !!this.state.sourceAccountId),
               steps,
             );
           } catch (reason) {
@@ -1384,15 +1473,11 @@ export const preparePortfolioKit = (
             this.facets.planner.rejectFlowPlan(flowId, message);
             throw reason;
           }
-          resolver.resolve(steps);
+          resolver.resolve(resolved);
           flowsRunning.set(flowId, { ...detail, sync });
           this.facets.reporter.publishStatus();
         },
-        /**
-         * Start a flow of asset movements. Reserves a flowId and records updates vstorage.
-         *
-         * NB: `flowId` is a counter, not the key in vstorage.
-         */
+        /** Reserve a flowId and publish its durable plan wait. */
         startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
           const {
             nextFlowId: flowId,
@@ -1400,9 +1485,9 @@ export const preparePortfolioKit = (
             accountsPending,
           } = this.state;
           this.state.nextFlowId = flowId + 1;
-          let sync: MaybeResolvedVowKit<MovementDesc[]> = vowTools.makeVowKit();
+          let sync: MaybeResolvedVowKit<FlowPlanResult> = vowTools.makeVowKit();
           if (steps) {
-            sync.resolver.resolve(steps);
+            sync.resolver.resolve(harden({ plan: steps }));
             sync = { ...sync, resolver: undefined };
           }
           flowsRunning.init(flowId, harden({ sync, ...detail }));

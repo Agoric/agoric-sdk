@@ -2,7 +2,9 @@
  * @file Planner exo for off-chain planning services to submit portfolio rebalancing plans.
  * @see {@link preparePlanner}
  */
-import { makeTracer } from '@agoric/internal';
+import { SignedEIP712DataShape } from '@agoric/orchestration';
+import type { SignedPortfolioObservations } from '@agoric/portfolio-api/src/observation-messages.js';
+import { makeTracer, type TypedPattern } from '@agoric/internal';
 import {
   PortfolioDelegatedClaimRewardsParamsShape,
   PortfolioDelegatedRebalanceParamsShape,
@@ -14,6 +16,7 @@ import {
 } from '@agoric/portfolio-api';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
+import { VowShape } from '@agoric/vow';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import { vetNoNewPositions } from './delegation-limits.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
@@ -60,6 +63,15 @@ export const preparePlanner = (
   const rebalanceCountShape = M.number();
 
   const PlannerI = M.interface('Planner', {
+    resolveObservedPlan: M.call(
+      portfolioIdShape,
+      flowIdShape,
+      planShape,
+      SignedEIP712DataShape as TypedPattern<SignedPortfolioObservations>,
+      policyVersionShape,
+    )
+      .optional(rebalanceCountShape)
+      .returns(VowShape),
     resolvePlan: M.call(
       portfolioIdShape,
       flowIdShape,
@@ -88,6 +100,22 @@ export const preparePlanner = (
     PlannerI,
     () => ({ etc: undefined }),
     {
+      resolveObservedPlan(
+        portfolioId: number,
+        flowId: number,
+        plan: FundsFlowPlan,
+        signedObservations: SignedPortfolioObservations,
+        policyVersion: number,
+        rebalanceCount = 0,
+      ) {
+        return getPortfolioPlanner(portfolioId).resolveObservedFlowPlan(
+          flowId,
+          plan,
+          signedObservations,
+          policyVersion,
+          rebalanceCount,
+        );
+      },
       resolvePlan(
         portfolioId: number,
         flowId: number,

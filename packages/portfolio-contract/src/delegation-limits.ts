@@ -235,6 +235,13 @@ type GetProtocolAddress = (src: InstrumentId) => EvmAddress | undefined;
 
 type GetVaultAddress = (src: ERC4626InstrumentId) => EvmAddress | undefined;
 
+type BindingAddresses = {
+  getUsdcTokenId?: GetUsdcTokenId;
+  getProtocolAddress?: GetProtocolAddress;
+  getVaultAddress?: GetVaultAddress;
+  hasMinimumRedemptionContracts?: (src: InstrumentId) => boolean;
+};
+
 /**
  * Decode once so every balance check uses the same operation semantics.
  * Legacy balance observations support exact-amount movements only.
@@ -379,13 +386,8 @@ const MAX_MINIMUM_BEARING_SHARES = 10n ** 27n;
 
 /** Derive execution instructions from the same operations used by allocation checks. */
 const bindSteps = (
-  plan: DecodedPlan,
-  addresses: {
-    getUsdcTokenId?: GetUsdcTokenId;
-    getProtocolAddress?: GetProtocolAddress;
-    getVaultAddress?: GetVaultAddress;
-    hasMinimumRedemptionContracts?: (src: InstrumentId) => boolean;
-  },
+  steps: readonly (PlanOperation | undefined)[],
+  addresses: BindingAddresses,
 ): Partial<Record<number, BoundStep>> => {
   const {
     getVaultAddress,
@@ -394,7 +396,8 @@ const bindSteps = (
     getUsdcTokenId,
   } = addresses;
   const bound: Partial<Record<number, BoundStep>> = {};
-  for (const [step, movement] of plan.flow.entries()) {
+  for (const [step, movement] of steps.entries()) {
+    if (!movement) continue;
     switch (movement.kind) {
       case 'redeemShares': {
         const vaultAddress = getVaultAddress?.(movement.src);
@@ -452,6 +455,27 @@ const bindSteps = (
   return harden(bound);
 };
 harden(bindSteps);
+
+/**
+ * Derive bindings for an already authorized owner flow. Ordinary movements,
+ * including funding and payout endpoints, keep the privileged planner's existing
+ * admission rules. Allocation plans must instead use vetAllocationPlan.
+ */
+export const bindObservedFlowPlan = (
+  plan: FundsFlowPlan,
+  observations: PlanObservations,
+  addresses: BindingAddresses,
+): ReturnType<typeof bindSteps> => {
+  // Do not filter or reorder: bindings refer to the original plan's indices.
+  const steps = plan.flow.map(movement =>
+    movement.withdraw?.max === true ||
+    movement.withdraw?.amountOfShares !== undefined
+      ? decodePlan(harden({ flow: [movement] }), observations).flow[0]
+      : undefined,
+  );
+  return bindSteps(steps, addresses);
+};
+harden(bindObservedFlowPlan);
 
 /** An investment requires principal or shares; rewards alone do not cover it. */
 const hasObservedBalance = (
@@ -790,12 +814,7 @@ export const vetAllocationPlan = (
   targetAllocation: TargetAllocation,
   plan: FundsFlowPlan | undefined,
   observations: PlanObservations | undefined,
-  addresses: {
-    getUsdcTokenId?: GetUsdcTokenId;
-    getProtocolAddress?: GetProtocolAddress;
-    getVaultAddress?: GetVaultAddress;
-    hasMinimumRedemptionContracts?: (src: InstrumentId) => boolean;
-  } = {},
+  addresses: BindingAddresses = {},
 ): VettedAllocationPlan => {
   assertMandateForAllocation(permissions, targetAllocation);
   if (!plan) return harden({ commitNow: !needsObservations(permissions) });
@@ -808,7 +827,7 @@ export const vetAllocationPlan = (
     addresses.getUsdcTokenId,
   );
   assertMandateForPlanObservations(permissions, targetAllocation, observations);
-  const boundSteps = bindSteps(decodedPlan, addresses);
+  const boundSteps = bindSteps(decodedPlan.flow, addresses);
   return harden({
     commitNow: true,
     ...(keys(boundSteps).length && { boundSteps }),
