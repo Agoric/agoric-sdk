@@ -57,6 +57,8 @@ const sumPortions = (targetAllocation: TargetAllocation): bigint =>
 /**
  * Sum observed values by portfolio location, in micro-USD.
  * These values measure exposure; they do not establish spendable quantities.
+ * Rewards are excluded until their value can be accounted for. This also
+ * excludes rewards from the portfolio total used by maxVaultShareBps.
  */
 const sumValueUusdByPlace = (
   observations: PlanObservations,
@@ -73,17 +75,18 @@ const sumValueUusdByPlace = (
   }
   const result = new Map<PortfolioBalancePlaceRef, bigint>();
   const legacyBalances = new Map<string, bigint>();
-  for (const { place, valueUusd, balanceUsdc } of holdings) {
-    if (valueUusd === undefined) {
-      throw Fail`missing holding valuation for ${q(place)}`;
-    }
-    result.set(place, (result.get(place) ?? 0n) + valueUusd);
+  for (const { place, kind, valueUusd, balanceUsdc } of holdings) {
     if (balanceUsdc !== undefined) {
       legacyBalances.set(
         place,
         (legacyBalances.get(place) ?? 0n) + balanceUsdc,
       );
     }
+    if (kind === 'claimable-reward' || kind === 'claimed-reward') continue;
+    if (valueUusd === undefined) {
+      throw Fail`missing holding valuation for ${q(place)}`;
+    }
+    result.set(place, (result.get(place) ?? 0n) + valueUusd);
   }
   // Transitional balances repeat the signed legacy fields; never count both.
   const given = entries(balances).filter(([, value]) => value !== undefined);
@@ -332,12 +335,36 @@ const decodePlan = (
       };
     }
     if (!claimRewards) {
+      // Exact withdrawals from shares still treat micro-USDC as micro-USD at
+      // parity until observations include an underlying USDC quantity (AGO-1709).
+      const principal =
+        isInstrumentId(src) && getPrincipalWithdrawalProtocol(src)
+          ? observations.holdings?.find(
+              holding => holding.place === src && holding.kind === 'principal',
+            )
+          : undefined;
+      let debitValueUusd = amount.value;
+      if (principal) {
+        const { valueUusd } = principal;
+        if (valueUusd === undefined) {
+          throw Fail`missing holding valuation for ${q(src)}`;
+        }
+        if (principal.amount === 0n) {
+          valueUusd === 0n ||
+            Fail`empty principal holding has nonzero valuation at ${q(src)}`;
+          // Supplies after observation are credited at parity.
+          debitValueUusd = amount.value;
+        } else {
+          // Round down so remaining USD exposure is not understated.
+          debitValueUusd = (valueUusd * amount.value) / principal.amount;
+        }
+      }
       return {
         kind: 'move',
         src,
         dest,
         amount,
-        debitValueUusd: amount.value,
+        debitValueUusd,
       };
     }
 
@@ -350,6 +377,19 @@ const decodePlan = (
     }
     return { kind: 'claimRewards', src, dest, claimRewards };
   });
+  const exactSources = new Set(
+    flow
+      .filter(({ kind, src }) => kind === 'move' && isInstrumentId(src))
+      .map(({ src }) => src),
+  );
+  for (const { kind, src } of flow) {
+    if (
+      (kind === 'redeemShares' || kind === 'withdrawMax') &&
+      exactSources.has(src)
+    ) {
+      throw Fail`cannot mix exact-amount and max/share withdrawals at ${q(src)}`;
+    }
+  }
   return harden({
     flow,
     ...(plan.order !== undefined && { order: plan.order }),
@@ -622,9 +662,7 @@ const projectPlanBalances = (
     for (const movement of plan.flow) {
       if (movement.kind !== 'move') continue;
       const { src } = movement;
-      if (!isInterChainAccountRef(src)) {
-        throw Fail`portfolio checks cannot yet project exact withdrawals from observed holdings at ${q(src)}`;
-      }
+      if (isInstrumentId(src)) continue;
       if (remainingCash.has(src)) continue;
       const usdcTokenId = getUsdcTokenId?.(src);
       if (!usdcTokenId) throw Fail`no configured USDC token at ${q(src)}`;
