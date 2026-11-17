@@ -534,6 +534,28 @@ export const preparePortfolioKit = (
     timerService: ERemote<TimerService>;
   },
 ) => {
+  const planBindingAddresses: NonNullable<
+    Parameters<typeof vetAllocationPlan>[4]
+  > = {
+    getUsdcTokenId: account =>
+      account === '@agoric'
+        ? agoricUsdcDenom
+        : account === '@noble'
+          ? UsdcTokenIds.mainnet.noble
+          : contracts[chainOf(account) as AxelarChain]?.usdc,
+    getProtocolAddress: src => {
+      const protocol = getPrincipalWithdrawalProtocol(src);
+      const addressKey = protocol?.addressKey;
+      if (!addressKey) return undefined;
+      return contracts[chainOf(src) as AxelarChain]?.[addressKey];
+    },
+    getVaultAddress: src => contracts[chainOf(src) as AxelarChain]?.[src],
+    hasMinimumRedemptionContracts: src => {
+      const chainContracts = contracts[chainOf(src) as AxelarChain];
+      return hasMinimumRedemptionContracts(src, chainContracts);
+    },
+  };
+
   // Ephemeral node cache
   // XXX collecting flow nodes is TBD
   const nodes = new Map<string, ERemote<StorageNode>>();
@@ -804,26 +826,7 @@ export const preparePortfolioKit = (
               targetAllocation,
               plan,
               observations,
-              {
-                getUsdcTokenId: account =>
-                  account === '@agoric'
-                    ? agoricUsdcDenom
-                    : account === '@noble'
-                      ? UsdcTokenIds.mainnet.noble
-                      : contracts[chainOf(account) as AxelarChain]?.usdc,
-                getProtocolAddress: src => {
-                  const protocol = getPrincipalWithdrawalProtocol(src);
-                  const addressKey = protocol?.addressKey;
-                  if (!addressKey) return undefined;
-                  return contracts[chainOf(src) as AxelarChain]?.[addressKey];
-                },
-                getVaultAddress: src =>
-                  contracts[chainOf(src) as AxelarChain]?.[src],
-                hasMinimumRedemptionContracts: src => {
-                  const chainContracts = contracts[chainOf(src) as AxelarChain];
-                  return hasMinimumRedemptionContracts(src, chainContracts);
-                },
-              },
+              planBindingAddresses,
             );
           // Pre-signed plans can be checked completely before assigning a flow.
           // Requests for a planner-supplied plan retain the existing lifecycle.
