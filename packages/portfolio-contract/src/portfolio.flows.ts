@@ -60,7 +60,10 @@ import {
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
-import { chainOf } from '@agoric/portfolio-api/src/places.js';
+import {
+  chainOf,
+  isERC4626MorphoInstrumentId,
+} from '@agoric/portfolio-api/src/places.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { EVow } from '@agoric/vow';
@@ -68,13 +71,18 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail, q } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
-import { getPrincipalWithdrawalProtocol } from './principal-withdrawal.ts';
+import {
+  getPrincipalWithdrawalProtocol,
+  hasMinimumRedemptionContracts,
+} from './principal-withdrawal.ts';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type {
   AccountInfo,
   AccountInfoFor,
   PortfolioKit,
+  FlowPlanResult,
+  ResolvedFlowPlan,
 } from './portfolio.exo.ts';
 import type { BoundStep } from './delegation-limits.ts';
 import {
@@ -264,8 +272,6 @@ type FlowStepPowers = {
 };
 
 export type ExecutePlanOptions = {
-  /** Host-bound quantities from authenticated observations, never plan fields. */
-  boundSteps?: Readonly<Partial<Record<number, BoundStep>>>;
   evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
   // XXX consider using pattern matching for queued steps instead of src/dest.
   queuedSteps?: Array<
@@ -984,6 +990,76 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
   }
 };
 
+/** Check every binding before Permit2 setup or any other remote dispatch. */
+const assertExecutionBindings = (
+  moves: MovementDesc[],
+  boundSteps: ResolvedFlowPlan['boundSteps'],
+  ctx: PortfolioInstanceContext,
+) => {
+  for (const index of keys(boundSteps ?? {})) {
+    (Number.isSafeInteger(Number(index)) &&
+      Number(index) >= 0 &&
+      Number(index) < moves.length) ||
+      Fail`bound step index out of range: ${q(index)}`;
+  }
+  for (const [i, move] of moves.entries()) {
+    const boundStep = boundSteps?.[i];
+    const requiresBinding =
+      move.withdraw?.max === true ||
+      move.withdraw?.amountOfShares !== undefined;
+    if (requiresBinding && !boundStep) {
+      throw Fail`withdraw options require a bound step at movement ${q(i)}`;
+    }
+    if (boundStep?.kind === 'redeemShares') {
+      isERC4626MorphoInstrumentId(move.src) ||
+        Fail`share redemption requires a Morpho vault at movement ${q(i)}`;
+      (move.src === boundStep.src &&
+        move.dest === `@${chainOf(boundStep.src)}` &&
+        ((move.withdraw?.max === true &&
+          move.withdraw.amountOfShares === undefined) ||
+          (move.withdraw?.max !== true &&
+            move.withdraw?.amountOfShares === boundStep.shares)) &&
+        move.amount.value === (boundStep.minimumProceeds ?? 0n) &&
+        (move.amount.value === 0n || boundStep.shares > 0n) &&
+        !move.claimRewards &&
+        !move.swap) ||
+        Fail`share withdrawal evidence does not match movement ${q(i)}`;
+      sameEvmAddress(
+        boundStep.vaultAddress,
+        ctx.contracts[chainOf(boundStep.src) as AxelarChain]?.[boundStep.src],
+      ) ||
+        Fail`share withdrawal vault no longer matches configuration at ${q(move.src)}`;
+    }
+    if (boundStep?.kind === 'withdrawMax') {
+      (move.src === boundStep.src &&
+        move.dest === `@${chainOf(boundStep.src)}` &&
+        move.withdraw?.max === true &&
+        move.withdraw.amountOfShares === undefined &&
+        move.amount.value === (boundStep.minimumProceeds ?? 0n) &&
+        (move.amount.value === 0n || boundStep.amount > 0n) &&
+        !move.claimRewards &&
+        !move.swap) ||
+        Fail`principal withdrawal evidence does not match movement ${q(i)}`;
+      const protocol = getPrincipalWithdrawalProtocol(boundStep.src);
+      const addresses = ctx.contracts[chainOf(boundStep.src) as AxelarChain];
+      (protocol &&
+        sameEvmAddress(
+          boundStep.protocolAddress,
+          addresses?.[protocol.addressKey],
+        ) &&
+        sameEvmAddress(boundStep.tokenAddress, addresses?.usdc)) ||
+        Fail`principal withdrawal configuration no longer matches at ${q(move.src)}`;
+    }
+    if (boundStep && (boundStep.minimumProceeds ?? 0n) > 0n) {
+      hasMinimumRedemptionContracts(
+        move.src,
+        ctx.contracts[chainOf(move.src) as AxelarChain],
+      ) ||
+        Fail`minimum withdrawal contracts no longer configured at ${q(move.src)}`;
+    }
+  }
+};
+
 const stepFlow = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -994,10 +1070,7 @@ const stepFlow = async (
   flowId: number,
   flowReporter: FlowReporter,
   config?: FlowConfig,
-  options?: Pick<
-    ExecutePlanOptions,
-    'queuedSteps' | 'evmDepositDetail' | 'boundSteps'
-  >,
+  options?: ExecutePlanOptions & Pick<ResolvedFlowPlan, 'boundSteps'>,
 ) => {
   const features = config?.features;
   const { queuedSteps, evmDepositDetail } = options ?? {};
@@ -1165,6 +1238,7 @@ const stepFlow = async (
           );
           return harden({ srcPos: pos });
         } else {
+          !boundStep || Fail`unexpected bound step for exact withdrawal`;
           await pImpl.withdraw(evmCtx, amount, gInfo, opts);
           return harden({ srcPos: pos });
         }
@@ -1182,48 +1256,6 @@ const stepFlow = async (
 
   for (const [i, move] of moves.entries()) {
     const boundStep = options?.boundSteps?.[i];
-    if (
-      boundStep &&
-      boundStep?.kind !== 'redeemShares' &&
-      boundStep?.kind !== 'withdrawMax'
-    ) {
-      throw Fail`unsupported bound step ${q((boundStep as any).kind)} at movement ${q(i)}`;
-    }
-    if (boundStep?.kind === 'redeemShares') {
-      (move.src === boundStep.src &&
-        move.dest === `@${chainOf(boundStep.src)}` &&
-        (move.withdraw?.max === true ||
-          move.withdraw?.amountOfShares === boundStep.shares) &&
-        move.amount.value === (boundStep.minimumProceeds ?? 0n) &&
-        !move.claimRewards &&
-        !move.swap) ||
-        Fail`share withdrawal evidence does not match movement ${q(i)}`;
-      sameEvmAddress(
-        boundStep.vaultAddress,
-        ctx.contracts[chainOf(boundStep.src) as AxelarChain]?.[boundStep.src],
-      ) ||
-        Fail`share withdrawal vault no longer matches configuration at ${q(move.src)}`;
-    }
-    if (boundStep?.kind === 'withdrawMax') {
-      (move.src === boundStep.src &&
-        move.dest === `@${chainOf(boundStep.src)}` &&
-        move.withdraw?.max === true &&
-        move.withdraw.amountOfShares === undefined &&
-        move.amount.value === (boundStep.minimumProceeds ?? 0n) &&
-        (move.amount.value === 0n || boundStep.amount > 0n) &&
-        !move.claimRewards &&
-        !move.swap) ||
-        Fail`principal withdrawal evidence does not match movement ${q(i)}`;
-      const protocol = getPrincipalWithdrawalProtocol(boundStep.src);
-      const addresses = ctx.contracts[chainOf(boundStep.src) as AxelarChain];
-      (protocol &&
-        sameEvmAddress(
-          boundStep.protocolAddress,
-          addresses?.[protocol.addressKey],
-        ) &&
-        sameEvmAddress(boundStep.tokenAddress, addresses?.usdc)) ||
-        Fail`principal withdrawal configuration no longer matches at ${q(move.src)}`;
-    }
     const isClaimRewards =
       getAssetPlaceRefKind(move.src) === 'pos' && !!move.claimRewards;
     move.amount.value > 0n ||
@@ -1521,7 +1553,9 @@ const stepFlow = async (
         break;
 
       case 'Beefy':
-        todo.push(makeEVMProtocolStep(way as Way & { how: 'Beefy' }, move));
+        todo.push(
+          makeEVMProtocolStep(way as Way & { how: 'Beefy' }, move, boundStep),
+        );
         break;
 
       case 'ERC4626':
@@ -2300,10 +2334,21 @@ export const executePlan = (async (
   await null;
   try {
     // idea: race with seat.getSubscriber()
-    const plan = await (stepsP as unknown as Promise<
-      MovementDesc[] | FundsFlowPlan
-    >); // XXX Guest/Host types UNTIL #9822
+    const resolved = await (stepsP as unknown as Promise<FlowPlanResult>); // XXX Guest/Host types UNTIL #9822
+    // Pure normalization only: no new host interactions or awaits on replay.
+    const { plan, boundSteps } =
+      !Array.isArray(resolved) && !('flow' in resolved) && 'plan' in resolved
+        ? resolved
+        : { plan: resolved, boundSteps: undefined };
     const steps = Array.isArray(plan) ? plan : plan.flow;
+    if (Array.isArray(resolved) || 'flow' in resolved) {
+      // Only pre-upgrade plans replayed from the journal have this shape.
+      // This trace runs on every replay, identifying remaining legacy flows.
+      // Once those flows are known to be stuck, a later upgrade can replace
+      // this branch with a tombstone without stranding legitimate waits.
+      traceFlow('legacy plan result', { steps: steps.length });
+    }
+    assertExecutionBindings(steps, boundSteps, ctx);
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {
       const { fromChain, permit2Payload, spender } = options.evmDepositDetail;
@@ -2349,8 +2394,8 @@ export const executePlan = (async (
       {
         queuedSteps,
         evmDepositDetail: options?.evmDepositDetail,
-        ...(options?.boundSteps && {
-          boundSteps: options.boundSteps,
+        ...(boundSteps && {
+          boundSteps,
         }),
       },
     );
