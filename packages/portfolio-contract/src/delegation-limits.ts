@@ -238,6 +238,14 @@ type GetProtocolAddress = (src: InstrumentId) => EvmAddress | undefined;
 
 type GetVaultAddress = (src: ERC4626InstrumentId) => EvmAddress | undefined;
 
+/** Narrow powers for binding checks; callbacks provide the configured details. */
+export type BindingDetailAccess = {
+  getUsdcTokenId?: GetUsdcTokenId;
+  getProtocolAddress?: GetProtocolAddress;
+  getVaultAddress?: GetVaultAddress;
+  hasMinimumRedemptionContracts?: (src: InstrumentId) => boolean;
+};
+
 /**
  * Decode once so every balance check uses the same operation semantics.
  * Legacy balance observations support exact-amount movements only.
@@ -419,13 +427,8 @@ const MAX_MINIMUM_BEARING_SHARES = 10n ** 27n;
 
 /** Derive execution instructions from the same operations used by allocation checks. */
 const bindSteps = (
-  plan: DecodedPlan,
-  addresses: {
-    getUsdcTokenId?: GetUsdcTokenId;
-    getProtocolAddress?: GetProtocolAddress;
-    getVaultAddress?: GetVaultAddress;
-    hasMinimumRedemptionContracts?: (src: InstrumentId) => boolean;
-  },
+  steps: readonly PlanOperation[],
+  addresses: BindingDetailAccess,
 ): Partial<Record<number, BoundStep>> => {
   const {
     getVaultAddress,
@@ -434,7 +437,7 @@ const bindSteps = (
     getUsdcTokenId,
   } = addresses;
   const bound: Partial<Record<number, BoundStep>> = {};
-  for (const [step, movement] of plan.flow.entries()) {
+  for (const [step, movement] of steps.entries()) {
     switch (movement.kind) {
       case 'redeemShares': {
         const vaultAddress = getVaultAddress?.(movement.src);
@@ -828,12 +831,7 @@ export const vetAllocationPlan = (
   targetAllocation: TargetAllocation,
   plan: FundsFlowPlan | undefined,
   observations: PlanObservations | undefined,
-  addresses: {
-    getUsdcTokenId?: GetUsdcTokenId;
-    getProtocolAddress?: GetProtocolAddress;
-    getVaultAddress?: GetVaultAddress;
-    hasMinimumRedemptionContracts?: (src: InstrumentId) => boolean;
-  } = {},
+  addresses: BindingDetailAccess = {},
 ): VettedAllocationPlan => {
   assertMandateForAllocation(permissions, targetAllocation);
   if (!plan) return harden({ commitNow: !needsObservations(permissions) });
@@ -846,7 +844,7 @@ export const vetAllocationPlan = (
     addresses.getUsdcTokenId,
   );
   assertMandateForPlanObservations(permissions, targetAllocation, observations);
-  const boundSteps = bindSteps(decodedPlan, addresses);
+  const boundSteps = bindSteps(decodedPlan.flow, addresses);
   return harden({
     commitNow: true,
     ...(keys(boundSteps).length && { boundSteps }),
