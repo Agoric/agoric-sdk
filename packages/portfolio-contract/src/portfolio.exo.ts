@@ -94,6 +94,7 @@ import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
+  type BindingDetailAccess,
   needsObservations,
   vetAllocationPlan,
   vetObservationPlaces,
@@ -534,9 +535,7 @@ export const preparePortfolioKit = (
     timerService: ERemote<TimerService>;
   },
 ) => {
-  const planBindingAddresses: NonNullable<
-    Parameters<typeof vetAllocationPlan>[4]
-  > = {
+  const planBindingAddresses: BindingDetailAccess = {
     getUsdcTokenId: account =>
       account === '@agoric'
         ? agoricUsdcDenom
