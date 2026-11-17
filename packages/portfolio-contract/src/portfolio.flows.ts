@@ -81,8 +81,9 @@ import type {
   AccountInfo,
   AccountInfoFor,
   PortfolioKit,
+  FlowPlanResult,
+  ResolvedFlowPlan,
 } from './portfolio.exo.ts';
-import type { FlowPlanResult, ResolvedFlowPlan } from './portfolio.exo.ts';
 import type { BoundStep } from './delegation-limits.ts';
 import {
   AaveProtocol,
@@ -996,33 +997,20 @@ const assertExecutionBindings = (
   ctx: PortfolioInstanceContext,
 ) => {
   for (const index of keys(boundSteps ?? {})) {
-    (String(Number(index)) === index &&
-      Number.isSafeInteger(Number(index)) &&
+    (Number.isSafeInteger(Number(index)) &&
       Number(index) >= 0 &&
       Number(index) < moves.length) ||
       Fail`bound step index out of range: ${q(index)}`;
   }
   for (const [i, move] of moves.entries()) {
     const boundStep = boundSteps?.[i];
-    if (
-      boundStep &&
-      boundStep?.kind !== 'redeemShares' &&
-      boundStep?.kind !== 'withdrawMax'
-    ) {
-      throw Fail`unsupported bound step ${q((boundStep as any).kind)} at movement ${q(i)}`;
-    }
     const requiresBinding =
       move.withdraw?.max === true ||
       move.withdraw?.amountOfShares !== undefined;
     if (requiresBinding && !boundStep) {
       throw Fail`withdraw options require a bound step at movement ${q(i)}`;
     }
-    if (boundStep) {
-      move.amount.value >= 0n ||
-        Fail`negative bound minimum at movement ${q(i)}`;
-    }
     if (boundStep?.kind === 'redeemShares') {
-      boundStep.shares >= 0n || Fail`negative bound shares at movement ${q(i)}`;
       isERC4626MorphoInstrumentId(move.src) ||
         Fail`share redemption requires a Morpho vault at movement ${q(i)}`;
       (move.src === boundStep.src &&
@@ -1043,8 +1031,6 @@ const assertExecutionBindings = (
         Fail`share withdrawal vault no longer matches configuration at ${q(move.src)}`;
     }
     if (boundStep?.kind === 'withdrawMax') {
-      boundStep.amount >= 0n ||
-        Fail`negative bound principal at movement ${q(i)}`;
       (move.src === boundStep.src &&
         move.dest === `@${chainOf(boundStep.src)}` &&
         move.withdraw?.max === true &&

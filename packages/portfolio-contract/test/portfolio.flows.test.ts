@@ -5357,7 +5357,7 @@ test('new plan envelopes retain exact-amount execution with no-op withdrawal opt
   }
 });
 
-for (const mutation of ['index', 'kind', 'protocol', 'minimum'] as const) {
+for (const mutation of ['index', 'protocol', 'minimum'] as const) {
   test(`invalid delayed binding (${mutation}) fails before dispatch`, async t => {
     const { ctx, offer } = mocks();
     const kit = await ctx.makePortfolioKit();
@@ -5380,11 +5380,7 @@ for (const mutation of ['index', 'kind', 'protocol', 'minimum'] as const) {
     );
     const bound = boundSteps![0]!;
     const binding =
-      mutation === 'kind'
-        ? { ...bound, kind: 'futureKind' }
-        : mutation === 'minimum'
-          ? { ...bound, minimumProceeds: 1n }
-          : bound;
+      mutation === 'minimum' ? { ...bound, minimumProceeds: 1n } : bound;
     kit.manager.resolveExecutionPlan(
       started.flowId,
       harden({
@@ -5399,8 +5395,7 @@ for (const mutation of ['index', 'kind', 'protocol', 'minimum'] as const) {
       }) as any,
     );
     await t.throwsAsync(result, {
-      message:
-        /bound step index|unsupported bound step|requires a Morpho|does not match movement/,
+      message: /bound step index|requires a Morpho|does not match movement/,
     });
     t.false(
       offer.log.some(
