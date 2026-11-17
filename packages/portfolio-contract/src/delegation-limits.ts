@@ -235,7 +235,7 @@ type GetProtocolAddress = (src: InstrumentId) => EvmAddress | undefined;
 
 type GetVaultAddress = (src: ERC4626InstrumentId) => EvmAddress | undefined;
 
-type BindingAddresses = {
+type BindingDetailAccess = {
   getUsdcTokenId?: GetUsdcTokenId;
   getProtocolAddress?: GetProtocolAddress;
   getVaultAddress?: GetVaultAddress;
@@ -387,7 +387,7 @@ const MAX_MINIMUM_BEARING_SHARES = 10n ** 27n;
 /** Derive execution instructions from the same operations used by allocation checks. */
 const bindSteps = (
   steps: readonly (PlanOperation | undefined)[],
-  addresses: BindingAddresses,
+  addresses: BindingDetailAccess,
 ): Partial<Record<number, BoundStep>> => {
   const {
     getVaultAddress,
@@ -464,7 +464,7 @@ harden(bindSteps);
 export const bindObservedFlowPlan = (
   plan: FundsFlowPlan,
   observations: PlanObservations,
-  addresses: BindingAddresses,
+  addresses: BindingDetailAccess,
 ): ReturnType<typeof bindSteps> => {
   // Do not filter or reorder: bindings refer to the original plan's indices.
   const steps = plan.flow.map(movement =>
@@ -814,7 +814,7 @@ export const vetAllocationPlan = (
   targetAllocation: TargetAllocation,
   plan: FundsFlowPlan | undefined,
   observations: PlanObservations | undefined,
-  addresses: BindingAddresses = {},
+  addresses: BindingDetailAccess = {},
 ): VettedAllocationPlan => {
   assertMandateForAllocation(permissions, targetAllocation);
   if (!plan) return harden({ commitNow: !needsObservations(permissions) });
