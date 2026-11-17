@@ -1166,34 +1166,7 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
         },
         resolveFlowPlan(flowId: number, steps: MovementDesc[] | FundsFlowPlan) {
-          const { flowsRunning } = this.state;
-          const detail = flowsRunning.get(flowId);
-          const { resolver, ...sync } = detail.sync;
-          if (!resolver) {
-            throw Fail`${q(`flow${flowId}`)} has already been resolved`;
-          }
-          try {
-            vetFlowPlanPlaces(
-              {
-                flowType: detail.type,
-                isEvmPortfolio: !!this.state.sourceAccountId,
-                ...(detail.type === 'deposit' && {
-                  fromChain: detail.fromChain,
-                }),
-                ...(detail.type === 'withdraw' && { toChain: detail.toChain }),
-              },
-              steps,
-            );
-          } catch (reason) {
-            // Fail the flow rather than leave it waiting for another plan.
-            const message =
-              reason instanceof Error ? reason.message : String(reason);
-            this.facets.planner.rejectFlowPlan(flowId, message);
-            throw reason;
-          }
-          resolver.resolve(steps);
-          flowsRunning.set(flowId, { ...detail, sync });
-          this.facets.reporter.publishStatus();
+          this.facets.manager.resolveExecutionPlan(flowId, steps);
         },
         rejectFlowPlan(flowId: number, reason: string) {
           const { flowsRunning } = this.state;
@@ -1384,6 +1357,39 @@ export const preparePortfolioKit = (
             accountsPending.delete(chainName);
             this.facets.reporter.publishStatus();
           }
+        },
+        resolveExecutionPlan(
+          flowId: number,
+          steps: MovementDesc[] | FundsFlowPlan,
+        ) {
+          const { flowsRunning } = this.state;
+          const detail = flowsRunning.get(flowId);
+          const { resolver, ...sync } = detail.sync;
+          if (!resolver) {
+            throw Fail`${q(`flow${flowId}`)} has already been resolved`;
+          }
+          try {
+            vetFlowPlanPlaces(
+              {
+                flowType: detail.type,
+                isEvmPortfolio: !!this.state.sourceAccountId,
+                ...(detail.type === 'deposit' && {
+                  fromChain: detail.fromChain,
+                }),
+                ...(detail.type === 'withdraw' && { toChain: detail.toChain }),
+              },
+              steps,
+            );
+          } catch (reason) {
+            // Fail the flow rather than leave it waiting for another plan.
+            const message =
+              reason instanceof Error ? reason.message : String(reason);
+            this.facets.planner.rejectFlowPlan(flowId, message);
+            throw reason;
+          }
+          resolver.resolve(steps);
+          flowsRunning.set(flowId, { ...detail, sync });
+          this.facets.reporter.publishStatus();
         },
         /**
          * Start a flow of asset movements. Reserves a flowId and records updates vstorage.
