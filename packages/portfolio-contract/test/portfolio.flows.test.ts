@@ -71,7 +71,10 @@ import {
   sendPermit2GMP as sendPermit2RoutedGMP,
   sendGMPContractCall as sendRoutedGMPContractCall,
 } from '../src/axelar-gmp-router.flows.ts';
-import { type PortfolioKit } from '../src/portfolio.exo.ts';
+import {
+  type PortfolioKit,
+  type ResolvedFlowPlan,
+} from '../src/portfolio.exo.ts';
 import {
   makeErrorList,
   provideCosmosAccount,
@@ -79,7 +82,6 @@ import {
   executePlan as rawExecutePlan,
   openPortfolio as rawOpenPortfolio,
   wayFromSrcToDest,
-  type ExecutePlanOptions as PublicExecutePlanOptions,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import {
@@ -135,33 +137,19 @@ const expectUnhandled = makeExpectUnhandledRejectionMacro({
   importMetaUrl: import.meta.url,
 });
 
-type ExecutePlanOptions = PublicExecutePlanOptions & {
-  boundSteps?: import('../src/portfolio.exo.ts').ResolvedFlowPlan['boundSteps'];
-};
-
-const executePlan = (
-  orch: Parameters<typeof rawExecutePlan>[0],
-  ctx: Parameters<typeof rawExecutePlan>[1],
-  seat: Parameters<typeof rawExecutePlan>[2],
-  offerArgs: Parameters<typeof rawExecutePlan>[3],
-  pKit: Parameters<typeof rawExecutePlan>[4],
-  flowDetail?: Parameters<typeof rawExecutePlan>[5],
-  startedFlow?: Parameters<typeof rawExecutePlan>[6],
+// Keep the test suite's feature defaults; bindings use resolveExecutionPlan directly.
+const executePlan: typeof rawExecutePlan = (
+  orch,
+  ctx,
+  seat,
+  offerArgs,
+  pKit,
+  flowDetail,
+  startedFlow,
   config = DEFAULT_FLOW_CONFIG,
-  options?: ExecutePlanOptions,
-) => {
-  if (options?.boundSteps) {
-    assert(!startedFlow);
-    startedFlow = pKit.manager.startFlow(flowDetail!);
-    pKit.manager.resolveExecutionPlan(
-      startedFlow.flowId,
-      harden({
-        plan: offerArgs.flow!,
-        boundSteps: options.boundSteps,
-      }),
-    );
-  }
-  return rawExecutePlan(
+  ...args
+) =>
+  rawExecutePlan(
     orch,
     ctx,
     seat,
@@ -170,9 +158,8 @@ const executePlan = (
     flowDetail,
     startedFlow,
     config,
-    options,
+    ...args,
   );
-};
 
 const openPortfolio: typeof rawOpenPortfolio = (
   orch,
@@ -278,18 +265,16 @@ const makeShareWithdrawalCase = ({
     amount: make(USDC, minimumProceeds),
     withdraw: { max: true },
   };
-  const options: ExecutePlanOptions = {
-    boundSteps: {
-      0: {
-        kind: 'redeemShares',
-        src: vaults.rwa.id,
-        vaultAddress: vaults.rwa.address,
-        shares: observedShares,
-        ...(minimumProceeds > 0n && { minimumProceeds }),
-      },
+  const boundSteps: NonNullable<ResolvedFlowPlan['boundSteps']> = {
+    0: {
+      kind: 'redeemShares',
+      src: vaults.rwa.id,
+      vaultAddress: vaults.rwa.address,
+      shares: observedShares,
+      ...(minimumProceeds > 0n && { minimumProceeds }),
     },
   };
-  return { step1, options };
+  return { step1, boundSteps };
 };
 
 const makeFullExitCase = async (
@@ -323,17 +308,19 @@ const makeFullExitCase = async (
     observedShares: bigint;
     minimumProceeds?: bigint;
   }) => {
-    const { step1, options } = makeShareWithdrawalCase({
+    const fixture = makeShareWithdrawalCase({
       minimumProceeds,
       observedShares,
     });
+    const { step1 } = fixture;
+    let { boundSteps } = fixture;
     if (principal) {
       step1.src = principal;
       const protocolAddress =
         principal === 'Aave_Ethereum'
           ? contractsMock.Ethereum.aavePool
           : contractsMock.Ethereum.compound;
-      options.boundSteps = {
+      boundSteps = {
         0: {
           kind: 'withdrawMax',
           src: principal,
@@ -361,22 +348,29 @@ const makeFullExitCase = async (
           started.flowId,
           harden({
             plan: { flow: [{ ...step1, fee: make(BLD, 100n) }] },
-            boundSteps: options.boundSteps,
+            boundSteps,
           }),
         ),
       );
       return result;
     }
+    const started = kit.manager.startFlow({ type: 'rebalance' });
+    kit.manager.resolveExecutionPlan(
+      started.flowId,
+      harden({
+        plan: { flow: [{ ...step1, fee: make(BLD, 100n) }] },
+        boundSteps,
+      }),
+    );
     return executePlan(
       orch,
       ctx,
       makeMockSeat({}, undefined, offer.log),
-      { flow: [{ ...step1, fee: make(BLD, 100n) }] },
+      {},
       kit,
-      { type: 'rebalance' },
       undefined,
+      started,
       DEFAULT_FLOW_CONFIG,
-      options,
     );
   };
   const redemptionQuantities = () =>
@@ -4946,28 +4940,30 @@ test('A withdrawal cannot use another position’s observed shares', async t => 
   const { orch, ctx, offer } = mocks();
   const kit = await ctx.makePortfolioKit();
   const { step1 } = makeShareWithdrawalCase({ minimumProceeds: 1n });
-  const options: ExecutePlanOptions = {
-    boundSteps: {
-      0: {
-        kind: 'redeemShares',
-        src: vaults.u2.id,
-        vaultAddress: vaults.u2.address,
-        shares: 50n,
-        minimumProceeds: 1n,
-      },
+  const boundSteps: NonNullable<ResolvedFlowPlan['boundSteps']> = {
+    0: {
+      kind: 'redeemShares',
+      src: vaults.u2.id,
+      vaultAddress: vaults.u2.address,
+      shares: 50n,
+      minimumProceeds: 1n,
     },
   };
+  const started = kit.manager.startFlow({ type: 'rebalance' });
+  kit.manager.resolveExecutionPlan(
+    started.flowId,
+    harden({ plan: { flow: [step1] }, boundSteps }),
+  );
   await t.throwsAsync(
     executePlan(
       orch,
       ctx,
       offer.seat,
-      { flow: [step1] },
+      {},
       kit,
-      { type: 'rebalance' },
       undefined,
+      started,
       DEFAULT_FLOW_CONFIG,
-      options,
     ),
     { message: /share withdrawal evidence does not match movement/ },
   );
@@ -4981,10 +4977,12 @@ test('A withdrawal cannot use another position’s observed shares', async t => 
 test('A zero proceeds minimum requires authenticated share instructions', async t => {
   const { orch, ctx, offer } = mocks();
   const kit = await ctx.makePortfolioKit();
-  const { step1, options } = makeShareWithdrawalCase({ minimumProceeds: 0n });
+  const { step1, boundSteps } = makeShareWithdrawalCase({
+    minimumProceeds: 0n,
+  });
   const submittedStep = {
     ...step1,
-    boundSteps: options.boundSteps,
+    boundSteps,
   };
   await t.throwsAsync(
     executePlan(orch, ctx, offer.seat, { flow: [submittedStep] }, kit, {
@@ -5002,7 +5000,9 @@ test('A zero proceeds minimum requires authenticated share instructions', async 
 test('Vault changes invalidate a pending share withdrawal before any transfer', async t => {
   const { orch, ctx, offer } = mocks();
   const kit = await ctx.makePortfolioKit();
-  const { step1, options } = makeShareWithdrawalCase({ minimumProceeds: 0n });
+  const { step1, boundSteps } = makeShareWithdrawalCase({
+    minimumProceeds: 0n,
+  });
   const changedContext = {
     ...ctx,
     contracts: {
@@ -5013,17 +5013,21 @@ test('Vault changes invalidate a pending share withdrawal before any transfer', 
       },
     },
   };
+  const started = kit.manager.startFlow({ type: 'rebalance' });
+  kit.manager.resolveExecutionPlan(
+    started.flowId,
+    harden({ plan: { flow: [step1] }, boundSteps }),
+  );
   await t.throwsAsync(
     executePlan(
       orch,
       changedContext,
       offer.seat,
-      { flow: [step1] },
+      {},
       kit,
-      { type: 'rebalance' },
       undefined,
+      started,
       DEFAULT_FLOW_CONFIG,
-      options,
     ),
     { message: /share withdrawal vault no longer matches configuration/ },
   );
@@ -5236,17 +5240,24 @@ for (const [src, expectations] of typedEntries(principalFullExits)) {
       {},
       { minimumProceeds: 2n, tokenAddress: vaults.replacement.address },
     ]) {
+      const started = kit.manager.startFlow({ type: 'rebalance' });
+      kit.manager.resolveExecutionPlan(
+        started.flowId,
+        harden({
+          plan: { flow: [move] },
+          boundSteps: { 0: { ...bound, ...change } },
+        }),
+      );
       await t.throwsAsync(
         executePlan(
           orch,
           ctx,
           offer.seat,
-          { flow: [move] },
+          {},
           kit,
-          { type: 'rebalance' },
           undefined,
+          started,
           DEFAULT_FLOW_CONFIG,
-          { boundSteps: { 0: { ...bound, ...change } } },
         ),
         { message: /principal withdrawal (evidence|configuration)/ },
       );
@@ -5346,39 +5357,11 @@ test('new plan envelopes retain exact-amount execution with no-op withdrawal opt
   }
 });
 
-test('creation-time execution options cannot supply missing late bindings', async t => {
-  const { orch, ctx, offer } = mocks();
-  const kit = await ctx.makePortfolioKit();
-  const { step1, options } = makeShareWithdrawalCase();
-  const started = kit.manager.startFlow({ type: 'rebalance' });
-  const result = rawExecutePlan(
-    orch,
-    ctx,
-    offer.seat,
-    {},
-    kit,
-    undefined,
-    started,
-    DEFAULT_FLOW_CONFIG,
-    options as PublicExecutePlanOptions,
-  );
-  await eventLoopIteration();
-  kit.planner.resolveFlowPlan(started.flowId, { flow: [step1] });
-  await t.throwsAsync(result, {
-    message: /withdraw options require a bound step/,
-  });
-  t.false(
-    offer.log.some(
-      ({ _method }) => _method === 'send' || _method === 'transfer',
-    ),
-  );
-});
-
 for (const mutation of ['index', 'kind', 'protocol', 'minimum'] as const) {
   test(`invalid delayed binding (${mutation}) fails before dispatch`, async t => {
     const { ctx, offer } = mocks();
     const kit = await ctx.makePortfolioKit();
-    const { step1, options } = makeShareWithdrawalCase();
+    const { step1, boundSteps } = makeShareWithdrawalCase();
     const started = kit.manager.startFlow({ type: 'rebalance' });
     const result = rawExecutePlan(
       {
@@ -5395,7 +5378,7 @@ for (const mutation of ['index', 'kind', 'protocol', 'minimum'] as const) {
       DEFAULT_FLOW_CONFIG,
       { evmDepositDetail: { ...makePermitDetails(), fromChain: 'Arbitrum' } },
     );
-    const bound = options.boundSteps![0]!;
+    const bound = boundSteps![0]!;
     const binding =
       mutation === 'kind'
         ? { ...bound, kind: 'futureKind' }
@@ -5440,7 +5423,7 @@ test('a flow awaiting a late plan executes its bound share quantity', async t =>
 test('reordering late plan movements cannot reuse bindings at their old indices', async t => {
   const { orch, ctx, offer } = mocks();
   const kit = await ctx.makePortfolioKit();
-  const { step1, options } = makeShareWithdrawalCase();
+  const { step1, boundSteps } = makeShareWithdrawalCase();
   const second = { ...step1, withdraw: { amountOfShares: 25n } };
   const started = kit.manager.startFlow({ type: 'rebalance' });
   const result = rawExecutePlan(
@@ -5458,8 +5441,8 @@ test('reordering late plan movements cannot reuse bindings at their old indices'
     harden({
       plan: { flow: [second, step1], order: [[1, [0]]] },
       boundSteps: {
-        0: options.boundSteps![0]!,
-        1: { ...options.boundSteps![0]!, shares: 25n },
+        0: boundSteps![0]!,
+        1: { ...boundSteps![0]!, shares: 25n },
       },
     }) as any,
   );
