@@ -1202,10 +1202,10 @@ export const preparePortfolioKit = (
               await verifyPortfolioObservations(signedObservations);
             this.facets.reader.checkVersion(policyVersion, rebalanceCount);
             verified.portfolioId === this.state.portfolioId ||
-              Fail`observations are for another portfolio`;
+              Fail`observations are for another portfolio ${q(verified.portfolioId)}; expected ${q(this.state.portfolioId)}`;
             (verified.syncState.policyVersion === policyVersion &&
               verified.syncState.rebalanceCount === rebalanceCount) ||
-              Fail`observations sync state does not match`;
+              Fail`observations sync state does not match: observed ${q(verified.syncState)}; expected ${q({ policyVersion, rebalanceCount })}`;
             const detail = this.state.flowsRunning.get(flowId);
             detail.sync.resolver || Fail`flow has already been resolved`;
             vetFlowPlanPlaces(

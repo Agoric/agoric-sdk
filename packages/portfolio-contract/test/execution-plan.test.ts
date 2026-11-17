@@ -171,7 +171,7 @@ for (const invalid of ['signature', 'expired', 'portfolio', 'sync'] as const) {
       invalid === 'signature' ? stranger : attestor,
       invalid === 'expired' ? NOW - 1n : NOW + 300n,
     );
-    await t.throwsAsync(
+    const error = await t.throwsAsync(
       vt.when(
         planner.resolveObservedPlan(
           12,
@@ -186,6 +186,8 @@ for (const invalid of ['signature', 'expired', 'portfolio', 'sync'] as const) {
           /not signed by the attestor|deadline has passed|another portfolio|sync state does not match/,
       },
     );
+    if (invalid === 'portfolio') t.regex(error!.message, /13.*12/);
+    if (invalid === 'sync') t.regex(error!.message, /2.*0.*1.*0/);
     t.notThrows(() => kit.reader.checkVersion(1, 0));
     // A failed observation submission leaves the authorized resolver usable.
     t.notThrows(() => kit.planner.resolveFlowPlan(started.flowId, []));
