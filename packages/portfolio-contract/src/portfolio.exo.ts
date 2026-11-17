@@ -89,13 +89,13 @@ import {
   preparePortfolioDelegationKit,
   type PortfolioDelegationClient,
 } from './delegation.exo.ts';
-import type { FlowPlanResult, ResolvedFlowPlan } from './execution-plan.ts';
 import { vetFlowPlanPlaces } from './flow-plan-places.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import {
   assertMandateForAllocation,
   assertMandateForPlanObservations,
   bindObservedFlowPlan,
+  type BoundStep,
   vetNoNewPositions,
   needsObservations,
   vetAllocationPlan,
@@ -198,6 +198,14 @@ const PortfolioAgentInfoShape: TypedPattern<PortfolioAgentInfo> = M.and(
 type MaybeResolvedVowKit<T> =
   | VowKit<T>
   | (Omit<VowKit<T>, 'resolver'> & { resolver?: undefined });
+
+export type ResolvedFlowPlan = Readonly<{
+  plan: FundsFlowPlan | MovementDesc[];
+  boundSteps?: Readonly<Partial<Record<number, BoundStep>>>;
+}>;
+
+/** Old durable vow results must retain their original plan representation. */
+export type FlowPlanResult = ResolvedFlowPlan | FundsFlowPlan | MovementDesc[];
 
 type RunningFlowDetail = {
   sync: MaybeResolvedVowKit<FlowPlanResult>;

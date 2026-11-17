@@ -82,7 +82,7 @@ import type {
   AccountInfoFor,
   PortfolioKit,
 } from './portfolio.exo.ts';
-import type { FlowPlanResult, ResolvedFlowPlan } from './execution-plan.ts';
+import type { FlowPlanResult, ResolvedFlowPlan } from './portfolio.exo.ts';
 import type { BoundStep } from './delegation-limits.ts';
 import {
   AaveProtocol,

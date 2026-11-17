@@ -136,7 +136,7 @@ const expectUnhandled = makeExpectUnhandledRejectionMacro({
 });
 
 type ExecutePlanOptions = PublicExecutePlanOptions & {
-  boundSteps?: import('../src/execution-plan.ts').ResolvedFlowPlan['boundSteps'];
+  boundSteps?: import('../src/portfolio.exo.ts').ResolvedFlowPlan['boundSteps'];
 };
 
 const executePlan = (
