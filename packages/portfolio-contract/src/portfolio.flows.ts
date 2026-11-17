@@ -2355,6 +2355,13 @@ export const executePlan = (async (
         ? resolved
         : { plan: resolved, boundSteps: undefined };
     const steps = Array.isArray(plan) ? plan : plan.flow;
+    if (Array.isArray(resolved) || 'flow' in resolved) {
+      // Only pre-upgrade plans replayed from the journal have this shape.
+      // This trace runs on every replay, identifying remaining legacy flows.
+      // Once those flows are known to be stuck, a later upgrade can replace
+      // this branch with a tombstone without stranding legitimate waits.
+      traceFlow('legacy plan result', { steps: steps.length });
+    }
     assertExecutionBindings(steps, boundSteps, ctx);
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {

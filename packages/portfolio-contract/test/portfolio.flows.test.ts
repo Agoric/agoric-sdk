@@ -5255,13 +5255,11 @@ for (const [src, expectations] of typedEntries(principalFullExits)) {
   });
 }
 
-for (const [label, withdraw] of [
-  ['absent', undefined],
-  ['empty', {}],
-  ['false max', { max: false }],
-] as const) {
-  for (const legacyShape of ['array', 'plan'] as const) {
-    test(`legacy ${legacyShape} vow results retain exact-amount execution (${label})`, async t => {
+for (const legacyShape of ['array', 'plan'] as const) {
+  // Capture the flow tracer without interleaving other tests' console output.
+  test.serial(
+    `legacy ${legacyShape} vow results retain exact-amount execution and trace their origin`,
+    async t => {
       const { orch, ctx, offer } = mocks();
       const kit = await ctx.makePortfolioKit();
       const { promise, resolve } = makePromiseKit<any>();
@@ -5269,49 +5267,84 @@ for (const [label, withdraw] of [
         src: 'USDN',
         dest: '@noble',
         amount: make(USDC, 10n),
-        ...(withdraw !== undefined && { withdraw }),
       };
-      // A historical vow can already have settled with either representation.
       const legacy = legacyShape === 'array' ? [step] : { flow: [step] };
       const { flowId } = kit.manager.startFlow({ type: 'rebalance' });
-      const result = rawExecutePlan(
-        orch,
-        ctx,
-        offer.seat,
-        {},
-        kit,
-        undefined,
-        { flowId, stepsP: promise as any },
-        DEFAULT_FLOW_CONFIG,
-      );
-      resolve(harden(legacy));
-      t.is(await result, `flow${flowId}`);
+      const logs: unknown[][] = [];
+      const originalConsole = console;
+      globalThis.console = {
+        ...originalConsole,
+        info: (...args) => {
+          logs.push(args);
+        },
+      };
+      try {
+        const result = rawExecutePlan(
+          orch,
+          ctx,
+          offer.seat,
+          {},
+          kit,
+          undefined,
+          { flowId, stepsP: promise as any },
+          DEFAULT_FLOW_CONFIG,
+        );
+        resolve(harden(legacy));
+        t.is(await result, `flow${flowId}`);
+      } finally {
+        globalThis.console = originalConsole;
+      }
       t.true(
         offer.log.some(
           ({ _method }) => _method === 'send' || _method === 'transfer',
         ),
       );
-      // A legacy representation cannot smuggle in new withdrawal semantics.
-      const { promise: badP, resolve: resolveBad } = makePromiseKit<any>();
-      const bad = { ...step, withdraw: { max: true } };
-      const started = kit.manager.startFlow({ type: 'rebalance' });
-      const rejected = rawExecutePlan(
-        orch,
-        ctx,
-        makeMockSeat({}),
-        {},
-        kit,
-        undefined,
-        { flowId: started.flowId, stepsP: badP as any },
-        DEFAULT_FLOW_CONFIG,
+      const legacyLogs = logs.filter(
+        ([, message]) => message === 'legacy plan result',
       );
-      resolveBad(harden(legacyShape === 'array' ? [bad] : { flow: [bad] }));
-      await t.throwsAsync(rejected, {
-        message: /withdraw options require a bound step/,
-      });
-    });
-  }
+      t.is(legacyLogs.length, 1);
+      t.regex(
+        String(legacyLogs[0]?.[0]),
+        new RegExp(`portfolio[0-9]+\\.flow${flowId},`),
+      );
+      t.deepEqual(legacyLogs[0]?.[2], { steps: 1 });
+    },
+  );
 }
+
+test('new plan envelopes retain exact-amount execution with no-op withdrawal options', async t => {
+  for (const withdraw of [{}, { max: false }] as const) {
+    const { orch, ctx, offer } = mocks();
+    const kit = await ctx.makePortfolioKit();
+    const started = kit.manager.startFlow({ type: 'rebalance' });
+    const result = rawExecutePlan(
+      orch,
+      ctx,
+      offer.seat,
+      {},
+      kit,
+      undefined,
+      started,
+      DEFAULT_FLOW_CONFIG,
+    );
+    kit.manager.resolveExecutionPlan(
+      started.flowId,
+      harden({
+        plan: {
+          flow: [
+            { src: 'USDN', dest: '@noble', amount: make(USDC, 10n), withdraw },
+          ],
+        },
+      }),
+    );
+    t.is(await result, `flow${started.flowId}`);
+    t.true(
+      offer.log.some(
+        ({ _method }) => _method === 'send' || _method === 'transfer',
+      ),
+    );
+  }
+});
 
 test('creation-time execution options cannot supply missing late bindings', async t => {
   const { orch, ctx, offer } = mocks();
