@@ -356,9 +356,17 @@ const withdrawalCases: Record<
     shares?: bigint;
     replay?: boolean;
     legacyBalances?: boolean;
+    typedHoldings?: boolean;
   }
 > = {
   'exact withdrawal emits asset calldata': {},
+  'exact withdrawal with typed holdings emits asset calldata': {
+    typedHoldings: true,
+  },
+  'exact withdrawal with hybrid holdings emits asset calldata': {
+    typedHoldings: true,
+    legacyBalances: true,
+  },
   'exact share withdrawal redeems requested shares': {
     shares: 4_000_000_000_000_000n,
   },
@@ -381,7 +389,7 @@ for (const instrument of [
   type ProtocolType = 'ERC4626' | 'Aave' | 'Compound';
   const protocolType = instrument.replace(/_.*/, '') as ProtocolType;
   for (const [description, inputs] of Object.entries(withdrawalCases)) {
-    const { maximum, shares, replay, legacyBalances } = inputs;
+    const { maximum, shares, replay, legacyBalances, typedHoldings } = inputs;
     test(`delegated ${instrument} ${description}`, async t => {
       const fixture = await setupTest(t);
       const {
@@ -406,7 +414,8 @@ for (const instrument of [
       const observedShares = 7_654_321_123_456_789n;
       const observedValue = 100_000_000n;
       const shareWithdrawal = maximum || shares !== undefined;
-      const observations: PlanObservations = shareWithdrawal
+      const useHoldings = shareWithdrawal || typedHoldings;
+      const observations: PlanObservations = useHoldings
         ? {
             balances: {},
             holdings: [

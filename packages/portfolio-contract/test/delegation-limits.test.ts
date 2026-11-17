@@ -801,7 +801,7 @@ for (const [instrument, kind] of [
   ['Aave_Ethereum', 'principal'],
   ['Compound_Ethereum', 'principal'],
 ] as const) {
-  test(`Portfolio limits use the combined observed values, not raw token quantities (${instrument})`, t => {
+  test(`Portfolio limits count invested value, not rewards or raw quantities (${instrument})`, t => {
     const observations = makeHoldingObservations(
       [
         makeHolding({
@@ -819,7 +819,7 @@ for (const [instrument, kind] of [
           balanceUsdc: 1n,
         }),
       ],
-      { [instrument]: { tvlUsd: 80n } },
+      { [instrument]: { tvlUsd: 30n } },
     );
     for (const balances of [{}, { [instrument]: 2n }]) {
       const withBalances = { ...observations, balances };
@@ -833,7 +833,21 @@ for (const [instrument, kind] of [
             { [instrument]: 100n },
             withBalances,
           ),
-        { message: /mandate.maxVaultShare.*portfolio value.*100000000/ },
+        { message: /mandate.maxVaultShare.*portfolio value.*40000000/ },
+      );
+      t.notThrows(() =>
+        vetPlanAllocation(
+          { [instrument]: 100n },
+          { flow: [] },
+          {
+            ...withBalances,
+            holdings: observations.holdings!.map(holding =>
+              holding.kind === 'claimable-reward'
+                ? { ...holding, valueUusd: undefined }
+                : holding,
+            ),
+          },
+        ),
       );
     }
     t.throws(
@@ -2229,26 +2243,43 @@ test('Share withdrawals cannot exceed the observed shares', t => {
   }
 });
 
-test('A maximum share withdrawal leaves reward exposure at the source', t => {
+test('A maximum share withdrawal ignores unclaimed reward value', t => {
   const { instrument, shares, movement, checkAllocation } =
     makeMorphoMaximumWithdrawalCase();
-  t.throws(
-    () =>
-      checkAllocation(
-        { Aave_Ethereum: 100n },
-        { flow: [movement] },
-        makeHoldingObservations([
-          shares,
-          makeHolding({
-            place: instrument,
-            kind: 'claimable-reward',
-            amount: 20n,
-            valueUusd: 20_000_000n,
-          }),
-        ]),
-      ),
-    { message: /plan final balance exceeds target allocation.*20000000/ },
+  t.notThrows(() =>
+    checkAllocation(
+      { Aave_Ethereum: 100n },
+      { flow: [movement] },
+      makeHoldingObservations([
+        shares,
+        makeHolding({
+          place: instrument,
+          kind: 'claimable-reward',
+          amount: 20n,
+          valueUusd: 20_000_000n,
+        }),
+      ]),
+    ),
   );
+});
+
+test('Exact withdrawals cannot spend unclaimed rewards', t => {
+  const src = 'Aave_Ethereum';
+  const observations = makeHoldingObservations([
+    makeHolding({ place: src, kind: 'principal', amount: 40n, valueUusd: 40n }),
+    makeHolding({
+      place: src,
+      kind: 'claimable-reward',
+      amount: 60n,
+      valueUusd: 60n,
+    }),
+  ]);
+  const plan: FundsFlowPlan = {
+    flow: [{ src, dest: '@Ethereum', amount: { brand: USDC, value: 100n } }],
+  };
+  t.throws(() => vetPlanAllocation({ '@Ethereum': 1n }, plan, observations), {
+    message: /unfunded plan movement/,
+  });
 });
 
 test('Maximum Morpho withdrawals target the position’s own chain account', t => {
@@ -2298,7 +2329,7 @@ test('Maximum Morpho withdrawals target the position’s own chain account', t =
 });
 
 for (const [label, withdraw] of additiveWithdrawCases) {
-  test(`withdraw is additive to exact-amount allocation validation: ${label}`, t => {
+  test(`exact withdrawal accepts legacy and hybrid observations: ${label}`, t => {
     const plan: FundsFlowPlan = harden({
       flow: [
         {
@@ -2309,9 +2340,25 @@ for (const [label, withdraw] of additiveWithdrawCases) {
         },
       ],
     });
+    const balances = { Aave_Base: 100_000_000n };
     t.notThrows(() =>
       vetPlanAllocation({ '@Base': 1n }, plan, {
-        balances: { Aave_Base: 100_000_000n, '@Base': 0n },
+        balances,
+        instrumentTvls: {},
+      }),
+    );
+    t.notThrows(() =>
+      vetPlanAllocation({ '@Base': 1n }, plan, {
+        balances,
+        holdings: [
+          makeHolding({
+            place: 'Aave_Base',
+            kind: 'principal',
+            amount: 100_000_000n,
+            valueUusd: 100_000_000n,
+            balanceUsdc: 100_000_000n,
+          }),
+        ],
         instrumentTvls: {},
       }),
     );
@@ -2322,6 +2369,160 @@ for (const [label, withdraw] of additiveWithdrawCases) {
     );
   });
 }
+
+test('Exact withdrawals share the observed source value', t => {
+  const holding = makeHolding({
+    place: 'Aave_Ethereum',
+    kind: 'principal',
+    amount: 100n,
+    valueUusd: 100n,
+  });
+  const movement = (value: bigint): MovementDesc => ({
+    src: 'Aave_Ethereum',
+    dest: '@Ethereum',
+    amount: { brand: USDC, value },
+  });
+  const check = (secondAmount: bigint, order?: FundsFlowPlan['order']) =>
+    vetPlanAllocation(
+      { '@Ethereum': 1n },
+      { flow: [movement(40n), movement(secondAmount)], order },
+      makeHoldingObservations([holding]),
+    );
+  for (const order of [undefined, []]) {
+    t.notThrows(() => check(60n, order));
+    t.throws(() => check(61n, order), { message: /unfunded plan movement/ });
+  }
+});
+
+test('Exact withdrawals cannot mix with max or share withdrawals from one source', t => {
+  for (const { src, kind, withdraw } of [
+    { src: 'Aave_Ethereum', kind: 'principal', withdraw: { max: true } },
+    {
+      src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+      kind: 'shares',
+      withdraw: { amountOfShares: 10n },
+    },
+  ] as const) {
+    const exact: MovementDesc = {
+      src,
+      dest: '@Ethereum',
+      amount: { brand: USDC, value: 40n },
+    };
+    const option: MovementDesc = {
+      ...exact,
+      amount: { brand: USDC, value: 0n },
+      withdraw,
+    };
+    const evidence = makeHoldingObservations([
+      makeHolding({ place: src, kind, amount: 100n, valueUusd: 100n }),
+    ]);
+    for (const flow of [
+      [exact, option],
+      [option, exact],
+    ]) {
+      t.throws(
+        () => vetPlanAllocation({ '@Ethereum': 1n }, { flow }, evidence),
+        {
+          message: /cannot mix exact-amount and max\/share withdrawals/,
+        },
+      );
+    }
+  }
+});
+
+test('Typed holdings allow exact Beefy withdrawals', t => {
+  const src = 'Beefy_re7_Avalanche';
+  t.notThrows(() =>
+    vetPlanAllocation(
+      { [src]: 60n, '@Avalanche': 40n },
+      {
+        flow: [
+          { src, dest: '@Avalanche', amount: { brand: USDC, value: 40n } },
+        ],
+      },
+      makeHoldingObservations([
+        makeHolding({
+          place: src,
+          kind: 'shares',
+          amount: 100n,
+          valueUusd: 100n,
+        }),
+      ]),
+    ),
+  );
+});
+
+test('Reject exact withdrawals when USDC withdrawn exceeds USD value removed', t => {
+  const src = 'Aave_Ethereum';
+  const observations = makeHoldingObservations([
+    makeHolding({
+      place: src,
+      kind: 'principal',
+      amount: 1_000_000_000n,
+      valueUusd: 990_000_000n,
+    }),
+  ]);
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src,
+        dest: '@Ethereum',
+        amount: { brand: USDC, value: 990_000_000n },
+      },
+    ],
+  };
+
+  // A successful 990-USDC withdrawal leaves 10 USDC worth $9.90 at Aave.
+  t.throws(() => vetPlanAllocation({ '@Ethereum': 1n }, plan, observations), {
+    message: /final balance exceeds target allocation at "Aave_Ethereum"/,
+  });
+});
+
+test('Exact withdrawals after a supply spend the new principal', t => {
+  const src = 'Aave_Ethereum';
+  const plan: FundsFlowPlan = {
+    flow: [
+      { src: '@Ethereum', dest: src, amount: { brand: USDC, value: 60n } },
+      { src, dest: '@Ethereum', amount: { brand: USDC, value: 20n } },
+      { src: '@Ethereum', dest: src, amount: { brand: USDC, value: 20n } },
+    ],
+  };
+  const holdings = [
+    makeHolding({
+      place: '@Ethereum',
+      kind: 'token',
+      amount: 100n,
+      valueUusd: 100n,
+    }),
+    makeHolding({ place: src, kind: 'principal', amount: 0n, valueUusd: 0n }),
+  ];
+  for (const hybrid of [false, true]) {
+    const observations: PlanObservations = {
+      balances: hybrid ? { '@Ethereum': 100n, [src]: 0n } : {},
+      holdings: hybrid
+        ? holdings.map(holding => ({ ...holding, balanceUsdc: holding.amount }))
+        : holdings,
+      instrumentTvls: {},
+    };
+    t.notThrows(() =>
+      vetPlanAllocation(
+        { [src]: 60n, '@Ethereum': 40n },
+        plan,
+        observations,
+        () => holdingTokens.usdc,
+      ),
+    );
+    t.throws(
+      () =>
+        vetPlanAllocation(
+          { '@Ethereum': 1n },
+          { flow: [plan.flow[1]!] },
+          observations,
+        ),
+      { message: /unfunded plan movement/ },
+    );
+  }
+});
 
 test('max with legacy balances requires principal evidence', t => {
   const plan: FundsFlowPlan = {
