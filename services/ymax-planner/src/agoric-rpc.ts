@@ -1,22 +1,51 @@
 import { Fail, q } from '@endo/errors';
 
-import type { CosmosRPCClient } from './cosmos-rpc.ts';
-
 /** How old a node's latest block may be for the node to count as healthy. */
 export const MAX_AGORIC_BLOCK_AGE_MS = 60_000;
 
 /** How long to wait for a node to open a websocket and answer `status`. */
 export const AGORIC_RPC_PROBE_TIMEOUT_MS = 15_000;
 
-type RpcClient = Pick<
-  CosmosRPCClient,
-  'opened' | 'closed' | 'close' | 'request'
->;
+/** The parts of a CosmosRPCClient used here. */
+type RpcClient = {
+  opened(): Promise<void>;
+  closed(): Promise<unknown>;
+  close(): void;
+  request(method: string, params: Record<string, never>): PromiseLike<unknown>;
+};
+
+/** The parts of a CometBFT `status` result checked here. */
+type CometStatus = {
+  node_info: { network: string };
+  sync_info: {
+    catching_up: boolean;
+    latest_block_height: string;
+    latest_block_time: string;
+  };
+};
+
+const isRecord = (specimen: unknown): specimen is Record<string, unknown> =>
+  typeof specimen === 'object' && specimen !== null;
+
+const isCometStatus = (specimen: unknown): specimen is CometStatus => {
+  if (!isRecord(specimen)) return false;
+  const { node_info: nodeInfo, sync_info: syncInfo } = specimen;
+  return (
+    isRecord(nodeInfo) &&
+    typeof nodeInfo.network === 'string' &&
+    isRecord(syncInfo) &&
+    typeof syncInfo.catching_up === 'boolean' &&
+    typeof syncInfo.latest_block_height === 'string' &&
+    typeof syncInfo.latest_block_time === 'string'
+  );
+};
 
 export type AgoricRpcPowers<C extends RpcClient = RpcClient> = {
   makeRpcClient: (rpcAddr: string) => C;
+  /** Wall-clock time in milliseconds, for comparing with block times. */
   now: () => number;
   setTimeout: typeof globalThis.setTimeout;
+  clearTimeout: typeof globalThis.clearTimeout;
 };
 
 export type AgoricRpcCriteria = {
@@ -30,7 +59,10 @@ export type AgoricRpcCriteria = {
 const withTimeout = async <T>(
   promise: Promise<T>,
   timeoutMs: number,
-  setTimeout: typeof globalThis.setTimeout,
+  {
+    setTimeout,
+    clearTimeout,
+  }: Pick<AgoricRpcPowers, 'setTimeout' | 'clearTimeout'>,
   label: string,
 ): Promise<T> => {
   await null;
@@ -63,11 +95,14 @@ export const checkAgoricRpcStatus = async (
   }: Omit<AgoricRpcCriteria, 'timeoutMs'> & { now: () => number },
 ) => {
   const status = await rpc.request('status', {});
-  const network = status?.node_info?.network;
+  if (!isCometStatus(status)) {
+    throw Fail`Unexpected status result: ${status}`;
+  }
+  const network = status.node_info.network;
   network === chainId ||
     Fail`Expected chain ID ${q(chainId)}, got ${q(network)}`;
   if (!requireSynced) return status;
-  const syncInfo = status?.sync_info ?? Fail`Missing sync_info in status`;
+  const syncInfo = status.sync_info;
   const { catching_up: catchingUp, latest_block_height: height } = syncInfo;
   !catchingUp || Fail`Node is catching up at height ${q(height)}`;
   const blockAgeMs = now() - Date.parse(syncInfo.latest_block_time);
@@ -84,7 +119,7 @@ export const checkAgoricRpcStatus = async (
  */
 export const connectHealthyAgoricRpc = async <C extends RpcClient>(
   rpcAddr: string,
-  { makeRpcClient, now, setTimeout }: AgoricRpcPowers<C>,
+  { makeRpcClient, now, setTimeout, clearTimeout }: AgoricRpcPowers<C>,
   {
     timeoutMs = AGORIC_RPC_PROBE_TIMEOUT_MS,
     ...statusCriteria
@@ -101,7 +136,7 @@ export const connectHealthyAgoricRpc = async <C extends RpcClient>(
         return checkAgoricRpcStatus(rpc, { ...statusCriteria, now });
       })(),
       timeoutMs,
-      setTimeout,
+      { setTimeout, clearTimeout },
       `Probing Agoric RPC ${rpcAddr}`,
     );
     return { rpc, status };
@@ -134,7 +169,8 @@ export const connectFirstHealthyAgoricRpc = async <C extends RpcClient>(
       return { rpc, rpcAddr, index, status, failures };
     } catch (err) {
       powers.log(`Agoric RPC ${rpcAddr} is unavailable:`, err);
-      failures.push(`${rpcAddr}: ${(err as Error)?.message ?? err}`);
+      const message = err instanceof Error ? err.message : String(err);
+      failures.push(`${rpcAddr}: ${message}`);
     }
   }
   throw Fail`No healthy Agoric RPC among ${q(rpcAddrs)}: ${q(failures)}`;

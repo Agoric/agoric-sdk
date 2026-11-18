@@ -184,6 +184,7 @@ export const main = async (
     makeNonce = defaultMakeNonce,
     now = globalThis.performance.now.bind(globalThis.performance),
     setTimeout = globalThis.setTimeout,
+    clearTimeout = globalThis.clearTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
     AbortController = globalThis.AbortController,
     AbortSignal = globalThis.AbortSignal,
@@ -240,10 +241,12 @@ export const main = async (
         // Detect a stalled node only when there is another to fall back to.
         maxMessageGapMs:
           agoricRpcAddrs.length > 1 ? AGORIC_MAX_MESSAGE_GAP_MS : undefined,
-        now: Date.now,
+        now,
       }),
+    // Wall-clock time, for comparing with block times.
     now: Date.now,
     setTimeout,
+    clearTimeout,
   };
   const agoricRpcCriteria = { chainId: networkConfig.chainName };
   const {

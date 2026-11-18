@@ -40,7 +40,7 @@ const makeFakeRpcs = (behaviors: Record<string, NodeBehavior>) => {
     const behavior = behaviors[rpcAddr] ?? { openError: 'unknown endpoint' };
     const record = { rpcAddr, closed: false };
     made.push(record);
-    const closedPK = Promise.withResolvers<any>();
+    const closedPK = Promise.withResolvers<void>();
     return {
       rpcAddr,
       opened: () =>
@@ -64,6 +64,7 @@ const makeFakeRpcs = (behaviors: Record<string, NodeBehavior>) => {
     makeRpcClient,
     now: () => NOW,
     setTimeout: globalThis.setTimeout,
+    clearTimeout: globalThis.clearTimeout,
     log: () => {},
   };
   return { made, powers };
@@ -71,7 +72,7 @@ const makeFakeRpcs = (behaviors: Record<string, NodeBehavior>) => {
 
 test('checkAgoricRpcStatus accepts a synced node of the expected chain', async t => {
   const rpc = { request: async () => makeStatus({}) };
-  const status = await checkAgoricRpcStatus(rpc as any, {
+  const status = await checkAgoricRpcStatus(rpc, {
     chainId: CHAIN_ID,
     now: () => NOW,
   });
@@ -80,11 +81,14 @@ test('checkAgoricRpcStatus accepts a synced node of the expected chain', async t
 
 test('checkAgoricRpcStatus rejects an unhealthy node', async t => {
   const check = (behavior: NodeBehavior, requireSynced?: boolean) =>
-    checkAgoricRpcStatus({ request: async () => makeStatus(behavior) } as any, {
-      chainId: CHAIN_ID,
-      now: () => NOW,
-      requireSynced,
-    });
+    checkAgoricRpcStatus(
+      { request: async () => makeStatus(behavior) },
+      {
+        chainId: CHAIN_ID,
+        now: () => NOW,
+        requireSynced,
+      },
+    );
   await t.throwsAsync(check({ network: 'agoricdev-25' }), {
     message: /Expected chain ID "agoric-3", got "agoricdev-25"/,
   });
@@ -116,12 +120,13 @@ test('connectFirstHealthyAgoricRpc prefers the first healthy endpoint', async t 
 });
 
 test('connectFirstHealthyAgoricRpc falls back past unhealthy endpoints', async t => {
-  for (const follower of [
+  const unhealthyFollowers: NodeBehavior[] = [
     { openError: 'Unexpected server response: 522' },
     { catchingUp: true },
     { blockAgeMs: 300_000 },
     { hang: true },
-  ] as NodeBehavior[]) {
+  ];
+  for (const follower of unhealthyFollowers) {
     const { made, powers } = makeFakeRpcs({
       [FOLLOWER]: follower,
       [ARCHIVE]: {},

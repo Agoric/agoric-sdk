@@ -1,13 +1,31 @@
 import test from 'ava';
 
-import { CosmosRPCClient } from '../src/cosmos-rpc.ts';
+import {
+  CosmosRPCClient,
+  type RpcCloseEvent,
+  type RpcWebSocket,
+} from '../src/cosmos-rpc.ts';
+
+/** One event object that fits every RpcWebSocket listener. */
+type FakeEvent = RpcCloseEvent & {
+  data: Buffer;
+  error?: { message?: string };
+};
+
+const makeFakeEvent = (fields: Partial<FakeEvent> = {}): FakeEvent => ({
+  code: 1000,
+  reason: '',
+  wasClean: true,
+  data: Buffer.from(''),
+  ...fields,
+});
 
 /** A minimal stand-in for `ws`'s WebSocket, driven by the test. */
 const makeFakeWebSocket = () => {
-  const sent: any[] = [];
-  let socket: any;
+  const sent: unknown[] = [];
+  let socket: FakeWebSocket | undefined;
   class FakeWebSocket {
-    listeners = new Map<string, Array<(event: any) => void>>();
+    listeners = new Map<string, Array<(event: FakeEvent) => void>>();
 
     terminated = false;
 
@@ -18,15 +36,15 @@ const makeFakeWebSocket = () => {
       socket = this;
     }
 
-    addEventListener(type: string, listener: (event: any) => void) {
+    addEventListener(type: string, listener: (event: FakeEvent) => void) {
       this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
     }
 
-    on(type: string, listener: (event: any) => void) {
+    on(type: string, listener: (event: FakeEvent) => void) {
       this.addEventListener(type, listener);
     }
 
-    emit(type: string, event: any = {}) {
+    emit(type: string, event: FakeEvent = makeFakeEvent()) {
       for (const listener of this.listeners.get(type) ?? []) listener(event);
     }
 
@@ -44,14 +62,24 @@ const makeFakeWebSocket = () => {
 
     close() {}
   }
-  const receive = (message: unknown) =>
-    socket.emit('message', { data: Buffer.from(JSON.stringify(message)) });
-  return {
-    WebSocket: FakeWebSocket as any,
-    sent,
-    receive,
-    getSocket: () => socket,
+  const WebSocket: new (url: URL) => RpcWebSocket = FakeWebSocket;
+  const getSocket = () => {
+    if (!socket) throw Error('no socket yet');
+    return socket;
   };
+  const receive = (message: unknown) =>
+    getSocket().emit(
+      'message',
+      makeFakeEvent({ data: Buffer.from(JSON.stringify(message)) }),
+    );
+  const lastSentId = () => {
+    const last = sent.at(-1);
+    if (typeof last === 'object' && last !== null && 'id' in last) {
+      return last.id;
+    }
+    throw Error('nothing sent');
+  };
+  return { WebSocket, receive, getSocket, lastSentId };
 };
 
 /** Heartbeats that the test triggers one at a time. */
@@ -79,7 +107,7 @@ const subscribe = async (
   const responses = rpc.subscribe("tm.event = 'NewBlock'");
   const readyP = responses.next();
   await null;
-  const { id } = fake.sent.at(-1);
+  const id = fake.lastSentId();
   fake.receive({ jsonrpc: '2.0', id, result: {} });
   await readyP;
   return { responses, id };

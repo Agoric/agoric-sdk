@@ -1,5 +1,4 @@
 import { JSONRPCClient, type JSONRPCResponse } from 'json-rpc-2.0';
-import type { CloseEvent, WebSocket } from 'ws';
 
 const MAX_SUBSCRIPTIONS = 5;
 
@@ -10,6 +9,31 @@ const hasOwnProperties = (obj: unknown) =>
 export type SubscriptionResponse = {
   type: string;
   value: Record<string, unknown>;
+};
+
+/** The parts of a WebSocket close event that CosmosRPCClient reports. */
+export type RpcCloseEvent = { code: number; reason: string; wasClean: boolean };
+
+/** The parts of `ws`'s WebSocket that CosmosRPCClient uses. */
+export type RpcWebSocket = {
+  send(data: string): void;
+  close(): void;
+  terminate(): void;
+  ping(): void;
+  on(event: 'pong', listener: () => void): unknown;
+  addEventListener(type: 'open', listener: () => void): void;
+  addEventListener(
+    type: 'close',
+    listener: (event: RpcCloseEvent) => void,
+  ): void;
+  addEventListener(
+    type: 'error',
+    listener: (event: { error?: { message?: string } }) => void,
+  ): void;
+  addEventListener(
+    type: 'message',
+    listener: (event: { data: { toString(encoding: 'utf8'): string } }) => void,
+  ): void;
 };
 
 export class CosmosRPCClient extends JSONRPCClient {
@@ -26,13 +50,13 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   #openedPK: PromiseWithResolvers<void>;
 
-  #closedPK: PromiseWithResolvers<CloseEvent>;
+  #closedPK: PromiseWithResolvers<RpcCloseEvent>;
 
   #isClosed = false;
 
   #lastSentId = -1;
 
-  #ws: WebSocket;
+  #ws: RpcWebSocket;
 
   /**
    * @param url
@@ -53,7 +77,7 @@ export class CosmosRPCClient extends JSONRPCClient {
       maxMessageGapMs,
       now,
     }: {
-      WebSocket: typeof import('ws').WebSocket;
+      WebSocket: new (url: URL) => RpcWebSocket;
       heartbeats?: AsyncIterable<unknown>;
       maxMessageGapMs?: number;
       now?: () => number;
