@@ -374,6 +374,29 @@ jobs:
 
       - uses: ./.github/actions/setup-agoric-sdk-build
 
+      - name: Check for Cloud Logging credentials
+        id: gcp-logging
+        env:
+          SA_KEY: ${{ secrets.GCP_LOGGING_VIEWER_SA_KEY }}
+        run: |
+          if [ -n "$SA_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::GCP_LOGGING_VIEWER_SA_KEY is not set; upgrade logs can only come from Grafana"
+          fi
+
+      # The upgrade logs are read from Cloud Logging, which needs a service
+      # account with roles/logging.viewer on the simulationlab project.
+      - name: Auth to Google Cloud for upgrade logs
+        if: steps.gcp-logging.outputs.configured == 'true'
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_LOGGING_VIEWER_SA_KEY }}
+
+      - name: Set up gcloud
+        if: steps.gcp-logging.outputs.configured == 'true'
+        uses: google-github-actions/setup-gcloud@v3
+
       - name: Run upgrade confirm phase
         env:
           AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}

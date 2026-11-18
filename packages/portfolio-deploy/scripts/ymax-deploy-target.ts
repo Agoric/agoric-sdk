@@ -2140,7 +2140,9 @@ const confirmUpgradeContract = async (
   const { sortedLogEntries, slogsText, incarnationNumber } =
     await retryUntilCondition(getGoodLogs, () => true, 'upgrade logs', {
       setTimeout,
-      retryIntervalMs: 20_000,
+      // retryIntervalMs doubles as a per-attempt timeout, and reading a large
+      // upgrade's logs from Cloud Logging can take most of 20 seconds.
+      retryIntervalMs: 60_000,
     });
 
   await release.join(slogAssetName).writeText(slogsText);
