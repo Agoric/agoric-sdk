@@ -162,6 +162,16 @@ Environment variables:
   "$subdomain,$chainId" or "$fqdn,$chainId" for sending cosmos-sdk RPC requests
   to $subdomain.rpc.agoric.net or $fqdn (respectively) and assuming the chain ID
   (default derived from `CLUSTER`, falling back to "local")
+- `AGORIC_RPC_FALLBACKS`: comma-separated Agoric RPC URLs to use, in order,
+  when the one from `AGORIC_NET` is unreachable, catching up, or has no recent
+  block (default "https://main-a.rpc.agoric.net:443" for "mainnet", none
+  otherwise; set it empty to disable). These should be archive nodes, since the
+  planner reads vstorage history. The planner picks one at startup and uses it
+  for everything (block following, queries, and transactions). If its
+  websocket fails or stalls (no message for 60 seconds while there is a
+  fallback), the planner exits so that a restart picks again. While on a
+  fallback, it logs a 🚨 error at startup and exits once the preferred RPC
+  has passed 5 health checks in a row (one per minute), to switch back to it.
 - `CONTRACT_INSTANCE`: Contract instance identifier, either "ymax0" (dev) or "ymax1" (prod) (required)
 - `ALCHEMY_API_KEY`: API key for accessing Alchemy's RPC endpoint (required, but not verified at startup)
   - **Important**: For all EVM chains in `AxelarChain` (see `packages/portfolio-api/src/constants.js`), ensure they are enabled in your Alchemy dashboard.

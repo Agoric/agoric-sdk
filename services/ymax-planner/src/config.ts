@@ -31,6 +31,19 @@ export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
     mainnet: 'main',
   });
 
+/**
+ * Agoric RPC endpoints to fall back to when the one from AGORIC_NET is
+ * unavailable. Archive nodes, because the planner reads vstorage history.
+ */
+export const defaultAgoricRpcFallbacksForCluster: Record<
+  ClusterName,
+  readonly string[]
+> = harden({
+  local: [],
+  testnet: [],
+  mainnet: ['https://main-a.rpc.agoric.net:443'],
+});
+
 /** `maxRetries` is a count; all other numbers are in milliseconds. */
 export type RequestLimits = {
   timeout: number;
@@ -51,6 +64,8 @@ export interface YmaxPlannerConfig {
   readonly requestLimits: Partial<RequestLimits>;
   readonly spectrumBlockchainEndpoints: string[];
   readonly agoricNetworkSpec: string;
+  /** Agoric RPC endpoints to use, in order, when AGORIC_NET's is unavailable. */
+  readonly agoricRpcFallbacks: readonly string[];
   readonly axelar: {
     readonly apiUrl: string;
     readonly chainIdMap: Record<AxelarChain, string>;
@@ -205,6 +220,23 @@ export const loadConfig = async (
     clusterName ||= 'testnet';
   }
 
+  // An empty AGORIC_RPC_FALLBACKS disables the default fallbacks.
+  const agoricRpcFallbacks = harden(
+    env.AGORIC_RPC_FALLBACKS === undefined
+      ? defaultAgoricRpcFallbacksForCluster[clusterName]
+      : env.AGORIC_RPC_FALLBACKS.split(',')
+          .map(addr => addr.trim())
+          .filter(addr => addr !== '')
+          .map((addr, i) => {
+            try {
+              void new URL(addr);
+              return addr;
+            } catch {
+              throw Fail`AGORIC_RPC_FALLBACKS[${q(i)}] must be a valid URL, got: ${addr}`;
+            }
+          }),
+  );
+
   const gcpProjectId = env.GCP_PROJECT_ID?.trim() || 'simulationlab';
   const gcpSecretName = env.GCP_SECRET_NAME?.trim() || 'YMAX_CONTROL_MNEMONIC';
   const mnemonic =
@@ -314,6 +346,7 @@ export const loadConfig = async (
     requestLimits: { timeout, maxRetries },
     spectrumBlockchainEndpoints,
     agoricNetworkSpec,
+    agoricRpcFallbacks,
     axelar: {
       apiUrl: axelarApiAddress,
       chainIdMap: axelarChainIdMap,

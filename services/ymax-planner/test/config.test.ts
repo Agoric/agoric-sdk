@@ -4,6 +4,7 @@ import type { ClusterName } from '@agoric/internal';
 import {
   loadConfig,
   defaultAgoricNetworkSpecForCluster,
+  defaultAgoricRpcFallbacksForCluster,
   type SecretManager,
 } from '../src/config.ts';
 import {
@@ -145,6 +146,42 @@ test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
       }
     }
   }
+});
+
+test('loadConfig defaults AGORIC_RPC_FALLBACKS from CLUSTER', async t => {
+  for (const [clusterName, fallbacks] of entries(
+    defaultAgoricRpcFallbacksForCluster,
+  )) {
+    const config = await callLoadConfig({ CLUSTER: clusterName });
+    t.deepEqual(config.agoricRpcFallbacks, fallbacks, `CLUSTER=${clusterName}`);
+  }
+  const mainnet = await callLoadConfig({ CLUSTER: 'mainnet' });
+  t.deepEqual(mainnet.agoricRpcFallbacks, [
+    'https://main-a.rpc.agoric.net:443',
+  ]);
+});
+
+test('loadConfig parses AGORIC_RPC_FALLBACKS', async t => {
+  const config = await callLoadConfig({
+    CLUSTER: 'mainnet',
+    AGORIC_RPC_FALLBACKS: ' https://a.example:443 , https://b.example ,, ',
+  });
+  t.deepEqual(config.agoricRpcFallbacks, [
+    'https://a.example:443',
+    'https://b.example',
+  ]);
+
+  // Explicitly empty disables the default.
+  const none = await callLoadConfig({
+    CLUSTER: 'mainnet',
+    AGORIC_RPC_FALLBACKS: '',
+  });
+  t.deepEqual(none.agoricRpcFallbacks, []);
+
+  await t.throwsAsync(
+    callLoadConfig({ AGORIC_RPC_FALLBACKS: 'https://a.example,not a url' }),
+    { message: /AGORIC_RPC_FALLBACKS\[1\] must be a valid URL/ },
+  );
 });
 
 test('loadConfig validates positive integers', async t => {
