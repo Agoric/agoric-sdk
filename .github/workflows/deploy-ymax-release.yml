@@ -377,17 +377,14 @@ jobs:
       - uses: ./.github/actions/setup-agoric-sdk-build
 
       # The upgrade logs are read from Cloud Logging with gcloud, which needs
-      # roles/logging.viewer on the simulationlab project. This job gets it
-      # through Workload Identity Federation, using its GitHub OIDC token
-      # (hence `id-token: write`) rather than a stored key.
-      # GCP_LOGS_SERVICE_ACCOUNT is only set when the role is granted to a
-      # service account for the job to impersonate, not to the job's identity.
+      # roles/logging.viewer on the simulationlab project. This repository's
+      # workflows have it through Workload Identity Federation, using the
+      # job's GitHub OIDC token (hence `id-token: write`) rather than a key.
       - name: Auth to Google Cloud for upgrade logs
         uses: google-github-actions/auth@v3
         with:
           project_id: simulationlab
-          workload_identity_provider: ${{ vars.GCP_LOGS_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_LOGS_SERVICE_ACCOUNT }}
+          workload_identity_provider: projects/60745596728/locations/global/workloadIdentityPools/github/providers/agoric-sdk
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v3
