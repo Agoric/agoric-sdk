@@ -347,7 +347,9 @@ Upgrade policy by target:
 - detached direct or `authz` operator signing can also be exercised on
   `ymax0-devnet` and `ymax0-main`
 - `ymax0-main` requires an approval gate before upgrade
-- `ymax1-main` requires protected-environment approval before upgrade
+- `ymax1-main` release submissions use `ymax1-mainnet-release` and proceed
+  automatically when the upgrade is ready, the operator attests that the
+  planner is down, and `stopBeforeSubmit` is false
 - operator-held signing is the intended high-safety path on `ymax1-main`
 
 Install:
