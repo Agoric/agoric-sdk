@@ -80,7 +80,7 @@
     "ky": "^1.13.0",
     "ts-blank-space": "^0.6.1",
     "viem": "^2.41.2",
-    "ws": "^8.18.3"
+    "ws": "^7.5.11"
   },
   "typeCoverage": {
     "atLeast": 93.19
