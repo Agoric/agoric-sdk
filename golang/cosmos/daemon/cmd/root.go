@@ -176,6 +176,7 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 	if err := autoCliOpts.EnhanceRootCommand(rootCmd); err != nil {
 		panic(err)
 	}
+	addMinGasPricesResolver(rootCmd)
 
 	return rootCmd, encodingConfig
 }

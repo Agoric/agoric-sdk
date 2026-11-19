@@ -14,10 +14,11 @@ import {
   reflectWalletStore,
   type WalletStoreSigner,
 } from '../src/wallet-store.js';
+import type { BroadcastFee } from '../src/signing-smart-wallet-kit.js';
 
 type BridgeSend<T extends BridgeAction = BridgeAction> = {
   action: T;
-  fee?: StdFee;
+  fee?: BroadcastFee;
   memo?: string;
   signerData?: SignerData;
 };

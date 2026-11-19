@@ -7,8 +7,13 @@ import {
   Registry,
   type GeneratedType,
 } from '@cosmjs/proto-signing';
-import { SigningStargateClient } from '@cosmjs/stargate';
+import { SigningStargateClient, type GasPrice } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
+import {
+  minGasPrices,
+  resolveAgoricGasPrices,
+  type AgoricGasPrices,
+} from './signing-fees.js';
 
 // XXX should come from code https://github.com/Agoric/agoric-sdk/issues/5912
 const AgoricMsgs = {
@@ -31,11 +36,15 @@ export const makeStargateClientKit = async (
     hdPath = `m/44'/564'/0'/0/0`,
     rpcAddr,
     connectWithSigner,
+    gasPrices = minGasPrices,
+    feeDenom,
   }: {
     prefix?: string;
     hdPath?: string;
     rpcAddr: string;
     connectWithSigner: typeof SigningStargateClient.connectWithSigner;
+    gasPrices?: AgoricGasPrices;
+    feeDenom?: string;
   },
 ) => {
   const signer = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
@@ -45,9 +54,15 @@ export const makeStargateClientKit = async (
   const accounts = await signer.getAccounts();
   accounts.length === 1 || Fail`expected exactly one account`;
   const [{ address }] = accounts;
+  const gasPrice: GasPrice = await resolveAgoricGasPrices(
+    rpcAddr,
+    gasPrices,
+    feeDenom,
+  );
   const client = await connectWithSigner(rpcAddr, signer, {
     registry: new Registry(agoricRegistryTypes),
+    gasPrice,
   });
 
-  return Object.freeze({ address, client });
+  return Object.freeze({ address, client, gasPrice });
 };
