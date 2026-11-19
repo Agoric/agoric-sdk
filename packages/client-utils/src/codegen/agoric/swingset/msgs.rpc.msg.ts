@@ -16,6 +16,8 @@ import {
   MsgProvisionResponse,
   MsgCoreEval,
   MsgCoreEvalResponse,
+  MsgUpdateParams,
+  MsgUpdateParamsResponse,
 } from '@agoric/cosmic-proto/codegen/agoric/swingset/msgs.js';
 /** Transactions. */
 export interface Msg {
@@ -37,6 +39,8 @@ export interface Msg {
   provision(request: MsgProvision): Promise<MsgProvisionResponse>;
   /** Execute a core evaluation. */
   coreEval(request: MsgCoreEval): Promise<MsgCoreEvalResponse>;
+  /** Update params. */
+  updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse>;
 }
 export class MsgClientImpl implements Msg {
   private readonly rpc: TxRpc;
@@ -49,6 +53,7 @@ export class MsgClientImpl implements Msg {
     this.walletSpendAction = this.walletSpendAction.bind(this);
     this.provision = this.provision.bind(this);
     this.coreEval = this.coreEval.bind(this);
+    this.updateParams = this.updateParams.bind(this);
   }
   installBundle(request: MsgInstallBundle): Promise<MsgInstallBundleResponse> {
     const data = MsgInstallBundle.encode(request).finish();
@@ -117,6 +122,17 @@ export class MsgClientImpl implements Msg {
     const promise = this.rpc.request('agoric.swingset.Msg', 'CoreEval', data);
     return promise.then(data =>
       MsgCoreEvalResponse.decode(new BinaryReader(data)),
+    );
+  }
+  updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse> {
+    const data = MsgUpdateParams.encode(request).finish();
+    const promise = this.rpc.request(
+      'agoric.swingset.Msg',
+      'UpdateParams',
+      data,
+    );
+    return promise.then(data =>
+      MsgUpdateParamsResponse.decode(new BinaryReader(data)),
     );
   }
 }
