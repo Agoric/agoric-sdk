@@ -13,6 +13,7 @@ import type {
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
 import type { Address as EvmAddress } from 'abitype';
+import type { HexBytes } from '@agoric/orchestration/src/utils/abitype.js';
 import type {
   AxelarChain,
   SupportedChain,
@@ -27,6 +28,8 @@ import type {
   PortfolioPermissionsExt,
 } from './portfolio-permissions.js';
 import type { SignedPortfolioObservations } from './observation-messages.ts';
+
+export type { HexBytes };
 
 /**
  * Feature flags to handle contract upgrade flow compatibility.
@@ -70,6 +73,9 @@ export type DepositFromChainRef = `+${AxelarChain}`;
 export type WithdrawToChainRef = `-${AxelarChain}`;
 
 export type InterChainAccountRef = `@${SupportedChain}`;
+
+/** The {@link InterChainAccountRef} of a portfolio on an EVM chain, e.g. `@Base`. */
+export type EvmAccountRef = `@${AxelarChain}`;
 
 /**
  * An AssetPlaceRef describes a place where funds can be, either an
@@ -179,6 +185,10 @@ export type PortfolioBalancePlaceRef = InstrumentId | InterChainAccountRef;
 /**
  * Off-chain observations used to construct and vet a submitted plan.
  * Balance values are micro-USDC.
+ *
+ * The optional {@link SelectableObservations} arrays are each independently
+ * present only when requested from (and returned by) the observation service:
+ * absent means not requested, while present and empty means nothing matched.
  */
 export type PlanObservations = {
   balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
@@ -188,6 +198,101 @@ export type PlanObservations = {
    */
   holdings?: TypedHoldingDetail[];
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
+} & SelectableObservations;
+
+/**
+ * Observations that plan steps refer to by index, rather than restate: claim
+ * evidence and swap instructions, attested by the observation service for an
+ * operation contemplated by an agent or the planner. A step's selector
+ * ({@link ClaimRewardsSelector} or {@link SwapSelector}) picks one entry by
+ * its index in one of these arrays, and the contract derives what the step
+ * executes from that signed entry, never from the plan itself.
+ *
+ * Entries carry proofs and provider route data; they neither authorize an
+ * operation, nor guarantee its proceeds. Expected amounts are estimates, for
+ * budgeting follow-on swaps optimistically.
+ *
+ * All amounts are raw units of the relevant token. EVM addresses are signed
+ * as EIP-712 `address` values, which hash the same regardless of case (unlike
+ * holding token identifiers, which are strings): they may be lowercase or
+ * EIP-55 checksummed, but signing rejects other mixed case.
+ */
+export type SelectableObservations = {
+  aaveClaims?: AaveClaimEvidence[];
+  compoundClaims?: CompoundClaimEvidence[];
+  merklClaims?: MerklClaimEvidence[];
+  oneInchSwaps?: OneInchSwapInstructions[];
+};
+
+/**
+ * Rewards of `tokenId` accrued through an Aave instrument. A claim collects
+ * **all** such rewards available when it executes, which may differ from
+ * `expectedAmount` (an estimate, not an exact amount or a minimum).
+ */
+export type AaveClaimEvidence = {
+  instrumentId: InstrumentId;
+  tokenId: EvmAddress;
+  /** estimated incremental payout of a claim */
+  expectedAmount: bigint;
+};
+
+/**
+ * Rewards of `tokenId` accrued through a Compound instrument. A claim collects
+ * whatever is owed when it executes; `expectedAmount` is only an estimate.
+ */
+export type CompoundClaimEvidence = {
+  instrumentId: InstrumentId;
+  tokenId: EvmAddress;
+  /** estimated incremental payout of a claim */
+  expectedAmount: bigint;
+};
+
+/**
+ * A Merkl entitlement of the account at `accountPlace`, claimable from
+ * `distributor` with `proof`. Merkl entitlements are cumulative, so a claim
+ * is expected to pay `cumulativeAmount - claimedAmount` (see
+ * `getMerklClaimExpectedAmount`), but the distributor uses its own claimed
+ * state when the claim executes, and a root update may invalidate `proof`.
+ */
+export type MerklClaimEvidence = {
+  accountPlace: EvmAccountRef;
+  distributor: EvmAddress;
+  tokenId: EvmAddress;
+  /** total entitlement, including any amount already claimed */
+  cumulativeAmount: bigint;
+  /** amount already claimed, as observed (e.g. from the Merkl API) */
+  claimedAmount: bigint;
+  /** Merkle proof of `cumulativeAmount` (32-byte hex nodes) */
+  proof: HexBytes[];
+};
+
+/**
+ * 1inch (V6 router `swap`) instructions, as quoted by 1inch, to swap exactly
+ * `amountIn` of `tokenIn` for at least `minAmountOut` of `tokenOut` from the
+ * account at `accountPlace`. Token-neutral: the contract restricts which
+ * tokens it accepts.
+ */
+export type OneInchSwapInstructions = {
+  accountPlace: EvmAccountRef;
+  tokenIn: EvmAddress;
+  tokenOut: EvmAddress;
+  amountIn: bigint;
+  /** expected output, in `tokenOut` units */
+  quotedAmountOut: bigint;
+  /** enforced minimum output, in `tokenOut` units */
+  minAmountOut: bigint;
+  /** slippage tolerance from `quotedAmountOut` used to derive `minAmountOut` */
+  slippageBps: number;
+  /** when the instructions expire, in seconds since the epoch */
+  expiresAt: bigint;
+  /** provider routing flags (e.g. 1inch `_PARTIAL_FILL`) */
+  flags: bigint;
+  /** provider route internal: the contract executing the swap */
+  executor: EvmAddress;
+  /** provider route internal: where `tokenIn` is routed */
+  srcReceiver: EvmAddress;
+  /** provider route internal: opaque executor calldata */
+  data: HexBytes;
 };
 
 /**

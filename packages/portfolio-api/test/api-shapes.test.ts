@@ -136,3 +136,67 @@ test('legacy holding Shape requires a place and a nonnegative balance', t => {
     t.false(matches(harden(entry), HoldingDetailShape));
   }
 });
+
+test('PlanObservationsShape accepts optional reward evidence', t => {
+  const token = `0x${'b'.repeat(40)}`;
+  const base = { balances: {}, instrumentTvls: {} };
+  const evidence = {
+    aaveClaims: [
+      { instrumentId: 'Aave_Base', tokenId: token, expectedAmount: 1n },
+    ],
+    compoundClaims: [
+      { instrumentId: 'Compound_Base', tokenId: token, expectedAmount: 1n },
+    ],
+    merklClaims: [
+      {
+        accountPlace: '@Base',
+        distributor: token,
+        tokenId: token,
+        cumulativeAmount: 2n,
+        claimedAmount: 1n,
+        proof: [`0x${'12'.repeat(32)}`],
+      },
+    ],
+    oneInchSwaps: [
+      {
+        accountPlace: '@Base',
+        tokenIn: token,
+        tokenOut: `0x${'a'.repeat(40)}`,
+        amountIn: 1n,
+        quotedAmountOut: 1n,
+        minAmountOut: 1n,
+        slippageBps: 200,
+        expiresAt: 1n,
+        flags: 0n,
+        executor: token,
+        srcReceiver: token,
+        data: '0x',
+      },
+    ],
+  };
+  t.true(matches(harden(base), PlanObservationsShape));
+  t.true(matches(harden({ ...base, ...evidence }), PlanObservationsShape));
+  for (const [key, [entry]] of Object.entries(evidence)) {
+    t.true(matches(harden({ ...base, [key]: [] }), PlanObservationsShape));
+    t.false(
+      matches(
+        harden({ ...base, [key]: [{ ...entry, extra: 1n }] }),
+        PlanObservationsShape,
+      ),
+      `${key} with an extra field`,
+    );
+    t.false(
+      matches(harden({ ...base, [key]: entry }), PlanObservationsShape),
+      `${key} not in an array`,
+    );
+  }
+  t.false(
+    matches(
+      harden({
+        ...base,
+        oneInchSwaps: [{ ...evidence.oneInchSwaps[0], slippageBps: 200n }],
+      }),
+      PlanObservationsShape,
+    ),
+  );
+});

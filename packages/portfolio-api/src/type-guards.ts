@@ -9,6 +9,10 @@ import type {
   HoldingKind,
   HoldingDetail,
   PlanObservations,
+  AaveClaimEvidence,
+  CompoundClaimEvidence,
+  MerklClaimEvidence,
+  OneInchSwapInstructions,
 } from './types.js';
 
 export {
@@ -88,6 +92,60 @@ export const HoldingDetailShape: CastedPattern<HoldingDetail> = M.or(
 );
 harden(HoldingDetailShape);
 
+/**
+ * Structural shapes of reward evidence. The observation decoder also checks
+ * places, addresses, identities and amounts.
+ */
+const InstrumentClaimEvidenceShape = M.splitRecord(
+  { instrumentId: M.string(), tokenId: M.string(), expectedAmount: M.nat() },
+  {},
+  {},
+);
+
+export const AaveClaimEvidenceShape: CastedPattern<AaveClaimEvidence> =
+  InstrumentClaimEvidenceShape;
+harden(AaveClaimEvidenceShape);
+
+export const CompoundClaimEvidenceShape: CastedPattern<CompoundClaimEvidence> =
+  InstrumentClaimEvidenceShape;
+harden(CompoundClaimEvidenceShape);
+
+export const MerklClaimEvidenceShape: CastedPattern<MerklClaimEvidence> =
+  M.splitRecord(
+    {
+      accountPlace: M.string(),
+      distributor: M.string(),
+      tokenId: M.string(),
+      cumulativeAmount: M.nat(),
+      claimedAmount: M.nat(),
+      proof: M.arrayOf(M.string()),
+    },
+    {},
+    {},
+  );
+harden(MerklClaimEvidenceShape);
+
+export const OneInchSwapInstructionsShape: CastedPattern<OneInchSwapInstructions> =
+  M.splitRecord(
+    {
+      accountPlace: M.string(),
+      tokenIn: M.string(),
+      tokenOut: M.string(),
+      amountIn: M.nat(),
+      quotedAmountOut: M.nat(),
+      minAmountOut: M.nat(),
+      slippageBps: M.and(M.number(), M.gte(0), M.lte(10_000)),
+      expiresAt: M.nat(),
+      flags: M.nat(),
+      executor: M.string(),
+      srcReceiver: M.string(),
+      data: M.string(),
+    },
+    {},
+    {},
+  );
+harden(OneInchSwapInstructionsShape);
+
 export const PlanObservationsShape: CastedPattern<PlanObservations> =
   M.splitRecord(
     {
@@ -97,7 +155,13 @@ export const PlanObservationsShape: CastedPattern<PlanObservations> =
         M.splitRecord({ tvlUsd: M.nat() }),
       ),
     },
-    { holdings: M.arrayOf(HoldingDetailV2Shape) },
+    {
+      holdings: M.arrayOf(HoldingDetailV2Shape),
+      aaveClaims: M.arrayOf(AaveClaimEvidenceShape),
+      compoundClaims: M.arrayOf(CompoundClaimEvidenceShape),
+      merklClaims: M.arrayOf(MerklClaimEvidenceShape),
+      oneInchSwaps: M.arrayOf(OneInchSwapInstructionsShape),
+    },
     {},
   );
 harden(PlanObservationsShape);

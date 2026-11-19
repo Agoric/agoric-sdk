@@ -36,7 +36,9 @@ import {
   type OperationType,
   type StandaloneOperationData,
 } from '@agoric/orchestration/src/utils/eip712-messages.ts';
+import type { Address as EvmAddress } from 'abitype';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
+import { sameEvmAddress } from '@agoric/orchestration/src/utils/evm-address.js';
 import {
   isEvmChain,
   isInterChainAccountRef,
@@ -46,7 +48,11 @@ import {
   getCanonicalHoldingKey,
 } from './places.ts';
 import type {
+  EvmAccountRef,
+  MerklClaimEvidence,
+  OneInchSwapInstructions,
   PlanObservations,
+  SelectableObservations,
   TypedHoldingDetail,
   PortfolioSyncState,
 } from './types.ts';
@@ -65,12 +71,21 @@ const ObservationOperationTypes = {
    * - syncState: the portfolio state the observations correspond to
    * - holdings: the balance of every balance-bearing place of the portfolio
    * - instruments: details of the instruments relevant to the portfolio
+   * - aaveClaims, compoundClaims, merklClaims, oneInchSwaps: optional claim
+   *   evidence and swap instructions, which plan steps select by index (see
+   *   {@link SelectableObservations}), each present only when requested. As
+   *   there is a single `PortfolioObservations` per message, their presence
+   *   never conflicts.
    */
   PortfolioObservations: [
     PortfolioIdParam,
     { name: 'syncState', type: 'SyncState' },
     { name: 'holdings', type: 'HoldingDetail[]' },
     { name: 'instruments', type: 'InstrumentDetail[]' },
+    { name: 'aaveClaims', type: 'AaveClaim[]', optional: true },
+    { name: 'compoundClaims', type: 'CompoundClaim[]', optional: true },
+    { name: 'merklClaims', type: 'MerklClaim[]', optional: true },
+    { name: 'oneInchSwaps', type: 'OneInchSwap[]', optional: true },
   ],
 } as const satisfies Record<string, readonly TypedDataParameter[]>;
 
@@ -106,6 +121,43 @@ const ObservationSubTypes = {
     { name: 'instrumentId', type: 'string' },
     /** in whole USD */
     { name: 'tvlUsd', type: 'uint256' },
+  ],
+  // Every field of the selectable structs is required.
+  /** @see {@link AaveClaimEvidence} */
+  AaveClaim: [
+    { name: 'instrumentId', type: 'string' },
+    { name: 'tokenId', type: 'address' },
+    { name: 'expectedAmount', type: 'uint256' },
+  ],
+  /** @see {@link CompoundClaimEvidence} */
+  CompoundClaim: [
+    { name: 'instrumentId', type: 'string' },
+    { name: 'tokenId', type: 'address' },
+    { name: 'expectedAmount', type: 'uint256' },
+  ],
+  /** @see {@link MerklClaimEvidence} */
+  MerklClaim: [
+    { name: 'accountPlace', type: 'string' },
+    { name: 'distributor', type: 'address' },
+    { name: 'tokenId', type: 'address' },
+    { name: 'cumulativeAmount', type: 'uint256' },
+    { name: 'claimedAmount', type: 'uint256' },
+    { name: 'proof', type: 'bytes32[]' },
+  ],
+  /** @see {@link OneInchSwapInstructions} */
+  OneInchSwap: [
+    { name: 'accountPlace', type: 'string' },
+    { name: 'tokenIn', type: 'address' },
+    { name: 'tokenOut', type: 'address' },
+    { name: 'amountIn', type: 'uint256' },
+    { name: 'quotedAmountOut', type: 'uint256' },
+    { name: 'minAmountOut', type: 'uint256' },
+    { name: 'slippageBps', type: 'uint16' },
+    { name: 'expiresAt', type: 'uint64' },
+    { name: 'flags', type: 'uint256' },
+    { name: 'executor', type: 'address' },
+    { name: 'srcReceiver', type: 'address' },
+    { name: 'data', type: 'bytes' },
   ],
 } as const satisfies Record<string, readonly TypedDataParameter[]>;
 
@@ -208,6 +260,10 @@ const typedHoldingFromEIP712 = ({
       : { valueUusd }),
   }) as TypedHoldingDetail;
 
+/** A canonical (lowercase) EVM address. */
+const LOWERCASE_EVM_ADDRESS_REGEX = /^0x[0-9a-f]{40}$/;
+const ZERO_EVM_ADDRESS = `0x${'0'.repeat(40)}`;
+
 const assertUint256 = (value: bigint, field: string): void => {
   if (typeof value !== 'bigint' || value < 0n || value >= 2n ** 256n) {
     throw RangeError(`invalid uint256 ${field}: ${String(value)}`);
@@ -274,7 +330,7 @@ const assertTypedHoldings: (
     if (
       typeof tokenId !== 'string' ||
       /\s/.test(tokenId) ||
-      (!isNative && isEvmPlace && !/^0x[0-9a-f]{40}$/.test(tokenId))
+      (!isNative && isEvmPlace && !LOWERCASE_EVM_ADDRESS_REGEX.test(tokenId))
     ) {
       throw TypeError(`invalid holding token identifier ${String(tokenId)}`);
     }
@@ -356,6 +412,182 @@ const copyPlainData = <T>(value: T): T => {
 };
 
 /**
+ * Signed selectable observations, before {@link pickSelectableObservations}
+ * narrows them. The EIP-712 layer checks primitive types and ranges (and, when
+ * decoding, rejects missing or unknown fields); only application constraints
+ * are checked here.
+ */
+type SelectableObservationsEIP712 = Pick<
+  PortfolioObservationsEIP712,
+  keyof SelectableObservations
+>;
+type SelectableObservationEIP712<K extends keyof SelectableObservations> =
+  NonNullable<SelectableObservationsEIP712[K]>[number];
+
+/**
+ * Addresses in selectable observations are EIP-712 `address` values, whose
+ * hashing ignores case (unlike holding token identifiers, which are strings),
+ * so they may be lowercase or EIP-55 checksummed. Like the EIP-712 layer, this
+ * does not verify checksums, which signing does. Compare them with
+ * {@link sameEvmAddress}, or lowercase them for keys.
+ */
+const assertNonZeroAddress = (
+  value: EvmAddress,
+  label: string,
+  field: string,
+): void => {
+  if (value === ZERO_EVM_ADDRESS) {
+    throw TypeError(`[${label}] invalid ${field} address ${value}`);
+  }
+};
+
+const assertEvmAccountPlace: (
+  place: string,
+  label: string,
+) => asserts place is EvmAccountRef = (place, label) => {
+  if (!isInterChainAccountRef(place) || !isEvmChain(maybeChainOf(place))) {
+    throw TypeError(
+      `[${label}] invalid account place ${JSON.stringify(place)}`,
+    );
+  }
+};
+
+/**
+ * Validate instrument-attributed claims, whose instrument must be of the
+ * claim's protocol, on an EVM chain.
+ */
+const assertInstrumentClaims: <K extends 'aaveClaims' | 'compoundClaims'>(
+  claims: readonly SelectableObservationEIP712<K>[],
+  key: K,
+  protocol: 'Aave' | 'Compound',
+) => asserts claims is NonNullable<SelectableObservations[K]> = (
+  claims,
+  key,
+  protocol,
+) => {
+  const identities = new Set<string>();
+  claims.forEach(({ instrumentId, tokenId }, i) => {
+    const label = `${key}[${i}]`;
+    if (
+      !isInstrumentId(instrumentId) ||
+      !instrumentId.startsWith(`${protocol}_`) ||
+      !isEvmChain(maybeChainOf(instrumentId))
+    ) {
+      throw TypeError(
+        `[${label}] invalid ${protocol} instrument ${JSON.stringify(instrumentId)}`,
+      );
+    }
+    assertNonZeroAddress(tokenId, label, 'token');
+    const identity = JSON.stringify([instrumentId, tokenId.toLowerCase()]);
+    if (identities.has(identity)) {
+      throw TypeError(`[${label}] duplicate ${identity}`);
+    }
+    identities.add(identity);
+  });
+};
+
+/**
+ * The estimated incremental payout of a Merkl claim: its cumulative
+ * entitlement less what was observed to be claimed already. Not guaranteed,
+ * since the distributor uses its own claimed state at execution time.
+ *
+ * @param claim
+ * @throws {RangeError} if more was claimed than the cumulative entitlement
+ */
+export const getMerklClaimExpectedAmount = ({
+  cumulativeAmount,
+  claimedAmount,
+}: Pick<MerklClaimEvidence, 'cumulativeAmount' | 'claimedAmount'>): bigint => {
+  if (claimedAmount > cumulativeAmount) {
+    throw RangeError(
+      `claimedAmount ${claimedAmount} exceeds cumulativeAmount ${cumulativeAmount}`,
+    );
+  }
+  return cumulativeAmount - claimedAmount;
+};
+
+const assertMerklClaims: (
+  claims: readonly SelectableObservationEIP712<'merklClaims'>[],
+) => asserts claims is MerklClaimEvidence[] = claims => {
+  const identities = new Set<string>();
+  claims.forEach((claim, i) => {
+    const label = `merklClaims[${i}]`;
+    const { accountPlace, distributor, tokenId } = claim;
+    assertEvmAccountPlace(accountPlace, label);
+    assertNonZeroAddress(distributor, label, 'distributor');
+    assertNonZeroAddress(tokenId, label, 'token');
+    try {
+      getMerklClaimExpectedAmount(claim);
+    } catch (err) {
+      throw RangeError(`[${label}] ${(err as Error).message}`);
+    }
+    const identity = JSON.stringify([
+      accountPlace,
+      distributor.toLowerCase(),
+      tokenId.toLowerCase(),
+    ]);
+    if (identities.has(identity)) {
+      throw TypeError(`[${label}] duplicate ${identity}`);
+    }
+    identities.add(identity);
+  });
+};
+
+/**
+ * Validate the structure of swap instructions. Whether they are acceptable
+ * (their tokens, slippage, flags or expiry) is for its consumer to decide.
+ */
+const assertOneInchSwaps: (
+  swaps: readonly SelectableObservationEIP712<'oneInchSwaps'>[],
+) => asserts swaps is OneInchSwapInstructions[] = swaps => {
+  swaps.forEach((swap, i) => {
+    const label = `oneInchSwaps[${i}]`;
+    const { accountPlace, tokenIn, tokenOut, amountIn, slippageBps } = swap;
+    assertEvmAccountPlace(accountPlace, label);
+    // The route's executor and srcReceiver may be the zero address,
+    // but tokens may not be.
+    assertNonZeroAddress(tokenIn, label, 'tokenIn');
+    assertNonZeroAddress(tokenOut, label, 'tokenOut');
+    if (sameEvmAddress(tokenIn, tokenOut)) {
+      throw TypeError(`[${label}] tokenIn and tokenOut must differ`);
+    }
+    if (amountIn === 0n) {
+      throw RangeError(`[${label}] amountIn must be positive`);
+    }
+    if (swap.minAmountOut > swap.quotedAmountOut) {
+      throw RangeError(`[${label}] minAmountOut exceeds quotedAmountOut`);
+    }
+    if (slippageBps > 10_000) {
+      throw RangeError(`[${label}] invalid slippageBps: ${slippageBps}`);
+    }
+  });
+};
+
+/**
+ * Pick the arrays present in `source`, validated. An absent array remains
+ * absent, distinct from an empty one.
+ */
+const pickSelectableObservations = ({
+  aaveClaims,
+  compoundClaims,
+  merklClaims,
+  oneInchSwaps,
+}: SelectableObservationsEIP712): SelectableObservations => {
+  if (aaveClaims) assertInstrumentClaims(aaveClaims, 'aaveClaims', 'Aave');
+  if (compoundClaims) {
+    assertInstrumentClaims(compoundClaims, 'compoundClaims', 'Compound');
+  }
+  if (merklClaims) assertMerklClaims(merklClaims);
+  if (oneInchSwaps) assertOneInchSwaps(oneInchSwaps);
+  return {
+    ...(aaveClaims && { aaveClaims }),
+    ...(compoundClaims && { compoundClaims }),
+    ...(merklClaims && { merklClaims }),
+    ...(oneInchSwaps && { oneInchSwaps }),
+  };
+};
+
+/**
  * Author either legacy balances or typed holdings using the shared schema.
  * Typed holdings always carry `valueUusd`, with {@link VALUE_UUSD_UNKNOWN}
  * standing for an absent valuation. With typed holdings, `balances` may only
@@ -368,7 +600,7 @@ export const portfolioObservationsToEIP712 = (
   const {
     portfolioId,
     syncState,
-    observations: { balances, holdings, instrumentTvls },
+    observations: { balances, holdings, instrumentTvls, ...rest },
   } = copyPlainData(content);
   for (const [field, value] of Object.entries({
     portfolio: portfolioId,
@@ -416,12 +648,17 @@ export const portfolioObservationsToEIP712 = (
       return [{ instrumentId, tvlUsd: tvl.tvlUsd }];
     },
   );
+  const selectable = pickSelectableObservations(rest);
   return {
     portfolio: portfolioId,
     syncState,
     holdings:
       holdings === undefined ? legacy : holdings.map(typedHoldingToEIP712),
     instruments,
+    ...(selectable as Pick<
+      PortfolioObservationsEIP712Input,
+      keyof SelectableObservations
+    >),
   };
 };
 
@@ -436,7 +673,7 @@ export const portfolioObservationsToEIP712 = (
 export const portfolioObservationsFromEIP712 = (
   message: PortfolioObservationsEIP712,
 ): PortfolioObservationsContent => {
-  const { portfolio, syncState, holdings, instruments } =
+  const { portfolio, syncState, holdings, instruments, ...rest } =
     copyPlainData(message);
   const legacyBalances: PlanObservations['balances'] = {};
   const rawHoldings: TypedHoldingDetail[] = [];
@@ -481,6 +718,8 @@ export const portfolioObservationsFromEIP712 = (
     assertUint256(tvlUsd, 'tvlUsd');
     instrumentTvls[instrumentId] = { tvlUsd };
   }
+  // Other fields (e.g. the standalone envelope) are the handler's concern.
+  const selectable = pickSelectableObservations(rest);
   return {
     portfolioId: toSafeNumber(portfolio, 'portfolio'),
     syncState: {
@@ -491,6 +730,7 @@ export const portfolioObservationsFromEIP712 = (
       balances,
       ...(rawHoldings.length ? { holdings: rawHoldings } : {}),
       instrumentTvls,
+      ...selectable,
     },
   };
 };

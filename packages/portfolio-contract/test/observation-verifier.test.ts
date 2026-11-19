@@ -150,6 +150,96 @@ test('verifies chain-local holding identities and micro-USD valuations', async t
   }
 });
 
+test('verifies optional claim evidence and swap instructions', async t => {
+  const rewardToken = '0x1111111111111111111111111111111111111111' as const;
+  const content: PortfolioObservationsContent = harden({
+    ...observation,
+    observations: {
+      balances: {},
+      holdings: [
+        {
+          place: '@Base',
+          kind: 'claimable-reward',
+          tokenId: rewardToken,
+          amount: 2n * 10n ** 18n,
+        },
+      ],
+      instrumentTvls: {},
+      merklClaims: [
+        {
+          accountPlace: '@Base',
+          distributor: '0x3ef3d8ba38ebe18db133cec108f4d14ce00dd9ae',
+          tokenId: rewardToken,
+          cumulativeAmount: 3n * 10n ** 18n,
+          claimedAmount: 10n ** 18n,
+          proof: [`0x${'12'.repeat(32)}`],
+        },
+      ],
+      oneInchSwaps: [
+        {
+          accountPlace: '@Base',
+          tokenIn: rewardToken,
+          tokenOut: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
+          amountIn: 2n * 10n ** 18n,
+          quotedAmountOut: 3_000_000n,
+          minAmountOut: 2_940_000n,
+          slippageBps: 200,
+          expiresAt: NOW + 60n,
+          flags: 0n,
+          executor: ROUTER,
+          srcReceiver: ROUTER,
+          data: '0xdeadbeef',
+        },
+      ],
+    },
+  });
+  const message = ymaxObservationMessageKit.getStandaloneOperationData(
+    {
+      ...portfolioObservationsToEIP712(content),
+      nonce: ISSUED_AT,
+      deadline: ISSUED_AT + OBSERVATION_LIFETIME,
+    },
+    'PortfolioObservations',
+    CHAIN_ID,
+    ROUTER,
+  );
+  const signed = await sign(message);
+  t.deepEqual(await verify(signed), {
+    ...content,
+    issuedAt: ISSUED_AT,
+    deadline: ISSUED_AT + OBSERVATION_LIFETIME,
+  });
+
+  const [swap] = signed.message.oneInchSwaps!;
+  await t.throwsAsync(
+    verify({
+      ...signed,
+      message: {
+        ...signed.message,
+        oneInchSwaps: [{ ...swap, minAmountOut: 1n }],
+      },
+    }),
+    { message: /observations not signed by the attestor/ },
+  );
+  // Dropping signed evidence, with its declared type, also invalidates the
+  // signature.
+  const { merklClaims: _field, ...withoutMerkl } = signed.message;
+  const { MerklClaim: _type, ...types } = signed.types;
+  await t.throwsAsync(
+    verify({
+      ...signed,
+      types: {
+        ...types,
+        PortfolioObservations: types.PortfolioObservations.filter(
+          f => f.name !== 'merklClaims',
+        ),
+      },
+      message: withoutMerkl,
+    } as any),
+    { message: /observations not signed by the attestor/ },
+  );
+});
+
 test('accepts observations issued at the maximum age', async t => {
   const issuedAt = NOW - MAX_OBSERVATION_AGE_SECONDS;
   const verified = await verify(
