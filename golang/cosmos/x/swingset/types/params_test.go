@@ -1,8 +1,8 @@
 package types
 
 import (
-	"strings"
 	"reflect"
+	"strings"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
@@ -112,6 +112,11 @@ func TestUpdateParamsFromEmpty(t *testing.T) {
 		InstallationDeadlineSeconds:      DefaultInstallationDeadlineSeconds,
 		BundleUncompressedSizeLimitBytes: DefaultBundleUncompressedSizeLimitBytes,
 		ChunkSizeLimitBytes:              DefaultChunkSizeLimitBytes,
+		MsgTypeBeansPerUnit:              DefaultMsgTypeBeansPerUnit(),
+		BeanFeeBurnFraction:              DefaultBeanFeeBurnFraction,
+		BeanFeeCollector:                 DefaultBeanFeeCollector,
+		MinGasPrice:                      DefaultMinGasPrice,
+		FeeUnitPriceAlternatives:         DefaultFeeUnitPriceAlternatives,
 	}
 	got, err := UpdateParams(in)
 	if err != nil {
@@ -149,6 +154,11 @@ func TestUpdateParamsFromExisting(t *testing.T) {
 		InstallationDeadlineSeconds:      in.InstallationDeadlineSeconds,
 		BundleUncompressedSizeLimitBytes: DefaultBundleUncompressedSizeLimitBytes,
 		ChunkSizeLimitBytes:              DefaultChunkSizeLimitBytes,
+		MsgTypeBeansPerUnit:              DefaultMsgTypeBeansPerUnit(),
+		BeanFeeBurnFraction:              DefaultBeanFeeBurnFraction,
+		BeanFeeCollector:                 DefaultBeanFeeCollector,
+		MinGasPrice:                      DefaultMinGasPrice,
+		FeeUnitPriceAlternatives:         DefaultFeeUnitPriceAlternatives,
 	}
 	got, err := UpdateParams(in)
 	if err != nil {

@@ -178,18 +178,13 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision) (*types.MsgProvisionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := keeper.ChargeForProvisioning(ctx, msg.Submitter, msg.PowerFlags)
-	if err != nil {
-		return nil, err
-	}
-
 	action := provisionAction{
 		MsgProvision: msg,
 	}
 
 	// Create the account, if it doesn't already exist.
 	egress := types.NewEgress(msg.Nickname, msg.Address, msg.PowerFlags)
-	err = keeper.SetEgress(ctx, egress)
+	err := keeper.SetEgress(ctx, egress)
 	if err != nil {
 		return nil, err
 	}
