@@ -314,7 +314,7 @@ jobs:
     environment:
       # The shared ymax1-mainnet environment gates planner deployments and
       # standalone confirmations. Release submissions use their own environment.
-      name: ${{ inputs.target == 'ymax0-main' && 'ymax0-mainnet' || inputs.target == 'ymax1-main' && 'ymax1-mainnet-release' || inputs.target }}
+      name: ${{ inputs.target == 'ymax0-main' && 'ymax0-mainnet' || inputs.target == 'ymax1-main' && 'ymax1-mainnet-contract' || inputs.target }}
     steps:
       - uses: actions/checkout@v4
         with:
