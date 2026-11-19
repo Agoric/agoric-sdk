@@ -193,7 +193,8 @@ export type PlanObservations = {
 /**
  * Holding kinds understood by the observation converters. `shares` identifies
  * vault shares; `principal` identifies instrument principal (for example Aave
- * or Compound). `claimable-reward` belongs to an instrument, while
+ * or Compound). `claimable-reward` is not yet spendable, and belongs to its
+ * instrument, or to the claiming chain account when unattributed (e.g. Merkl).
  * `claimed-reward` and other `token` holdings belong to a chain account.
  * Cosmos bank assets are ordinary `token` holdings, e.g. Noble USDC has
  * `kind: 'token', tokenId: 'uusdc'`. `$SYMBOL` is reserved for a chain's own

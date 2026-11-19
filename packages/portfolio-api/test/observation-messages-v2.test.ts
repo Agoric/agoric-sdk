@@ -134,6 +134,22 @@ test('multiple kinds and reward tokens can share one instrument place', t => {
   t.deepEqual(decode(entries).observations.holdings, entries);
 });
 
+test('claimable rewards may be attributed to an instrument or an account', t => {
+  const attributed: HoldingDetail = { ...holding, kind: 'claimable-reward' };
+  const unattributed: HoldingDetail = { ...attributed, place: '@Base' };
+  const claimed: HoldingDetail = { ...unattributed, kind: 'claimed-reward' };
+  const entries = [attributed, unattributed, claimed];
+  t.deepEqual(decode(entries).observations.holdings, entries);
+  t.throws(() => decode([unattributed, { ...unattributed }]), {
+    message: /duplicate holding identity/,
+  });
+  for (const place of ['<Cash>', '+Base', '-Base']) {
+    t.throws(() => decode([{ ...unattributed, place } as HoldingDetail]), {
+      message: /invalid holding place/,
+    });
+  }
+});
+
 test('holding identity uses canonical token identifiers', t => {
   t.throws(() => decode([holding, holding]), {
     message: /duplicate holding identity/,
@@ -301,11 +317,6 @@ for (const [label, fields, error] of [
   [
     'claimed reward on instrument',
     { kind: 'claimed-reward' },
-    /incompatible with place/,
-  ],
-  [
-    'claimable reward on account',
-    { place: '@Base', kind: 'claimable-reward' },
     /incompatible with place/,
   ],
   ['invalid place', { place: '?FutureVault' }, /invalid holding place/],

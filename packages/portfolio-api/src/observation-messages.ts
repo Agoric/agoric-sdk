@@ -246,15 +246,22 @@ const assertTypedHoldings: (
     }
     const isNative =
       typeof kind === 'string' && kind.startsWith('$') && kind.length > 1;
+    // A claimable reward may be attributed to an instrument, or only
+    // to the account entitled to claim it (e.g. Merkl rewards).
+    const isClaimableReward = kind === 'claimable-reward';
     const isInstrument =
-      kind === 'shares' || kind === 'principal' || kind === 'claimable-reward';
+      isClaimableReward || kind === 'shares' || kind === 'principal';
     const isAccountHolding =
-      isNative || kind === 'token' || kind === 'claimed-reward';
+      isClaimableReward ||
+      isNative ||
+      kind === 'token' ||
+      kind === 'claimed-reward';
     if (!isAccountHolding && !isInstrument) {
       throw TypeError(`invalid holding kind ${JSON.stringify(kind)}`);
     }
     if (
-      isInstrument ? !isInstrumentId(place) : !isInterChainAccountRef(place)
+      !(isInstrument && isInstrumentId(place)) &&
+      !(isAccountHolding && isInterChainAccountRef(place))
     ) {
       throw TypeError(
         `holding kind ${kind} is incompatible with place ${place}`,
