@@ -136,7 +136,7 @@ test('connectFirstHealthyAgoricRpc falls back past unhealthy endpoints', async t
       powers,
       { chainId: CHAIN_ID, timeoutMs: 50 },
     );
-    t.is(rpcAddr, ARCHIVE, JSON.stringify(follower));
+    t.is(rpcAddr, ARCHIVE, `follower ${JSON.stringify(follower)}`);
     t.is(index, 1);
     t.is(failures.length, 1);
     t.true(failures[0].startsWith(`${FOLLOWER}: `));

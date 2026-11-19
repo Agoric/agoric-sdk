@@ -29,6 +29,10 @@ const makeFakeWebSocket = () => {
 
     terminated = false;
 
+    closed = false;
+
+    sent = sent;
+
     url: URL;
 
     constructor(url: URL) {
@@ -49,7 +53,7 @@ const makeFakeWebSocket = () => {
     }
 
     send(data: string) {
-      sent.push(JSON.parse(data));
+      this.sent.push(JSON.parse(data));
     }
 
     ping() {
@@ -60,7 +64,9 @@ const makeFakeWebSocket = () => {
       this.terminated = true;
     }
 
-    close() {}
+    close() {
+      this.closed = true;
+    }
   }
   const WebSocket: new (url: URL) => RpcWebSocket = FakeWebSocket;
   const getSocket = () => {
