@@ -24,6 +24,7 @@
     "./src/portfolio-permissions.js": "./src/portfolio-permissions.ts",
     "./src/portfolio-constants.js": "./src/portfolio-constants.js",
     "./src/resolver.js": "./src/resolver.js",
+    "./src/reward-swaps.js": "./src/reward-swaps.ts",
     "./src/target-balances.js": "./src/target-balances.ts",
     "./src/type-guards.js": "./src/type-guards.ts",
     "./package.json": "./package.json"
