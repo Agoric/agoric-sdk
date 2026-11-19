@@ -903,7 +903,10 @@ const fakeUpgradeLogs = (
     incarnationNumber?: number;
   } = {},
 ) => {
-  if (!cmd.endsWith('/ymax-upgrade-run-logs.ts')) {
+  if (
+    !cmd.endsWith('/ymax-upgrade-run-logs.ts') ||
+    args.includes('--check-access')
+  ) {
     return undefined;
   }
   const event = makeExecEvent(normalize, cmd, args, opts as ExecOpts);
@@ -1076,6 +1079,12 @@ const makeScenario = (
         args[0] === 'rev-parse'
       ) {
         result = { stdout: '4a17f0878bceee3a5af27ae156cb81f6bcb48255\n' };
+      } else if (
+        cmd.endsWith('/ymax-upgrade-run-logs.ts') &&
+        args.includes('--check-access')
+      ) {
+        // The upgrade logs are readable; reading them needs fakeUpgradeLogs.
+        result = { stdout: '' };
       } else if (cmd.endsWith('/install-bundle.ts')) {
         result = {
           stdout: JSON.stringify({
@@ -4078,6 +4087,80 @@ test.serial(
       ctx.releases.get(releaseTag)?.assets.has('ymax1-main-upgrade.json') ??
         false,
       'no upgrade record is written for a failed invocation',
+    );
+  },
+);
+
+test.serial(
+  'confirm fails fast when the upgrade logs cannot be read',
+  async t => {
+    const ctx = makeScenario();
+    const releaseTag = happyPathReleaseTag;
+    const { execFile: baseExecFile, files } = ctx;
+
+    const logCommands: string[][] = [];
+    const execFile = async (
+      cmd: string,
+      args: string[],
+      opts?: Parameters<typeof baseExecFile>[2],
+      ...rest: unknown[]
+    ) => {
+      if (
+        cmd.endsWith('/wallet-admin.ts') &&
+        args[0] === './packages/portfolio-deploy/src/ymax-upgrade.ts'
+      ) {
+        const resultFile = args[args.indexOf('--result-file') + 1];
+        files.set(resultFile, '{}\n');
+        return { stdout: '' };
+      }
+      if (cmd.endsWith('/ymax-upgrade-run-logs.ts')) {
+        logCommands.push(args);
+        throw Error('cannot read logs of GCP project simulationlab');
+      }
+      return baseExecFile(cmd, args, opts, ...rest);
+    };
+
+    seedRelease(ctx.releases, releaseTag, {
+      'bundle-ymax0.json': jsonText(examples.bundle),
+      'ymax0-main-install.json': jsonText({
+        ...examples.install.main0,
+        releaseTag,
+      }),
+      'ymax0-main-upgrade.json': jsonText(examples.upgrade.main0),
+    });
+
+    const powers = { agoricSdk: ctx.agoricSdk, execFile, stdout: ctx.stdout };
+    const env = { ...ctx.env, PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}' };
+    const cli = { target: 'ymax1-main', tag: releaseTag };
+    await runPhase(
+      { ...powers, fetchFn: ctx.fetchFn },
+      'phase-upgrade-submit',
+      cli,
+      env,
+    );
+    const fetched: string[] = [];
+    const fetchFn = async (url: string) => {
+      fetched.push(url);
+      return ctx.fetchFn(url);
+    };
+    const err = await t.throwsAsync(
+      runPhase({ ...powers, fetchFn }, 'phase-upgrade-confirm', cli, env),
+    );
+    t.true(err?.message.includes('cannot read logs'), err?.message);
+    t.deepEqual(
+      logCommands,
+      [['--check-access']],
+      'log access is checked once, and the logs are never requested',
+    );
+    t.deepEqual(
+      fetched.filter(url => url.includes('/cosmos/tx/')),
+      [],
+      'fails before looking for the upgrade tx',
+    );
+    t.false(
+      ctx.releases.get(releaseTag)?.assets.has('ymax1-main-upgrade.json') ??
+        false,
+      'no upgrade record is written',
     );
   },
 );

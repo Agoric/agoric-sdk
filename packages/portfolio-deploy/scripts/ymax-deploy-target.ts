@@ -2042,6 +2042,11 @@ const confirmUpgradeContract = async (
   if (target !== upgradeTarget) {
     throw Error(`missing required release asset ${upgradeTarget}-upgrade.json`);
   }
+  // Confirming needs the upgrade's logs. Fail now, once, if they can't be
+  // read at all, rather than in each getGoodLogs retry below.
+  await upgradeLogs.exec(['--check-access'], {
+    stdio: ['ignore', 'ignore', 'inherit'],
+  });
   const txApi = await makeTxApiForTarget(upgradeTarget);
   const vstorageApi = await makeVstorageApiForTarget(upgradeTarget);
   const info = getTargetInfo(upgradeTarget);

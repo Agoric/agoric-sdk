@@ -2,10 +2,10 @@
 /**
  * @file query upgrade run slogs for a ymax control tx
  *
- * Reads the slogs from Cloud Logging (`gcloud logging read`, which needs
- * credentials with roles/logging.viewer on the GCP project), falling back to
- * the Grafana datasource for it. Exits nonzero, saying what each source
- * returned, when no log entries are found.
+ * Reads the slogs from Cloud Logging with `gcloud logging read`. Before doing
+ * anything else, it checks that gcloud's active credentials can read the GCP
+ * project's log entries (roles/logging.viewer) and exits nonzero if not. It
+ * also exits nonzero when no log entries are found.
  */
 
 import { execFile as execFileCb } from 'node:child_process';
@@ -31,16 +31,16 @@ Options:
   --pretty                     Print a single pretty JSON object instead of NDJSON
   --tx-limit <n>               Recent txs to inspect from sender (default: 20)
   --window-minutes <n>         Minutes before/after tx time for log query (default: 15)
-  --source <name>              Log source: auto (cloud-logging, then grafana),
-                               cloud-logging, or grafana (default: auto)
   --max-entries <n>            Max Cloud Logging entries to read (default: 20000)
-  --raw                        With --pretty, include the source's raw response
+  --raw                        With --pretty, include the raw log entries
+  --check-access               Only check that gcloud can read the logs, then exit
   --save-txs <n>               Fetch last N txs from control address and save as JSON, then exit
   --help                       Show this help
 `;
 
 const options = {
   address: { type: 'string' },
+  'check-access': { type: 'boolean', default: false },
   contract: { type: 'string', default: 'ymax0' },
   help: { type: 'boolean', default: false, short: 'h' },
   'max-entries': { type: 'string', default: '20000' },
@@ -50,7 +50,6 @@ const options = {
   pretty: { type: 'boolean', default: false },
   raw: { type: 'boolean', default: false },
   'save-txs': { type: 'string' },
-  source: { type: 'string', default: 'auto' },
   'tx-hash': { type: 'string' },
   'tx-limit': { type: 'string', default: '20' },
   'window-minutes': { type: 'string', default: '15' },
@@ -82,28 +81,6 @@ type ChainTx = {
   };
 };
 
-type GrafanaResponse = {
-  results?: Record<
-    string,
-    {
-      status?: number;
-      error?: string;
-      frames?: GrafanaFrame[];
-    }
-  >;
-};
-
-type GrafanaFrame = {
-  schema?: {
-    fields?: Array<{
-      name?: string;
-    }>;
-  };
-  data?: {
-    values?: unknown[][];
-  };
-};
-
 /** A Cloud Logging entry, as `gcloud logging read --format=json` prints it. */
 type LogEntry = {
   timestamp?: string;
@@ -112,15 +89,12 @@ type LogEntry = {
 
 /**
  * A log row: its time in epoch milliseconds and its content, the raw slog
- * JSON line. Grafana rows also carry other fields.
+ * JSON line.
  */
-type LogRow = { time?: unknown; content?: unknown } & Record<string, unknown>;
+type LogRow = { time?: number; content: string };
 
 const isLogEntry = (specimen: unknown): specimen is LogEntry =>
   typeof specimen === 'object' && specimen !== null;
-
-const LOG_SOURCES = ['cloud-logging', 'grafana'] as const;
-type LogSource = (typeof LOG_SOURCES)[number];
 
 const execFile = promisify(execFileCb);
 
@@ -129,8 +103,6 @@ const trace = (...args: unknown[]) =>
 
 const LOG_CLUSTER = 'instagoric';
 const LOG_CONTAINER = 'log-slog';
-const GRAFANA_URL = 'https://monitor.agoric.net';
-const DATASOURCE_UID = 'P470A85C5170C7A1D';
 const PROJECT_ID = 'simulationlab';
 
 const must = <T>(specimen: T | null | undefined, detail: string): T => {
@@ -206,38 +178,21 @@ const buildLogQuery = ({
     .filter(Boolean)
     .join('\n');
 
-const buildExploreUrl = ({
-  grafanaUrl,
-  datasourceUid,
-  queryText,
+/** Link to the same query in the Cloud Console's Logs Explorer. */
+const buildLogsExplorerUrl = ({
+  filter,
+  from,
+  to,
   projectId,
 }: {
-  grafanaUrl: string;
-  datasourceUid: string;
-  queryText: string;
+  filter: string;
+  from: string;
+  to: string;
   projectId: string;
-}) => {
-  const panes = {
-    ymax: {
-      datasource: datasourceUid,
-      queries: [
-        {
-          queryText,
-          refId: 'A',
-          datasource: {
-            type: 'googlecloud-logging-datasource',
-            uid: datasourceUid,
-          },
-          projectId,
-        },
-      ],
-      range: { from: 'now-24h', to: 'now' },
-    },
-  };
-  return `${grafanaUrl}/explore?schemaVersion=1&panes=${encodeURIComponent(
-    JSON.stringify(panes),
-  )}&orgId=1`;
-};
+}) =>
+  `https://console.cloud.google.com/logs/query;query=${encodeURIComponent(
+    filter,
+  )};timeRange=${encodeURIComponent(`${from}/${to}`)}?project=${projectId}`;
 
 const fetchSenderTxs = async (
   apiAddr: string,
@@ -324,64 +279,9 @@ const completeTx = async ({
   return must(response.tx_response, `missing tx_response for ${tx.txhash}`);
 };
 
-const flattenFrames = (frames: GrafanaFrame[] = []) => {
-  const rows: Array<Record<string, unknown>> = [];
-  for (const frame of frames) {
-    const fields = frame.schema?.fields || [];
-    const columns = frame.data?.values || [];
-    const rowCount = columns[0]?.length || 0;
-    for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
-      const row: Record<string, unknown> = {};
-      for (let columnIndex = 0; columnIndex < fields.length; columnIndex += 1) {
-        const name = fields[columnIndex]?.name || `field_${columnIndex}`;
-        row[name] = columns[columnIndex]?.[rowIndex];
-      }
-      rows.push(row);
-    }
-  }
-  return rows;
-};
-
-const queryGrafana = async ({
-  grafanaUrl,
-  datasourceUid,
-  from,
-  to,
-  queryText,
-  projectId,
-}: {
-  grafanaUrl: string;
-  datasourceUid: string;
-  from: string;
-  to: string;
-  queryText: string;
-  projectId: string;
-}) =>
-  fetchJson<GrafanaResponse>(`${grafanaUrl}/api/ds/query`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      from,
-      to,
-      queries: [
-        {
-          refId: 'A',
-          datasource: {
-            type: 'googlecloud-logging-datasource',
-            uid: datasourceUid,
-          },
-          projectId,
-          queryText,
-          maxDataPoints: 1000,
-          intervalMs: 1000,
-        },
-      ],
-    }),
-  });
-
 /**
- * Convert a Cloud Logging entry to the row shape Grafana produces, whose
- * `content` is the raw slog line (kept as `jsonPayload.message`).
+ * Convert a Cloud Logging entry to a row whose `content` is the raw slog line
+ * (kept as `jsonPayload.message`).
  */
 const rowFromLogEntry = (entry: LogEntry): LogRow => {
   const { message, ...fields } = entry.jsonPayload || {};
@@ -391,25 +291,99 @@ const rowFromLogEntry = (entry: LogEntry): LogRow => {
   };
 };
 
-const queryCloudLogging = async ({
-  projectId,
+/** The filter for a log query, limited to a time range. */
+const buildTimedFilter = ({
+  queryText,
   from,
   to,
-  queryText,
+}: {
+  queryText: string;
+  from: string;
+  to: string;
+}) =>
+  [queryText, `timestamp>=${quote(from)}`, `timestamp<=${quote(to)}`].join(
+    '\n',
+  );
+
+/** Why a gcloud command failed, preferring what gcloud itself said. */
+const gcloudFailure = (err: unknown) => {
+  if (typeof err === 'object' && err !== null) {
+    if ('code' in err && err.code === 'ENOENT') {
+      return 'gcloud is not installed, or not on PATH';
+    }
+    if ('stderr' in err && typeof err.stderr === 'string') {
+      const stderr = err.stderr.trim();
+      if (stderr) return stderr;
+    }
+  }
+  return err instanceof Error ? err.message : String(err);
+};
+
+const getGcloudAccount = async () => {
+  await null;
+  try {
+    const { stdout } = await execFile('gcloud', [
+      ...['auth', 'list'],
+      '--filter=status:ACTIVE',
+      '--format=value(account)',
+    ]);
+    return stdout.trim() || undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Check that gcloud's active credentials can read the project's log entries,
+ * by reading at most one recent entry. Throws, saying which account was tried
+ * and what gcloud reported, when gcloud is missing, has no usable credentials,
+ * or lacks the permission (logging.logEntries.list, e.g. via
+ * roles/logging.viewer).
+ */
+const checkLogAccess = async ({
+  projectId,
+  cluster,
+  container,
+}: {
+  projectId: string;
+  cluster: string;
+  container: string;
+}) => {
+  const filter = [
+    `resource.labels.cluster_name=${quote(cluster)}`,
+    `resource.labels.container_name=${quote(container)}`,
+  ].join('\n');
+  const args = [
+    ...['logging', 'read', filter],
+    ...['--project', projectId],
+    ...['--limit', '1'],
+    ...['--freshness', '10m'],
+    '--format=value(insertId)',
+  ];
+  trace(`checking that gcloud can read logs of project ${projectId}`);
+  await null;
+  try {
+    await execFile('gcloud', args);
+  } catch (err) {
+    const account = await getGcloudAccount();
+    throw Error(
+      `cannot read logs of GCP project ${projectId} with gcloud (${
+        account ? `as ${account}` : 'no active account'
+      }). The active gcloud account needs roles/logging.viewer on the project. gcloud said: ${gcloudFailure(err)}`,
+    );
+  }
+  trace(`gcloud can read logs of project ${projectId}`);
+};
+
+const queryCloudLogging = async ({
+  projectId,
+  filter,
   maxEntries,
 }: {
   projectId: string;
-  from: string;
-  to: string;
-  queryText: string;
+  filter: string;
   maxEntries: number;
 }) => {
-  // An explicit time range also overrides gcloud's default --freshness=1d.
-  const filter = [
-    queryText,
-    `timestamp>=${quote(from)}`,
-    `timestamp<=${quote(to)}`,
-  ].join('\n');
   const args = [
     ...['logging', 'read', filter],
     ...['--project', projectId],
@@ -417,9 +391,15 @@ const queryCloudLogging = async ({
     '--format=json',
   ];
   trace('gcloud', ...args.map(arg => (arg === filter ? quote(arg) : arg)));
-  const { stdout } = await execFile('gcloud', args, {
-    maxBuffer: 1024 * 1024 * 1024,
-  });
+  await null;
+  let stdout: string;
+  try {
+    ({ stdout } = await execFile('gcloud', args, {
+      maxBuffer: 1024 * 1024 * 1024,
+    }));
+  } catch (err) {
+    throw Error(`gcloud logging read failed: ${gcloudFailure(err)}`);
+  }
   const entries: unknown = JSON.parse(stdout.trim() || '[]');
   if (!Array.isArray(entries) || !entries.every(isLogEntry)) {
     throw Error(
@@ -433,23 +413,6 @@ const queryCloudLogging = async ({
     raw: entries,
     rows: entries.map(rowFromLogEntry),
   };
-};
-
-const queryGrafanaRows = async (params: Parameters<typeof queryGrafana>[0]) => {
-  const grafana = await queryGrafana(params);
-  const result = grafana.results?.A;
-  if (!result) {
-    throw Error(`Grafana response has no result: ${JSON.stringify(grafana)}`);
-  }
-  if (result.error || (result.status !== undefined && result.status >= 400)) {
-    throw Error(
-      `Grafana query failed with status ${result.status}: ${result.error}`,
-    );
-  }
-  const frames = result.frames || [];
-  trace(`Grafana returned ${frames.length} frame(s)`);
-  const rows: LogRow[] = flattenFrames(frames);
-  return { raw: grafana, rows };
 };
 
 const toIso = (ms: number) => new Date(ms).toISOString();
@@ -474,14 +437,6 @@ const main = async (argv = process.argv) => {
     throw Error(`bad --network: ${network}`);
   }
 
-  const sources: readonly LogSource[] =
-    values.source === 'auto'
-      ? LOG_SOURCES
-      : LOG_SOURCES.filter(source => source === values.source);
-  if (sources.length === 0) {
-    throw Error(`bad --source: ${values.source}`);
-  }
-
   const maxEntries = Number.parseInt(values['max-entries'], 10);
   if (!Number.isFinite(maxEntries) || maxEntries < 1) {
     throw Error(`bad --max-entries: ${values['max-entries']}`);
@@ -494,6 +449,19 @@ const main = async (argv = process.argv) => {
   }
   if (!Number.isFinite(windowMinutes) || windowMinutes < 1) {
     throw Error(`bad --window-minutes: ${values['window-minutes']}`);
+  }
+
+  // Fail before doing any work if the logs can't be read at all, so that a
+  // missing permission is not mistaken for logs that haven't arrived yet.
+  if (values['check-access'] || !values['save-txs']) {
+    await checkLogAccess({
+      projectId: PROJECT_ID,
+      cluster: LOG_CLUSTER,
+      container: LOG_CONTAINER,
+    });
+  }
+  if (values['check-access']) {
+    return;
   }
 
   const namespace =
@@ -536,50 +504,20 @@ const main = async (argv = process.argv) => {
   const windowMs = windowMinutes * 60_000;
   const from = toIso(txTimeMs - windowMs);
   const to = toIso(txTimeMs + windowMs);
+  // An explicit time range also overrides gcloud's default --freshness=1d.
+  const filter = buildTimedFilter({ queryText, from, to });
   trace(`querying logs from ${from} to ${to}`);
-  trace(`log query: ${queryText}`);
-
-  // Use the first source with matching entries. An empty or failed one
-  // doesn't mean the logs aren't there, so try the next and report each.
-  const outcomes: string[] = [];
-  let found: { source: LogSource; raw: unknown; rows: LogRow[] } | undefined;
-  for (const source of sources) {
-    try {
-      const { raw, rows } =
-        source === 'cloud-logging'
-          ? await queryCloudLogging({
-              projectId: PROJECT_ID,
-              from,
-              to,
-              queryText,
-              maxEntries,
-            })
-          : await queryGrafanaRows({
-              grafanaUrl: GRAFANA_URL,
-              datasourceUid: DATASOURCE_UID,
-              from,
-              to,
-              queryText,
-              projectId: PROJECT_ID,
-            });
-      trace(`${source} returned ${rows.length} row(s)`);
-      if (rows.length > 0) {
-        found = { source, raw, rows };
-        break;
-      }
-      outcomes.push(`${source}: no matching log entries`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      trace(`${source} failed:`, message);
-      outcomes.push(`${source}: ${message}`);
-    }
-  }
-  if (!found) {
+  const { raw, rows } = await queryCloudLogging({
+    projectId: PROJECT_ID,
+    filter,
+    maxEntries,
+  });
+  trace(`Cloud Logging returned ${rows.length} row(s)`);
+  if (rows.length === 0) {
     throw Error(
-      `no upgrade logs found for run ${runId} (tx ${tx.txhash}) between ${from} and ${to}; ${outcomes.join('; ')}`,
+      `no upgrade logs found for run ${runId} (tx ${tx.txhash}) between ${from} and ${to}`,
     );
   }
-  const { source, rows } = found;
 
   const result = {
     network,
@@ -589,19 +527,18 @@ const main = async (argv = process.argv) => {
     height: tx.height,
     timestamp: tx.timestamp,
     runId,
-    source,
     logQuery: queryText,
-    exploreUrl: buildExploreUrl({
-      grafanaUrl: GRAFANA_URL,
-      datasourceUid: DATASOURCE_UID,
-      queryText,
+    logsUrl: buildLogsExplorerUrl({
+      filter,
+      from,
+      to,
       projectId: PROJECT_ID,
     }),
     from,
     to,
     rowCount: rows.length,
     rows: values.raw ? undefined : rows,
-    raw: values.raw ? found.raw : undefined,
+    raw: values.raw ? raw : undefined,
   };
 
   if (values.pretty) {
