@@ -13,6 +13,10 @@ import type {
   CompoundClaimEvidence,
   MerklClaimEvidence,
   OneInchSwapInstructions,
+  ClaimRewardsSelector,
+  SwapProvider,
+  RewardClaimProtocol,
+  SwapSelector,
 } from './types.js';
 
 export {
@@ -145,6 +149,34 @@ export const OneInchSwapInstructionsShape: CastedPattern<OneInchSwapInstructions
     {},
   );
 harden(OneInchSwapInstructionsShape);
+
+/**
+ * Structural shape of an index into evidence. Consumers must still check
+ * that it is an integer designating an entry of the selected evidence.
+ */
+const EvidenceIndexShape = M.and(M.number(), M.gte(0));
+
+export const RewardClaimProtocolShape: CastedPattern<RewardClaimProtocol> =
+  M.or('aave', 'compound', 'merkl');
+harden(RewardClaimProtocolShape);
+
+export const SwapProviderShape: CastedPattern<SwapProvider> = M.or('1inch');
+harden(SwapProviderShape);
+
+export const ClaimRewardsSelectorShape: CastedPattern<ClaimRewardsSelector> =
+  M.splitRecord(
+    { protocol: RewardClaimProtocolShape, index: EvidenceIndexShape },
+    {},
+    {},
+  );
+harden(ClaimRewardsSelectorShape);
+
+export const SwapSelectorShape: CastedPattern<SwapSelector> = M.splitRecord(
+  { provider: SwapProviderShape, index: EvidenceIndexShape },
+  {},
+  {},
+);
+harden(SwapSelectorShape);
 
 export const PlanObservationsShape: CastedPattern<PlanObservations> =
   M.splitRecord(

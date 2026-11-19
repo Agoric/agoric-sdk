@@ -560,6 +560,44 @@ export type ClaimRewardsParams = {
   };
 };
 
+/** Protocols whose rewards a plan step may claim, given signed evidence. */
+export type RewardClaimProtocol = 'aave' | 'compound' | 'merkl';
+
+/**
+ * Selects, by `index`, the signed claim evidence of a plan step claiming
+ * rewards: `aaveClaims`, `compoundClaims` or `merklClaims` of the
+ * {@link SelectableObservations} submitted with the plan, according to
+ * `protocol`. The contract derives what to execute from the evidence, never
+ * from the plan.
+ *
+ * An Aave or Compound claim step moves from its instrument to the chain
+ * account (e.g. `Aave_Base` → `@Base`). A Merkl claim is account-scoped, so
+ * its step stays at the account (e.g. `@Base` → `@Base`), whatever instrument
+ * accrued the rewards.
+ *
+ * Supersedes {@link ClaimRewardsParams}, which remains until the contract and
+ * planner adopt selectors.
+ */
+export type ClaimRewardsSelector = {
+  protocol: RewardClaimProtocol;
+  index: number;
+};
+
+/**
+ * Selects, by `index`, the signed swap instructions of a plan step:
+ * `oneInchSwaps` of the {@link SelectableObservations} submitted with the
+ * plan for provider `'1inch'`. A swap step stays at the account (e.g. `@Base`
+ * → `@Base`); its movement `amount` is the enforced minimum output, while the
+ * exact input comes from the selected instructions.
+ *
+ * Supersedes {@link SwapDesc}, which remains until the contract and planner
+ * adopt selectors.
+ */
+export type SwapSelector = {
+  provider: SwapProvider;
+  index: number;
+};
+
 export type MovementDesc = {
   /** Default-token units (micro-USDC) received at dest; a minimum when withdraw.max is true or withdraw.amountOfShares is specified, otherwise exact. */
   amount: NatAmount;
