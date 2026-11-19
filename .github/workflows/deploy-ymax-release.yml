@@ -355,11 +355,6 @@ jobs:
           echo "upgrade_submitted=true" >> "$GITHUB_OUTPUT"
 
   upgrade-confirm:
-    permissions:
-      contents: write
-      # For the Google Cloud auth below.
-      id-token: write
-    needs: [plan, pre-upgrade, upgrade-submit]
     # This job depends upon `plan` succeeding and `pre-upgrade` not failing.
     if: |
       (!cancelled()) &&
@@ -368,6 +363,13 @@ jobs:
       (needs.plan.outputs.need_upgrade_submit != 'true' || needs.upgrade-submit.outputs.upgrade_submitted == 'true') &&
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
       contains(fromJSON('["success","skipped","failure"]'), needs.upgrade-submit.result)
+    needs:
+      - plan
+      - pre-upgrade
+      - upgrade-submit
+    permissions:
+      contents: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -376,10 +378,6 @@ jobs:
 
       - uses: ./.github/actions/setup-agoric-sdk-build
 
-      # The upgrade logs are read from Cloud Logging with gcloud, which needs
-      # roles/logging.viewer on the simulationlab project. This repository's
-      # workflows have it through Workload Identity Federation, using the
-      # job's GitHub OIDC token (hence `id-token: write`) rather than a key.
       - name: Auth to Google Cloud for upgrade logs
         uses: google-github-actions/auth@v3
         with:

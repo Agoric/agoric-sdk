@@ -1,11 +1,7 @@
-#!/usr/bin/env -S node --import ts-blank-space/register
+#! /usr/bin/env -S node --import ts-blank-space/register
+
 /**
  * @file query upgrade run slogs for a ymax control tx
- *
- * Reads the slogs from Cloud Logging with `gcloud logging read`. Before doing
- * anything else, it checks that gcloud's active credentials can read the GCP
- * project's log entries (roles/logging.viewer) and exits nonzero if not. It
- * also exits nonzero when no log entries are found.
  */
 
 import { execFile as execFileCb } from 'node:child_process';

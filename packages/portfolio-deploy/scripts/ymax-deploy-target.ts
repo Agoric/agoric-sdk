@@ -2042,8 +2042,6 @@ const confirmUpgradeContract = async (
   if (target !== upgradeTarget) {
     throw Error(`missing required release asset ${upgradeTarget}-upgrade.json`);
   }
-  // Confirming needs the upgrade's logs. Fail now, once, if they can't be
-  // read at all, rather than in each getGoodLogs retry below.
   await upgradeLogs.exec(['--check-access'], {
     stdio: ['ignore', 'ignore', 'inherit'],
   });
@@ -2144,10 +2142,8 @@ const confirmUpgradeContract = async (
 
   const { sortedLogEntries, slogsText, incarnationNumber } =
     await retryUntilCondition(getGoodLogs, () => true, 'upgrade logs', {
+      retryIntervalMs: 60 * 1000,
       setTimeout,
-      // retryIntervalMs doubles as a per-attempt timeout, and reading a large
-      // upgrade's logs from Cloud Logging can take most of 20 seconds.
-      retryIntervalMs: 60_000,
     });
 
   await release.join(slogAssetName).writeText(slogsText);
