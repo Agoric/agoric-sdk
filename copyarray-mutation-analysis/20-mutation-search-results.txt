@@ -1,0 +1,100 @@
+
+=== File: packages/ERTP/src/amountMath.js ===
+--- Looking for .push() ---
+None found
+--- Looking for .pop() ---
+None found
+--- Looking for .shift() ---
+None found
+--- Looking for .unshift() ---
+None found
+--- Looking for .splice() ---
+None found
+--- Looking for array[index] = ---
+None found
+--- Looking for .sort() ---
+28:const assetKindNames = harden(Object.values(AssetKind).sort());
+--- Looking for .reverse() ---
+None found
+--- Looking for .fill() ---
+None found
+
+=== File: packages/ERTP/src/mathHelpers/setMathHelpers.js ===
+--- Looking for .push() ---
+None found
+--- Looking for .pop() ---
+None found
+--- Looking for .shift() ---
+None found
+--- Looking for .unshift() ---
+None found
+--- Looking for .splice() ---
+None found
+--- Looking for array[index] = ---
+None found
+--- Looking for .sort() ---
+None found
+--- Looking for .reverse() ---
+None found
+--- Looking for .fill() ---
+None found
+
+=== File: packages/ERTP/src/typeGuards.js ===
+--- Looking for .push() ---
+None found
+--- Looking for .pop() ---
+None found
+--- Looking for .shift() ---
+None found
+--- Looking for .unshift() ---
+None found
+--- Looking for .splice() ---
+None found
+--- Looking for array[index] = ---
+None found
+--- Looking for .sort() ---
+None found
+--- Looking for .reverse() ---
+None found
+--- Looking for .fill() ---
+None found
+
+=== File: packages/notifier/tools/testSupports.js ===
+--- Looking for .push() ---
+None found
+--- Looking for .pop() ---
+None found
+--- Looking for .shift() ---
+None found
+--- Looking for .unshift() ---
+None found
+--- Looking for .splice() ---
+None found
+--- Looking for array[index] = ---
+None found
+--- Looking for .sort() ---
+None found
+--- Looking for .reverse() ---
+None found
+--- Looking for .fill() ---
+None found
+
+=== File: packages/zoe/test/unitTests/setupNonFungibleMints.js ===
+--- Looking for .push() ---
+None found
+--- Looking for .pop() ---
+None found
+--- Looking for .shift() ---
+None found
+--- Looking for .unshift() ---
+None found
+--- Looking for .splice() ---
+None found
+--- Looking for array[index] = ---
+None found
+--- Looking for .sort() ---
+None found
+--- Looking for .reverse() ---
+None found
+--- Looking for .fill() ---
+None found
