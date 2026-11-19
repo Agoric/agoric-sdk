@@ -125,7 +125,7 @@ export type ProposalType = {
  * basis points). Denominator is implicitly the sum of all numerators.
  */
 export type TargetAllocation = Partial<
-  Record<InstrumentId | `@${AxelarChain}`, bigint>
+  Record<InstrumentId | EvmAccountRef, bigint>
 >;
 
 /**
@@ -324,7 +324,7 @@ export type LegacyHoldingDetail = {
 
 type EvmHoldingPlace = Extract<
   PortfolioBalancePlaceRef,
-  `@${AxelarChain}` | `${string}_${AxelarChain}`
+  EvmAccountRef | `${string}_${AxelarChain}`
 >;
 type NonNativeHoldingKind = Exclude<HoldingKind, `$${string}`>;
 
@@ -352,7 +352,7 @@ type HoldingIdentity =
       tokenId: string;
     }
   | {
-      place: `@${AxelarChain}`;
+      place: EvmAccountRef;
       kind: `$${string}`;
       tokenId: '';
     };
