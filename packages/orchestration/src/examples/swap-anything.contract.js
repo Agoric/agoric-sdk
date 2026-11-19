@@ -117,6 +117,7 @@ export const contract = async (
         const {
           amount,
           extra: { receiver: origReceiver },
+          fromAccount,
         } = await vowTools.when(
           E(sharedLocalAccount).parseInboundTransfer(event.packet),
         );
@@ -136,6 +137,7 @@ export const contract = async (
           destAddr,
           receiverAddr,
           outDenom,
+          fromAccount,
         });
 
         if (!receiverAddr || !destAddr || !outDenom) return;
@@ -149,6 +151,7 @@ export const contract = async (
             slippagePercentage: '20',
             windowSeconds: 10,
           },
+          fromAccount,
         });
       },
     });
