@@ -6,6 +6,8 @@ import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
 import {
+  ClaimRewardsSelectorShape,
+  SwapSelectorShape,
   WithdrawParamsShape,
   type AssetPlaceRef,
   type FundsFlowPlan,
@@ -161,31 +163,8 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     withdraw: WithdrawParamsShape,
     fee: AnyNatAmountShape,
     detail: M.recordOf(M.string(), M.nat()),
-    swap: M.splitRecord(
-      {
-        provider: '1inch',
-        tokenIn: M.string(),
-        amountIn: M.nat(),
-        flags: M.nat(),
-        executor: M.string(),
-        srcReceiver: M.string(),
-        data: M.string(),
-      },
-      {
-        tokenOut: M.string(),
-      },
-    ),
-    claimRewards: M.splitRecord(
-      {
-        tokens: M.arrayOf(M.string()),
-        minAmounts: M.arrayOf(M.nat()),
-      },
-      {
-        morpho: M.splitRecord({
-          proofs: M.arrayOf(M.arrayOf(M.string())),
-        }),
-      },
-    ),
+    claimRewards: ClaimRewardsSelectorShape,
+    swap: SwapSelectorShape,
   });
   // Structural compatibility does not establish support for a future place.
   // Known amounts and withdrawal parameters use the same checks as movements.

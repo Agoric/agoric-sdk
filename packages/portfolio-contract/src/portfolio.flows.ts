@@ -42,7 +42,7 @@ import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   TxType,
   type ChainTokenMetadata,
-  type ClaimRewardsParams,
+  type ClaimRewardsSelector,
   type FlowConfig,
   type FlowErrors,
   type FlowFeatures,
@@ -86,6 +86,11 @@ import type {
 } from './portfolio.exo.ts';
 import type { BoundStep } from './delegation-limits.ts';
 import {
+  assertRewardBinding,
+  type ClaimBoundStep,
+  type GetEvmContracts,
+} from './reward-bindings.ts';
+import {
   AaveProtocol,
   BeefyProtocol,
   CCTP,
@@ -96,6 +101,7 @@ import {
   provideEVMAccount,
   sendGMPContractCall,
   sendPermit2GMP,
+  claimMerklRewards,
   swapRewardToStable,
   type EVMContext,
   type GMPAccountStatus,
@@ -245,7 +251,7 @@ export type ProtocolDetail<
   claimRewards?: (
     ctx: CTX,
     dest: AccountInfoFor[C],
-    params: ClaimRewardsParams,
+    claim: ClaimBoundStep,
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
 };
@@ -832,6 +838,7 @@ type Way =
   | { how: 'withdrawToEVM'; dest: AxelarChain }
   | { how: 'CCTPtoUser'; dest: AxelarChain }
   | { how: 'swap'; chain: AxelarChain }
+  | { how: 'Merkl'; chain: AxelarChain }
   | {
       how: YieldProtocol;
       /** pool we're supplying */
@@ -852,8 +859,8 @@ type Way =
       poolKey: PoolKey;
       /** chain with account that will receive the claimed rewards */
       dest: SupportedChain;
-      /** External params required for claiming rewards */
-      claimRewards: ClaimRewardsParams;
+      /** selects the signed evidence of the claim */
+      claimRewards: ClaimRewardsSelector;
     };
 
 // exported only for testing
@@ -944,6 +951,12 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
           if (srcIsEVM && srcChain === destChain && moveDesc.swap) {
             return { how: 'swap', chain: srcChain as AxelarChain };
           }
+          // Account-scoped reward claim (e.g. @Base -> @Base)
+          if (srcIsEVM && srcChain === destChain && moveDesc.claimRewards) {
+            moveDesc.claimRewards.protocol === 'merkl' ||
+              Fail`${q(moveDesc.claimRewards.protocol)} claims must come from an instrument: ${q(moveDesc)}`;
+            return { how: 'Merkl', chain: srcChain as AxelarChain };
+          }
 
           // TODO HACK don't use magic number 2 for CCTPv2 signal
           const { cctpVersion } = moveDesc.detail ?? {};
@@ -1002,6 +1015,7 @@ const assertExecutionBindings = (
       Number(index) < moves.length) ||
       Fail`bound step index out of range: ${q(index)}`;
   }
+  const getEvmContracts: GetEvmContracts = chain => ctx.contracts[chain];
   for (const [i, move] of moves.entries()) {
     const boundStep = boundSteps?.[i];
     const requiresBinding =
@@ -1009,6 +1023,15 @@ const assertExecutionBindings = (
       move.withdraw?.amountOfShares !== undefined;
     if (requiresBinding && !boundStep) {
       throw Fail`withdraw options require a bound step at movement ${q(i)}`;
+    }
+    // Claims and swaps only execute what was derived from signed evidence.
+    if ((move.claimRewards || move.swap) && !boundStep) {
+      throw Fail`reward claims and swaps require a bound step at movement ${q(i)}`;
+    }
+    if (boundStep?.kind === 'claimRewards' || boundStep?.kind === 'swap') {
+      !move.withdraw ||
+        Fail`reward claims and swaps cannot withdraw at movement ${q(i)}`;
+      assertRewardBinding(move, boundStep, getEvmContracts);
     }
     if (boundStep?.kind === 'redeemShares') {
       isERC4626MorphoInstrumentId(move.src) ||
@@ -1050,7 +1073,11 @@ const assertExecutionBindings = (
         sameEvmAddress(boundStep.tokenAddress, addresses?.usdc)) ||
         Fail`principal withdrawal configuration no longer matches at ${q(move.src)}`;
     }
-    if (boundStep && (boundStep.minimumProceeds ?? 0n) > 0n) {
+    if (
+      boundStep &&
+      'minimumProceeds' in boundStep &&
+      (boundStep.minimumProceeds ?? 0n) > 0n
+    ) {
       hasMinimumRedemptionContracts(
         move.src,
         ctx.contracts[chainOf(move.src) as AxelarChain],
@@ -1210,8 +1237,11 @@ const stepFlow = async (
           await pImpl.supply(evmCtx, amount, gInfo, opts);
           return harden({ destPos: pos });
         } else if (claimRewards) {
+          if (boundStep?.kind !== 'claimRewards') {
+            throw Fail`claimRewards requires bound claim evidence`;
+          }
           pImpl.claimRewards || Fail`${q(how)} does not support claimRewards`;
-          await pImpl.claimRewards!(evmCtx, gInfo, claimRewards, opts);
+          await pImpl.claimRewards!(evmCtx, gInfo, boundStep, opts);
           // Rewards land in the user's remote address as separate tokens;
           // the pool position is unchanged.
           return harden({});
@@ -1256,10 +1286,7 @@ const stepFlow = async (
 
   for (const [i, move] of moves.entries()) {
     const boundStep = options?.boundSteps?.[i];
-    const isClaimRewards =
-      getAssetPlaceRefKind(move.src) === 'pos' && !!move.claimRewards;
     move.amount.value > 0n ||
-      isClaimRewards ||
       !!boundStep ||
       Fail`movement amount must be positive in ${q(move)}`;
     move.amount.value >= 0n ||
@@ -1473,6 +1500,10 @@ const stepFlow = async (
       case 'swap': {
         const { chain } = way;
         features?.experimentalSwap || Fail`swap not supported: ${q(move)}`;
+        if (boundStep?.kind !== 'swap') {
+          throw Fail`swap requires bound swap instructions: ${q(move)}`;
+        }
+        const swap = boundStep;
         todo.push({
           how: 'swap',
           amount,
@@ -1488,17 +1519,43 @@ const stepFlow = async (
               agoric.lca,
               ctx.transferChannels.noble.counterPartyChannelId,
             );
-            await swapRewardToStable(
-              evmCtx,
-              gInfo,
-              amount,
-              move.swap,
-              ...optsArgs,
-            );
+            await swapRewardToStable(evmCtx, gInfo, swap, ...optsArgs);
             return {};
           },
         });
 
+        break;
+      }
+
+      case 'Merkl': {
+        const { chain } = way;
+        if (
+          boundStep?.kind !== 'claimRewards' ||
+          boundStep.protocol !== 'merkl'
+        ) {
+          throw Fail`Merkl claim requires bound claim evidence: ${q(move)}`;
+        }
+        const claim = boundStep;
+        todo.push({
+          how: 'Merkl',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          ...(move.claimRewards ? { claimRewards: move.claimRewards } : {}),
+          apply: async ({ [chain]: gInfo, agoric }, _tracer, ...optsArgs) => {
+            assert(gInfo && agoric, chain);
+            await gInfo.ready;
+            const evmCtx = await makeEVMCtx(
+              chain,
+              move,
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+            await claimMerklRewards(evmCtx, gInfo, claim, ...optsArgs);
+            // Rewards land in the account as separate tokens.
+            return {};
+          },
+        });
         break;
       }
 

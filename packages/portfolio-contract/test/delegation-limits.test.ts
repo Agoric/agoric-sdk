@@ -1052,7 +1052,7 @@ test('claimRewards cannot hide a supply above the allocation ceiling', t => {
         src: '@Arbitrum',
         dest: 'Aave_Arbitrum',
         amount: { brand: USDC, value: 100n },
-        claimRewards: { tokens: [], minAmounts: [] },
+        claimRewards: { protocol: 'aave', index: 0 },
       },
     ],
   };
@@ -1089,7 +1089,7 @@ test('allocation plan rejects a well-formed reward claim', t => {
               src: 'Aave_Arbitrum',
               dest: '@Arbitrum',
               amount: { brand: USDC, value: 0n },
-              claimRewards: { tokens: [], minAmounts: [] },
+              claimRewards: { protocol: 'aave', index: 0 },
             },
           ],
         },
@@ -1120,7 +1120,7 @@ test('allocation plan rejects a reward claim after an ordinary movement', t => {
         src: 'Compound_Arbitrum',
         dest: '@Arbitrum',
         amount: { brand: USDC, value: 0n },
-        claimRewards: { tokens: [], minAmounts: [] },
+        claimRewards: { protocol: 'aave', index: 0 },
       },
     ],
   };
@@ -1319,15 +1319,7 @@ test('allocation plan rejects swap steps', t => {
         src: '@Avalanche',
         dest: '@Avalanche',
         amount: { brand: USDC, value: 10n },
-        swap: {
-          provider: '1inch',
-          tokenIn: '0x0000000000000000000000000000000000000abc',
-          amountIn: 10n,
-          flags: 0n,
-          executor: '0x2222222222222222222222222222222222222222',
-          srcReceiver: '0x3333333333333333333333333333333333333333',
-          data: '0xdeadbeef',
-        },
+        swap: { provider: '1inch', index: 0 },
       },
     ],
   };
@@ -2319,7 +2311,7 @@ test('Maximum Morpho withdrawals target the position’s own chain account', t =
           flow: [
             {
               ...movement,
-              claimRewards: { tokens: [], minAmounts: [] },
+              claimRewards: { protocol: 'aave', index: 0 },
             },
           ],
         },
@@ -2688,7 +2680,7 @@ for (const src of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
     t.throws(
       () =>
         check({
-          flow: [{ ...move, claimRewards: { tokens: [], minAmounts: [] } }],
+          flow: [{ ...move, claimRewards: { protocol: 'aave', index: 0 } }],
         }),
       { message: /cannot also claim rewards/ },
     );

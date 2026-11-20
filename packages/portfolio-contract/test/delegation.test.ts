@@ -1549,7 +1549,7 @@ test('delegated plans: allocation permission cannot submit reward claims', async
             src: 'Aave_Arbitrum',
             dest: '@Arbitrum',
             amount: usdc.make(0n),
-            claimRewards: { tokens: [], minAmounts: [] },
+            claimRewards: { protocol: 'aave', index: 0 },
           },
         ],
       },

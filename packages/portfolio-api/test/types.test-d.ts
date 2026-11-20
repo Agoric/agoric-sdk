@@ -390,23 +390,14 @@ const flowSteps: FlowStep[] = [
     amount: natAmount,
     src: 'Compound_Arbitrum',
     dest: '@Arbitrum',
-    claimRewards: { tokens: ['0xCAFED00D'], minAmounts: [1000n] },
+    claimRewards: { protocol: 'compound', index: 0 },
   },
   {
-    how: 'Compound',
+    how: 'swap',
     amount: natAmount,
     src: '@Arbitrum',
     dest: '@Arbitrum',
-    swap: {
-      provider: '1inch',
-      tokenIn: '0xCAFED00D',
-      tokenOut: '0xDEADBEEF',
-      amountIn: 1000n,
-      flags: 0n,
-      executor: '0xca11ab1e',
-      srcReceiver: '0xBOB5C0FFEEFACADE',
-      data: '0xB0A710AD',
-    },
+    swap: { provider: '1inch', index: 0 },
   },
 ];
 

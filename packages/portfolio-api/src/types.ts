@@ -471,53 +471,8 @@ export type FlowStatus =
   | { state: 'done' }
   | ({ state: 'fail' } & FlowErrors);
 
-/**
- * Decomposed parameters for a same-chain, same-account reward-token -> stable-token
- * swap (src === dest === `@{chain}`) routed through 1inch.
- *
- * Rather than forwarding an opaque calldata blob, the planner supplies the swap
- * as named fields and the contract reconstructs the call itself, filling the
- * fund-safety fields it controls (`dstToken` = configured stable token,
- * `dstReceiver` = this portfolio's own account, `minReturnAmount` = the
- * movement `amount`) and pinning the router/selector from `provider`.
- * `executor`, `srcReceiver`, and `data` are provider route internals
- */
-export type OneInchSwapDesc = {
-  provider: '1inch';
-  /**
-   * Reward token; becomes `desc.srcToken` and the approved spend token.
-   * The contract accepts only tokens listed in configured chain metadata with
-   * `swapFrom` usage.
-   */
-  tokenIn: `0x${string}`;
-  /**
-   * Optional stable token; becomes `desc.dstToken`. When omitted, the contract
-   * uses its configured stable token for the chain. The effective token must be
-   * listed in configured chain metadata with `swapTo` usage.
-   */
-  tokenOut?: `0x${string}`;
-  /** becomes `desc.amount` and the approved amount */
-  amountIn: bigint;
-  /** provider routing flags (e.g. 1inch `_PARTIAL_FILL`) */
-  flags: bigint;
-  /** provider route internal: the contract executing the swap */
-  executor: `0x${string}`;
-  /** provider route internal: where `tokenIn` is routed */
-  srcReceiver: `0x${string}`;
-  /** provider route internal: opaque executor calldata */
-  data: `0x${string}`;
-};
-
-/**
- * A reward-token -> stable-token swap request. Currently only 1inch is supported;
- * supporting another aggregator widens this to a union of per-provider descs.
- */
-export type SwapDesc = OneInchSwapDesc;
-
-/**
- * Swap aggregator whose API produced the swap `data`
- */
-export type SwapProvider = SwapDesc['provider'];
+/** Swap aggregator whose signed instructions a swap step may select. */
+export type SwapProvider = '1inch';
 
 /**
  * Additive options for a position-to-same-chain-account withdrawal. Structural
@@ -542,36 +497,6 @@ export type WithdrawParams =
       amountOfShares?: bigint;
     };
 
-/**
- * Parameters for claiming external rewards.
- *
- * `tokens` and `minAmounts` are common across protocols. Protocol-specific
- * inputs are nested under a per-protocol key (e.g. `morpho`).
- *
- */
-export type ClaimRewardsParams = {
-  /** reward token addresses being claimed */
-  tokens: EvmAddress[];
-  /** minimum amount to claim constraint per corresponding entry in `tokens` */
-  minAmounts: bigint[];
-  /**
-   * Morpho-specific claim inputs (e.g. for the Merkle rewards distributor).
-   *
-   * Morpho rewards are distributed on-chain via a Merkle Distributor
-   * Contract. The `tokens`, `minAmounts`, and `proofs` below are
-   * obtained off-chain following Morpho's claim-rewards tutorial
-   * ({@link https://docs.morpho.org/developers/rewards/tutorials/claim-rewards/}),
-   * which queries the Merkl rewards API for the claimer's EVM address:
-   * `GET https://api.merkl.xyz/v4/users/{address}/rewards?chainId={chainId}`.
-   * Each entry of that response supplies the reward token address, the
-   * cumulative claimable amount, and the corresponding Merkle proof.
-   */
-  morpho?: {
-    /** Merkle proof per corresponding claim entry, from the Merkl rewards API */
-    proofs: `0x${string}`[][];
-  };
-};
-
 /** Protocols whose rewards a plan step may claim, given signed evidence. */
 export type RewardClaimProtocol = 'aave' | 'compound' | 'merkl';
 
@@ -586,9 +511,6 @@ export type RewardClaimProtocol = 'aave' | 'compound' | 'merkl';
  * account (e.g. `Aave_Base` → `@Base`). A Merkl claim is account-scoped, so
  * its step stays at the account (e.g. `@Base` → `@Base`), whatever instrument
  * accrued the rewards.
- *
- * Supersedes {@link ClaimRewardsParams}, which remains until the contract and
- * planner adopt selectors.
  */
 export type ClaimRewardsSelector = {
   protocol: RewardClaimProtocol;
@@ -601,9 +523,6 @@ export type ClaimRewardsSelector = {
  * plan for provider `'1inch'`. A swap step stays at the account (e.g. `@Base`
  * → `@Base`); its movement `amount` is the enforced minimum output, while the
  * exact input comes from the selected instructions.
- *
- * Supersedes {@link SwapDesc}, which remains until the contract and planner
- * adopt selectors.
  */
 export type SwapSelector = {
   provider: SwapProvider;
@@ -621,10 +540,10 @@ export type MovementDesc = {
   detail?: Record<string, bigint>;
   /** Present only for withdrawing from a position to an account. */
   withdraw?: WithdrawParams;
-  /** Present only for reward-token claims. */
-  claimRewards?: ClaimRewardsParams;
-  /** Present only for reward-token -> stable-token swaps. */
-  swap?: SwapDesc;
+  /** Present only for reward claims: selects their signed evidence. */
+  claimRewards?: ClaimRewardsSelector;
+  /** Present only for reward swaps: selects their signed instructions. */
+  swap?: SwapSelector;
 };
 
 /**

@@ -739,7 +739,7 @@ test('planner starts delegated claimRewards and resolves its plan', async t => {
       src: 'Aave_Arbitrum',
       dest: '@Arbitrum',
       amount,
-      claimRewards: { tokens: [], minAmounts: [] },
+      claimRewards: { protocol: 'aave', index: 0 },
     },
   ];
 
@@ -919,7 +919,7 @@ test('planner cannot start claimRewards without features enabled', async t => {
       src: 'Aave_Arbitrum',
       dest: '@Arbitrum',
       amount,
-      claimRewards: { tokens: [], minAmounts: [] },
+      claimRewards: { protocol: 'aave', index: 0 },
     },
   ];
 

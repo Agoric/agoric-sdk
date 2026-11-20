@@ -2,36 +2,38 @@ import '@endo/init/debug.js';
 
 import test from 'ava';
 import { encodeFunctionData } from 'viem';
-import type { SwapDesc } from '@agoric/portfolio-api';
 import {
   getOneInchSwapArgs,
   oneInchRouterABI,
 } from '../src/interfaces/one-inch.ts';
+import type { SwapBoundStep } from '../src/reward-bindings.ts';
 
 const TOKEN_IN = '0x0000000000000000000000000000000000000abc' as const;
 const TOKEN_OUT = '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf' as const;
 const RECEIVER = '0x1111111111111111111111111111111111111111' as const;
 const EXECUTOR = '0x2222222222222222222222222222222222222222' as const;
 const SRC_RECEIVER = '0x3333333333333333333333333333333333333333' as const;
+const ROUTER = '0x111111125421cA6dc452d289314280a0f8842A65' as const;
 
 const AMOUNT_IN = 5_000_000n;
 const MIN_RETURN = 4_900_000n;
 
-const swap: SwapDesc = {
+const swap: SwapBoundStep = harden({
+  kind: 'swap',
   provider: '1inch',
+  account: '@Arbitrum',
+  router: ROUTER,
   tokenIn: TOKEN_IN,
+  tokenOut: TOKEN_OUT,
   amountIn: AMOUNT_IN,
-  flags: 0n,
+  quotedAmountOut: 5_000_000n,
+  minAmountOut: MIN_RETURN,
   executor: EXECUTOR,
   srcReceiver: SRC_RECEIVER,
   data: '0xdeadbeef',
-};
+});
 
-const controlled = {
-  tokenOut: TOKEN_OUT,
-  receiver: RECEIVER,
-  minReturnAmount: MIN_RETURN,
-} as const;
+const controlled = { receiver: RECEIVER } as const;
 
 test('args encode to a swap() call targeting the V6 selector', t => {
   const data = encodeFunctionData({
@@ -58,9 +60,20 @@ test('fills the contract-controlled fund-safety fields', t => {
   });
 });
 
-test('the planner cannot redirect dstReceiver', t => {
-  // Even though SwapDesc carries no dstReceiver, the built args always pin it
-  // to the contract-controlled value.
-  const [, desc] = getOneInchSwapArgs(swap, controlled);
+test('swap instructions cannot redirect dstReceiver', t => {
+  // Swap instructions carry no dstReceiver: the built args always pin it to
+  // the contract-controlled value.
+  const [, desc] = getOneInchSwapArgs(
+    { ...swap, dstReceiver: EXECUTOR } as SwapBoundStep,
+    controlled,
+  );
   t.is(desc.dstReceiver, RECEIVER);
+});
+
+test('partial fills are never requested', t => {
+  const [, desc] = getOneInchSwapArgs(
+    { ...swap, flags: 1n } as SwapBoundStep,
+    controlled,
+  );
+  t.is(desc.flags, 0n);
 });

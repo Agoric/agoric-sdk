@@ -24,6 +24,7 @@ import {
 import type { Address as EvmAddress } from 'abitype';
 import { b, Fail, q } from '@endo/errors';
 import { getPrincipalWithdrawalProtocol } from './principal-withdrawal.ts';
+import type { RewardBoundStep } from './reward-bindings.ts';
 import { vetInstrumentAccountChain } from './flow-plan-places.ts';
 import { maxWeightClosure } from './max-weight-closure.ts';
 import { fullOrder, makeDependencies, makeSchedule } from './schedule-order.ts';
@@ -404,24 +405,26 @@ const decodePlan = (
   });
 };
 
-export type BoundStep = Readonly<
-  | {
-      kind: 'redeemShares';
-      src: ERC4626InstrumentId;
-      vaultAddress: EvmAddress;
-      shares: bigint;
-      minimumProceeds?: bigint;
-    }
-  | {
-      kind: 'withdrawMax';
-      src: InstrumentId;
-      protocolAddress: EvmAddress;
-      tokenAddress: EvmAddress;
-      /** Observed underlying quantity; zero skips an already empty position. */
-      amount: bigint;
-      minimumProceeds?: bigint;
-    }
->;
+export type BoundStep =
+  | Readonly<
+      | {
+          kind: 'redeemShares';
+          src: ERC4626InstrumentId;
+          vaultAddress: EvmAddress;
+          shares: bigint;
+          minimumProceeds?: bigint;
+        }
+      | {
+          kind: 'withdrawMax';
+          src: InstrumentId;
+          protocolAddress: EvmAddress;
+          tokenAddress: EvmAddress;
+          /** Observed underlying quantity; zero skips an already empty position. */
+          amount: bigint;
+          minimumProceeds?: bigint;
+        }
+    >
+  | RewardBoundStep;
 
 const MAX_MINIMUM_BEARING_SHARES = 10n ** 27n;
 
