@@ -175,8 +175,11 @@ export const preparePortfolioDelegationKit = (
           const { portfolioAccess, agentId } = this.state;
           // Don't let an unauthorized client cause any verification work.
           // Authorization is checked again once verification resolves.
+          // Supplying a plan also requires the authority to rebalance, so that
+          // `rebalance: false` limits an agent to target-only updates.
           portfolioAccess.getAuthorizedDelegation(this.facets.client, agentId, {
             allocation: true,
+            ...(params.plan !== undefined && { rebalance: true }),
           });
           const { signedObservations, ...allocationParams } = params;
           (params.plan === undefined) === (signedObservations === undefined) ||

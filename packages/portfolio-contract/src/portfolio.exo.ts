@@ -28,8 +28,10 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import {
+  getEffectivePortfolioPermissions,
   PortfolioAutoFeaturesShape,
   PortfolioPermissionsShape,
+  type EffectivePortfolioPermissions,
   type FlowConfig,
   type FlowKey,
   type FlowStatus,
@@ -758,10 +760,17 @@ export const preparePortfolioKit = (
         },
       },
       delegationHelper: {
+        /**
+         * Get the status of an active delegation, checking that it confers
+         * each `required` authority, after inheritance (see
+         * {@link getEffectivePortfolioPermissions}).
+         */
         getAuthorizedDelegation(
           client: PortfolioDelegationClient,
           agentId: number,
-          required: Partial<PortfolioPermissions> = {},
+          required: Partial<
+            Record<keyof EffectivePortfolioPermissions, true>
+          > = {},
         ) {
           const { delegations, portfolioId } = this.state;
           if (!delegations) {
@@ -773,10 +782,13 @@ export const preparePortfolioKit = (
           status.state === 'active' ||
             Fail`delegation ${q(`agent${agentId}`)} is not active; current state is ${q(status.state)}`;
 
+          const effective = getEffectivePortfolioPermissions(
+            status.permissions,
+          );
           for (const permission of Object.keys(
             required,
-          ) as (keyof PortfolioPermissions)[]) {
-            status.permissions[permission] ||
+          ) as (keyof EffectivePortfolioPermissions)[]) {
+            effective[permission] ||
               Fail`delegation ${q(`agent${agentId}`)} does not have required permission ${q(permission)}`;
           }
           return status;
@@ -809,13 +821,16 @@ export const preparePortfolioKit = (
           verifiedObservations?: VerifiedPortfolioObservations,
         ): FlowKey {
           const { reader, manager, delegationHelper } = this.facets;
+          const { syncState, targetAllocation, agentMemo, plan } =
+            delegatedSetTargetAllocationParams;
           const delegation = delegationHelper.getAuthorizedDelegation(
             client,
             agentId,
-            { allocation: true },
+            {
+              allocation: true,
+              ...(plan !== undefined && { rebalance: true }),
+            },
           );
-          const { syncState, targetAllocation, agentMemo, plan } =
-            delegatedSetTargetAllocationParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);

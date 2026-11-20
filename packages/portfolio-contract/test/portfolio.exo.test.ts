@@ -28,6 +28,7 @@ import {
   PortfolioStateShape,
   preparePortfolioKit,
   type AccountInfoFor,
+  type PortfolioKit,
 } from '../src/portfolio.exo.ts';
 import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
@@ -1364,34 +1365,122 @@ test('rejected pre-signed allocation preserves an existing account reservation',
   t.is(manager.reserveAccountState('Arbitrum').state, 'pending');
 });
 
-test('allocation delegation cannot use rebalance', async t => {
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
-  const { manager } = makePortfolioKit({ portfolioId: 21 });
+/**
+ * Stored permissions, and the planless delegated operations they authorize
+ * after stepwise inheritance (allocation → rebalance → claimRewards).
+ */
+const effectivePermissionCases: Array<
+  [
+    title: string,
+    permissions: Parameters<PortfolioKit['manager']['grantDelegation']>[1],
+    allowed: { rebalance: boolean; claimRewards: boolean },
+  ]
+> = [
+  [
+    'allocation inherits all',
+    { allocation: true },
+    { rebalance: true, claimRewards: true },
+  ],
+  [
+    'allocation mandate inherits all',
+    { allocation: { maxWeightBps: 5_000n } },
+    { rebalance: true, claimRewards: true },
+  ],
+  [
+    'rebalance: false blocks inherited claims',
+    { allocation: true, rebalance: false },
+    { rebalance: false, claimRewards: false },
+  ],
+  [
+    'explicit claimRewards is independent of rebalance',
+    { allocation: true, rebalance: false, claimRewards: true },
+    { rebalance: false, claimRewards: true },
+  ],
+  [
+    'planner rebalance-only grant',
+    { allocation: false, rebalance: true, claimRewards: false },
+    { rebalance: true, claimRewards: false },
+  ],
+  [
+    'claimRewards alone',
+    { claimRewards: true },
+    { rebalance: false, claimRewards: true },
+  ],
+];
 
+for (const [title, permissions, allowed] of effectivePermissionCases) {
+  test(`effective delegation permissions: ${title}`, async t => {
+    const { makePortfolioKit, getCallLog } = makeTestSetup();
+    const { manager, reporter } = makePortfolioKit({ portfolioId: 21 });
+    manager.setTargetAllocation({ Aave_Base: 50n, Compound_Arbitrum: 50n });
+    await manager.grantDelegation('agoric1delegate', permissions);
+    const [, client] = getCallLog()[0] as [
+      'deliverDelegation',
+      ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+    ];
+    const syncState = harden({ policyVersion: 2, rebalanceCount: 0 });
+
+    for (const op of ['rebalance', 'claimRewards'] as const) {
+      const calls = getCallLog().length;
+      const attempt = () => client[op]({ syncState });
+      if (allowed[op]) {
+        const flowKey = attempt();
+        t.regex(flowKey, /^flow\d+$/, op);
+        t.is(getCallLog().length, calls + 1, `${op} starts a flow`);
+        reporter.finishFlow(Number(flowKey.slice('flow'.length)));
+      } else {
+        t.throws(attempt, {
+          message: `delegation "agent1" does not have required permission "${op}"`,
+        });
+        t.is(getCallLog().length, calls, `${op} denial starts no flow`);
+      }
+    }
+  });
+}
+
+test('allocation delegation with rebalance: false may only update its target', async t => {
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { manager, delegationHelper } = makePortfolioKit({ portfolioId: 23 });
+  manager.setTargetAllocation({ USDN: 100n });
   const { agentId } = await manager.grantDelegation('agoric1delegate', {
     allocation: true,
+    rebalance: false,
   });
-
-  t.is(agentId, 1);
-
-  const callLog = getCallLog();
-  t.is(callLog.length, 1);
-  t.is(callLog[0][0], 'deliverDelegation');
-
-  const [, client] = callLog[0] as [
+  const [, client] = getCallLog()[0] as [
     'deliverDelegation',
     ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
+  const syncState = harden({ policyVersion: 2, rebalanceCount: 0 });
+  const params = harden({ syncState, targetAllocation: { USDN: 100n } });
+  const denied = {
+    message:
+      'delegation "agent1" does not have required permission "rebalance"',
+  };
 
+  // Denied before any verification of the (absent) observations.
+  await t.throwsAsync(
+    client.setTargetAllocation({ ...params, plan: { flow: [] } }),
+    denied,
+  );
   t.throws(
     () =>
-      client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
-    {
-      message:
-        /delegation "agent1" does not have required permission "rebalance"/,
-    },
+      delegationHelper.submitTargetAllocation(
+        client,
+        agentId,
+        { ...params, plan: { flow: [] } },
+        harden({
+          portfolioId: 23,
+          syncState,
+          observations: { balances: {}, instrumentTvls: {} },
+          issuedAt: 0n,
+          deadline: 300n,
+        }),
+      ),
+    denied,
   );
-  t.is(getCallLog().length, 1, 'rebalance denial does not start a flow');
+  t.is(getCallLog().length, 1, 'denied plans start no flow');
+
+  t.is(await client.setTargetAllocation(params), 'flow1');
 });
 
 test('revoked delegation client is no longer usable', async t => {
