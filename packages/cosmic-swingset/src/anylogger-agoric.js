@@ -46,7 +46,7 @@ let maxActiveLevel =
     : 'info';
 for (const selector of DEBUG_LIST) {
   const fullSelector = selector === 'agoric' ? 'agoric:debug' : selector;
-  const [_, detail] = fullSelector.match(/^agoric:(.*)/gs) || [];
+  const [_, detail] = fullSelector.match(/^agoric:(.*)/s) || [];
   if (detail) {
     maxActiveLevel = detail === 'none' ? undefined : detail;
   }

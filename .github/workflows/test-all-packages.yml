@@ -260,6 +260,9 @@ jobs:
       - name: yarn test (portfolio-api)
         if: (success() || failure())
         run: cd packages/portfolio-api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: Build daemon for portfolio CLI tests
+        if: (success() || failure())
+        run: bin/agd version
       - name: yarn test (portfolio-deploy)
         if: (success() || failure())
         run: cd packages/portfolio-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -634,6 +637,8 @@ jobs:
         with:
           go-version: '1.24'
           cache-dependency-path: golang/cosmos/go.sum
+      - name: Build daemon for Solo CLI fixtures
+        run: bin/agd version
       - name: yarn test (solo)
         if: (success() || failure())
         run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -677,6 +682,9 @@ jobs:
       - uses: ./.github/actions/restore-golang
         with:
           go-version: '1.24'
+      - name: Build daemon and native adapter before concurrent tests
+        if: matrix.engine != 'xs'
+        run: bin/agd build
       - name: yarn test (cosmic-swingset)
         if: (success() || failure())
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
