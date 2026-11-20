@@ -209,6 +209,35 @@ the unexpected-exit observer share that result. Existing interrupt/kill grace
 periods remain as a fallback and are cancelled when the VM exits. Expected exit
 during shutdown is not reported as premature VM exit.
 
+## Process lifetime ownership
+
+The old `whenHellFreezesOver` variable and its unresolved promise remain
+removed. An unresolved promise alone does not keep Node's event loop alive.
+The runtime's active handles and explicit shutdown protocol own its lifetime.
+
+In embedded mode, the native addon retains a referenced `ThreadSafeCallback`
+dispatcher backed by a libuv async handle. That handle keeps Node available for
+Go callbacks while the Go daemon runs in a background goroutine. Go owns the
+command's completion and exit status; a finite command can return successfully,
+while an unexpected return from `start` is an error. Native completion uses the
+immediate termination path described below. The lifetime contract does not
+depend on retaining an application promise.
+
+In split mode, the main thread retains the reader and monitor workers. Their
+message listeners, the reader's input stream, and the monitor's lease keep the
+connection active. The RPC completion promise observes their lifecycle; it is
+not a substitute for those active handles. Orderly completion cancels input and
+terminates both workers before the entrypoint exits successfully. Failure
+rejects completion, terminates the workers, and makes the entrypoint exit with
+an error. The Go parent owns the child process and its single reaping waiter,
+including bounded shutdown escalation if the VM does not finish.
+
+The real-chain lifecycle probe exercises signal shutdown in both modes and
+finite export/bootstrap-state completion. The focused RPC tests additionally
+cover EOF, pending replies, cancellation with an open peer pipe, and worker
+disappearance. These checks validate actual lifetime resources and completion,
+without restoring the historical unresolved-promise workaround.
+
 ## Configurable transport diagnostics
 
 The JS runtime uses the repository's `anylogger` adapter with logger name
