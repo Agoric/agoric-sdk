@@ -1,5 +1,4 @@
 import { JSONRPCClient, type JSONRPCResponse } from 'json-rpc-2.0';
-import type { CloseEvent, WebSocket } from 'ws';
 
 const MAX_SUBSCRIPTIONS = 5;
 
@@ -10,6 +9,31 @@ const hasOwnProperties = (obj: unknown) =>
 export type SubscriptionResponse = {
   type: string;
   value: Record<string, unknown>;
+};
+
+/** The parts of a WebSocket close event that CosmosRPCClient reports. */
+export type RpcCloseEvent = { code: number; reason: string; wasClean: boolean };
+
+/** The parts of `ws`'s WebSocket that CosmosRPCClient uses. */
+export type RpcWebSocket = {
+  send(data: string): void;
+  close(): void;
+  terminate(): void;
+  ping(): void;
+  on(event: 'pong', listener: () => void): unknown;
+  addEventListener(type: 'open', listener: () => void): void;
+  addEventListener(
+    type: 'close',
+    listener: (event: RpcCloseEvent) => void,
+  ): void;
+  addEventListener(
+    type: 'error',
+    listener: (event: { error?: { message?: string } }) => void,
+  ): void;
+  addEventListener(
+    type: 'message',
+    listener: (event: { data: { toString(encoding: 'utf8'): string } }) => void,
+  ): void;
 };
 
 export class CosmosRPCClient extends JSONRPCClient {
@@ -26,22 +50,37 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   #openedPK: PromiseWithResolvers<void>;
 
-  #closedPK: PromiseWithResolvers<CloseEvent>;
+  #closedPK: PromiseWithResolvers<RpcCloseEvent>;
 
   #isClosed = false;
 
   #lastSentId = -1;
 
-  #ws: WebSocket;
+  #ws: RpcWebSocket;
 
+  /**
+   * @param url
+   * @param opts
+   * @param opts.WebSocket
+   * @param opts.heartbeats each item pings the server, failing the connection
+   *   if the previous ping got no pong
+   * @param opts.maxMessageGapMs with `heartbeats` and `now`, also fail the
+   *   connection when a heartbeat finds subscriptions but no message received
+   *   for this long (e.g., a node that stopped producing blocks)
+   * @param opts.now
+   */
   constructor(
     url: string | URL,
     {
       WebSocket,
       heartbeats,
+      maxMessageGapMs,
+      now,
     }: {
-      WebSocket: typeof import('ws').WebSocket;
+      WebSocket: new (url: URL) => RpcWebSocket;
       heartbeats?: AsyncIterable<unknown>;
+      maxMessageGapMs?: number;
+      now?: () => number;
     },
   ) {
     const wsUrl = new URL('/websocket', url);
@@ -55,6 +94,7 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
     this.#ws = ws;
     this.#subscriptions = new Map();
+    const subscriptions = this.#subscriptions;
     this.#openedPK = Promise.withResolvers();
     this.#closedPK = Promise.withResolvers();
 
@@ -85,6 +125,7 @@ export class CosmosRPCClient extends JSONRPCClient {
       onError(Error(msg, { cause }));
     });
 
+    let lastMessageTime = now?.();
     if (heartbeats) {
       let gotPong = true;
       ws.on('pong', () => {
@@ -93,6 +134,24 @@ export class CosmosRPCClient extends JSONRPCClient {
       void (async () => {
         for await (const _ of heartbeats) {
           if (this.#isClosed) break;
+          if (
+            now &&
+            maxMessageGapMs !== undefined &&
+            subscriptions.size > 0 &&
+            lastMessageTime !== undefined &&
+            now() - lastMessageTime > maxMessageGapMs
+          ) {
+            const err = Error(
+              `WebSocket ${wsUrl.href} sent no message in over ${maxMessageGapMs}ms`,
+            );
+            Object.defineProperty(err, 'code', {
+              value: 'WEBSOCKET_MESSAGE_TIMEOUT',
+              enumerable: true,
+            });
+            onError(err);
+            ws.terminate();
+            break;
+          }
           if (!gotPong) {
             const err = Error('WebSocket pong timeout');
             Object.defineProperty(err, 'code', {
@@ -110,6 +169,7 @@ export class CosmosRPCClient extends JSONRPCClient {
     }
 
     ws.addEventListener('message', event => {
+      lastMessageTime = now?.();
       const str = event.data.toString('utf8');
       const response = JSON.parse(str);
       const sub = this.#subscriptions.get(response.id);
@@ -120,6 +180,7 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
 
     ws.addEventListener('open', () => {
+      lastMessageTime = now?.();
       this.#openedPK.resolve();
     });
   }
@@ -182,7 +243,9 @@ export class CosmosRPCClient extends JSONRPCClient {
       // console.log(`Subscribing to query ${JSON.stringify(query)} with ID ${subId}`);
       const unsubscribe = () => {
         this.#subscriptions.delete(subId);
-        void this.request('unsubscribe', { query });
+        // A closed socket has no subscription left to cancel.
+        if (this.#isClosed) return;
+        Promise.resolve(this.request('unsubscribe', { query })).catch(() => {});
       };
       const readyKit = {
         isSettled: false,
