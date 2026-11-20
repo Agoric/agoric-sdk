@@ -87,6 +87,7 @@ import type {
 import type { BoundStep } from './delegation-limits.ts';
 import {
   assertRewardBinding,
+  summarizeRewardStep,
   type ClaimBoundStep,
   type GetEvmContracts,
 } from './reward-bindings.ts';
@@ -1217,7 +1218,7 @@ const stepFlow = async (
       src: move.src,
       dest: move.dest,
       ...(phases && { phases }),
-      ...(claimRewards && { claimRewards }),
+      ...(boundStep?.kind === 'claimRewards' && summarizeRewardStep(boundStep)),
       apply: async ({ [evmChain]: gInfo, agoric }, _traceStep, opts) => {
         assert(gInfo, evmChain);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
@@ -1509,7 +1510,7 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          ...(move.swap ? { swap: move.swap } : {}),
+          ...summarizeRewardStep(swap),
           apply: async ({ [chain]: gInfo, agoric }, _tracer, ...optsArgs) => {
             assert(gInfo && agoric, chain);
             await gInfo.ready;
@@ -1541,7 +1542,7 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          ...(move.claimRewards ? { claimRewards: move.claimRewards } : {}),
+          ...summarizeRewardStep(claim),
           apply: async ({ [chain]: gInfo, agoric }, _tracer, ...optsArgs) => {
             assert(gInfo && agoric, chain);
             await gInfo.ready;

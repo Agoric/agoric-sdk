@@ -11,6 +11,7 @@ import {
   MAX_REWARD_SWAP_SLIPPAGE_BPS,
   type ClaimRewardsSelector,
   type EvmAccountRef,
+  type FlowStep,
   type FundsFlowPlan,
   type HexBytes,
   type InstrumentId,
@@ -471,6 +472,39 @@ const isClaimConfigured = (
       throw Fail`unknown claim protocol ${q(bound)}`;
   }
 };
+
+/**
+ * Public summary of what a bound reward step executes, without the proofs or
+ * route data of its evidence. Called from the `executePlan` async flow, also on
+ * replay: keep it a pure function of the bound step.
+ */
+export const summarizeRewardStep = (
+  bound: RewardBoundStep,
+): Pick<FlowStep, 'rewardClaim' | 'tokenSwap'> => {
+  if (bound.kind === 'claimRewards') {
+    const { protocol, tokenId, expectedAmount } = bound;
+    return harden({ rewardClaim: { protocol, tokenId, expectedAmount } });
+  }
+  const {
+    provider,
+    tokenIn,
+    tokenOut,
+    amountIn,
+    quotedAmountOut,
+    minAmountOut,
+  } = bound;
+  return harden({
+    tokenSwap: {
+      provider,
+      tokenIn,
+      tokenOut,
+      amountIn,
+      quotedAmountOut,
+      minAmountOut,
+    },
+  });
+};
+harden(summarizeRewardStep);
 
 /**
  * At execution, check that a bound reward step still matches the movement

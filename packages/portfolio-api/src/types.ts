@@ -559,10 +559,51 @@ export type MovementDescExt = Omit<MovementDesc, 'src' | 'dest'> & {
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
 
-export type FlowStep = Pick<
-  MovementDesc,
-  'amount' | 'src' | 'dest' | 'claimRewards' | 'swap'
-> & {
+/**
+ * What a reward claim step executes, summarized from the signed evidence it
+ * selects (its proof, if any, is not repeated).
+ */
+export type RewardClaimSummary = {
+  protocol: RewardClaimProtocol;
+  tokenId: EvmAddress;
+  /** estimated payout of the claim, neither guaranteed nor a minimum */
+  expectedAmount: bigint;
+};
+
+/**
+ * What a token swap step executes, summarized from the signed instructions it
+ * selects (its provider route is not repeated). Amounts are in raw units of
+ * the respective token.
+ */
+export type TokenSwapSummary = {
+  provider: SwapProvider;
+  tokenIn: EvmAddress;
+  tokenOut: EvmAddress;
+  /** exact input */
+  amountIn: bigint;
+  /** quoted output, an estimate */
+  quotedAmountOut: bigint;
+  /** enforced minimum output */
+  minAmountOut: bigint;
+};
+
+export type FlowStep = Pick<MovementDesc, 'amount' | 'src' | 'dest'> & {
+  /** For a reward claim step, what it claims. */
+  rewardClaim?: RewardClaimSummary;
+  /** For a token swap step, what it swaps. */
+  tokenSwap?: TokenSwapSummary;
+  /**
+   * @deprecated Only on steps published before claims and swaps required
+   *   signed evidence: the claim parameters of the step's movement. Newer
+   *   steps publish `rewardClaim` instead.
+   */
+  claimRewards?: CopyRecord<any>;
+  /**
+   * @deprecated Only on steps published before claims and swaps required
+   *   signed evidence: the swap description of the step's movement. Newer
+   *   steps publish `tokenSwap` instead.
+   */
+  swap?: CopyRecord<any>;
   /**
    * Human-readable description of how the step accomplishes the transfer from
    * `src` to `dest` (distinct from `Way.how` in the contract).

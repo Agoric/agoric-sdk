@@ -1124,6 +1124,40 @@ test(
     await transmitVTransferEvent('acknowledgementPacket', -1);
     await settleTransaction(zoe, resolver, Number(swap.id.slice(2)), 'failed');
     await pendingVstorageWrites();
+    // Activity can show what each step does, without proofs or routes.
+    const steps = await portfolioRead.readPublished(
+      `${flowPath(claimFlow)}.steps`,
+    );
+    t.like(steps, [
+      {
+        how: 'Merkl',
+        src: '@Ethereum',
+        dest: '@Ethereum',
+        rewardClaim: {
+          protocol: 'merkl',
+          tokenId: MERKL_REWARD,
+          expectedAmount: 2_000n,
+        },
+      },
+      {
+        how: 'swap',
+        tokenSwap: {
+          provider: '1inch',
+          tokenIn: MERKL_REWARD,
+          tokenOut: eth.usdc,
+          amountIn: 2_000n,
+          quotedAmountOut: 3_000_000n,
+          minAmountOut: 2_940_000n,
+        },
+      },
+    ]);
+    t.false(
+      /proof|deadbeef|1a2b3c4d|srcReceiver|executor|cumulativeAmount|calldataSuffix|"claimRewards":|"swap":/.test(
+        JSON.stringify(steps, (_k, v) => (typeof v === 'bigint' ? `${v}` : v)),
+      ),
+      'published steps omit evidence details',
+    );
+
     const done = await portfolioRead.readPublished(flowPath(claimFlow));
     t.like(done, { state: 'fail', step: 2 }, 'the swap step failed');
     t.deepEqual((await portfolioRead.getPortfolioStatus()).flowsRunning, {});

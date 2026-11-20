@@ -454,9 +454,12 @@ export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf(
     },
     {
       phases: M.recordOf(M.string(), M.arrayOf(M.string())),
-      // `claimRewards` and `swap` are intentionally non-strict.
+      // Legacy `claimRewards` and `swap` are only on steps published before
+      // claims and swaps required signed evidence, in any of their old shapes.
       claimRewards: M.record(),
       swap: M.record(),
+      rewardClaim: M.record(),
+      tokenSwap: M.record(),
     },
   ),
 );
