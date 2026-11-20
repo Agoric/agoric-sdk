@@ -70,6 +70,25 @@ test('input errors reject the loop', async t => {
   t.true(input.destroyed);
 });
 
+test('dispatch failure retains its identity when input teardown races it', async t => {
+  const failure = Error('original dispatch failure');
+  const input = new PassThrough();
+  const cancellation = new AbortController();
+  const finished = makeReadlineLoop(
+    input,
+    () => {
+      input.destroy();
+      throw failure;
+    },
+    cancellation.signal,
+  );
+  const rejected = t.throwsAsync(finished, { is: failure });
+  input.end('first\nignored\n');
+  await rejected;
+  t.false(cancellation.signal.aborted);
+  t.true(input.destroyed);
+});
+
 test('line input rejects malformed UTF-8 instead of substituting replacement characters', async t => {
   for (const bytes of [
     [0xff, 10],
