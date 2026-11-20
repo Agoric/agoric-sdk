@@ -33,6 +33,14 @@ While [tooling to enforce consistent import ordering #7403](https://github.com/A
 - **Entry-point JSDoc:** Put the meaningful docs on the exported symbols (what shows up in IDE call sites). External URLs belong here when they define the canonical ABI/spec.
 - **External design constraints:** If a module is constrained by external contracts, standards, or off-repo design docs, add a short JSDoc note with a `@see` link to the authoritative source at the relevant entry point(s).
 
+## Submitter-facing error messages
+
+Errors from plan or policy submission, and from flows, are published on-chain (wallet results in vstorage) and surfaced to agents as the transaction's `error`. In `Fail`/`X` templates, `@endo/errors` redacts unquoted substitutions in the message; the value only appears in the local console log. Wrap values in `q()` so they are part of the message.
+
+- **Quote:** what the submitter sent, or what is already public: instrument/place refs, chain names and ids, agent ids, policy versions, sync state, permission names, token and contract addresses from the permit, balances and amounts from signed observations or the tx itself. Include the numbers a check compared.
+- **Leave redacted:** remotables and capabilities, internal object state, and anything not already public on-chain. Quote the specific offending value, not the whole plan or mandate.
+- Give each check its own message so failures can be told apart.
+
 ## Commit Messages w.r.t. Last Release
 
 Note [use of Conventional Commits in agoric-sdk](https://github.com/Agoric/agoric-sdk/wiki/Conventional-Commits). In particular:

@@ -2,6 +2,7 @@ import test from 'ava';
 
 import {
   calculateInstrumentBlocks,
+  extractInstrumentLiquidity,
   extractInstrumentTvls,
   type YdsInstrument,
 } from '../src/instrument-status.ts';
@@ -20,6 +21,21 @@ const instrument = (
 });
 
 const missingDataInstrument: YdsInstrument = { id: '@Ethereum', caipChainId };
+
+test('extractInstrumentLiquidity converts valid liquidity to micro-USDC rounding down', t => {
+  const instruments = [
+    missingDataInstrument,
+    instrument('Aave_Ethereum', 123.4567899, 1000),
+    instrument('Compound_Ethereum', 0, 1000),
+    instrument('negative', -1, 1000),
+    instrument('nan', NaN, 1000),
+    instrument('infinite', Infinity, 1000),
+  ];
+  t.deepEqual(extractInstrumentLiquidity(instruments), {
+    Aave_Ethereum: 123_456_789n,
+    Compound_Ethereum: 0n,
+  });
+});
 
 test('extractInstrumentTvls reports valid TVL observations', t => {
   const instruments: YdsInstrument[] = [
@@ -49,7 +65,7 @@ test('calculateInstrumentBlocks ignores instruments without supply/liquidity dat
   t.deepEqual([...noWithdrawInstruments].sort(), []);
 });
 
-test('calculateInstrumentBlocks blocks deposits if liquidity < $10k or < 10% of total supply', t => {
+test('calculateInstrumentBlocks blocks deposits if liquidity < $10k', t => {
   const instruments = [
     missingDataInstrument,
     instrument('liquidity < $10k but = 10%', 9999.99, 9999.99 * 10),
@@ -62,11 +78,7 @@ test('calculateInstrumentBlocks blocks deposits if liquidity < $10k or < 10% of 
 
   t.deepEqual(
     [...noDepositInstruments].sort(),
-    [
-      'liquidity < $10k but = 10%',
-      'liquidity = $10k but < 10%',
-      'liquidity < $10k and < 10%',
-    ].sort(),
+    ['liquidity < $10k but = 10%', 'liquidity < $10k and < 10%'].sort(),
   );
   t.deepEqual([...noWithdrawInstruments].sort(), []);
 });

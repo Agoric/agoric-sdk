@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { NatAmount } from '@agoric/ertp';
+import type { CopyRecord } from '@endo/pass-style';
 import {
   type AccountId,
   type Bech32Address,
@@ -35,6 +36,11 @@ export type FlowFeatures = {
   useProgressTracker?: boolean;
   /** Enable experimental swap feature. */
   experimentalSwap?: boolean;
+  /**
+   * Link a CCTPv2 `CCTP_TO_EVM` tx to the tx that sends its burn (via
+   * `burnTxId`), and fail it when that burn fails to be sent or executed.
+   */
+  trackCctpBurn?: boolean;
 };
 
 /**
@@ -82,7 +88,7 @@ export type AssetPlaceRef =
   | InterChainAccountRef
   | InstrumentId;
 
-type Empty = Record<never, NatAmount>;
+type Empty = Record<string, never>;
 
 /**
  * Proposal shapes for portfolio operations.
@@ -104,6 +110,7 @@ export type ProposalType = {
     | { want: { Cash: NatAmount }; give: Empty };
   withdraw: { want: { Cash: NatAmount }; give: Empty };
   deposit: { give: { Deposit: NatAmount }; want: Empty };
+  transferOwnershipToEVM: { give?: Empty; want?: Empty };
 };
 
 /**
@@ -175,8 +182,120 @@ export type PortfolioBalancePlaceRef = InstrumentId | InterChainAccountRef;
  */
 export type PlanObservations = {
   balances: Partial<Record<PortfolioBalancePlaceRef, bigint>>;
+  /**
+   * Authenticated raw holdings. When present, `balances` is derived from their
+   * deprecated `balanceUsdc` (never from `valueUusd`).
+   */
+  holdings?: TypedHoldingDetail[];
   instrumentTvls: Partial<Record<InstrumentId, InstrumentTvlObservation>>;
 };
+
+/**
+ * Holding kinds understood by the observation converters. `shares` identifies
+ * vault shares; `principal` identifies instrument principal (for example Aave
+ * or Compound). `claimable-reward` belongs to an instrument, while
+ * `claimed-reward` and other `token` holdings belong to a chain account.
+ * Cosmos bank assets are ordinary `token` holdings, e.g. Noble USDC has
+ * `kind: 'token', tokenId: 'uusdc'`. `$SYMBOL` is reserved for a chain's own
+ * coin on chains where other tokens are contracts (such as `$ETH`, `$AVAX`,
+ * or later `$SOL`); it uses an empty `tokenId`. The nonempty symbol is the
+ * coin's display symbol. `$` holdings and Cosmos USDC are never reward-swap
+ * input.
+ */
+export type HoldingKind =
+  | 'shares'
+  | 'principal'
+  | 'claimable-reward'
+  | 'claimed-reward'
+  | 'token'
+  | `$${string}`;
+
+/** A legacy balance observation, in micro-USDC. */
+export type LegacyHoldingDetail = {
+  place: PortfolioBalancePlaceRef;
+  balanceUsdc: bigint;
+};
+
+type EvmHoldingPlace = Extract<
+  PortfolioBalancePlaceRef,
+  `@${AxelarChain}` | `${string}_${AxelarChain}`
+>;
+type NonNativeHoldingKind = Exclude<HoldingKind, `$${string}`>;
+
+/**
+ * Token identifier local to the chain implied by `place`: a lowercase EVM
+ * contract address (vault for shares, underlying token for principal,
+ * rewards, or ERC-20 holdings), a raw Cosmos bank denom (e.g. `uusdc`,
+ * `ibc/…`, `factory/…`), or another chain's canonical identifier such as a
+ * Solana mint. `$SYMBOL` holdings use the empty string. Do not substitute
+ * a display symbol or repeat the chain as a CAIP-19 identifier. Resolve
+ * decimal scale from chain asset metadata for this identifier. Preserve its
+ * spelling for storage, signing, and chain operations. Compare token IDs using
+ * `makeTokenIdKey(tokenId, place)`: EVM `0x` identifiers compare in lowercase;
+ * non-EVM identifiers compare case-sensitively.
+ */
+type HoldingIdentity =
+  | {
+      place: EvmHoldingPlace;
+      kind: NonNativeHoldingKind;
+      tokenId: EvmAddress;
+    }
+  | {
+      place: Exclude<PortfolioBalancePlaceRef, EvmHoldingPlace>;
+      kind: NonNativeHoldingKind;
+      tokenId: string;
+    }
+  | {
+      place: `@${AxelarChain}`;
+      kind: `$${string}`;
+      tokenId: '';
+    };
+
+/**
+ * One authenticated raw holding, independent of its USD valuation.
+ *
+ * The identity is `(place, kind, tokenId)`: compare `place` and `kind` exactly
+ * and compare `tokenId` using its chain-aware canonical key. EVM addresses
+ * must be lowercase hex; other chain identifiers compare case-sensitively
+ * and retain their canonical spelling when stored and signed. Multiple holdings
+ * may share a place, including multiple reward tokens, but duplicate identities
+ * are rejected. Instrument holdings appear under the instrument, not again
+ * under its chain account.
+ * Missing holdings are unobserved and must never be treated as zero.
+ *
+ * Signed observations use the shared `YmaxObservation` version-1 schema.
+ * Legacy balance-only entries retain their original resolved signed type;
+ * typed fields are optional in that schema for compatibility, but must form a
+ * complete typed holding when present. Optional-field presence is uniform per
+ * signed struct type. The converters always include `valueUusd` for typed
+ * holdings on the wire, encoding an absent valuation as `-1n` and stripping
+ * that sentinel when decoding. Never add unsigned holdings to a legacy
+ * signature, or infer shares from either valuation field.
+ *
+ * Producer rollout must follow verifier support. Producers first include
+ * typed holdings with transitional `balanceUsdc`; consumers then adopt typed
+ * holdings before legacy balances and balance-only entries are retired.
+ */
+export type TypedHoldingDetail = HoldingIdentity & {
+  /** Raw asset units, independent of USD valuation. Zero is observed zero. */
+  amount: bigint;
+  /**
+   * Valuation in micro-USD; absent if not observed, distinct from known zero.
+   * Known values range from `0n` through `2n ** 255n - 1n`. This is not a raw
+   * token quantity and must not be added to `balanceUsdc`.
+   */
+  valueUusd?: bigint;
+  /**
+   * @deprecated Transitional legacy valuation in micro-USDC, summed per place
+   * into `PlanObservations['balances']` for consumers not yet reading typed
+   * holdings. Put the place's legacy balance on one holding and `0n` on its
+   * others; include on every holding or none. Removed with legacy balances.
+   */
+  balanceUsdc?: bigint;
+};
+
+/** Legacy balances and typed raw holdings share the observation schema. */
+export type HoldingDetail = LegacyHoldingDetail | TypedHoldingDetail;
 
 export type FlowDetail =
   | {
@@ -283,6 +402,29 @@ export type SwapDesc = OneInchSwapDesc;
 export type SwapProvider = SwapDesc['provider'];
 
 /**
+ * Additive options for a position-to-same-chain-account withdrawal. Structural
+ * acceptance does not establish implementation support; an older contract may
+ * ignore these options and execute the movement's amount exactly.
+ *
+ * The movement retains its required default-token amount (micro-USDC at dest).
+ * It is a minimum when `max` is true or `amountOfShares` is present. An explicit
+ * share quantity is exact. `max` and `amountOfShares` are exclusive. Missing
+ * movement amounts, negative share quantities, and unknown options are rejected.
+ * Transfers, bridges, deposits, and downstream movements retain exact amounts.
+ */
+export type WithdrawParams =
+  | {
+      /** When true, MovementDesc['amount'] is a minimum, not exact. */
+      max?: boolean;
+      amountOfShares?: never;
+    }
+  | {
+      max?: never;
+      /** Exact number of share tokens to redeem. */
+      amountOfShares?: bigint;
+    };
+
+/**
  * Parameters for claiming external rewards.
  *
  * `tokens` and `minAmounts` are common across protocols. Protocol-specific
@@ -313,6 +455,7 @@ export type ClaimRewardsParams = {
 };
 
 export type MovementDesc = {
+  /** Default-token units (micro-USDC) received at dest; a minimum when withdraw.max is true or withdraw.amountOfShares is specified, otherwise exact. */
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
@@ -320,11 +463,24 @@ export type MovementDesc = {
   fee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
+  /** Present only for withdrawing from a position to an account. */
+  withdraw?: WithdrawParams;
   /** Present only for reward-token claims. */
   claimRewards?: ClaimRewardsParams;
   /** Present only for reward-token -> stable-token swaps. */
   swap?: SwapDesc;
 };
+
+/**
+ * Extensible structural input, not a validated movement. Known fields retain
+ * their types, including the required amount and optional withdrawal parameters;
+ * future source/destination places and additional fields remain representable.
+ * Consumers must validate place support and semantics before execution.
+ */
+export type MovementDescExt = Omit<MovementDesc, 'src' | 'dest'> & {
+  src: string;
+  dest: string;
+} & CopyRecord<any>;
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
 
@@ -367,6 +523,11 @@ export type FundsFlowPlan = {
   order?: FlowStepDependency[];
 };
 
+/** Forward-compatible structural plan input; its movements still need validation. */
+export type FundsFlowPlanExt = Omit<FundsFlowPlan, 'flow'> & {
+  flow: MovementDescExt[];
+} & CopyRecord<any>;
+
 export type FundsFlow = MovementDesc[] | FundsFlowPlan;
 
 // tx for transactions
@@ -406,6 +567,24 @@ export type PortfolioGrantResult = {
 
 /** Result of an owner-signed external delegation lifecycle operation. */
 export type PortfolioDelegationLifecycleResult = PortfolioGrantResult;
+
+/** An ownership transfer from a portfolio's Agoric owner to an EVM account. */
+export type PortfolioPendingOwnerTransfer = {
+  evmAddress: `0x${string}`;
+  /**
+   * Last time the transfer can be accepted: an absolute time in seconds since
+   * the Unix epoch, as measured by Agoric chain time (the contract's timer
+   * service).
+   */
+  deadlineTimestampSeconds: bigint;
+};
+
+/**
+ * Result of a `TransferOwnershipToEVM` offer, once the transfer is accepted:
+ * the portfolio's new `sourceAccountId`. A string, so that the smart wallet
+ * publishes it (it publishes records as `UNPUBLISHED`).
+ */
+export type PortfolioTransferOwnershipResult = AccountId;
 
 /** Result of a `SetAutoFeatures` operation, referencing the resulting policyVersion. */
 export type PortfolioSetAutoFeaturesResult = {
@@ -510,12 +689,21 @@ export type StatusFor = {
     nobleForwardingAddress?: Bech32Address;
     targetAllocation?: TargetAllocation;
     /**
-     * CAIP-10 account ID of the authenticated EVM account that opened this portfolio.
-     * Derived from `permit2Payload.owner` in `openPortfolioFromEVM()`.
-     * The Permit2 signature is verified on-chain by the `depositFactory` contract
-     * when it receives the GMP call via `sendCreateAndDepositCall()`.
+     * CAIP-10 account ID of the authenticated EVM account that owns this portfolio.
+     * For a portfolio opened from EVM, derived from `permit2Payload.owner` in
+     * `openPortfolioFromEVM()`. The Permit2 signature is verified on-chain by
+     * the `depositFactory` contract when it receives the GMP call via
+     * `sendCreateAndDepositCall()`.
+     * For a portfolio transferred from its Agoric owner, the signer of the
+     * accepted `AcceptOwnership` message, on that message's domain chain.
      */
     sourceAccountId?: AccountId;
+    /**
+     * Ownership transfer designated by the portfolio's Agoric owner, awaiting
+     * an `AcceptOwnership` message signed by `evmAddress` until `deadlineTimestampSeconds`
+     * (absolute, in seconds, as measured by Agoric chain time).
+     */
+    pendingOwnerTransfer?: PortfolioPendingOwnerTransfer;
     /** incremented by the contract every time the user sends a transaction that the planner should respond to */
     policyVersion: number;
     /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
@@ -608,4 +796,5 @@ export type PortfolioContinuingInvitationMaker =
   | 'Deposit'
   | 'Withdraw'
   | 'Rebalance'
-  | 'SimpleRebalance';
+  | 'SimpleRebalance'
+  | 'TransferOwnershipToEVM';

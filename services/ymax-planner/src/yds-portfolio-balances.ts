@@ -39,6 +39,7 @@ export type YdsPortfolioSummary = {
       accounts: Partial<Record<SupportedChain, null | UsdcNumber>>;
     };
     totalValueUsdc: UsdcNumber;
+    // YdsTokenBalance[]
     tokenBalances: {
       chainName: SupportedChain;
       caipChainId: CaipChainId;

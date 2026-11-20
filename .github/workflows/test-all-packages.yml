@@ -32,7 +32,7 @@ defaults:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-build-${{ matrix.node-version }}
       cancel-in-progress: true
@@ -48,7 +48,7 @@ jobs:
 
   dependency-graph:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-dependency-graph
       cancel-in-progress: true
@@ -98,7 +98,7 @@ jobs:
   lint-primary:
     timeout-minutes: 45 # Since Node 22, it's sometimes longer than 20min
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-lint-primary
       cancel-in-progress: true
@@ -125,7 +125,7 @@ jobs:
 
   # A second job for what's not covered in primary
   lint-rest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-lint-rest
@@ -173,7 +173,7 @@ jobs:
 
   # Build the package lockfiles, and check that they are clean.
   check-lockfiles:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-check-lockfiles
@@ -203,7 +203,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-quick-${{ matrix.engine }}
       cancel-in-progress: true
@@ -302,7 +302,7 @@ jobs:
   # does not produce changes.
   test-codegen:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-codegen
       cancel-in-progress: true
@@ -332,7 +332,7 @@ jobs:
   # action's post-job git-status check to fail if anything changed.
   test-snapshot-docs:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-snapshot-docs
       cancel-in-progress: true
@@ -350,7 +350,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-quick2-${{ matrix.engine }}
       cancel-in-progress: true
@@ -485,7 +485,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-fast-usdc-deploy-${{ matrix.engine }}
       cancel-in-progress: true
@@ -524,7 +524,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-governance-${{ matrix.engine }}
       cancel-in-progress: true
@@ -563,7 +563,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 40
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-portfolio-contract-${{ matrix.engine }}
       cancel-in-progress: true
@@ -602,7 +602,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-solo-${{ matrix.engine }}
       cancel-in-progress: true
@@ -641,7 +641,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-cosmic-swingset-${{ matrix.engine }}
       cancel-in-progress: true
@@ -684,7 +684,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 40
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-boot-${{ matrix.engine }}-${{ matrix.node_index }}-${{ matrix.total_nodes }}
       cancel-in-progress: true
@@ -808,7 +808,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-swingset-${{ matrix.engine }}-${{ matrix.node_index }}-${{ matrix.total_nodes }}
       cancel-in-progress: true
@@ -858,7 +858,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-zoe-unit-${{ matrix.engine }}
       cancel-in-progress: true
@@ -900,7 +900,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-test-zoe-swingset-${{ matrix.engine }}
       cancel-in-progress: true

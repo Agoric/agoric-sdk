@@ -1454,4 +1454,74 @@ test('excessive withdrawal is clamped', async t => {
     { method: 'invokeEntry', message: expectedInvocation },
   ]);
 });
+{
+  const runSmallWithdrawal = async (
+    noWithdrawInstruments: InstrumentId[],
+    ethereumHubValue = 500_000n,
+  ) => {
+    const kit = await fakePortfolioKit({
+      accounts: {
+        Ethereum: makeDeposit(ethereumHubValue),
+        Base: makeDeposit(0n),
+      },
+      otherBalances: { aave: makeDeposit(1_000_000n) },
+    });
+    const { powers, blockHeight, portfolioPath, initialPortfolioStatus } = kit;
+    powers.instrumentBlocks = {
+      noDepositInstruments: new Set(),
+      noWithdrawInstruments: new Set(noWithdrawInstruments),
+    };
+    const status: StatusFor['portfolio'] = harden({
+      ...initialPortfolioStatus,
+      positionKeys: ['Aave_Ethereum', 'Aave_Base'],
+      targetAllocation: { '@Base': 1n },
+      flowCount: 1,
+      flowsRunning: {
+        flow1: {
+          type: 'withdraw',
+          amount: makeDeposit(100_000n),
+          toChain: 'Base',
+          awaitingSteps: true,
+        },
+      },
+    });
+    kit.testPowers.updateVstorage(portfolioPath, 'set', {
+      object: status,
+      wrap: true,
+    });
+    const memory = makePortfoliosMemory();
+    await processPortfolioEvents(
+      [makeVstorageEventDetail(blockHeight, portfolioPath, status)],
+      blockHeight,
+      memory,
+      powers,
+    );
+    const actions = kit.testPowers.getBridgeSends().map(x => x.action);
+    return { deferrals: memory.deferrals, actions };
+  };
+
+  test('processPortfolioEvents conserves funds for a small withdrawal past a suppressed hub', async t => {
+    const { deferrals, actions } = await runSmallWithdrawal(['Aave_Base']);
+    t.is(deferrals.length, 0);
+    arrayIsLike(t, actions, [
+      { method: 'invokeEntry', message: { method: 'resolvePlan' } },
+    ]);
+    const [steps] = (actions[0] as any).message.args.slice(2);
+    t.deepEqual(
+      steps.filter(m => m.dest === '-Base').map(m => m.amount.value),
+      [100_000n],
+    );
+  });
+
+  test('processPortfolioEvents rejects a withdrawal with nothing available', async t => {
+    const { deferrals, actions } = await runSmallWithdrawal(
+      ['Aave_Base', 'Aave_Ethereum'],
+      0n,
+    );
+    t.is(deferrals.length, 0, 'deterministic planning errors must settle');
+    arrayIsLike(t, actions, [
+      { method: 'invokeEntry', message: { method: 'rejectPlan' } },
+    ]);
+  });
+}
 // #endregion processPortfolioEvents

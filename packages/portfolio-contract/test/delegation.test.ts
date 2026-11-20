@@ -159,6 +159,36 @@ const openPetePortfolio = async (
   return { receiver, peteKit, peteArbitrum, portfolioId };
 };
 
+/** End the synthetic opening deposit before exercising delegated admission. */
+const cancelOpeningFlow = async (
+  t: ExecutionContext,
+  deployed: Deployed,
+  evmTraderKit: EvmTraderKit,
+) => {
+  const { evmTrader } = evmTraderKit;
+  const status = await evmTrader.getPortfolioStatus();
+  const entries = Object.entries(status.flowsRunning ?? {});
+  t.is(entries.length, 1);
+  const [flowKey, detail] = entries[0];
+  t.is(detail.type, 'deposit');
+  const invitation = await E(
+    deployed.started.creatorFacet,
+  ).makePlannerInvitation();
+  const seat = await E(deployed.zoe).offer(invitation, emptyProposal);
+  const planner = await E(seat).getOfferResult();
+  // These fixtures use synthetic balances; they do not execute the deposit.
+  // Reject via the real planner so executePlan's finally releases its slot.
+  await E(planner).rejectPlan(
+    evmTrader.getPortfolioId(),
+    Number(flowKey.slice('flow'.length)),
+    'opening deposit omitted in delegation fixture',
+    status.policyVersion,
+    status.rebalanceCount,
+  );
+  await eventLoopIteration();
+  t.deepEqual((await evmTrader.getPortfolioStatus()).flowsRunning, {});
+};
+
 const redeemAndCheckDelegation = async ({
   t,
   zoe,
@@ -298,6 +328,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
     },
   });
 
+  await cancelOpeningFlow(t, deployed, peteKit);
   const before = await peteKit.evmTrader.getPortfolioStatus();
   const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
     targetAllocation: {
@@ -413,7 +444,7 @@ test('owner-signed grant, full replacement, revoke, and re-grant govern the rede
       },
       syncState: getSyncState(beforeRevoke),
     }),
-    { message: /delegation client is not active for agent1/ },
+    { message: /delegation client is not active for "agent1"/ },
   );
 
   const agentsAfterRevoke = await peteKit.readPublished(
@@ -494,6 +525,7 @@ const testSignedGlobalLimits = async (t: ExecutionContext) => {
     readPublished: peteKit.readPublished,
   });
 
+  await cancelOpeningFlow(t, deployed, peteKit);
   const acceptedRequest = await peteAgent.proposeTargetAllocation({
     Aave_Arbitrum: 50n,
     Compound_Arbitrum: 50n,
@@ -545,7 +577,7 @@ const testSignedGlobalLimits = async (t: ExecutionContext) => {
   );
   await rejectedWeightRequest.expectRejected(
     t,
-    'mandate.maxWeight:"Aave_Arbitrum"',
+    'mandate.maxWeight:"Aave_Arbitrum": portion "[50n]" of total "[100n]" exceeds maxWeightBps "[4000n]"',
   );
   await rejectedWeightRequest.expectNoSteps(t);
 
@@ -588,7 +620,7 @@ const testSignedGlobalLimits = async (t: ExecutionContext) => {
   );
   await rejectedTvlRequest.expectRejected(
     t,
-    'mandate.minVaultTvl:"Aave_Arbitrum"',
+    'mandate.minVaultTvl:"Aave_Arbitrum": tvlUsd "[20000000n]" is below minVaultTvlUsd "[20000001n]"',
   );
 };
 
@@ -659,6 +691,7 @@ test('Granted rebalance may retain an instrument key with zero portion', async t
     },
   });
 
+  await cancelOpeningFlow(t, deployed, peteKit);
   const before = await peteKit.evmTrader.getPortfolioStatus();
   const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
     targetAllocation: {
@@ -713,6 +746,7 @@ test('Delegation is active only while registered on the portfolio', async t => {
     },
   });
 
+  await cancelOpeningFlow(t, deployed, peteKit);
   const before = await peteKit.evmTrader.getPortfolioStatus();
   const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
     targetAllocation: {
@@ -932,6 +966,7 @@ test('Pete may open a portfolio and grant control in a single signed message', a
   // The grant is live end-to-end: the grantee rebalances through the redeemed
   // delegation facet, proving the single-message open+grant produced a usable
   // delegation.
+  await cancelOpeningFlow(t, deployed, peteKit);
   const before = await peteKit.evmTrader.getPortfolioStatus();
   const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
     targetAllocation: {
@@ -1210,6 +1245,7 @@ const setupPlanDelegation = async (
   });
   const { receiver, peteKit, peteArbitrum, portfolioId } =
     await openPetePortfolio(deployed);
+  await cancelOpeningFlow(t, deployed, peteKit);
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
     harden({ allocation: true }),
@@ -1474,7 +1510,7 @@ test('delegated plans: signed TVL mandate failure creates no flow', async t => {
       plan: emptyPlan,
       signedObservations,
     }),
-    { message: 'mandate.minVaultTvl:"Aave_Arbitrum"' },
+    { message: /^mandate\.minVaultTvl:"Aave_Arbitrum": tvlUsd/ },
   );
   await eventLoopIteration();
   const after = await peteKit.evmTrader.getPortfolioStatus();
@@ -1547,7 +1583,7 @@ test('delegated plans: an unauthorized client causes no verification', async t =
         privateKeyToAccount(evmTrader0PrivateKey),
       ),
     }),
-    { message: /delegation client is not active for agent1/ },
+    { message: /delegation client is not active for "agent1"/ },
   );
 });
 

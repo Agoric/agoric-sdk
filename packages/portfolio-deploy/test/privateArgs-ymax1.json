@@ -1,4 +1,5 @@
 {
+  "features.agenticPlanning": true,
   "axelarIds": {
     "Arbitrum": "arbitrum",
     "Avalanche": "Avalanche",
@@ -1336,8 +1337,11 @@
       "usdc": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
       "walletHelper": "0x16e0e17f315eC5F2A1af92bB1A71754D667F8E70",
       "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
-      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f",
-      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
+      "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537",
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae",
+      "morphoBundler3": "0x1FA4431bC113D308beE1d46B0e98Cb805FB48C13",
+      "morphoGeneralAdapter1": "0x9954aFB60BB5A222714c478ac86990F221788B88",
+      "universalRouter": "0x5E325eDA8064b456f4781070C0738d849c824258"
     },
     "Avalanche": {
       "Beefy_re7_Avalanche": "0xdA640bE4588C469C9DB45D082B36913490924c08",
@@ -1359,7 +1363,10 @@
       "usdc": "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
       "walletHelper": "0x",
       "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
-      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
+      "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537",
+      "morphoBundler3": "0x708e04d46D82d8f1D0A70a3Aa0a780F27fcb3F92",
+      "morphoGeneralAdapter1": "0x8BcC016Ab7334A16DCcbEE9AB3FD6E52fEb29E96",
+      "universalRouter": "0x4Dae2f939ACf50408e13d58534Ff8c2776d45265"
     },
     "Base": {
       "Beefy_morphoSeamlessUsdc_Base": "0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A",
@@ -1389,8 +1396,11 @@
       "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "walletHelper": "0xE0aFf709b7A6Cdf476738b86354D17bd334eB516",
       "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
-      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f",
-      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
+      "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537",
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae",
+      "morphoBundler3": "0x6BFd8137e702540E7A42B74178A4a49Ba43920C4",
+      "morphoGeneralAdapter1": "0xb98c948CFA24072e58935BC004a8A7b376AE746A",
+      "universalRouter": "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD"
     },
     "Ethereum": {
       "Beefy_morphoGauntletUsdc_Ethereum": "0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0",
@@ -1435,8 +1445,11 @@
       "usdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       "walletHelper": "0x",
       "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
-      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f",
-      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
+      "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537",
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae",
+      "morphoBundler3": "0x6566194141eefa99Af43Bb5Aa71460Ca2Dc90245",
+      "morphoGeneralAdapter1": "0x4A6c312ec70E8747a587EE860a0353cd42Be0aE0",
+      "universalRouter": "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD"
     },
     "Optimism": {
       "Beefy_compoundUsdc_Optimism": "0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F",
@@ -1459,8 +1472,11 @@
       "usdc": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
       "walletHelper": "0x",
       "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
-      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f",
-      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
+      "cctpRelayer": "0x797680C6C74303564Fd55a45e86bc32a9712b537",
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae",
+      "morphoBundler3": "0xFBCd3C258feB131D8E038F2A3a670A7bE0507C05",
+      "morphoGeneralAdapter1": "0x79481C87f24A3C4332442A2E9faaf675e5F141f0",
+      "universalRouter": "0xCb1355ff08Ab38bBCE60111F1bb2B784bE25D7e8"
     }
   },
   "gmpAddresses": {

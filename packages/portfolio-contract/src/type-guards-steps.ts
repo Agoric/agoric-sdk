@@ -5,10 +5,13 @@ import { assert } from '@endo/errors';
 import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
-import type {
-  AssetPlaceRef,
-  FundsFlowPlan,
-  MovementDesc,
+import {
+  WithdrawParamsShape,
+  type AssetPlaceRef,
+  type FundsFlowPlan,
+  type FundsFlowPlanExt,
+  type MovementDesc,
+  type MovementDescExt,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -116,10 +119,32 @@ export const getKeywordOfPlaceRef = (
   return keyword as SeatKeyword;
 };
 
+/**
+ * Offers no longer carry a plan (`flow`): steps come only from the planner or
+ * from a delegated agent.
+ *
+ * `openPortfolio` still accepts this property only so that activations
+ * started before the change replay as far as the `rebalance` tombstone.
+ */
+export type LegacyOfferPlan = {
+  /** @deprecated offers can no longer supply a plan */
+  flow?: MovementDesc[];
+};
+
 export type OfferArgsFor = {
-  deposit: { flow?: MovementDesc[] };
-  openPortfolio: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
-  rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
+  deposit: Record<string, never>;
+  openPortfolio: { targetAllocation?: TargetAllocation };
+  rebalance: { targetAllocation?: TargetAllocation };
+  transferOwnershipToEVM: {
+    /** the EVM account designated as the new owner */
+    evmAddress: `0x${string}`;
+    /**
+     * Last time the transfer can be accepted: an absolute time in seconds
+     * since the Unix epoch, as measured by Agoric chain time. Must be at most
+     * `MAX_YMAX_DEADLINE_OFFSET_SECONDS` into the future.
+     */
+    deadlineTimestampSeconds: bigint;
+  };
 };
 
 /**
@@ -130,45 +155,50 @@ export type OfferArgsFor = {
  * reusable movement and plan shapes as well as offer-argument shapes.
  */
 export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
-  const movementDescShape = M.splitRecord(
-    {
-      // amount should be 0 for claimRewards (but is ignored) and positive
-      // otherwise.
-      amount: makeNatAmountShape(usdcBrand),
-      src: AssetPlaceRefShape,
-      dest: AssetPlaceRefShape,
-    },
-    {
-      fee: AnyNatAmountShape,
-      detail: M.recordOf(M.string(), M.nat()),
-      swap: M.splitRecord(
-        {
-          provider: '1inch',
-          tokenIn: M.string(),
-          amountIn: M.nat(),
-          flags: M.nat(),
-          executor: M.string(),
-          srcReceiver: M.string(),
-          data: M.string(),
-        },
-        {
-          tokenOut: M.string(),
-        },
-      ),
-      claimRewards: M.splitRecord(
-        {
-          tokens: M.arrayOf(M.string()),
-          minAmounts: M.arrayOf(M.nat()),
-        },
-        {
-          morpho: M.splitRecord({
-            proofs: M.arrayOf(M.arrayOf(M.string())),
-          }),
-        },
-      ),
-    },
-    // Be robust in the face of additional properties
+  const amountShape = makeNatAmountShape(usdcBrand);
+  const places = harden({ src: AssetPlaceRefShape, dest: AssetPlaceRefShape });
+  const optionalFields = harden({
+    withdraw: WithdrawParamsShape,
+    fee: AnyNatAmountShape,
+    detail: M.recordOf(M.string(), M.nat()),
+    swap: M.splitRecord(
+      {
+        provider: '1inch',
+        tokenIn: M.string(),
+        amountIn: M.nat(),
+        flags: M.nat(),
+        executor: M.string(),
+        srcReceiver: M.string(),
+        data: M.string(),
+      },
+      {
+        tokenOut: M.string(),
+      },
+    ),
+    claimRewards: M.splitRecord(
+      {
+        tokens: M.arrayOf(M.string()),
+        minAmounts: M.arrayOf(M.nat()),
+      },
+      {
+        morpho: M.splitRecord({
+          proofs: M.arrayOf(M.arrayOf(M.string())),
+        }),
+      },
+    ),
+  });
+  // Structural compatibility does not establish support for a future place.
+  // Known amounts and withdrawal parameters use the same checks as movements.
+  const movementDescShapeExt: TypedPattern<MovementDescExt> = M.splitRecord(
+    { src: M.string(), dest: M.string(), amount: amountShape },
+    optionalFields,
     M.record(),
+  );
+  // Reuse the extensible structure while admitting only supported places.
+  // Additional movement fields remain accepted at existing offer boundaries.
+  const movementDescShape = M.and(
+    M.splitRecord(places, {}, M.record()),
+    movementDescShapeExt,
   );
   const flowShape = M.arrayOf(movementDescShape, {
     arrayLengthLimit: MAX_PLAN_STEPS,
@@ -180,19 +210,23 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     ],
     { arrayLengthLimit: MAX_PLAN_STEPS },
   );
+  const planShapeExt: TypedPattern<FundsFlowPlanExt> = M.splitRecord(
+    {
+      flow: M.arrayOf(movementDescShapeExt, {
+        arrayLengthLimit: MAX_PLAN_STEPS,
+      }),
+    },
+    { order: orderShape },
+    M.record(),
+  );
 
   return {
-    deposit: M.splitRecord(
-      {},
-      {
-        flow: flowShape,
-      },
-      {},
-    ) as TypedPattern<OfferArgsFor['deposit']>,
+    // Offers must not carry a plan (`flow`); see LegacyOfferPlan. These are
+    // closed records, so an offer that still includes one is rejected.
+    deposit: M.splitRecord({}, {}, {}) as TypedPattern<OfferArgsFor['deposit']>,
     openPortfolio: M.splitRecord(
       {},
       {
-        flow: flowShape,
         destinationEVMChain: M.or(...keys(AxelarChain)),
         targetAllocation: TargetAllocationShape,
       },
@@ -201,17 +235,23 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     rebalance: M.splitRecord(
       {},
       {
-        flow: flowShape,
         targetAllocation: TargetAllocationShape,
       },
       {},
     ) as TypedPattern<OfferArgsFor['rebalance']>,
-    plan: M.splitRecord(
-      { flow: flowShape },
-      { order: orderShape },
+    transferOwnershipToEVM: M.splitRecord(
+      { evmAddress: M.string(), deadlineTimestampSeconds: M.nat() },
       {},
+      {},
+    ) as TypedPattern<OfferArgsFor['transferOwnershipToEVM']>,
+    plan: M.and(
+      planShapeExt,
+      // Restrict places and top-level fields without widening plan admission.
+      M.splitRecord({ flow: flowShape }, { order: orderShape }, {}),
     ) as TypedPattern<FundsFlowPlan>,
     movementDescShape: movementDescShape as TypedPattern<MovementDesc>,
+    movementDescShapeExt,
+    planShapeExt,
   };
 };
 harden(makeOfferArgsShapes);

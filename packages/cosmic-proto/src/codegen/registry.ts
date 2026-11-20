@@ -7,8 +7,11 @@
 
 import { BinaryReader } from './binary.js';
 import { Any } from './google/protobuf/any.js';
-import type { AnyAmino } from './google/protobuf/any.js';
-import type { IProtoType, TelescopeGeneratedCodec } from './types.js';
+import type {
+  IAminoMsg,
+  IProtoType,
+  TelescopeGeneratedCodec,
+} from './types.js';
 
 export class GlobalDecoderRegistry {
   static registry: {
@@ -160,7 +163,9 @@ export class GlobalDecoderRegistry {
     const decoder = getDecoderByInstance<T, unknown, Amino>(object);
     return decoder.fromAmino!(object);
   }
-  static fromAminoMsg<T = unknown, Amino = unknown>(object: AnyAmino): T {
+  static fromAminoMsg<T = unknown, Amino = unknown>(
+    object: IAminoMsg<Amino>,
+  ): T {
     const decoder = GlobalDecoderRegistry.getDecoderByAminoType<
       T,
       unknown,
@@ -191,7 +196,7 @@ export class GlobalDecoderRegistry {
 
     return decoder.toAmino!(data);
   }
-  static toAminoMsg<T = unknown, Amino = unknown>(object: T): AnyAmino {
+  static toAminoMsg<T = unknown, Amino = unknown>(object: T): IAminoMsg<Amino> {
     let data: any;
     let decoder: TelescopeGeneratedCodec<any, any, any>;
     if (Any.is(object)) {

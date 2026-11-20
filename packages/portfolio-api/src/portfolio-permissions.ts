@@ -1,5 +1,5 @@
 import { mustMatch, type TypedPattern } from '@agoric/internal';
-import { Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { type CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type {
@@ -139,7 +139,7 @@ export const portfolioPermissionsToEIP712 = (
   mustMatch(permissions, PortfolioPermissionsShape);
   for (const authority of ['rebalance', 'claimRewards'] as const) {
     !Object.hasOwn(permissions, authority) ||
-      Fail`${authority} is not supported by user-facing permissions`;
+      Fail`${q(authority)} is not supported by user-facing permissions`;
   }
   const { allocation } = permissions;
   if (allocation === undefined) {

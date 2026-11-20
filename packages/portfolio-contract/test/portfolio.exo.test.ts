@@ -19,6 +19,7 @@ import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
+import type { ZCFSeat } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
 import { Far } from '@endo/pass-style';
 import { hexToBytes } from '@noble/hashes/utils';
@@ -31,7 +32,7 @@ import {
 import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
-import type { StatusFor } from '../src/type-guards.ts';
+import type { FlowDetail, StatusFor } from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 import { contractsMock } from './mocks.ts';
@@ -69,6 +70,7 @@ const makeSpies = <T extends Record<string, Callable>>(
 const makeTestSetup = (
   opts: {
     storage?: ReturnType<typeof makeFakeStorageKit>;
+    legacyFlows?: { nextFlowId: number; runningIds: number[] };
   } = {},
 ) => {
   const zone = makeHeapZone();
@@ -76,18 +78,14 @@ const makeTestSetup = (
   const marshaller = board.getReadonlyMarshaller();
   const vowTools = prepareVowTools(zone);
 
-  const depStubs: Pick<
-    PortfolioKitDeps,
-    'rebalance' | 'executePlan' | 'deliverDelegation'
-  > = {
-    rebalance: (..._args: Parameters<PortfolioKitDeps['rebalance']>) =>
-      vowTools.asVow(() => {}),
-    executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) =>
-      vowTools.asVow(() => {}),
-    deliverDelegation: async (
-      ..._args: Parameters<PortfolioKitDeps['deliverDelegation']>
-    ) => {},
-  };
+  const depStubs: Pick<PortfolioKitDeps, 'executePlan' | 'deliverDelegation'> =
+    {
+      executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) =>
+        vowTools.asVow(() => {}),
+      deliverDelegation: async (
+        ..._args: Parameters<PortfolioKitDeps['deliverDelegation']>
+      ) => {},
+    };
 
   const { spies, log: callLog } = makeSpies(depStubs);
 
@@ -227,12 +225,51 @@ test('portfolio exo caches storage nodes', async t => {
   await eventLoopIteration();
   t.is(nodeQty, 4, 'root, portfolio, flows, flow1');
 
+  const ica = Far('NobleICA', {
+    getAddress: () => ({
+      chainId: 'noble-1',
+      value: 'noble1xyz',
+      encoding: 'bech32',
+    }),
+  }) as unknown as AccountInfoFor['noble']['ica'];
+  manager.resolveAccount({ namespace: 'cosmos', chainName: 'noble', ica });
   const acctId = 'cosmos:noble-1:noble1xyz';
   const pos = manager.providePosition('USDN', 'USDN', acctId);
   pos.publishStatus();
   pos.publishStatus();
   await eventLoopIteration();
   t.is(nodeQty, 6, 'root, portfolio, flows, flow1, positions, position1');
+});
+
+test('providePosition requires the account on the pool chain', t => {
+  const { makePortfolioKit } = makeTestSetup();
+  const { manager } = makePortfolioKit({ portfolioId: 1656 });
+
+  const baseInfo: AccountInfoFor['Base'] = {
+    namespace: 'eip155',
+    chainName: 'Base',
+    chainId: 'eip155:8453',
+    remoteAddress: '0x1111111111111111111111111111111111111111',
+  };
+  manager.resolveAccount(baseInfo);
+  const baseAcct = `${baseInfo.chainId}:${baseInfo.remoteAddress}` as const;
+
+  t.throws(() => manager.providePosition('Aave_Arbitrum', 'Aave', baseAcct), {
+    message:
+      /position "Aave_Arbitrum" needs a "Arbitrum" account, not "eip155:8453:0x1{40}"/,
+  });
+  t.throws(
+    () =>
+      manager.providePosition(
+        'Aave_Base',
+        'Aave',
+        'eip155:8453:0x2222222222222222222222222222222222222222',
+      ),
+    { message: /must be held by the "Base" account "eip155:8453:0x1{40}"/ },
+    'another address on the right chain',
+  );
+
+  t.notThrows(() => manager.providePosition('Aave_Base', 'Aave', baseAcct));
 });
 
 test('releaseAccount clears pending account reservation', async t => {
@@ -1188,7 +1225,7 @@ test('rejected external lifecycle changes do not advance policyVersion', async t
 
   await assertRejectedWithoutPolicyChange(
     () => vowTools.when(evmHandler.changePermissions(99, { allocation: true })),
-    /no delegation found for agent 99/,
+    /no delegation found for "agent99"/,
   );
 
   await manager.setAutoFeatures({ rebalance: true });
@@ -1207,7 +1244,7 @@ test('rejected external lifecycle changes do not advance policyVersion', async t
       vowTools.when(
         evmHandler.changePermissions(granted.agentId, { allocation: true }),
       ),
-    /delegation agent1 cannot be changed or revoked while .*revoked/,
+    /delegation "agent1" cannot be changed or revoked while .*revoked/,
   );
 });
 
@@ -1351,7 +1388,7 @@ test('allocation delegation cannot use rebalance', async t => {
       client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
     {
       message:
-        /delegation agent1 does not have required permission "rebalance"/,
+        /delegation "agent1" does not have required permission "rebalance"/,
     },
   );
   t.is(getCallLog().length, 1, 'rebalance denial does not start a flow');
@@ -1400,7 +1437,7 @@ test('revoked delegation client is no longer usable', async t => {
         syncState: { policyVersion: 1, rebalanceCount: 0 },
       }),
     {
-      message: /delegation client is not active for agent1/,
+      message: /delegation client is not active for "agent1"/,
     },
   );
 });
@@ -1478,7 +1515,7 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
       client.rebalance({ syncState: { policyVersion: 1, rebalanceCount: 0 } }),
     {
       message:
-        /delegation agent1 does not have required permission "rebalance"/,
+        /delegation "agent1" does not have required permission "rebalance"/,
     },
   );
 
@@ -1749,4 +1786,255 @@ test('awaitingSteps is published in flowsRunning and reflects resolution state',
   }
 
   await t.throwsAsync(vowTools.when(stepsP), { message: 'insufficient funds' });
+});
+
+for (const activeType of [
+  'deposit',
+  'claimRewards',
+  'rebalance',
+  'withdraw',
+] as const) {
+  test(`delegated flows reject overlap with the latest ${activeType} flow`, async t => {
+    const storage = makeFakeStorageKit('published', { sequence: true });
+    const { makePortfolioKit, getCallLog, getPortfolioStatus, vowTools } =
+      makeTestSetup({ storage });
+    const { manager, planner, reporter } = makePortfolioKit({ portfolioId: 1 });
+    manager.setTargetAllocation({ USDN: 100n });
+    await manager.grantDelegation('agoric1delegate', {
+      allocation: true,
+      rebalance: true,
+      claimRewards: true,
+    });
+    const [, client] = getCallLog()[0] as [
+      'deliverDelegation',
+      ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+    ];
+    const amount = harden({ brand: USDC, value: 100n });
+    const detail = (
+      activeType === 'deposit' || activeType === 'withdraw'
+        ? { type: activeType, amount }
+        : { type: activeType }
+    ) as FlowDetail;
+    const { flowId, stepsP } = manager.startFlow(detail);
+    t.is(flowId, 1); // xxx
+    const before = await getPortfolioStatus!(1);
+    t.deepEqual(Object.keys(before.flowsRunning!), [`flow${flowId}`]); // xxx
+    t.is(before.flowCount, 1); // xxx
+
+    const syncState = harden({
+      policyVersion: before.policyVersion,
+      rebalanceCount: before.rebalanceCount,
+    });
+    const calls = getCallLog();
+    for (const attempt of [
+      () => client.rebalance({ syncState }),
+      () => client.claimRewards({ syncState }),
+    ]) {
+      t.throws(attempt, { message: 'portfolio already has a running flow' });
+    }
+    await t.throwsAsync(
+      client.setTargetAllocation({
+        syncState,
+        targetAllocation: { USDN: 100n },
+      }),
+      { message: 'portfolio already has a running flow' },
+    );
+    t.deepEqual(await getPortfolioStatus!(1), before);
+    t.deepEqual(getCallLog(), calls);
+
+    // Resolving or rejecting a plan does not finish its execution.
+    if (activeType === 'claimRewards') {
+      planner.rejectFlowPlan(flowId, 'synthetic rejection');
+      await t.throwsAsync(vowTools.when(stepsP), {
+        message: 'synthetic rejection',
+      });
+    } else {
+      planner.resolveFlowPlan(flowId, []);
+      await vowTools.when(stepsP);
+    }
+    t.throws(() => client.claimRewards({ syncState }), {
+      message: 'portfolio already has a running flow',
+    });
+    reporter.finishFlow(flowId);
+    t.is(
+      client.claimRewards({ syncState }),
+      'flow2',
+      'denials do not consume flow IDs',
+    );
+  });
+}
+
+test('delegated requests reject an active claimRewards flow with matching sync state', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
+  const { manager, reader, delegationHelper, reporter } = makePortfolioKit({
+    portfolioId: 1,
+  });
+  manager.setTargetAllocation({ USDN: 100n });
+  const { agentId } = await manager.grantDelegation('agoric1delegate', {
+    allocation: true,
+    rebalance: true,
+    claimRewards: true,
+  });
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+  reporter.publishStatus();
+  const before = await getPortfolioStatus!(1);
+  const syncState = harden({
+    policyVersion: before.policyVersion,
+    rebalanceCount: before.rebalanceCount,
+  });
+
+  // Model observations verified before a claimRewards request won the race.
+  const verifiedObservations = harden({
+    portfolioId: 1,
+    syncState,
+    observations: { balances: {}, instrumentTvls: {} },
+    issuedAt: 0n,
+    deadline: 300n,
+  });
+  t.is(client.claimRewards({ syncState }), 'flow1');
+  reader.checkVersion(syncState.policyVersion, syncState.rebalanceCount);
+  const running = await getPortfolioStatus!(1);
+  const calls = getCallLog();
+  for (const attempt of [
+    () => client.rebalance({ syncState }),
+    () => client.claimRewards({ syncState }),
+    () =>
+      delegationHelper.submitTargetAllocation(
+        client,
+        agentId,
+        {
+          syncState,
+          targetAllocation: { USDN: 100n },
+          plan: { flow: [] },
+        },
+        verifiedObservations,
+      ),
+  ]) {
+    t.throws(attempt, { message: 'portfolio already has a running flow' });
+  }
+
+  t.deepEqual(await getPortfolioStatus!(1), running);
+  t.deepEqual(getCallLog(), calls, 'rejected requests never call executePlan');
+  reporter.finishFlow(1);
+
+  t.is(
+    client.rebalance({ syncState }),
+    'flow2',
+    'rejected requests do not consume flow IDs',
+  );
+});
+
+test('delegated starts ignore older stuck flows once the last allocated flow finishes', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
+  const { manager, reporter } = makePortfolioKit({ portfolioId: 1 });
+  await manager.grantDelegation('agoric1delegate', { claimRewards: true });
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+  manager.startFlow({ type: 'rebalance' });
+  manager.startFlow({ type: 'rebalance' });
+  const before = await getPortfolioStatus!(1);
+
+  const syncState = harden({
+    policyVersion: before.policyVersion,
+    rebalanceCount: before.rebalanceCount,
+  });
+  t.throws(() => client.claimRewards({ syncState }), {
+    message: 'portfolio already has a running flow',
+  });
+  reporter.finishFlow(2);
+  t.is(client.claimRewards({ syncState }), 'flow3');
+  t.throws(() => client.claimRewards({ syncState }), {
+    message: 'portfolio already has a running flow',
+  });
+  reporter.finishFlow(3);
+  t.is(client.claimRewards({ syncState }), 'flow4');
+  t.deepEqual(Object.keys((await getPortfolioStatus!(1)).flowsRunning!), [
+    'flow1',
+    'flow4',
+  ]);
+});
+
+test('owner rebalances may start while a delegated or owner flow is running', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
+  // An EVM-owned portfolio, and an Agoric-owned one: each owner has its own
+  // way to rebalance.
+  const evmKit = makePortfolioKit({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x4545454545454545454545454545454545454545',
+  });
+  const agoricKit = makePortfolioKit({ portfolioId: 2 });
+  const emptySeat = Far('Seat', {
+    getProposal: () => harden({ give: {}, want: {} }),
+  }) as unknown as ZCFSeat;
+  const ownerRebalances = [
+    () => evmKit.evmHandler.rebalance([{ instrument: 'USDN', portion: 75n }]),
+    () =>
+      agoricKit.simpleRebalanceHandler.handle(emptySeat, {
+        targetAllocation: { USDN: 50n },
+      }),
+  ];
+  for (const [i, { manager }] of [evmKit, agoricKit].entries()) {
+    const portfolioId = i + 1;
+    await manager.grantDelegation('agoric1delegate', { claimRewards: true });
+    manager.setTargetAllocation({ USDN: 100n });
+    const [, client] = getCallLog()
+      .filter(([name]) => name === 'deliverDelegation')
+      .at(-1) as [
+      'deliverDelegation',
+      ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+    ];
+    const before = await getPortfolioStatus!(portfolioId);
+
+    t.is(
+      client.claimRewards({
+        syncState: {
+          policyVersion: before.policyVersion,
+          rebalanceCount: before.rebalanceCount,
+        },
+      }),
+      'flow1',
+    );
+    t.is(ownerRebalances[i](), 'flow2');
+    t.is(ownerRebalances[i](), 'flow3');
+    const after = await getPortfolioStatus!(portfolioId);
+
+    t.deepEqual(Object.keys(after.flowsRunning!), ['flow1', 'flow2', 'flow3']);
+    t.is(after.policyVersion, before.policyVersion + 2);
+  }
+});
+
+test('Agoric owner offers are rejected once EVM-owned', async t => {
+  const { makePortfolioKit } = makeTestSetup();
+  const {
+    rebalanceHandler,
+    simpleRebalanceHandler,
+    depositHandler,
+    withdrawHandler,
+  } = makePortfolioKit({
+    portfolioId: 460,
+    sourceAccountId: 'eip155:42161:0x2222222222222222222222222222222222222222',
+  });
+  // The guard runs before the seat is touched.
+  const seat = {} as ZCFSeat;
+  const message =
+    'portfolio460 is owned by EVM account "eip155:42161:0x2222222222222222222222222222222222222222"';
+
+  t.throws(() => rebalanceHandler.handle(seat, {}), { message });
+  t.throws(() => simpleRebalanceHandler.handle(seat, {}), { message });
+  t.throws(() => depositHandler.handle(seat, {}), { message });
+  t.throws(() => withdrawHandler.handle(seat), { message });
 });

@@ -243,9 +243,27 @@ test.serial('coreEval code without swingset', async t => {
   const silvia = makeTrader(wallet, instance);
   const amount = usdc.units(3_333);
   const detail = { usdnOut: amount.value }; // XXX  * 99n / 100n
+  // Offers can't carry a plan, so a planner supplies the opening deposit's steps.
+  const { creatorFacet } = await (powers as PortfolioBootPowers).consume
+    .ymax0Kit;
+  const planner = await E(
+    E(zoe).offer(E(creatorFacet).makePlannerInvitation()),
+  ).getOfferResult();
   const actualP = silvia.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
+    { targetAllocation: { USDNVault: 1n } },
+  );
+  // ack IBC transfer for NFA
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', 0);
+  await eventLoopIteration();
+  const portfolioKey = 'orchtest.ymax0.portfolios.portfolio0';
+  const { flowsRunning, policyVersion, rebalanceCount } =
+    common.bootstrap.storage.getDeserialized(portfolioKey).at(-1) as any;
+  const [flowKey] = Object.keys(flowsRunning);
+  await E(planner).resolvePlan(
+    0,
+    Number(flowKey.replace('flow', '')),
     {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
@@ -253,9 +271,11 @@ test.serial('coreEval code without swingset', async t => {
         { src: '@noble', dest: 'USDNVault', amount, detail },
       ],
     },
+    policyVersion,
+    rebalanceCount,
   );
-  // ack IBC transfer for NFA, forward
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', 0);
+  await eventLoopIteration();
+  // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const actual = await actualP;
   t.like(actual, {

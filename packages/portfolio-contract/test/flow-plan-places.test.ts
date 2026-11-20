@@ -155,3 +155,32 @@ test('EVM owner places only in the matching flow type and chain', t => {
     message: '"-Base" does not match flow chain "[undefined]"',
   });
 });
+
+test('instrument steps stay on the instrument chain', t => {
+  // AGO-1656: `@Base -> Aave_Arbitrum` would supply Aave on Base.
+  const mismatched: [string, string, RegExp][] = [
+    [
+      '@Base',
+      'Aave_Arbitrum',
+      /"Aave_Arbitrum" lives on "Arbitrum", not "Base"/,
+    ],
+    [
+      'Aave_Arbitrum',
+      '@Base',
+      /"Aave_Arbitrum" lives on "Arbitrum", not "Base"/,
+    ],
+    [
+      '@Avalanche',
+      'Compound_Base',
+      /"Compound_Base" lives on "Base", not "Avalanche"/,
+    ],
+    ['@agoric', 'USDN', /"USDN" lives on "noble", not "agoric"/],
+  ];
+  for (const context of [evm('rebalance'), cosmos('rebalance')]) {
+    for (const [src, dest, message] of mismatched) {
+      t.throws(() => vetFlowPlanPlaces(context, [step(src, dest)]), {
+        message,
+      });
+    }
+  }
+});

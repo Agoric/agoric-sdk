@@ -9,7 +9,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { GuestInterface } from '@agoric/async-flow';
 import { AmountMath, type NatAmount } from '@agoric/ertp';
-import { makeTracer, mustMatch } from '@agoric/internal';
+import { makeTracer, mustMatch, typedEntries } from '@agoric/internal';
 import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -19,6 +19,7 @@ import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   decodeFunctionData,
+  decodeAbiParameters,
   getAbiItem,
   getAddress,
   toFunctionSelector,
@@ -26,25 +27,38 @@ import {
 import {
   type AxelarChain,
   type FlowDetail,
+  type FlowConfig,
   type FundsFlowPlan,
+  type TargetAllocation,
 } from '@agoric/portfolio-api';
 import {
   DEFAULT_FLOW_CONFIG,
   RebalanceStrategy,
+  SupportedChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeTokenIdKey } from '@agoric/portfolio-api/src/type-guards.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import type { ZCF } from '@agoric/zoe';
+import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import { Far } from '@endo/far';
 import { passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'abitype';
 import type { Assertions } from 'ava';
+import { aavePoolABI } from '../src/interfaces/aave.ts';
+import { compoundABI } from '../src/interfaces/compound.ts';
 import { erc20ABI } from '../src/interfaces/erc20.ts';
+import {
+  bundler3ABI,
+  generalAdapter1ABI,
+} from '../src/interfaces/morpho-bundler3.ts';
 import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
+import {
+  universalRouterABI,
+  balanceCheckErc20Schema,
+} from '../src/interfaces/universal-router.ts';
 import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
@@ -57,18 +71,24 @@ import {
   sendPermit2GMP as sendPermit2RoutedGMP,
   sendGMPContractCall as sendRoutedGMPContractCall,
 } from '../src/axelar-gmp-router.flows.ts';
-import { type PortfolioKit } from '../src/portfolio.exo.ts';
+import {
+  type PortfolioKit,
+  type ResolvedFlowPlan,
+} from '../src/portfolio.exo.ts';
 import {
   makeErrorList,
   provideCosmosAccount,
   provideNobleAccount,
   executePlan as rawExecutePlan,
   openPortfolio as rawOpenPortfolio,
-  rebalance as rawRebalance,
   wayFromSrcToDest,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
-import { swapRewardToStable, type EVMContext } from '../src/pos-evm.flows.ts';
+import {
+  CCTPv2,
+  swapRewardToStable,
+  type EVMContext,
+} from '../src/pos-evm.flows.ts';
 import {
   agoricToNoble,
   makeSwapLockMessages,
@@ -76,11 +96,12 @@ import {
   nobleToAgoric,
   protocolUSDN,
 } from '../src/pos-usdn.flows.ts';
+import { type MovementDesc } from '../src/type-guards-steps.ts';
 import {
-  type MovementDesc,
-  type OfferArgsFor,
-} from '../src/type-guards-steps.ts';
-import { makeProposalShapes } from '../src/type-guards.ts';
+  makeProposalShapes,
+  PoolPlaces,
+  type PoolKey,
+} from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { makePortfolioSteps } from '../tools/plan-transfers.ts';
 import {
@@ -116,6 +137,7 @@ const expectUnhandled = makeExpectUnhandledRejectionMacro({
   importMetaUrl: import.meta.url,
 });
 
+// Keep the test suite's feature defaults; bindings use resolveExecutionPlan directly.
 const executePlan: typeof rawExecutePlan = (
   orch,
   ctx,
@@ -125,7 +147,7 @@ const executePlan: typeof rawExecutePlan = (
   flowDetail,
   startedFlow,
   config = DEFAULT_FLOW_CONFIG,
-  options,
+  ...args
 ) =>
   rawExecutePlan(
     orch,
@@ -136,7 +158,7 @@ const executePlan: typeof rawExecutePlan = (
     flowDetail,
     startedFlow,
     config,
-    options,
+    ...args,
   );
 
 const openPortfolio: typeof rawOpenPortfolio = (
@@ -149,17 +171,206 @@ const openPortfolio: typeof rawOpenPortfolio = (
   ...args
 ) => rawOpenPortfolio(orch, ctx, seat, offerArgs, madeKit, config, ...args);
 
-const rebalance: typeof rawRebalance = (
-  orch,
-  ctx,
-  seat,
-  offerArgs,
-  kit,
-  startedFlow,
-  config = DEFAULT_FLOW_CONFIG,
-) => rawRebalance(orch, ctx, seat, offerArgs, kit, startedFlow, config);
+/**
+ * Run steps the way the planner supplies them, but given up front.
+ * Unlike the tombstoned `rebalance` flow, `executePlan` rejects when a step
+ * fails.
+ */
+const executeSteps = (
+  orch: Orchestrator,
+  ctx: PortfolioInstanceContext,
+  seat: ZCFSeat,
+  offerArgs: { flow: MovementDesc[] },
+  pKit: GuestInterface<PortfolioKit>,
+  config?: FlowConfig,
+) =>
+  executePlan(
+    orch,
+    ctx,
+    seat,
+    offerArgs,
+    pKit,
+    { type: 'rebalance' },
+    undefined,
+    config,
+  );
+
+/**
+ * Open a portfolio the way production does: the offer names a target
+ * allocation, then the planner supplies `flow` for the opening deposit.
+ */
+const openWithPlan = async (
+  { orch, ctx, storage }: Pick<Mocks, 'orch' | 'ctx' | 'storage'>,
+  seat: ZCFSeat,
+  flow: MovementDesc[],
+) => {
+  const targetAllocation: TargetAllocation = {};
+  for (const { dest, amount } of flow) {
+    if (/^[@<+-]/.test(dest)) continue;
+    const key = dest as keyof TargetAllocation;
+    targetAllocation[key] = (targetAllocation[key] ?? 0n) + amount.value;
+  }
+  const kit = await ctx.makePortfolioKit();
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  let settled = false;
+  const openP = openPortfolio(
+    orch,
+    ctx,
+    seat,
+    {
+      targetAllocation: keys(targetAllocation).length
+        ? targetAllocation
+        : { USDN: 1n },
+    },
+    kit,
+  ).finally(() => {
+    settled = true;
+  });
+  while (!settled) {
+    await eventLoopIteration();
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId).catch(
+      () => ({ flowsRunning: {} }),
+    );
+    const [flowKey] = keys(flowsRunning);
+    if (flowKey) {
+      kit.planner.resolveFlowPlan(Number(flowKey.replace('flow', '')), flow);
+      break;
+    }
+  }
+  return openP;
+};
 
 const { make } = AmountMath;
+const { keys } = Object;
+const vaults = {
+  rwa: {
+    id: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+    address: contractsMock.Ethereum.ERC4626_morphoGauntletUsdcRwa_Ethereum!,
+  },
+  u2: {
+    id: 'ERC4626_vaultU2_Ethereum',
+    address: contractsMock.Ethereum.ERC4626_vaultU2_Ethereum!,
+  },
+  replacement: { address: '0x0000000000000000000000000000000000000003' },
+} as const;
+
+const makeShareWithdrawalCase = ({
+  minimumProceeds = 0n,
+  observedShares = 50n,
+} = {}) => {
+  const step1: MovementDesc = {
+    src: vaults.rwa.id,
+    dest: '@Ethereum',
+    amount: make(USDC, minimumProceeds),
+    withdraw: { max: true },
+  };
+  const boundSteps: NonNullable<ResolvedFlowPlan['boundSteps']> = {
+    0: {
+      kind: 'redeemShares',
+      src: vaults.rwa.id,
+      vaultAddress: vaults.rwa.address,
+      shares: observedShares,
+      ...(minimumProceeds > 0n && { minimumProceeds }),
+    },
+  };
+  return { step1, boundSteps };
+};
+
+const makeFullExitCase = async (
+  principal?: 'Aave_Ethereum' | 'Compound_Ethereum',
+) => {
+  const { orch, ctx, offer, txResolver, resolverService, storage } = mocks(
+    {},
+    { Deposit: make(USDC, 1_000_000n) },
+  );
+  const kit = await ctx.makePortfolioKit();
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const accountP = provideEVMAccount(
+    'Ethereum',
+    axelarCCTPConfig.Ethereum,
+    { chain: await orch.getChain('axelar'), fee: 100n },
+    kit.reader.getLocalAccount(),
+    ctx,
+    kit,
+  );
+  await offer.factoryPK.promise;
+  await txResolver.drainPending();
+  const accountInfo = await accountP;
+  await accountInfo.ready;
+  offer.log.length = 0;
+  const executeExit = ({
+    observedShares,
+    minimumProceeds = 0n,
+    delayed = false,
+  }: {
+    delayed?: boolean;
+    observedShares: bigint;
+    minimumProceeds?: bigint;
+  }) => {
+    const fixture = makeShareWithdrawalCase({
+      minimumProceeds,
+      observedShares,
+    });
+    const { step1 } = fixture;
+    let { boundSteps } = fixture;
+    if (principal) {
+      step1.src = principal;
+      const protocolAddress =
+        principal === 'Aave_Ethereum'
+          ? contractsMock.Ethereum.aavePool
+          : contractsMock.Ethereum.compound;
+      boundSteps = {
+        0: {
+          kind: 'withdrawMax',
+          src: principal,
+          protocolAddress,
+          tokenAddress: contractsMock.Ethereum.usdc,
+          amount: observedShares,
+          ...(minimumProceeds > 0n && { minimumProceeds }),
+        },
+      };
+    }
+    const started = kit.manager.startFlow({ type: 'rebalance' });
+    const envelope = harden({
+      plan: { flow: [{ ...step1, fee: make(BLD, 100n) }] },
+      boundSteps,
+    });
+    const resolvePlan = () =>
+      kit.manager.resolveExecutionPlan(started.flowId, envelope);
+    if (!delayed) resolvePlan();
+    const result = rawExecutePlan(
+      orch,
+      ctx,
+      makeMockSeat({}, undefined, offer.log),
+      {},
+      kit,
+      undefined,
+      started,
+      DEFAULT_FLOW_CONFIG,
+    );
+    if (delayed) void eventLoopIteration().then(resolvePlan);
+    return result;
+  };
+  const redemptionQuantities = () =>
+    offer.log.flatMap(({ _method, opts }) => {
+      if (_method !== 'transfer' || typeof opts?.memo !== 'string') return [];
+      const { calls } = decodeFunctionCall(opts.memo, [
+        'redeem(uint256,address,address)',
+      ]);
+      return calls.map(call => call.args![0]);
+    });
+  return {
+    kit,
+    remoteAddress: accountInfo.remoteAddress,
+    log: offer.log,
+    txResolver,
+    resolverService,
+    storage,
+    executeExit,
+    redemptionQuantities,
+  };
+};
 /* eslint-disable no-underscore-dangle */
 /* We use _method to get it to sort before other properties. */
 
@@ -266,7 +477,7 @@ test('open portfolio with USDN position', async t => {
   const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
-  const actual = await openPortfolio(orch, ctx, seat, { flow: steps });
+  const actual = await openWithPlan({ orch, ctx, storage }, seat, steps);
   t.log(log.map(msg => msg._method).join(', '));
 
   t.like(log, [
@@ -299,7 +510,7 @@ const openAndTransfer = test.macro(
     const { log, seat } = offer;
 
     const [actual] = await Promise.all([
-      openPortfolio(orch, ctx, seat, { flow: steps }),
+      openWithPlan({ orch, ctx, storage }, seat, steps),
       Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
         async ([tap, _]) => {
           for (const event of makeEvents()) {
@@ -335,14 +546,12 @@ test('open portfolio with Aave position', async t => {
   );
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, ctx, offer.seat, {
-      flow: [
-        { src: '<Deposit>', dest: '@agoric', amount },
-        { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
-      ],
-    }),
+    openWithPlan({ orch, ctx, storage }, offer.seat, [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+      { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+    ]),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       // Complete transactions.
       await txResolver.drainPending();
@@ -392,9 +601,7 @@ test('open portfolio with Compound position', async t => {
   );
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, { ...ctx }, offer.seat, {
-      flow: steps,
-    }),
+    openWithPlan({ orch, ctx: { ...ctx }, storage }, offer.seat, steps),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       await txResolver.drainPending();
     }),
@@ -428,9 +635,9 @@ test.skip('handle failure in localTransfer from seat to local account', async t 
   );
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
-  });
+  const actual = await openWithPlan({ orch, ctx: { ...ctx }, storage }, seat, [
+    { src: '<Deposit>', dest: '@agoric', amount },
+  ]);
   t.log(log.map(msg => msg._method).join(', '));
   t.snapshot(log, 'call log');
 
@@ -455,9 +662,11 @@ test.skip('handle failure in IBC transfer', async t => {
   );
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    flow: steps,
-  });
+  const actual = await openWithPlan(
+    { orch, ctx: { ...ctx }, storage },
+    seat,
+    steps,
+  );
   t.log(log.map(msg => msg._method).join(', '));
   const nobleId = await cosmosId('noble');
   t.like(log, [
@@ -481,9 +690,11 @@ test.skip('handle failure in executeEncodedTx', async t => {
   );
   const { log, seat } = offer;
 
-  const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    flow: steps,
-  });
+  const actual = await openWithPlan(
+    { orch, ctx: { ...ctx }, storage },
+    seat,
+    steps,
+  );
   t.log(log.map(msg => msg._method).join(', '));
   const nobleId = await cosmosId('noble');
   const agoricId = await cosmosId('agoric');
@@ -515,13 +726,11 @@ test.skip('handle failure in recovery from executeEncodedTx', async t => {
   const { log, seat } = offer;
 
   const detail = { usdnOut: 100n };
-  const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    flow: [
-      { src: '<Deposit>', dest: '@agoric', amount },
-      { src: '@agoric', dest: '@noble', amount },
-      { src: '@noble', dest: 'USDNVault', amount, detail },
-    ],
-  });
+  const actual = await openWithPlan({ orch, ctx: { ...ctx }, storage }, seat, [
+    { src: '<Deposit>', dest: '@agoric', amount },
+    { src: '@agoric', dest: '@noble', amount },
+    { src: '@noble', dest: 'USDNVault', amount, detail },
+  ]);
   t.log(log.map(msg => msg._method).join(', '));
   const nobleId = await cosmosId('noble');
   const agoricId = await cosmosId('agoric');
@@ -549,14 +758,16 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   );
 
   // Start the openPortfolio flow
-  const portfolioPromise = openPortfolio(orch, { ...ctx }, offer.seat, {
-    flow: [
+  const portfolioPromise = openWithPlan(
+    { orch, ctx: { ...ctx }, storage },
+    offer.seat,
+    [
       { src: '<Deposit>', dest: '@agoric', amount },
       { src: '@agoric', dest: '@noble', amount },
       { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
       { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
     ],
-  });
+  );
 
   const actual = await portfolioPromise;
   const { log } = offer;
@@ -598,7 +809,7 @@ test.skip('rebalance handles stepFlow failure correctly', async t => {
 
   const { log, seat } = offer;
 
-  const badOfferArgs: OfferArgsFor['rebalance'] = {
+  const badOfferArgs: { flow: MovementDesc[] } = {
     flow: [
       { src: '<Deposit>', dest: '@agoric', amount: make(USDC, 500n) },
       { src: '@agoric', dest: '@noble', amount: make(USDC, 500n) },
@@ -607,9 +818,8 @@ test.skip('rebalance handles stepFlow failure correctly', async t => {
     ],
   };
 
-  await t.throwsAsync(() =>
-    rebalance(orch, ctx, seat, badOfferArgs, ctx.makePortfolioKit()),
-  );
+  const kit = await ctx.makePortfolioKit();
+  await t.throwsAsync(() => executeSteps(orch, ctx, seat, badOfferArgs, kit));
 
   // Check that seat.fail() was called, not seat.exit()
   const seatCalls = log.filter(entry => entry._cap === 'seat');
@@ -636,7 +846,7 @@ test.skip('claim rewards on Aave position', async t => {
     minAmounts: [1_234_567n],
   };
   await Promise.all([
-    rebalance(
+    executeSteps(
       orch,
       ctx,
       offer.seat,
@@ -697,19 +907,17 @@ test('open portfolio with Beefy position', async t => {
   const axelarId = await cosmosId('axelar');
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, ctx, offer.seat, {
-      flow: [
-        { src: '<Deposit>', dest: '@agoric', amount },
-        { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
-        {
-          src: '@Avalanche',
-          dest: 'Beefy_re7_Avalanche',
-          amount,
-          fee: feeCall,
-        },
-      ],
-    }),
+    openWithPlan({ orch, ctx, storage }, offer.seat, [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
+      {
+        src: '@Avalanche',
+        dest: 'Beefy_re7_Avalanche',
+        amount,
+        fee: feeCall,
+      },
+    ]),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       await txResolver.drainPending();
     }),
@@ -756,7 +964,7 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   const kit = await ctx.makePortfolioKit();
 
-  await rebalance(
+  await executeSteps(
     orch,
     ctx,
     offer.seat,
@@ -789,7 +997,7 @@ test('client can move to deposit LCA', async t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   const kit = await ctx.makePortfolioKit();
 
-  await rebalance(
+  await executeSteps(
     orch,
     ctx,
     offer.seat,
@@ -818,9 +1026,9 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
   // First attempt - will fail creating noble account
   const seat1 = makeMockSeat({ Deposit: amount }, undefined, log);
 
-  const attempt1 = rebalance(orch, ctx, seat1, { flow: steps }, kit);
+  const attempt1 = executeSteps(orch, ctx, seat1, { flow: steps }, kit);
 
-  t.is(await attempt1, undefined);
+  await t.throwsAsync(attempt1, { message: /timeout creating ICA/ });
 
   // Check failure evidence
   const failCall = log.find(entry => entry._method === 'fail');
@@ -851,7 +1059,7 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
 
   const seat2 = makeMockSeat({ Deposit: amount }, undefined, log);
 
-  await rebalance(orch, ctx, seat2, { flow: steps }, kit);
+  await executeSteps(orch, ctx, seat2, { flow: steps }, kit);
 
   const exitCall = log.find(entry => entry._method === 'exit');
   t.truthy(exitCall, 'seat.exit() should be called on successful recovery');
@@ -890,10 +1098,10 @@ test(
     // First attempt - will fail when trying to send 13n BLD (unlucky amount)
     const seat1 = makeMockSeat(give, undefined, log);
 
-    const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
+    const attempt1P = executeSteps(orch, ctx, seat1, { flow: steps }, pKit);
     const testDonePK = makePromiseKit();
     void txResolver.settleUntil(testDonePK.promise);
-    t.is(await attempt1P, undefined);
+    await t.throwsAsync(attempt1P, { message: /Insufficient funds/ });
 
     const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
     t.like(
@@ -939,7 +1147,7 @@ test(
       },
     );
     const seat2 = makeMockSeat(giveGood, undefined, log);
-    const attempt2P = rebalance(orch, ctx, seat2, { flow: stepsGood }, pKit);
+    const attempt2P = executeSteps(orch, ctx, seat2, { flow: stepsGood }, pKit);
 
     await Promise.all([
       attempt2P,
@@ -973,10 +1181,10 @@ test('withdraw in coordination with planner', async t => {
 
   {
     const amount = make(USDC, 50_000_000n);
-    const seat = makeMockSeat({ Aave: amount }, {}, offer.log);
+    const seat = makeMockSeat({ Deposit: amount }, {}, offer.log);
     const feeAcct = AmountMath.make(BLD, 50n);
     const feeCall = AmountMath.make(BLD, 100n);
-    const depositP = rebalance(
+    const depositP = executeSteps(
       orch,
       ctx,
       seat,
@@ -1125,7 +1333,7 @@ test('simple rebalance in coordination with planner', async t => {
   {
     const depositAmount = make(USDC, 10_000n);
     const depositSeat = makeMockSeat({ Deposit: depositAmount }, {}, offer.log);
-    await rebalance(
+    await executeSteps(
       orch,
       ctx,
       depositSeat,
@@ -1141,17 +1349,7 @@ test('simple rebalance in coordination with planner', async t => {
   }
 
   // Set initial allocation (100% USDN in basis points)
-  {
-    const initialAllocation = { USDN: 10000n }; // 100% = 10000 basis points
-    const seat = makeMockSeat({}, {}, offer.log);
-    await rebalance(
-      orch,
-      ctx,
-      seat,
-      { targetAllocation: initialAllocation },
-      initialKit,
-    );
-  }
+  initialKit.manager.setTargetAllocation({ USDN: 10000n }); // 100% = 10000 basis points
 
   // Now test simpleRebalance flow with different allocation
   const webUiDone = (async () => {
@@ -2058,7 +2256,7 @@ test('CCTP from EVM waits for source wallet readiness before sending GMP call', 
   const seat = makeMockSeat({}, {}, log);
   const axelarId = await cosmosId('axelar');
 
-  const flowP = rebalance(
+  const flowP = executeSteps(
     orch,
     ctx,
     seat,
@@ -2102,7 +2300,7 @@ test('asking to relay less than 1 USDC over CCTP is refused by contract', async 
   const nobleId = await cosmosId('noble');
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, ctx, offer.seat, { flow: steps }),
+    openWithPlan({ orch, ctx, storage }, offer.seat, steps),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       await txResolver.drainPending();
     }),
@@ -2207,19 +2405,17 @@ test('open portfolio with ERC4626 position', async t => {
   );
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, ctx, offer.seat, {
-      flow: [
-        { src: '<Deposit>', dest: '@agoric', amount },
-        { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
-        {
-          src: '@Ethereum',
-          dest: 'ERC4626_vaultU2_Ethereum',
-          amount,
-          fee: feeCall,
-        },
-      ],
-    }),
+    openWithPlan({ orch, ctx, storage }, offer.seat, [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
+      {
+        src: '@Ethereum',
+        dest: 'ERC4626_vaultU2_Ethereum',
+        amount,
+        fee: feeCall,
+      },
+    ]),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
       await txResolver.drainPending();
     }),
@@ -2319,7 +2515,7 @@ test('withdraw from Beefy position', async t => {
   const kit = await ctx.makePortfolioKit();
 
   await Promise.all([
-    rebalance(
+    executeSteps(
       orch,
       ctx,
       offer.seat,
@@ -2378,7 +2574,7 @@ test('swap reward token to stable token via 1inch', async t => {
   // Phase 1: provision the Avalanche remote account so we know the address the
   // swap proceeds must return to (`dstReceiver`).
   await Promise.all([
-    rebalance(
+    executeSteps(
       orch,
       ctx,
       offer.seat,
@@ -2439,7 +2635,7 @@ test('swap reward token to stable token via 1inch', async t => {
   };
 
   const seat2 = makeMockSeat({ Deposit: amount }, undefined, log);
-  const swapP = rebalance(
+  const swapP = executeSteps(
     orch,
     ctx,
     seat2,
@@ -2455,7 +2651,6 @@ test('swap reward token to stable token via 1inch', async t => {
       ],
     },
     kit,
-    undefined,
     {
       ...DEFAULT_FLOW_CONFIG,
       features: {
@@ -2554,24 +2749,25 @@ test('swap fails when experimentalSwap feature is disabled', async t => {
   const seat = makeMockSeat({ Deposit: amount }, undefined, log);
   // DEFAULT_FLOW_CONFIG has no `experimentalSwap` feature flag set, so the
   // swap step must be rejected before any GMP calls are made.
-  await rebalance(
-    orch,
-    ctx,
-    seat,
-    {
-      flow: [
-        {
-          src: '@Avalanche',
-          dest: '@Avalanche',
-          amount,
-          fee: feeCall,
-          swap: swapParams,
-        },
-      ],
-    },
-    kit,
-    undefined,
-    DEFAULT_FLOW_CONFIG,
+  await t.throwsAsync(() =>
+    executeSteps(
+      orch,
+      ctx,
+      seat,
+      {
+        flow: [
+          {
+            src: '@Avalanche',
+            dest: '@Avalanche',
+            amount,
+            fee: feeCall,
+            swap: swapParams,
+          },
+        ],
+      },
+      kit,
+      DEFAULT_FLOW_CONFIG,
+    ),
   );
 
   t.falsy(
@@ -2653,7 +2849,10 @@ test('swap rejects unconfigured token values', async t => {
         ...chainMetadataMock.Avalanche,
         tokenMetadataById: {
           ...chainMetadataMock.Avalanche.tokenMetadataById,
-          [makeTokenIdKey(extraSwapToToken.tokenId)]: extraSwapToToken,
+          [makeTokenIdKey(
+            extraSwapToToken.tokenId,
+            `@${extraSwapToToken.chainName}`,
+          )]: extraSwapToToken,
         },
       },
     }),
@@ -2871,6 +3070,38 @@ test('the inert seat refuses a payout before the LCA is debited', async t => {
 });
 
 // #region wayFromSrcToDest withdraw tests
+
+test('wayFromSrcToDest reaches an instrument only from its own chain', t => {
+  // AGO-1656: a step runs on its account's chain, so a mismatch would act on
+  // a different instrument than the one named and recorded.
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  const fee = make(BLD, 100n);
+  for (const [poolKey, { chainName: poolChain }] of Object.entries(
+    PoolPlaces,
+  ) as [PoolKey, (typeof PoolPlaces)[PoolKey]][]) {
+    for (const chain of Object.keys(SupportedChain) as SupportedChain[]) {
+      const account = `@${chain}` as const;
+      const moves = [
+        { src: account, dest: poolKey, amount, fee },
+        { src: poolKey, dest: account, amount, fee },
+      ];
+      for (const move of moves) {
+        const label = `${move.src} -> ${move.dest}`;
+        if (chain === poolChain) {
+          t.notThrows(() => wayFromSrcToDest(move), label);
+        } else {
+          t.throws(
+            () => wayFromSrcToDest(move),
+            {
+              message: `pool ${JSON.stringify(poolKey)} lives on ${JSON.stringify(poolChain)}, not ${JSON.stringify(chain)}`,
+            },
+            label,
+          );
+        }
+      }
+    }
+  }
+});
 
 test('wayFromSrcToDest handles @Arbitrum -> -Arbitrum (same-chain withdraw)', t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
@@ -3655,10 +3886,10 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
   // Seed a Base Aave position.
   {
     const amount = make(USDC, 50_000_000n);
-    const seat = makeMockSeat({ Aave: amount }, {}, offer.log);
+    const seat = makeMockSeat({ Deposit: amount }, {}, offer.log);
     const feeAcct = AmountMath.make(BLD, 50n);
     const feeCall = AmountMath.make(BLD, 100n);
-    const depositP = rebalance(
+    const depositP = executeSteps(
       orch,
       ctx,
       seat,
@@ -3776,8 +4007,98 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
     cctpV2Tx.destinationCaller,
     `eip155:10:${contractsMock.Optimism.cctpRelayer}`,
   );
+  t.regex(cctpV2Tx.burnTxId, /^tx\d+$/, 'CCTPv2 tx links its burn tx');
+  const [burnTx] = storage
+    .getDeserialized(`published.ymax0.pendingTxs.${cctpV2Tx.burnTxId}`)
+    .slice(-1) as any[];
+  t.true(
+    ['GMP', 'ROUTED_GMP'].includes(burnTx.type),
+    `burn tx is a GMP: ${burnTx.type}`,
+  );
+  t.is(burnTx.status, 'success');
   await documentStorageSchema(t, storage, docOpts);
 });
+
+const cctpV2BurnFailureTest = test.macro({
+  title: (_providedTitle = '', trackCctpBurn: boolean, useRouter: boolean) =>
+    `CCTPv2 ${trackCctpBurn ? 'fails' : 'leaves pending'} its tx when the burn GMP fails (${useRouter ? 'routed' : 'legacy'})`,
+  async exec(t, trackCctpBurn: boolean, useRouter: boolean) {
+    const { resolverClient, storage, makeProgressTracker } = mocks({});
+    const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
+    const ctx = {
+      feeAccount: {
+        getAddress: () => lcaAddress,
+        send: async () => {
+          throw Error('fee send failed');
+        },
+      },
+      lca: { getAddress: () => lcaAddress, transfer: async () => {} },
+      gmpFee: { denom: 'uaxl', value: 100n },
+      gmpChain: {
+        getChainInfo: async () => ({ chainId: 'axelar-testnet-lisbon-3' }),
+      },
+      gmpAddresses,
+      resolverClient,
+      axelarIds: axelarIdsMock,
+      addresses: contractsMock.Base,
+      contracts: contractsMock,
+      nobleForwardingChannel: 'channel-0',
+      ...(trackCctpBurn ? { features: { trackCctpBurn } } : {}),
+    } as unknown as EVMContext;
+
+    const remoteAddress = '0x1234567890AbcdEF1234567890aBcdef12345678';
+    const src = {
+      namespace: 'eip155',
+      chainName: 'Base',
+      remoteAddress,
+      chainId: 'eip155:8453',
+      ...(useRouter
+        ? { routerFactory: contractsMock.Base.remoteAccountFactory }
+        : {}),
+    } as const;
+    const dest = {
+      namespace: 'eip155',
+      chainName: 'Optimism',
+      remoteAddress,
+      chainId: 'eip155:10',
+    } as const;
+
+    await t.throwsAsync(
+      () =>
+        CCTPv2.apply(ctx, make(USDC, 1_000_000n), src as any, dest as any, {
+          progressTracker: makeProgressTracker(),
+        }),
+      { message: 'fee send failed' },
+    );
+    await eventLoopIteration();
+
+    const cctpTxs = storage.getDeserialized(
+      'published.ymax0.pendingTxs.tx0',
+    ) as any[];
+    const gmpTx = (
+      storage.getDeserialized('published.ymax0.pendingTxs.tx1') as any[]
+    ).at(-1);
+    t.is(cctpTxs[0].type, 'CCTP_TO_EVM');
+    t.is(gmpTx.type, useRouter ? 'ROUTED_GMP' : 'GMP');
+    t.is(gmpTx.status, 'failed');
+
+    const last = cctpTxs.at(-1);
+    if (trackCctpBurn) {
+      t.is(last.burnTxId, 'tx1', 'links the burn GMP tx');
+      t.is(last.status, 'failed', 'CCTP tx failed with its burn');
+      t.regex(last.rejectionReason, /burn failed: .*fee send failed/);
+    } else {
+      t.false('burnTxId' in last, 'no link without trackCctpBurn');
+      t.is(last.status, 'pending', 'pre-feature behavior preserved');
+      t.is(cctpTxs.length, 1, 'no extra writes without trackCctpBurn');
+    }
+  },
+});
+
+test(expectUnhandled(1, cctpV2BurnFailureTest), true, false);
+test(cctpV2BurnFailureTest, true, true);
+test(expectUnhandled(1, cctpV2BurnFailureTest), false, false);
+test(cctpV2BurnFailureTest, false, true);
 
 const sendGMPContractCallTest = test.macro({
   title: (providedTitle = '', useRouter: boolean) =>
@@ -4078,7 +4399,7 @@ test('claim rewards from ERC4626 position', async t => {
   };
 
   await Promise.all([
-    rebalance(
+    executeSteps(
       orch,
       ctx,
       offer.seat,
@@ -4148,7 +4469,7 @@ test('claim rewards from Compound position', async t => {
   const emptyAmount = AmountMath.make(USDC, 0n);
 
   await Promise.all([
-    rebalance(
+    executeSteps(
       orch,
       ctx,
       offer.seat,
@@ -4508,7 +4829,7 @@ test('EVM-to-Agoric CCTP provisions the Noble forwarding account', async t => {
   const portfolioId = kit.reader.getPortfolioId();
   const { getPortfolioStatus } = makeStorageTools(storage);
 
-  const flowP = rebalance(
+  const flowP = executeSteps(
     orch,
     ctx,
     offer.seat,
@@ -4557,7 +4878,7 @@ test('EVM-to-EVM CCTP does not provision a Noble forwarding account', async t =>
   const { orch, ctx, offer, tapPK, txResolver, cosmosId } = mocks();
   const kit = await ctx.makePortfolioKit();
 
-  const flowP = rebalance(
+  const flowP = executeSteps(
     orch,
     ctx,
     offer.seat,
@@ -4593,3 +4914,600 @@ test('EVM-to-EVM CCTP does not provision a Noble forwarding account', async t =>
   );
   t.falsy(registration, 'direct EVM-to-EVM CCTP must not register an NFA');
 });
+
+test('A withdrawal cannot use another position’s observed shares', async t => {
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const { step1 } = makeShareWithdrawalCase({ minimumProceeds: 1n });
+  const boundSteps: NonNullable<ResolvedFlowPlan['boundSteps']> = {
+    0: {
+      kind: 'redeemShares',
+      src: vaults.u2.id,
+      vaultAddress: vaults.u2.address,
+      shares: 50n,
+      minimumProceeds: 1n,
+    },
+  };
+  const started = kit.manager.startFlow({ type: 'rebalance' });
+  kit.manager.resolveExecutionPlan(
+    started.flowId,
+    harden({ plan: { flow: [step1] }, boundSteps }),
+  );
+  await t.throwsAsync(
+    executePlan(
+      orch,
+      ctx,
+      offer.seat,
+      {},
+      kit,
+      undefined,
+      started,
+      DEFAULT_FLOW_CONFIG,
+    ),
+    { message: /share withdrawal evidence does not match movement/ },
+  );
+  t.false(
+    offer.log.some(
+      ({ _method }) => _method === 'send' || _method === 'transfer',
+    ),
+  );
+});
+
+test('A zero proceeds minimum requires authenticated share instructions', async t => {
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const { step1, boundSteps } = makeShareWithdrawalCase({
+    minimumProceeds: 0n,
+  });
+  const submittedStep = {
+    ...step1,
+    boundSteps,
+  };
+  await t.throwsAsync(
+    executePlan(orch, ctx, offer.seat, { flow: [submittedStep] }, kit, {
+      type: 'rebalance',
+    }),
+    { message: /withdraw options require a bound step/ },
+  );
+  t.false(
+    offer.log.some(
+      ({ _method }) => _method === 'send' || _method === 'transfer',
+    ),
+  );
+});
+
+test('Vault changes invalidate a pending share withdrawal before any transfer', async t => {
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const { step1, boundSteps } = makeShareWithdrawalCase({
+    minimumProceeds: 0n,
+  });
+  const changedContext = {
+    ...ctx,
+    contracts: {
+      ...ctx.contracts,
+      Ethereum: {
+        ...ctx.contracts.Ethereum,
+        [vaults.rwa.id]: vaults.replacement.address,
+      },
+    },
+  };
+  const started = kit.manager.startFlow({ type: 'rebalance' });
+  kit.manager.resolveExecutionPlan(
+    started.flowId,
+    harden({ plan: { flow: [step1] }, boundSteps }),
+  );
+  await t.throwsAsync(
+    executePlan(
+      orch,
+      changedContext,
+      offer.seat,
+      {},
+      kit,
+      undefined,
+      started,
+      DEFAULT_FLOW_CONFIG,
+    ),
+    { message: /share withdrawal vault no longer matches configuration/ },
+  );
+  t.false(
+    offer.log.some(
+      ({ _method }) => _method === 'send' || _method === 'transfer',
+    ),
+  );
+});
+
+test('An observed empty position exits without a redemption transaction', async t => {
+  const { executeExit, redemptionQuantities } = await makeFullExitCase();
+  await executeExit({
+    observedShares: 0n,
+    minimumProceeds: 0n,
+  });
+  t.deepEqual(redemptionQuantities(), []);
+});
+
+test('A failed full exit can be retried with refreshed share evidence', async t => {
+  const {
+    kit,
+    txResolver,
+    resolverService,
+    storage,
+    executeExit,
+    redemptionQuantities,
+  } = await makeFullExitCase();
+  const failed = t.throwsAsync(executeExit({ observedShares: 50n }), {
+    message: /Transaction failed/,
+  });
+  // Delivery succeeds; the remote redemption itself fails.
+  for (;;) {
+    const pending = await txResolver.findPending();
+    if (!pending.length) break;
+    for (const txId of pending) {
+      resolverService.settleTransaction({
+        txId,
+        status:
+          txResolver.getPublished(txId)?.type === 'GMP' ? 'failed' : 'success',
+      });
+    }
+  }
+  await failed;
+  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+  const portfolioId = kit.reader.getPortfolioId();
+  t.is((await getFlowStatus(portfolioId, 1))?.state, 'fail');
+  t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
+
+  t.deepEqual(redemptionQuantities(), [50n], 'no automatic partial retry');
+  t.deepEqual(await txResolver.findPending(), []);
+
+  const retry = executeExit({ observedShares: 30n });
+  await txResolver.drainPending();
+  t.is(await retry, 'flow2');
+  t.is((await getFlowStatus(portfolioId, 2))?.state, 'done');
+  t.deepEqual((await getPortfolioStatus(portfolioId)).flowsRunning, {});
+  t.deepEqual(redemptionQuantities(), [50n, 30n]);
+  t.deepEqual(await txResolver.findPending(), []);
+});
+
+test('A positive redemption minimum is checked in the remote account batch', async t => {
+  const { executeExit, txResolver, log } = await makeFullExitCase();
+  const done = executeExit({ observedShares: 50n, minimumProceeds: 25n });
+  await txResolver.drainPending();
+  await done;
+
+  const memo = log.findLast(
+    ({ _method, opts }) =>
+      _method === 'transfer' && typeof opts?.memo === 'string',
+  )?.opts?.memo;
+  t.truthy(memo);
+  const { calls } = decodeMultiCalls(memo!);
+  t.is(calls.length, 2);
+  t.is(calls[0].target.toLowerCase(), vaults.rwa.address.toLowerCase());
+  const approval = decodeFunctionData({ abi: erc20ABI, data: calls[0].data });
+  t.is(approval.functionName, 'approve');
+  t.deepEqual(approval.args, [
+    contractsMock.Ethereum.morphoGeneralAdapter1,
+    50n,
+  ]);
+
+  t.is(
+    calls[1].target.toLowerCase(),
+    contractsMock.Ethereum.morphoBundler3.toLowerCase(),
+  );
+  t.true(calls[1].data.startsWith('0x374f435d'));
+  const multicall = decodeFunctionData({
+    abi: bundler3ABI,
+    data: calls[1].data,
+  });
+  t.is(multicall.functionName, 'multicall');
+  const [bundle] = multicall.args;
+  t.is(bundle.length, 1);
+  const [call] = bundle;
+  t.is(
+    call.to.toLowerCase(),
+    contractsMock.Ethereum.morphoGeneralAdapter1.toLowerCase(),
+  );
+  t.is(call.value, 0n);
+  t.false(call.skipRevert);
+  t.is(call.callbackHash, `0x${'0'.repeat(64)}`);
+  t.true(call.data.startsWith('0xa7f6e606'));
+  const redeem = decodeFunctionData({
+    abi: generalAdapter1ABI,
+    data: call.data,
+  });
+  t.deepEqual(redeem.args?.slice(0, 3), [
+    vaults.rwa.address,
+    50n,
+    5n * 10n ** 26n,
+  ]);
+  t.is(redeem.args?.[3], redeem.args?.[4]);
+});
+
+const principalFullExits = {
+  Aave_Ethereum: {
+    token: contractsMock.Ethereum.aaveUSDC,
+    protocolAddress: contractsMock.Ethereum.aavePool,
+    abi: aavePoolABI,
+    getArgs: owner => [
+      getAddress(contractsMock.Ethereum.usdc),
+      2n ** 256n - 1n,
+      owner,
+    ],
+  },
+  Compound_Ethereum: {
+    token: contractsMock.Ethereum.compound,
+    protocolAddress: contractsMock.Ethereum.compound,
+    abi: compoundABI,
+    getArgs: _owner => [
+      getAddress(contractsMock.Ethereum.usdc),
+      2n ** 256n - 1n,
+    ],
+  },
+};
+for (const [src, expectations] of typedEntries(principalFullExits)) {
+  test(`${src} guarded full withdrawal batches balance check before max`, async t => {
+    const { executeExit, txResolver, log, remoteAddress } =
+      await makeFullExitCase(src);
+    const done = executeExit({ observedShares: 100n, minimumProceeds: 99n });
+    await txResolver.drainPending();
+    await done;
+    const memo = log.findLast(
+      ({ _method, opts }) =>
+        _method === 'transfer' && typeof opts?.memo === 'string',
+    )?.opts?.memo;
+    t.truthy(memo);
+    const { calls } = decodeMultiCalls(memo!);
+    t.is(calls.length, 2);
+    t.is(
+      calls[0].target.toLowerCase(),
+      contractsMock.Ethereum.universalRouter.toLowerCase(),
+    );
+    const check = decodeFunctionData({
+      abi: universalRouterABI,
+      data: calls[0].data,
+    });
+    t.is(check.functionName, 'execute');
+    const [commands, inputs] = check.args;
+    t.is(commands, '0x0e', 'BALANCE_CHECK_ERC20');
+    const [owner, token, minimum] = decodeAbiParameters(
+      balanceCheckErc20Schema.inputs,
+      inputs[0],
+    );
+    t.is(
+      owner,
+      getAddress(remoteAddress),
+      'balance check reads the portfolio account',
+    );
+    t.is(token.toLowerCase(), expectations.token.toLowerCase());
+    t.is(minimum, 99n);
+    t.is(
+      calls[1].target.toLowerCase(),
+      expectations.protocolAddress.toLowerCase(),
+    );
+    const withdrawal = decodeFunctionData({
+      abi: expectations.abi,
+      data: calls[1].data,
+    });
+    t.is(withdrawal.functionName, 'withdraw');
+    t.deepEqual(withdrawal.args, expectations.getArgs(owner));
+  });
+
+  test(`${src} empty full withdrawal completes with no transaction`, async t => {
+    const { executeExit, log } = await makeFullExitCase(src);
+    await executeExit({ observedShares: 0n });
+    t.false(log.some(({ _method }) => _method === 'transfer'));
+  });
+
+  test(`${src} rejects mismatched bound minimum before sending`, async t => {
+    const { orch, ctx, offer } = mocks();
+    const kit = await ctx.makePortfolioKit();
+    const move: MovementDesc = {
+      src,
+      dest: '@Ethereum',
+      amount: make(USDC, 2n),
+      fee: make(BLD, 100n),
+      withdraw: { max: true },
+    };
+    const bound = {
+      kind: 'withdrawMax' as const,
+      src,
+      tokenAddress: contractsMock.Ethereum.usdc,
+      protocolAddress: expectations.protocolAddress,
+      amount: 100n,
+      minimumProceeds: 1n,
+    };
+    for (const change of [
+      {},
+      { minimumProceeds: 2n, tokenAddress: vaults.replacement.address },
+    ]) {
+      const started = kit.manager.startFlow({ type: 'rebalance' });
+      kit.manager.resolveExecutionPlan(
+        started.flowId,
+        harden({
+          plan: { flow: [move] },
+          boundSteps: { 0: { ...bound, ...change } },
+        }),
+      );
+      await t.throwsAsync(
+        executePlan(
+          orch,
+          ctx,
+          offer.seat,
+          {},
+          kit,
+          undefined,
+          started,
+          DEFAULT_FLOW_CONFIG,
+        ),
+        { message: /principal withdrawal (evidence|configuration)/ },
+      );
+    }
+    t.false(offer.log.some(({ _method }) => _method === 'transfer'));
+  });
+}
+
+for (const legacyShape of ['array', 'plan'] as const) {
+  // Capture the flow tracer without interleaving other tests' console output.
+  test.serial(
+    `legacy ${legacyShape} vow results retain exact-amount execution and trace their origin`,
+    async t => {
+      const { orch, ctx, offer } = mocks();
+      const kit = await ctx.makePortfolioKit();
+      const { promise, resolve } = makePromiseKit<any>();
+      const step: MovementDesc = {
+        src: 'USDN',
+        dest: '@noble',
+        amount: make(USDC, 10n),
+      };
+      const legacy = legacyShape === 'array' ? [step] : { flow: [step] };
+      const { flowId } = kit.manager.startFlow({ type: 'rebalance' });
+      const logs: unknown[][] = [];
+      const originalConsole = console;
+      globalThis.console = {
+        ...originalConsole,
+        info: (...args) => {
+          logs.push(args);
+        },
+      };
+      try {
+        const result = rawExecutePlan(
+          orch,
+          ctx,
+          offer.seat,
+          {},
+          kit,
+          undefined,
+          { flowId, stepsP: promise as any },
+          DEFAULT_FLOW_CONFIG,
+        );
+        resolve(harden(legacy));
+        t.is(await result, `flow${flowId}`);
+      } finally {
+        globalThis.console = originalConsole;
+      }
+      t.true(
+        offer.log.some(
+          ({ _method }) => _method === 'send' || _method === 'transfer',
+        ),
+      );
+      const legacyLogs = logs.filter(
+        ([, message]) => message === 'legacy plan result',
+      );
+      t.is(legacyLogs.length, 1);
+      t.regex(
+        String(legacyLogs[0]?.[0]),
+        new RegExp(`portfolio[0-9]+\\.flow${flowId},`),
+      );
+      t.deepEqual(legacyLogs[0]?.[2], { steps: 1 });
+    },
+  );
+}
+
+test('new plan envelopes retain exact-amount execution with no-op withdrawal options', async t => {
+  for (const withdraw of [{}, { max: false }] as const) {
+    const { orch, ctx, offer } = mocks();
+    const kit = await ctx.makePortfolioKit();
+    const started = kit.manager.startFlow({ type: 'rebalance' });
+    const result = rawExecutePlan(
+      orch,
+      ctx,
+      offer.seat,
+      {},
+      kit,
+      undefined,
+      started,
+      DEFAULT_FLOW_CONFIG,
+    );
+    kit.manager.resolveExecutionPlan(
+      started.flowId,
+      harden({
+        plan: {
+          flow: [
+            { src: 'USDN', dest: '@noble', amount: make(USDC, 10n), withdraw },
+          ],
+        },
+      }),
+    );
+    t.is(await result, `flow${started.flowId}`);
+    t.true(
+      offer.log.some(
+        ({ _method }) => _method === 'send' || _method === 'transfer',
+      ),
+    );
+  }
+});
+
+for (const mutation of ['index', 'protocol', 'minimum'] as const) {
+  test(`invalid delayed binding (${mutation}) fails before dispatch`, async t => {
+    const { ctx, offer } = mocks();
+    const kit = await ctx.makePortfolioKit();
+    const { step1, boundSteps } = makeShareWithdrawalCase();
+    const started = kit.manager.startFlow({ type: 'rebalance' });
+    const result = rawExecutePlan(
+      {
+        getChain: () => {
+          throw Error('Permit2 setup must not start');
+        },
+      } as unknown as Orchestrator,
+      ctx,
+      offer.seat,
+      {},
+      kit,
+      undefined,
+      started,
+      DEFAULT_FLOW_CONFIG,
+      { evmDepositDetail: { ...makePermitDetails(), fromChain: 'Arbitrum' } },
+    );
+    const bound = boundSteps![0]!;
+    const binding =
+      mutation === 'minimum' ? { ...bound, minimumProceeds: 1n } : bound;
+    kit.manager.resolveExecutionPlan(
+      started.flowId,
+      harden({
+        plan: {
+          flow: [
+            mutation === 'protocol'
+              ? { ...step1, src: 'ERC4626_vaultU2_Ethereum' }
+              : step1,
+          ],
+        },
+        boundSteps: { [mutation === 'index' ? 1 : 0]: binding },
+      }) as any,
+    );
+    await t.throwsAsync(result, {
+      message: /bound step index|requires a Morpho|does not match movement/,
+    });
+    t.false(
+      offer.log.some(
+        ({ _method }) => _method === 'send' || _method === 'transfer',
+      ),
+    );
+  });
+}
+
+test('a flow awaiting a late plan executes its bound share quantity', async t => {
+  const { executeExit, txResolver, redemptionQuantities } =
+    await makeFullExitCase();
+  const result = executeExit({ observedShares: 73n, delayed: true });
+  await eventLoopIteration();
+  await txResolver.drainPending();
+  await result;
+  t.deepEqual(redemptionQuantities(), [73n]);
+});
+
+test('reordering late plan movements cannot reuse bindings at their old indices', async t => {
+  const { orch, ctx, offer } = mocks();
+  const kit = await ctx.makePortfolioKit();
+  const { step1, boundSteps } = makeShareWithdrawalCase();
+  const second = { ...step1, withdraw: { amountOfShares: 25n } };
+  const started = kit.manager.startFlow({ type: 'rebalance' });
+  const result = rawExecutePlan(
+    orch,
+    ctx,
+    offer.seat,
+    {},
+    kit,
+    undefined,
+    started,
+    DEFAULT_FLOW_CONFIG,
+  );
+  kit.manager.resolveExecutionPlan(
+    started.flowId,
+    harden({
+      plan: { flow: [second, step1], order: [[1, [0]]] },
+      boundSteps: {
+        0: boundSteps![0]!,
+        1: { ...boundSteps![0]!, shares: 25n },
+      },
+    }) as any,
+  );
+  await t.throwsAsync(result, {
+    message: /share withdrawal evidence does not match movement/,
+  });
+  t.false(
+    offer.log.some(
+      ({ _method }) => _method === 'send' || _method === 'transfer',
+    ),
+  );
+});
+
+for (const [src, field] of [
+  [vaults.rwa.id, 'morphoBundler3'],
+  [vaults.rwa.id, 'morphoGeneralAdapter1'],
+  ['Aave_Ethereum', 'aaveUSDC'],
+  ['Aave_Ethereum', 'universalRouter'],
+  ['Compound_Ethereum', 'universalRouter'],
+] as const) {
+  test(`positive-minimum ${src} rejects missing ${field} before Permit2 setup`, async t => {
+    const { ctx, offer } = mocks();
+    const kit = await ctx.makePortfolioKit();
+    const started = kit.manager.startFlow({ type: 'rebalance' });
+    const addresses = {
+      ...ctx.contracts.Ethereum,
+      [field]: undefined,
+    } as unknown as typeof ctx.contracts.Ethereum;
+    const changed = {
+      ...ctx,
+      contracts: { ...ctx.contracts, Ethereum: addresses },
+    };
+    const result = rawExecutePlan(
+      {
+        getChain: () => {
+          throw Error('remote setup was reached');
+        },
+      } as unknown as Orchestrator,
+      changed,
+      offer.seat,
+      {},
+      kit,
+      undefined,
+      started,
+      DEFAULT_FLOW_CONFIG,
+      { evmDepositDetail: { ...makePermitDetails(), fromChain: 'Arbitrum' } },
+    );
+    const bound =
+      src === vaults.rwa.id
+        ? ({
+            kind: 'redeemShares',
+            src,
+            vaultAddress: vaults.rwa.address,
+            shares: 50n,
+            minimumProceeds: 1n,
+          } as const)
+        : ({
+            kind: 'withdrawMax',
+            src,
+            protocolAddress:
+              src === 'Aave_Ethereum'
+                ? contractsMock.Ethereum.aavePool
+                : contractsMock.Ethereum.compound,
+            tokenAddress: contractsMock.Ethereum.usdc,
+            amount: 50n,
+            minimumProceeds: 1n,
+          } as const);
+    kit.manager.resolveExecutionPlan(
+      started.flowId,
+      harden({
+        plan: {
+          flow: [
+            {
+              src,
+              dest: '@Ethereum',
+              amount: make(USDC, 1n),
+              fee: make(BLD, 100n),
+              withdraw: { max: true },
+            },
+          ],
+        },
+        boundSteps: { 0: bound },
+      }),
+    );
+    await t.throwsAsync(result, {
+      message: /minimum withdrawal contracts no longer configured/,
+    });
+    t.false(
+      offer.log.some(
+        ({ _method }) => _method === 'send' || _method === 'transfer',
+      ),
+    );
+  });
+}

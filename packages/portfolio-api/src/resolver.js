@@ -74,6 +74,10 @@ harden(TxType);
  * transactions when the version is operationally relevant.
  * @property {AccountId} [destinationCaller] - Destination-chain account
  * authorized to call receiveMessage for CCTPv2 CCTP_TO_EVM transactions.
+ * @property {TxId} [burnTxId] - For CCTPv2 CCTP_TO_EVM transactions, the
+ * transaction (ROUTED_GMP or GMP) which executes the `depositForBurn` on the
+ * source chain. Its outcome locates the burn needed to fetch the attestation.
+ * Absent for transactions created before this was introduced.
  * @property {HexAddress} [expectedAddr] - The expected address of the EVM smart
  * wallet to be created (only for type "MAKE_ACCOUNT")
  * @property {HexAddress} [factoryAddr] - The address of the EVM smart wallet

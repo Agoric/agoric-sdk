@@ -23,6 +23,8 @@ const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
 
 const { entries, fromEntries } = Object;
 
+const evmChainNames = ['Ethereum', 'Arbitrum', 'Avalanche', 'Base', 'Optimism'];
+
 const tokenMap = {
   agoric: ['ubld'],
   noble: ['uusdc'],
@@ -213,7 +215,15 @@ test('ymax0 contract addresses match golden snapshot', async t => {
     'tokenMessenger',
     'tokenMessengerV2',
     'oneInchRouter',
+    'morphoBundler3',
+    'morphoGeneralAdapter1',
+    'universalRouter',
   ];
+  for (const chain of evmChainNames) {
+    t.truthy(golden.contracts[chain].morphoBundler3, chain);
+    t.truthy(golden.contracts[chain].morphoGeneralAdapter1, chain);
+    t.truthy(golden.contracts[chain].universalRouter, chain);
+  }
   checkContracts(t, golden, computed, shareFields, 'ymax0');
 });
 
@@ -233,7 +243,15 @@ test('ymax1 contract addresses match golden snapshot', async t => {
     'remoteAccountFactory',
     'remoteAccountImplementation',
     'remoteAccountRouter',
+    'morphoBundler3',
+    'morphoGeneralAdapter1',
+    'universalRouter',
   ];
+  for (const chain of evmChainNames) {
+    t.truthy(golden.contracts[chain].morphoBundler3, chain);
+    t.truthy(golden.contracts[chain].morphoGeneralAdapter1, chain);
+    t.truthy(golden.contracts[chain].universalRouter, chain);
+  }
   checkContracts(t, golden, computed, instanceFields, 'ymax1');
 });
 

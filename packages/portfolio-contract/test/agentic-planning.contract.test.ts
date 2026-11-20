@@ -4,10 +4,13 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import assert from 'node:assert/strict';
 
+import type { AsyncFlow } from '@agoric/async-flow';
 import { eventLoopIteration as pendingVstorageWrites } from '@agoric/internal/src/testing-utils.js';
 import type {
   PlanObservations,
+  FlowKey,
   PortfolioDelegatedSetTargetAllocationParams,
+  TypedHoldingDetail,
 } from '@agoric/portfolio-api';
 import {
   portfolioObservationsToEIP712,
@@ -18,17 +21,22 @@ import type { TimerService } from '@agoric/time';
 import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { NameAdmin } from '@agoric/vats';
+import type { MapStore } from '@agoric/store';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
 import { E, Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import { encodeFunctionData, parseAbi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
+import { decodeMultiCalls } from './abi-utils.ts';
 import { deploy, makeEvmTraderKit } from './contract-setup.ts';
+import { makeDirectPlannerClient } from './contract-test-support.ts';
 import {
   contractsMock,
   evmTrader0PrivateKey,
   evmTrader1PrivateKey,
 } from './mocks.ts';
+import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 
 const AGENT_ADDRESS = 'agoric1andrewAgent' as const;
 /** The observation service's EOA, which signs portfolio observations. */
@@ -37,6 +45,29 @@ const ARBITRUM_CHAIN_ID = 42161n;
 /** The lifetime the observation service gives its observations. */
 const OBSERVATION_LIFETIME = 5n * 60n;
 const emptyProposal = harden({ give: {}, want: {} }) as Proposal;
+
+const emptyAccountBalances = harden({
+  '@agoric': 0n,
+  '@Arbitrum': 0n,
+  '@Ethereum': 0n,
+});
+
+const makeEmptyAccountHoldings = (): TypedHoldingDetail[] => [
+  {
+    place: '@agoric',
+    kind: 'token',
+    tokenId: 'ubld',
+    amount: 0n,
+    valueUusd: 0n,
+  },
+  ...(['Arbitrum', 'Ethereum'] as const).map(chain => ({
+    place: `@${chain}` as const,
+    kind: 'token' as const,
+    tokenId: contractsMock[chain].usdc.toLowerCase() as `0x${string}`,
+    amount: 0n,
+    valueUusd: 0n,
+  })),
+];
 
 const makeWalletFactory = (namesByAddressAdmin: NameAdmin, zoe: ZoeService) => {
   const makeSmartWallet = () => {
@@ -216,11 +247,56 @@ const setupTest = async (t: ExecutionContext) => {
   const mcp = makeMcp(mcpPowers);
 
   return harden({
+    inspectLocalBridge: common.utils.inspectLocalBridge,
+    async replayPendingFlows() {
+      // Restart the real journaled activations via the test-only baggage jig.
+      // Replay the existing journals in this incarnation.
+      assert(deployed.contractBaggage, 'contract baggage jig is required');
+      const asyncFlowBaggage = deployed.contractBaggage.get(
+        'asyncFlow',
+      ) as MapStore<string, unknown>;
+      const flows = asyncFlowBaggage.get('flowForOutcomeVow') as MapStore<
+        unknown,
+        AsyncFlow
+      >;
+      const pending = [...flows.values()];
+      for (const flow of pending) flow.restart();
+      await pendingVstorageWrites();
+      for (const flow of pending) {
+        assert.equal(flow.getOptFatalProblem(), undefined);
+        assert.notEqual(flow.getFlowState(), 'Replaying');
+      }
+      return pending.length;
+    },
+    outgoingTransferAt: common.utils.outgoingTransferAt,
+    transmitVTransferEvent: common.utils.transmitVTransferEvent,
+    zoe,
+    creatorFacet: deployed.started.creatorFacet,
     walletFactory,
     trader,
     portfolioRead,
     mcp,
     mcpPowers,
+    async cancelOpening() {
+      const planner = makeDirectPlannerClient(
+        zoe,
+        deployed.started.creatorFacet,
+      );
+      await planner.redeem();
+      const status = await portfolioRead.getPortfolioStatus();
+      // These tests supply synthetic balances in signed observations and test
+      // plan admission, not deposit execution. Explicitly cancel the opening
+      // deposit so that it no longer occupies the portfolio's flow slot.
+      await E(planner.stub).rejectPlan(
+        portfolioRead.getPortfolioId(),
+        1,
+        'opening deposit omitted in plan-admission fixture',
+        status.policyVersion,
+        status.rebalanceCount,
+      );
+      await pendingVstorageWrites();
+      t.deepEqual((await portfolioRead.getPortfolioStatus()).flowsRunning, {});
+    },
     usdc: common.brands.usdc,
     bld: common.brands.bld,
   });
@@ -237,6 +313,277 @@ const publishedPortfolioPath = (
       new RegExp(`^${ROOT_STORAGE_PATH}\\.`),
       '',
     ) as PortfolioPublishedPath;
+
+const insistFlowHasNotFailed = async (
+  portfolioRead: PortfolioRead,
+  flowKey: FlowKey,
+) => {
+  const status = await portfolioRead.readPublished(
+    `${publishedPortfolioPath(portfolioRead)}.flows.${flowKey}`,
+  );
+  if (status.state === 'fail') throw Error(status.error);
+};
+
+const openDelegatedPortfolio = async (
+  fixture: Awaited<ReturnType<typeof setupTest>>,
+  config: AgentConfig,
+  observations: PlanObservations,
+  initialDeposit: bigint,
+) => {
+  const { walletFactory, portfolioRead, mcpPowers, trader, cancelOpening } =
+    fixture;
+  const wallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
+  const agent = makeAgent(
+    { wallet, portfolioRead, mcp: makeMcp(mcpPowers, harden(observations)) },
+    config,
+  );
+  await trader.openPortfolio(agent.proposeInitialAllocation(), initialDeposit, {
+    grantee: {
+      address: AGENT_ADDRESS,
+      permissions: harden({ allocation: {} }),
+    },
+  });
+  await pendingVstorageWrites();
+  await cancelOpening();
+  await agent.redeem();
+  return agent;
+};
+
+const withdrawalCases: Record<
+  string,
+  {
+    maximum?: boolean;
+    shares?: bigint;
+    replay?: boolean;
+    legacyBalances?: boolean;
+    typedHoldings?: boolean;
+  }
+> = {
+  'exact withdrawal emits asset calldata': {},
+  'exact withdrawal with typed holdings emits asset calldata': {
+    typedHoldings: true,
+  },
+  'exact withdrawal with hybrid holdings emits asset calldata': {
+    typedHoldings: true,
+    legacyBalances: true,
+  },
+  'exact share withdrawal redeems requested shares': {
+    shares: 4_000_000_000_000_000n,
+  },
+  'maximum withdrawal exits the authenticated holding': { maximum: true },
+  'full exit resumes after journal replay without resending withdrawal': {
+    maximum: true,
+    replay: true,
+  },
+  'maximum withdrawal accepts holdings carrying legacy balances': {
+    maximum: true,
+    legacyBalances: true,
+  },
+};
+
+for (const instrument of [
+  'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+  'Aave_Ethereum',
+  'Compound_Ethereum',
+] as const) {
+  type ProtocolType = 'ERC4626' | 'Aave' | 'Compound';
+  const protocolType = instrument.replace(/_.*/, '') as ProtocolType;
+  for (const [description, inputs] of Object.entries(withdrawalCases)) {
+    const { maximum, shares, replay, legacyBalances, typedHoldings } = inputs;
+    test(`delegated ${instrument} ${description}`, async t => {
+      const fixture = await setupTest(t);
+      const {
+        outgoingTransferAt,
+        transmitVTransferEvent,
+        zoe,
+        creatorFacet,
+        portfolioRead,
+        usdc,
+        bld,
+        inspectLocalBridge,
+        replayPendingFlows,
+      } = fixture;
+      const addresses = contractsMock.Ethereum;
+      const tokenAddress =
+        addresses[protocolType === 'ERC4626' ? instrument : 'usdc']!;
+      const protocolAddress = {
+        ERC4626: addresses[instrument]!,
+        Aave: addresses.aavePool,
+        Compound: addresses.compound,
+      }[protocolType];
+      const observedShares = 7_654_321_123_456_789n;
+      const observedValue = 100_000_000n;
+      const shareWithdrawal = maximum || shares !== undefined;
+      const useHoldings = shareWithdrawal || typedHoldings;
+      const observations: PlanObservations = useHoldings
+        ? {
+            balances: {},
+            holdings: [
+              ...makeEmptyAccountHoldings(),
+              {
+                place: instrument,
+                kind: protocolType === 'ERC4626' ? 'shares' : 'principal',
+                tokenId: tokenAddress.toLowerCase() as `0x${string}`,
+                amount:
+                  protocolType === 'ERC4626' ? observedShares : observedValue,
+                valueUusd: observedValue,
+              },
+            ],
+            instrumentTvls: {},
+          }
+        : {
+            balances: {
+              ...emptyAccountBalances,
+              [instrument]: observedValue,
+            },
+            instrumentTvls: {},
+          };
+      if (legacyBalances) {
+        // The shared decoder derives balances from these signed legacy fields.
+        // They describe the same holdings and must not be counted twice.
+        observations.holdings = observations.holdings!.map(holding => ({
+          ...holding,
+          balanceUsdc: holding.valueUusd!,
+        }));
+      }
+      const agent = await openDelegatedPortfolio(
+        fixture,
+        {
+          initialAllocation: [{ instrument, portion: 100n }],
+          targetAllocation: { [instrument]: 100n },
+          plan: {
+            flow: [
+              {
+                src: instrument,
+                dest: '@Ethereum',
+                // Principal exits enforce the observed value; share cases use zero.
+                amount: usdc.make(
+                  protocolType === 'ERC4626' && shareWithdrawal
+                    ? 0n
+                    : observedValue,
+                ),
+                fee: bld.make(100n),
+                ...(maximum && { withdraw: { max: true } }),
+                ...(shares !== undefined && {
+                  withdraw: { amountOfShares: shares },
+                }),
+              },
+            ],
+          },
+        },
+        observations,
+        observedValue,
+      );
+
+      // Only ERC4626 supports share-based withdrawal.
+      if (shares !== undefined && protocolType !== 'ERC4626') {
+        await t.throwsAsync(async () => agent.wake(), {
+          message: /principal withdrawal does not support amountOfShares/,
+        });
+        return;
+      }
+
+      const flowKey = await agent.wake();
+      await pendingVstorageWrites();
+      await insistFlowHasNotFailed(portfolioRead, flowKey);
+
+      // Complete account creation so the withdrawal call can be emitted.
+      const resolver = await getResolverMakers(zoe, creatorFacet);
+      await transmitVTransferEvent('acknowledgementPacket', -1);
+      await settleTransaction(zoe, resolver, 0);
+      await pendingVstorageWrites();
+      await insistFlowHasNotFailed(portfolioRead, flowKey);
+
+      const { accountIdByChain } = await portfolioRead.getPortfolioStatus();
+      const remoteAddress = accountIdByChain.Ethereum?.split(':').at(-1);
+      assert(remoteAddress?.startsWith('0x'), 'Ethereum account was created');
+      const address = remoteAddress as `0x${string}`;
+      const { message } = outgoingTransferAt(-1);
+      const { id: withdrawalTxId, calls } = decodeMultiCalls(message.memo);
+      let expectCallData: string;
+      switch (protocolType) {
+        case 'ERC4626': {
+          // Use the standard signatures independently of the adapter's ABI subset.
+          const abi = parseAbi([
+            'function redeem(uint256 shares, address receiver, address owner) returns (uint256)',
+            'function withdraw(uint256 assets, address receiver, address owner) returns (uint256)',
+          ]);
+          const quantity = shares ?? (maximum ? observedShares : observedValue);
+          expectCallData = encodeFunctionData({
+            abi,
+            functionName: shareWithdrawal ? 'redeem' : 'withdraw',
+            args: [quantity, address, address],
+          });
+          break;
+        }
+        case 'Aave': {
+          const abi = parseAbi([
+            'function withdraw(address asset, uint256 amount, address to) returns (uint256)',
+          ]);
+          const quantity = maximum ? 2n ** 256n - 1n : observedValue;
+          expectCallData = encodeFunctionData({
+            abi,
+            functionName: 'withdraw',
+            args: [addresses.usdc, quantity, address],
+          });
+          break;
+        }
+        case 'Compound': {
+          const abi = parseAbi([
+            'function withdraw(address asset, uint256 amount)',
+          ]);
+          const quantity = maximum ? 2n ** 256n - 1n : observedValue;
+          expectCallData = encodeFunctionData({
+            abi,
+            functionName: 'withdraw',
+            args: [contractsMock.Ethereum.usdc, quantity],
+          });
+          break;
+        }
+        default:
+          throw Error('test definition failure: unhandled protocol type');
+      }
+      if (protocolType === 'ERC4626' || !maximum) {
+        t.deepEqual(calls, [{ target: protocolAddress, data: expectCallData }]);
+      } else {
+        t.deepEqual(calls.at(-1), {
+          target: protocolAddress,
+          data: expectCallData,
+        });
+        t.deepEqual(
+          calls.map(call => call.target.toLowerCase()),
+          [
+            addresses.universalRouter.toLowerCase(),
+            protocolAddress.toLowerCase(),
+          ],
+        );
+      }
+      const flowPath =
+        `${publishedPortfolioPath(portfolioRead)}.flows.${flowKey}` as const;
+      t.is((await portfolioRead.readPublished(flowPath)).state, 'run');
+
+      await transmitVTransferEvent('acknowledgementPacket', -1);
+      await pendingVstorageWrites();
+      t.is(
+        (await portfolioRead.readPublished(flowPath)).state,
+        'run',
+        'transport acknowledgement does not confirm the withdrawal',
+      );
+
+      t.regex(withdrawalTxId, /^tx\d+$/);
+      if (replay) {
+        const trafficBeforeReplay = inspectLocalBridge();
+        t.true((await replayPendingFlows()) > 0);
+        t.deepEqual(inspectLocalBridge(), trafficBeforeReplay);
+        t.is((await portfolioRead.readPublished(flowPath)).state, 'run');
+      }
+      await settleTransaction(zoe, resolver, Number(withdrawalTxId.slice(2)));
+      await pendingVstorageWrites();
+      t.is((await portfolioRead.readPublished(flowPath)).state, 'done');
+      t.deepEqual((await portfolioRead.getPortfolioStatus()).flowsRunning, {});
+    });
+  }
+}
 
 const promptInjectionScenario = async (t: ExecutionContext) => {
   const { walletFactory, trader, portfolioRead, mcpPowers, usdc } =
@@ -283,7 +630,7 @@ const promptInjectionScenario = async (t: ExecutionContext) => {
   const before = await portfolioRead.getPortfolioStatus();
   await agent.redeem();
   await t.throwsAsync(agent.wake(), {
-    message: 'mandate.maxWeight:"Aave_Avalanche"',
+    message: /^mandate\.maxWeight:"Aave_Avalanche": portion/,
   });
   await pendingVstorageWrites();
   const after = await portfolioRead.getPortfolioStatus();
@@ -300,8 +647,15 @@ test(
 );
 
 test('delegated attested plan supplies execution steps', async t => {
-  const { walletFactory, trader, portfolioRead, mcp, usdc, bld } =
-    await setupTest(t);
+  const {
+    walletFactory,
+    trader,
+    portfolioRead,
+    mcp,
+    usdc,
+    bld,
+    cancelOpening,
+  } = await setupTest(t);
   const agentWallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
   const amount = usdc.make(20_000_550n);
   const fee = bld.make(100n);
@@ -340,6 +694,7 @@ test('delegated attested plan supplies execution steps', async t => {
   });
   await pendingVstorageWrites();
 
+  await cancelOpening();
   await agent.redeem();
   const flowKey = await agent.wake();
   await pendingVstorageWrites();
@@ -355,7 +710,7 @@ test('delegated attested plan supplies execution steps', async t => {
 });
 
 test('agent redeems once and submits completed plans on successive wakes', async t => {
-  const { walletFactory, trader, portfolioRead, mcpPowers } =
+  const { walletFactory, trader, portfolioRead, mcpPowers, cancelOpening } =
     await setupTest(t);
   const agentWallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
   const mcp = makeMcp(
@@ -383,6 +738,7 @@ test('agent redeems once and submits completed plans on successive wakes', async
     },
   });
   await pendingVstorageWrites();
+  await cancelOpening();
   await agent.redeem();
 
   const portfolioPath = publishedPortfolioPath(portfolioRead);
@@ -409,8 +765,15 @@ test('agent redeems once and submits completed plans on successive wakes', async
 });
 
 test('delegated plan commits allocation after observation checks', async t => {
-  const { walletFactory, trader, portfolioRead, mcpPowers, usdc, bld } =
-    await setupTest(t);
+  const {
+    walletFactory,
+    trader,
+    portfolioRead,
+    mcpPowers,
+    usdc,
+    bld,
+    cancelOpening,
+  } = await setupTest(t);
   const agentWallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
   const mcp = makeMcp(
     mcpPowers,
@@ -457,6 +820,7 @@ test('delegated plan commits allocation after observation checks', async t => {
   });
   await pendingVstorageWrites();
 
+  await cancelOpening();
   await agent.redeem();
   await agent.wake();
   await pendingVstorageWrites();
@@ -464,5 +828,52 @@ test('delegated plan commits allocation after observation checks', async t => {
   t.deepEqual(
     (await portfolioRead.getPortfolioStatus()).targetAllocation,
     targetAllocation,
+  );
+});
+
+test('valid attested plan is rejected while the opening flow is active', async t => {
+  const { walletFactory, trader, portfolioRead, mcpPowers, cancelOpening } =
+    await setupTest(t);
+  const mcp = makeMcp(
+    mcpPowers,
+    harden({
+      balances: { '@agoric': 200_005_700n, '@Arbitrum': 0n },
+      instrumentTvls: {},
+    }),
+  );
+  const wallet = await walletFactory.provideSmartWallet(AGENT_ADDRESS);
+  const agent = makeAgent(
+    { wallet, portfolioRead, mcp },
+    {
+      initialAllocation,
+      targetAllocation: {
+        Aave_Arbitrum: 60n,
+        Compound_Arbitrum: 40n,
+        Aave_Avalanche: 0n,
+      },
+      plan: { flow: [] },
+    },
+  );
+  await trader.openPortfolio(agent.proposeInitialAllocation(), 200_005_700n, {
+    grantee: {
+      address: AGENT_ADDRESS,
+      permissions: harden({ allocation: { maxWeightBps: 6_000n } }),
+    },
+  });
+  await pendingVstorageWrites();
+  await agent.redeem();
+  const before = await portfolioRead.getPortfolioStatus();
+  t.deepEqual(Object.keys(before.flowsRunning ?? {}), ['flow1']);
+  await t.throwsAsync(agent.wake(), {
+    message: 'portfolio already has a running flow',
+  });
+  await pendingVstorageWrites();
+  t.deepEqual(await portfolioRead.getPortfolioStatus(), before);
+
+  await cancelOpening();
+  t.is(
+    await agent.wake(),
+    'flow2',
+    'the same valid plan is admitted once idle',
   );
 });

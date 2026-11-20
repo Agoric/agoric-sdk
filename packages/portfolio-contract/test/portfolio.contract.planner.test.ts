@@ -16,15 +16,22 @@ import {
   type FundsFlowPlan,
   type MovementDesc,
 } from '@agoric/portfolio-api';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
-import { type TargetAllocation } from '../src/type-guards.ts';
+import {
+  type ProposalType,
+  type TargetAllocation,
+} from '../src/type-guards.ts';
 import { setupTrader } from './contract-setup.ts';
 import {
   getRunningFlowEntries,
   ackNFA,
   setupPlanner,
+  makePlannedTrader,
+  makePlannerProvider,
   makeCreateAndDepositScenarioRunner,
   keys,
+  stripStoredPortfolioKit,
 } from './contract-test-support.ts';
 
 test('request rebalance - send same targetAllocation', async t => {
@@ -109,19 +116,20 @@ test('request rebalance - send same targetAllocation', async t => {
 });
 
 test('withdraw using planner', async t => {
-  const { common, trader1, planner1 } = await setupPlanner(t);
+  const { common, trader1, planner1, zoe, started } = await setupPlanner(t);
 
   await planner1.redeem();
   await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const pId: number = trader1.getPortfolioId();
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
-  const depP = trader1.rebalance(
-    t,
-    { give: { Deposit }, want: {} },
-    { flow: [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }] },
+  const planned = makePlannedTrader(
+    trader1,
+    makePlannerProvider(zoe, started.creatorFacet, planner1),
   );
-  await depP;
+  await planned.deposit(t, Deposit, [
+    { src: '<Deposit>', dest: '@agoric', amount: Deposit },
+  ]);
   t.log('trader deposited', Deposit);
 
   const traderP = (async () => {
@@ -296,19 +304,20 @@ test('deposit using planner', async t => {
 });
 
 test('simple rebalance using planner', async t => {
-  const { common, trader1, planner1 } = await setupPlanner(t);
+  const { common, trader1, planner1, zoe, started } = await setupPlanner(t);
 
   await planner1.redeem();
   await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const pId: number = trader1.getPortfolioId();
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
-  const depP = trader1.rebalance(
-    t,
-    { give: { Deposit }, want: {} },
-    { flow: [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }] },
+  const planned = makePlannedTrader(
+    trader1,
+    makePlannerProvider(zoe, started.creatorFacet, planner1),
   );
-  await depP;
+  await planned.deposit(t, Deposit, [
+    { src: '<Deposit>', dest: '@agoric', amount: Deposit },
+  ]);
   t.log('trader deposited', Deposit);
 
   const traderP = (async () => {
@@ -383,4 +392,91 @@ test('create portfolio and deposit using planner (upgrade)', async t => {
   const powers = await setupPlanner(t, { defaultFlowConfig: null });
   const runScenario = makeCreateAndDepositScenarioRunner(t, powers);
   await runScenario({ restartOverrides: {} });
+});
+
+test('legacy Rebalance invitation waits for the planner, like SimpleRebalance', async t => {
+  const { common, trader1, planner1 } = await setupPlanner(t);
+  await planner1.redeem();
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
+  const pId = trader1.getPortfolioId();
+
+  const offerArgs = { targetAllocation: { USDN: 100n } };
+  const before = await trader1.getPortfolioStatus();
+  t.deepEqual(before.flowsRunning, {});
+
+  // Offers can't carry a plan, so the continuing Rebalance
+  // invitation starts a planner-driven flow, as SimpleRebalance does.
+  const rebalanceP = trader1.rebalance(t, { give: {}, want: {} }, offerArgs);
+  await eventLoopIteration();
+  const pending = await trader1.getPortfolioStatus();
+  t.deepEqual(pending.targetAllocation, offerArgs.targetAllocation);
+  const [[flowKey, detail]] = getRunningFlowEntries(pending.flowsRunning);
+  t.like(detail, { type: 'rebalance', awaitingSteps: true });
+
+  const plan: FundsFlowPlan = { flow: [] };
+  await E(planner1.stub).resolvePlan(
+    pId,
+    Number(flowKey.replace('flow', '')),
+    plan,
+    pending.policyVersion,
+    pending.rebalanceCount,
+  );
+  const { result } = await rebalanceP;
+  t.is(result, flowKey);
+  const after = await trader1.getPortfolioStatus();
+  t.deepEqual(after.flowsRunning, {}, 'the completed offer releases its flow');
+});
+
+test('Rebalance and SimpleRebalance reject offers that give or want funds', async t => {
+  const { common, trader1, planner1 } = await setupPlanner(t);
+  const { usdc } = common.brands;
+  await planner1.redeem();
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
+
+  const amount = usdc.units(100);
+  for (const offer of [trader1.rebalance, trader1.simpleRebalance]) {
+    for (const proposal of [
+      { give: { Deposit: amount }, want: {} },
+      { give: {}, want: { Cash: amount } },
+    ] as ProposalType['rebalance'][]) {
+      await t.throwsAsync(offer(t, proposal, {}), {
+        message: /use Deposit or Withdraw/,
+      });
+    }
+  }
+  const after = await trader1.getPortfolioStatus();
+  t.deepEqual(after.flowsRunning, {}, 'no offer started a flow');
+});
+
+test('planner reaches portfolios stored before its facet existed', async t => {
+  const { common, trader1, planner1, contractBaggage } = await setupPlanner(t);
+  await planner1.redeem();
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
+  const pId: number = trader1.getPortfolioId();
+  stripStoredPortfolioKit(contractBaggage!, pId);
+
+  const targetAllocation: TargetAllocation = { USDN: 100n };
+  // Settles once the planner resolves the flow it starts.
+  const traderP = trader1.simpleRebalance(
+    t,
+    { give: {}, want: {} },
+    { targetAllocation },
+  );
+  let status = await trader1.getPortfolioStatus();
+  for (let i = 0; i < 100 && !keys(status.flowsRunning ?? {}).length; i += 1) {
+    await eventLoopIteration();
+    status = await trader1.getPortfolioStatus();
+  }
+  const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+  const [[flowId]] = getRunningFlowEntries(flowsRunning);
+  await t.notThrowsAsync(
+    E(planner1.stub).resolvePlan(
+      pId,
+      Number(flowId.replace('flow', '')),
+      [],
+      policyVersion,
+      rebalanceCount,
+    ),
+  );
+  await traderP;
 });

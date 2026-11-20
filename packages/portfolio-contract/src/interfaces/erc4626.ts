@@ -29,6 +29,17 @@ export const erc4626ABI = [
     outputs: [{ name: 'shares', type: 'uint256' }],
     stateMutability: 'nonpayable',
   },
+  {
+    type: 'function',
+    name: 'redeem',
+    inputs: [
+      { name: 'shares', type: 'uint256' },
+      { name: 'receiver', type: 'address' },
+      { name: 'owner', type: 'address' },
+    ],
+    outputs: [{ name: 'assets', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+  },
 ] as const satisfies Abi;
 
 harden(erc4626ABI);

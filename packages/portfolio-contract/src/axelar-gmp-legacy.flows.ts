@@ -43,7 +43,7 @@ import { TxType } from './resolver/constants.js';
 import type { TxId } from './resolver/types.ts';
 import { predictWalletAddress } from './utils/evm-orch-factory.ts';
 import { appendTxIds } from './utils/traffic.ts';
-import type { EVMContext } from './pos-evm.flows.ts';
+import type { EVMContext, GMPCallContext } from './pos-evm.flows.ts';
 
 const trace = makeTracer('GMPF');
 
@@ -421,7 +421,7 @@ export const provideEVMAccountWithPermit = (
  * 2. Executes each call via multicall: `calls[i].target.call(calls[i].data)`
  */
 export const sendGMPContractCall = async (
-  ctx: EVMContext,
+  ctx: GMPCallContext,
   gmpAcct: GMPAccountInfo,
   calls: ContractCall[],
   ...optsArgs: [OrchestrationOptions?]
@@ -450,6 +450,7 @@ export const sendGMPContractCall = async (
   );
   try {
     appendTxIds(optsArgs[0]?.progressTracker, [txId]);
+    ctx.onGmpTxId?.(txId);
 
     const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
     const memo: AxelarGmpOutgoingMemo = {

@@ -17077,7 +17077,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sigstore@npm:^4.0.0":
+"sigstore@npm:4.1.0":
   version: 4.1.0
   resolution: "sigstore@npm:4.1.0"
   dependencies:
@@ -17088,6 +17088,20 @@ __metadata:
     "@sigstore/tuf": "npm:^4.0.1"
     "@sigstore/verify": "npm:^3.1.0"
   checksum: 10c0/6a62601b75c5b0336c15b62d41be6d07e750a2ebd93a49856401cff201aaab4af8304f3edeaffb4777409385c828c11c09b94b721be5932c1335de2292cceadd
+  languageName: node
+  linkType: hard
+
+"sigstore@patch:sigstore@npm%3A4.1.0#~/.yarn/patches/sigstore-npm-4.1.0-c356de95f4.patch":
+  version: 4.1.0
+  resolution: "sigstore@patch:sigstore@npm%3A4.1.0#~/.yarn/patches/sigstore-npm-4.1.0-c356de95f4.patch::version=4.1.0&hash=7fb061"
+  dependencies:
+    "@sigstore/bundle": "npm:^4.0.0"
+    "@sigstore/core": "npm:^3.1.0"
+    "@sigstore/protobuf-specs": "npm:^0.5.0"
+    "@sigstore/sign": "npm:^4.1.0"
+    "@sigstore/tuf": "npm:^4.0.1"
+    "@sigstore/verify": "npm:^3.1.0"
+  checksum: 10c0/12490aea2b43ad58904f4afeb76ff497d7ead1607c837e8d434dc4c577fb45c3dd6a55c08db3d84fda00ccc169b53d6e3702ea1a000de5555eee3ba5971aee3b
   languageName: node
   linkType: hard
 

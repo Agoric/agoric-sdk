@@ -47,10 +47,27 @@ export type ComputeTargetBalancesOptions<
    * target sink is unavailable or suppressed.
    */
   depositFromChain?: SupportedChain;
+  /**
+   * Chain receiving a withdrawal. When a withdrawal can only be partially
+   * satisfied, funds on this chain are preferred and funds on other chains are
+   * used only in amounts that satisfy the minimums of some route to it.
+   */
+  withdrawToChain?: SupportedChain;
+  /** Instruments for which deposit and/or withdraw is unavailable. */
   instrumentBlocks?: {
     noDepositInstruments: Set<AssetPlaceRef>;
     noWithdrawInstruments: Set<AssetPlaceRef>;
   };
+  /**
+   * Available instrument liquidity, in the same units as currentBalances.
+   * Hubs and missing entries default to unlimited liquidity.
+   */
+  instrumentLiquidity?: Partial<Record<AssetPlaceRef, NatValue>>;
+  /**
+   * Maximum fraction of each instrument's available liquidity to be considered
+   * for withdrawal, in basis points (defaults to no limit).
+   */
+  withdrawalLiquidityLimitBps?: NatValue;
 };
 
 type PlaceRecord = {
@@ -61,6 +78,12 @@ type PlaceRecord = {
 const placeRecordsByNetwork = new WeakMap<
   NetworkSpec,
   Map<AssetPlaceRef, PlaceRecord>
+>();
+
+/** network -> destination chain -> source hub -> least movable amount */
+const routeMinsByNetwork = new WeakMap<
+  NetworkSpec,
+  Map<SupportedChain, Map<AssetPlaceRef, NatValue>>
 >();
 
 const failTargetBalance = (message: string): never => {
@@ -88,6 +111,14 @@ const bigintMin = (first: bigint, ...rest: bigint[]): bigint => {
     if (arg < min) min = arg;
   }
   return min;
+};
+
+const bigintMax = (first: bigint, ...rest: bigint[]): bigint => {
+  let max = first;
+  for (const arg of rest) {
+    if (arg > max) max = arg;
+  }
+  return max;
 };
 // #endregion
 
@@ -140,12 +171,52 @@ const isNonemptyPositionEntry = (entry: [AssetPlaceRef, NatValue]): boolean => {
 };
 
 /**
+ * The least amount that can be moved from one chain hub to another, i.e., the
+ * minimum over all hub-to-hub routes of the largest link `min` along the route,
+ * or undefined if there is no route.
+ */
+const getRouteMin = (
+  network: NetworkSpec,
+  fromChain: SupportedChain,
+  toChain: SupportedChain,
+): NatValue | undefined => {
+  const routeMins = provideLazyMap(
+    provideLazyMap(routeMinsByNetwork, network, () => new Map()),
+    toChain,
+    () => {
+      // Bottleneck shortest path (Dijkstra) over reversed hub-to-hub links.
+      const best = new Map<AssetPlaceRef, NatValue>([[`@${toChain}`, 0n]]);
+      const todo = new Set<AssetPlaceRef>([`@${toChain}`]);
+      while (todo.size) {
+        let node: AssetPlaceRef | undefined;
+        for (const n of todo) {
+          if (node === undefined || best.get(n)! < best.get(node)!) node = n;
+        }
+        todo.delete(node!);
+        for (const { src, dest, min = 0n } of network.links) {
+          if (dest !== node || !src.startsWith('@')) continue;
+          const cost = bigintMax(best.get(node)!, min);
+          const prev = best.get(src);
+          if (prev === undefined || cost < prev) {
+            best.set(src, cost);
+            todo.add(src);
+          }
+        }
+      }
+      return best;
+    },
+  );
+  return routeMins.get(`@${fromChain}` as AssetPlaceRef);
+};
+
+/**
  * Derive target balances for allocation keys, suppressing small changes and
  * movements blocked by e.g. lack of instrument liquidity or available capacity.
  * When target allocations cannot be satisfied, strive for proportionality and
  * bend the rules for a withdrawal, but do not increase any position beyond its
  * target allocation (opting instead to leave the excess at a non-instrument
- * hub).
+ * hub). If blocked or liquidity-limited sources prevent a full withdrawal,
+ * withdraw as much as possible from the remaining available funds.
  *
  * Returns only entries whose values change by at least ACCOUNT_DUST_EPSILON
  * compared to current.
@@ -160,8 +231,19 @@ export const computeTargetBalances = <
   targetAllocation = {},
   network,
   depositFromChain,
+  withdrawToChain,
   instrumentBlocks,
+  instrumentLiquidity,
+  withdrawalLiquidityLimitBps = 10_000n,
 }: ComputeTargetBalancesOptions<C, T>): Partial<Record<C | T, NatAmount>> => {
+  const computeWithdrawLimit = (place: AssetPlaceRef, current: NatValue) => {
+    const liquidity = isInstrumentId(place)
+      ? getOwn(instrumentLiquidity ?? {}, place)
+      : undefined;
+    if (liquidity === undefined) return current;
+    const limit = (liquidity * withdrawalLiquidityLimitBps) / 10_000n;
+    return limit <= 0n ? 0n : bigintMin(current, limit);
+  };
   const { noDepositInstruments, noWithdrawInstruments } =
     instrumentBlocks ?? {};
   const currentValues = objectMap(
@@ -249,11 +331,14 @@ export const computeTargetBalances = <
   // at current 52, and then 52/15/15/18 from the originally-a-sink D being
   // withdraw-blocked at current 18.
   const suppressions = new Map<AssetPlaceRef, NatValue>();
-  for (;;) {
+  const limitedSources = new Set<AssetPlaceRef>();
+  let done = false;
+  while (!done) {
     const badSources: [DraftRecord, gap: NatValue][] = [];
     const needsSuppress: [DraftRecord, gap: NatValue][] = [];
+    const newlyLimited: DraftRecord[] = [];
     for (const [place, draftRecord] of typedEntries(draft)) {
-      if (suppressions.has(place)) continue;
+      if (suppressions.has(place) || limitedSources.has(place)) continue;
       const { weight, current, blockDeposit, blockWithdraw } = draftRecord;
       const target = (liquidTotal * weight) / sumW; // rounds down
       /** positive delta is a sink, negative delta is a source */
@@ -263,15 +348,28 @@ export const computeTargetBalances = <
       const isBlocked =
         (delta > 0n && blockDeposit) || (delta < 0n && blockWithdraw);
       const isSuppressed = delta !== 0n && absDelta < draftRecord.deltaSoftMin;
+      const limit = computeWithdrawLimit(place, current);
       if (isBlocked && delta < 0n) {
         badSources.push([draftRecord, 0n]);
       } else if (isSuppressed && delta < 0n) {
         needsSuppress.push([draftRecord, draftRecord.deltaSoftMin - absDelta]);
+      } else if (delta < -limit) {
+        // Limit this source, then recompute the other targets.
+        if (limit && limit < draftRecord.deltaSoftMin) {
+          needsSuppress.push([draftRecord, draftRecord.deltaSoftMin - limit]);
+          draftRecord.resolvedDelta = 0n;
+          continue;
+        }
+        draftRecord.target = current - limit;
+        draftRecord.delta = -limit;
+        draftRecord.resolvedDelta = -limit;
+        newlyLimited.push(draftRecord);
+        continue;
       }
       draftRecord.resolvedDelta = isBlocked || isSuppressed ? 0n : delta;
     }
 
-    if (badSources.length === 0) {
+    if (badSources.length === 0 && newlyLimited.length === 0) {
       // No sources to block, but there still might be suppressions.
       // Cement those with the largest gap.
       sortEntriesDesc(needsSuppress);
@@ -280,6 +378,11 @@ export const computeTargetBalances = <
         if (i > 0 && gap !== needsSuppress[i - 1][1]) break;
         badSources.push(needsSuppress[i]);
       }
+    }
+    for (const source of newlyLimited) {
+      limitedSources.add(source.place);
+      liquidTotal -= source.target;
+      sumW -= source.weight;
     }
     for (const [source, gap] of badSources) {
       const { place, current, weight, blockWithdraw } = source;
@@ -290,7 +393,7 @@ export const computeTargetBalances = <
       liquidTotal -= current;
       sumW -= weight;
     }
-    if (badSources.length === 0 || liquidTotal < 0n) break;
+    done = liquidTotal < 0n || (!badSources.length && !newlyLimited.length);
   }
 
   // If all sources are suppressed for a deposit or rebalance, we're done.
@@ -302,19 +405,77 @@ export const computeTargetBalances = <
   if (liquidTotal < 0n && balanceDelta < 0n) {
     const fallback = Object.create(null) as Partial<Record<C | T, NatAmount>>;
     let unsatisfied = -balanceDelta;
-    for (const [place, value] of sortEntriesDesc(
+    // When the destination is known, group sources by chain (destination
+    // first) so that a remote chain contributes only if its total can actually
+    // be moved. Otherwise, treat all sources as a single group.
+    const destChain = withdrawToChain
+      ? getPlaceData(`@${withdrawToChain}` as AssetPlaceRef, network).chain
+      : undefined;
+    const groups = new Map<SupportedChain | undefined, [C, NatValue][]>();
+    if (destChain) groups.set(destChain.name, []);
+    for (const entry of sortEntriesDesc(
       typedEntries(currentValues) as [C, NatValue][],
     )) {
+      const [place, value] = entry;
       if (isDust(value)) break;
       if (draft[place]?.blockWithdraw !== false) continue;
-      const take = bigintMin(unsatisfied, value);
-      fallback[place] = makeNatAmount(brand, value - take);
-      unsatisfied -= take;
+      const key = destChain && draft[place].chain.name;
+      const group = groups.get(key);
+      if (group) group.push(entry);
+      else groups.set(key, [entry]);
+    }
+    const takeFrom = (sources: [C, NatValue][], want: NatValue) => {
+      const takes: [C, NatValue, take: NatValue][] = [];
+      let taken = 0n;
+      for (const [place, value] of sources) {
+        const available = computeWithdrawLimit(place, value);
+        const take = bigintMin(want - taken, available);
+        if (take === 0n) continue;
+        takes.push([place, value, take]);
+        taken += take;
+        if (taken === want) break;
+      }
+      return { takes, taken };
+    };
+    let destTakes: [C, NatValue, take: NatValue][] = [];
+    for (const [chainName, sources] of groups) {
+      let { takes, taken } = takeFrom(sources, unsatisfied);
+      if (destChain && chainName === destChain.name) {
+        destTakes = takes;
+      } else if (destChain) {
+        const routeMin = getRouteMin(network, chainName!, destChain.name);
+        if (routeMin === undefined) continue; // unreachable
+        if (taken < routeMin) {
+          // Too little to move from this chain. But if the chain has enough
+          // and only the remaining need is too small, move the route minimum
+          // and take the difference less from the destination chain.
+          const shortfall = routeMin - taken;
+          const destTotal = destTakes.reduce((acc, t) => acc + t[2], 0n);
+          if (taken !== unsatisfied || destTotal < shortfall) continue;
+          ({ takes, taken } = takeFrom(sources, routeMin));
+          if (taken < routeMin) continue;
+          let excess = shortfall;
+          for (const destTake of destTakes.toReversed()) {
+            const [place, value, take] = destTake;
+            const giveBack = bigintMin(excess, take);
+            destTake[2] = take - giveBack;
+            if (destTake[2] === 0n) delete fallback[place];
+            else fallback[place] = makeNatAmount(brand, value - destTake[2]);
+            excess -= giveBack;
+            if (excess === 0n) break;
+          }
+          unsatisfied += shortfall;
+        }
+      }
+      for (const [place, value, take] of takes) {
+        fallback[place] = makeNatAmount(brand, value - take);
+      }
+      unsatisfied -= taken;
       if (unsatisfied === 0n) return { ...fallback };
     }
-    // TODO(AGO-535): Effect a partial withdrawal here if necessary (e.g., when
-    // some requested funds are in a low-liquidity position).
-    return {};
+    // Preserve any available withdrawal even when blocked or liquidity-limited
+    // positions prevent satisfying the full request.
+    return { ...fallback };
   }
 
   // Blocked/suppressed *sinks* just leave funds in a source chain account.
@@ -338,12 +499,20 @@ export const computeTargetBalances = <
     const chainPlace = `@${chainName}` as C | T;
     draft[chainPlace] ??= makeDraftRecord(chainPlace);
     draft[chainPlace].resolvedDelta += value;
-    if (!pending.has(draft[chainPlace])) remainder -= value;
+    // A hub that will still be visited by the loop below accounts for its own
+    // claims, unless that visit is skipped for suppression/limitation.
+    if (
+      !pending.has(draft[chainPlace]) ||
+      suppressions.has(chainPlace) ||
+      limitedSources.has(chainPlace)
+    ) {
+      remainder -= value;
+    }
   };
   for (const draftRecord of pending) {
     pending.delete(draftRecord);
     const { place, current, delta, resolvedDelta } = draftRecord;
-    if (suppressions.has(place)) continue;
+    if (suppressions.has(place) || limitedSources.has(place)) continue;
     // No adjustment is necessary for a source and/or satisfied delta.
     if (delta <= 0n || resolvedDelta !== 0n) {
       const newBalance = current + resolvedDelta;

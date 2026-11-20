@@ -8,7 +8,10 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
-import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
+import {
+  PortfolioPlannerAgent,
+  type PlanObservations,
+} from '@agoric/portfolio-api';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { preparePlanner } from '../src/planner.exo.ts';
 import {
@@ -53,6 +56,11 @@ test('planner exo resolvePlan method', async t => {
   });
 
   const planner = makePlanner();
+
+  // Until the signed-observation planner design is introduced as a whole,
+  // expose only the established plan-resolution path on both planner facets.
+  t.false('resolveObservedPlan' in planner);
+  t.false('resolveObservedFlowPlan' in aPortfolio.planner);
 
   const oversizedSteps = harden(
     Array(31).fill({
@@ -99,7 +107,7 @@ test('planner exo resolvePlan method', async t => {
     });
 
     planner.resolvePlan(portfolioId, flowId, plan, 1, 0);
-    t.deepEqual(await vt.when(stepsP), plan);
+    t.deepEqual(await vt.when(stepsP), { plan });
 
     const { policyVersion, rebalanceCount } = await getPortfolioStatus(1);
     t.log({ policyVersion, rebalanceCount });
@@ -108,6 +116,9 @@ test('planner exo resolvePlan method', async t => {
       { policyVersion: 1, rebalanceCount: 1 },
       'rebalanceCount 1 after .resolvePlan(plan, ...)',
     );
+
+    // This unit test has no executor, so manually finish the resolved flow.
+    aPortfolio.reporter.finishFlow(flowId);
   }
 
   {
@@ -121,7 +132,7 @@ test('planner exo resolvePlan method', async t => {
       'planner may rebalance >1 times at same policyVersion',
     );
 
-    t.deepEqual(await vt.when(stepsP), mockRebalancePlan);
+    t.deepEqual(await vt.when(stepsP), { plan: mockRebalancePlan });
 
     const { policyVersion, rebalanceCount } = await getPortfolioStatus(1);
     t.log({ policyVersion, rebalanceCount });
@@ -130,6 +141,8 @@ test('planner exo resolvePlan method', async t => {
       { policyVersion: 1, rebalanceCount: 2 },
       'rebalanceCount 2 after second resolvePlan',
     );
+
+    aPortfolio.reporter.finishFlow(flowId);
   }
 
   {
@@ -144,7 +157,67 @@ test('planner exo resolvePlan method', async t => {
       () => planner.resolvePlan(portfolioId, flowId, newPositionPlan, 1, 2),
       { message: /plan cannot add positions/i },
     );
+
+    aPortfolio.reporter.finishFlow(flowId);
   }
+});
+
+test('planner resolvePlan validates and forwards typed holdings', t => {
+  const zone = makeHeapZone();
+  const observations = harden({
+    balances: { Aave_Base: 100n },
+    holdings: [
+      {
+        place: 'Aave_Base',
+        kind: 'principal',
+        tokenId: `0x${'1'.repeat(40)}`,
+        amount: 100n,
+        balanceUsdc: 100n,
+      },
+    ],
+    instrumentTvls: {},
+  } satisfies PlanObservations);
+  const received: unknown[] = [];
+  const planner = preparePlanner(zone, {
+    getPortfolioPlanner: () =>
+      ({
+        getTargetAllocation: () => ({ Aave_Base: 100n }),
+        validateAndCommitPlanPolicy: (_flowId, obs) => {
+          received.push(obs);
+          return { policyVersion: 1, rebalanceCount: 1 };
+        },
+        submitVersion: () => {},
+        resolveFlowPlan: () => {},
+      }) as unknown as PortfolioKit['planner'],
+    getPlannerDelegation: () => undefined,
+    shapes: makeOfferArgsShapes(USDC),
+  })();
+  t.notThrows(() => planner.resolvePlan(1, 1, [], 1, 0, observations));
+  t.deepEqual(received, [observations]);
+  for (const fields of [
+    { amount: -1n },
+    { kind: 'unknown' },
+    { tokenId: 1n },
+  ]) {
+    t.throws(() =>
+      planner.resolvePlan(
+        1,
+        2,
+        [],
+        1,
+        1,
+        harden({
+          ...observations,
+          holdings: [{ ...observations.holdings[0], ...fields }],
+        }) as any,
+      ),
+    );
+  }
+  t.deepEqual(
+    received,
+    [observations],
+    'malformed holdings never reach policy validation',
+  );
 });
 
 test('planner rejects delegated plans that fail observation-time validation', async t => {
@@ -232,7 +305,13 @@ test('planner rejects delegated plans that fail observation-time validation', as
     afterFlow.rebalanceCount + 1,
   );
 
+  // The executePlan stub only captures stepsP. Simulate the production
+  // executor's finally cleanup after observing the rejected plan.
+  t.truthy((await getPortfolioStatus(1)).flowsRunning?.[flowKey]);
+  portfolio.reporter.finishFlow(flowId);
+
   const beforeRace = await getPortfolioStatus(1);
+  t.deepEqual(beforeRace.flowsRunning, {});
   const racedFlowKey = await delegationClient.setTargetAllocation({
     targetAllocation: { Aave_Base: 100n },
     syncState: {
@@ -268,6 +347,9 @@ test('planner rejects delegated plans that fail observation-time validation', as
     (await getPortfolioStatus(1)).rebalanceCount,
     afterPolicyChange.rebalanceCount + 1,
   );
+
+  portfolio.reporter.finishFlow(racedFlowId);
+  t.deepEqual((await getPortfolioStatus(1)).flowsRunning, {});
 });
 
 test('planner accepts already-committed delegated target allocation after policy race', async t => {
@@ -350,7 +432,7 @@ test('planner accepts already-committed delegated target allocation after policy
       afterPolicyChange.rebalanceCount,
     ),
   );
-  t.deepEqual(await vt.when(stepsP as any), plan);
+  t.deepEqual(await vt.when(stepsP as any), { plan });
   t.is(
     (await getPortfolioStatus(1)).rebalanceCount,
     afterPolicyChange.rebalanceCount + 1,
@@ -406,7 +488,7 @@ test('planner allows cosmos-based portfolio to withdraw to <Cash> via @chain acc
     () => planner.resolvePlan(portfolioId, flowId, withdrawPlan, 1, 0),
     'withdrawing via @noble to <Cash> is not a new position, even though USDN is absent from target allocation',
   );
-  t.deepEqual(await vt.when(stepsP), withdrawPlan);
+  t.deepEqual(await vt.when(stepsP), { plan: withdrawPlan });
 });
 
 test('planner starts delegated rebalance and resolves its plan', async t => {
@@ -494,7 +576,7 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
 
   t.is(flowKey, 'flow1');
   t.truthy(startedFlow);
-  t.deepEqual(await vt.when(startedFlow!.stepsP as any), plan);
+  t.deepEqual(await vt.when(startedFlow!.stepsP as any), { plan });
 
   const portfolioStatus = await getPortfolioStatus(1);
   t.like(portfolioStatus, {
@@ -675,7 +757,7 @@ test('planner starts delegated claimRewards and resolves its plan', async t => {
 
   t.is(flowKey, 'flow1');
   t.truthy(startedFlow);
-  t.deepEqual(await vt.when(startedFlow!.stepsP as any), plan);
+  t.deepEqual(await vt.when(startedFlow!.stepsP as any), { plan });
 
   const portfolioStatus = await getPortfolioStatus(1);
   t.like(portfolioStatus, {
@@ -912,7 +994,7 @@ test('planner allows EVM-based portfolio to withdraw to -Chain via @chain accoun
     () => planner.resolvePlan(portfolioId, flowId, withdrawPlan, 1, 0),
     'withdrawing via @Arbitrum to -Arbitrum is not a new position, even though Aave_Arbitrum is absent from target allocation',
   );
-  t.deepEqual(await vt.when(stepsP), withdrawPlan);
+  t.deepEqual(await vt.when(stepsP), { plan: withdrawPlan });
 });
 
 test('planner cannot start rebalance without features enabled', async t => {

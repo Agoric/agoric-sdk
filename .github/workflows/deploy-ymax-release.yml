@@ -47,6 +47,13 @@ on:
           used, since its address has no on-chain public key yet).
         required: false
         type: string
+      stopBeforeSubmit:
+        description: >-
+          Stop before submitting the upgrade on chain, e.g. to audit the
+          privateArgs release assets. Rerun without it to submit them.
+        required: false
+        type: boolean
+        default: false
       ymax1Planner:
         description: 'Attest ymax1 planner state (must be "down" for ymax1-main upgrades). Operator is responsible for actually stopping the planner.'
         required: false
@@ -105,16 +112,16 @@ jobs:
     permissions:
       contents: write
     needs: [plan, build-bundle]
-    # Opt out of GitHub's implicit success() so a skipped build-bundle job
-    # does not skip pre-upgrade for non-devnet targets.
+    # This job depends upon `plan` succeeding and `build-bundle` not failing.
     if: |
-      always() &&
+      (!cancelled()) &&
       needs.plan.result == 'success' &&
       needs.plan.outputs.need_pre_upgrade == 'true' &&
-      (inputs.target != 'ymax0-devnet' || contains(fromJSON('["success","skipped"]'), needs.build-bundle.result))
+      contains(fromJSON('["success","skipped"]'), needs.build-bundle.result)
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+      # Replace "ymax$n-main" suffixes with "ymax$n-mainnet", but preserve "ymax0-devnet".
+      name: ${{ inputs.target == 'ymax0-main' && 'ymax0-mainnet' || inputs.target == 'ymax1-main' && 'ymax1-mainnet' || inputs.target }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -138,23 +145,29 @@ jobs:
           TARGET: ${{ inputs.target }}
           YMAX_INSTALL_BUNDLE_MNEMONIC: ${{ secrets.YMAX_INSTALL_BUNDLE_MNEMONIC }}
         run: |
-          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-            phase-pre-upgrade \
-            --target "$TARGET" \
-            --tag "$RELEASE_TAG" \
-            --branch "$BRANCH"
+          set -o pipefail
+          # Pipe stderr through the summary filter; stdout goes to FD 3.
+          {
+            packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+              phase-pre-upgrade \
+              --target "$TARGET" \
+              --tag "$RELEASE_TAG" \
+              --branch "$BRANCH" \
+              2>&1 >&3 \
+              | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
+          } 3>&1
 
-  # Does everything short of actually broadcasting: validates inputs,
-  # generates (or re-validates) the unsigned/detached artifacts, and reports
-  # whether a signed tx is ready. Unprotected (no environment) so it never
-  # prompts for approval — approval is reserved for upgrade-submit, and only
-  # requested once there's actually something to broadcast.
+  # Does everything short of actually broadcasting: validates inputs, generates
+  # or re-validates the unsigned/detached artifacts, and reports whether a
+  # signed tx is ready. Unprotected (no environment) so it never prompts for
+  # approval (which is the purview of `upgrade-submit`).
   upgrade-prepare:
     permissions:
       contents: write
     needs: [plan, pre-upgrade]
+    # This job depends upon `plan` succeeding and `pre-upgrade` not failing.
     if: |
-      always() &&
+      (!cancelled()) &&
       needs.plan.result == 'success' &&
       needs.plan.outputs.need_upgrade_submit == 'true' &&
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result)
@@ -173,22 +186,17 @@ jobs:
           AUTHZ_GRANTEE: ${{ inputs.authzGrantee }}
           SIGNING_KEY: ${{ inputs.signingKey }}
         run: |
+          # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#example-creating-an-annotation-for-an-error
+          fail_step () { echo "::error::$1"; exit 1; }
           case "$SIGNING_KEY" in
             ci-secret|detached-control)
-              if [ -n "$AUTHZ_GRANTEE" ]; then
-                echo "::error::authzGrantee is only valid with signingKey=detached-grantee. Clear it or rerun with signingKey=detached-grantee."
-                exit 1
-              fi
+              [ -z "$AUTHZ_GRANTEE" ] || fail_step "authzGrantee is only valid with signingKey=detached-grantee. Clear it or rerun with signingKey=detached-grantee."
               ;;
             detached-grantee)
-              if [ -z "$AUTHZ_GRANTEE" ]; then
-                echo "::error::authzGrantee is required with signingKey=detached-grantee. Rerun with authzGrantee set."
-                exit 1
-              fi
+              [ -n "$AUTHZ_GRANTEE" ] || fail_step "authzGrantee is required with signingKey=detached-grantee. Rerun with authzGrantee set."
               ;;
             *)
-              echo "::error::unsupported signingKey: $SIGNING_KEY"
-              exit 1
+              fail_step "unsupported signingKey: $SIGNING_KEY"
               ;;
           esac
 
@@ -207,14 +215,30 @@ jobs:
 
           case "$SIGNING_KEY" in
             ci-secret)
+              # Attach privateArgs for review before upgrade-submit (and
+              # its approval gate), which then reuses them.
+              {
+                packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+                  phase-upgrade-args \
+                  --target "$TARGET" \
+                  --tag "$RELEASE_TAG" \
+                  2>&1 >&3 \
+                  | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
+              } 3>&1
               echo "ready_to_broadcast=true" >> "$GITHUB_OUTPUT"
               ;;
             detached-control|detached-grantee)
               export GRANTEE="$AUTHZ_GRANTEE"
-              generate_output="$(packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-                phase-upgrade-generate \
-                --target "$TARGET" \
-                --tag "$RELEASE_TAG")"
+              generate_output="$(
+                {
+                  packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+                    phase-upgrade-generate \
+                    --target "$TARGET" \
+                    --tag "$RELEASE_TAG" \
+                    2>&1 >&3 \
+                    | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
+                } 3>&1
+              )"
               printf '%s\n' "$generate_output"
 
               ready="$(jq -r '.readyToBroadcast' <<<"$generate_output")"
@@ -231,22 +255,16 @@ jobs:
                 reason="$(jq -r '.reason // ""' <<<"$generate_output")"
                 message="Detached signing pending: generated or validated unsigned tx; upload $signed_asset$signature_hint to the release and rerun this workflow."
                 echo "$message"
-                if [ -n "$reason" ]; then
-                  echo "$reason"
-                fi
+                [ -n "$reason" ] && echo "$reason"
                 echo "$sign_command"
 
-                # Also written to the job summary (rendered prominently on
-                # the run's summary page) so the required action is visible
-                # without opening this step's logs.
+                # Also render in the run's summary page so the required action
+                # is visible without opening logs.
+                # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary
                 {
                   echo '### :key: Action required: detached signing pending'
-                  echo
-                  echo "$message"
-                  if [ -n "$reason" ]; then
-                    echo
-                    echo "$reason"
-                  fi
+                  printf '\n%s\n' "$message"
+                  [ -n "$reason" ] && printf '\n%s\n' "$reason"
                   echo
                   echo '```sh'
                   echo "$sign_command"
@@ -256,6 +274,19 @@ jobs:
               ;;
           esac
 
+      - name: Report stop before submit
+        if: inputs.stopBeforeSubmit
+        env:
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          message="Stopped before submitting the $TARGET upgrade (stopBeforeSubmit). Review the $TARGET-privateArgsOverrides-* and $TARGET-allegedPrivateArgs-* assets (incl. .diff) on release $RELEASE_TAG, then rerun without stopBeforeSubmit to submit."
+          echo "::notice::$message"
+          {
+            echo '### :mag: Stopped before submit'
+            printf '\n%s\n' "$message"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       # Enforced here, once a signed tx is actually ready, rather than
       # earlier: this job can rerun freely while cosigners are still
       # collecting signatures without requiring the planner be down for
@@ -263,7 +294,7 @@ jobs:
       # gate so a human is never asked to approve a broadcast that this
       # step would immediately block anyway.
       - name: Require ymax1 planner down
-        if: steps.prepare.outputs.ready_to_broadcast == 'true' && inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
+        if: steps.prepare.outputs.ready_to_broadcast == 'true' && !inputs.stopBeforeSubmit && inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
         run: |
           echo '::error::ymax1Planner must be down for ymax1-main. Stop the planner, then rerun this workflow with ymax1Planner=down.'
           exit 1
@@ -275,18 +306,22 @@ jobs:
     permissions:
       contents: write
     needs: [plan, pre-upgrade, upgrade-prepare]
+    # This job depends upon `plan` and `upgrade-prepare` succeeding, and
+    # `pre-upgrade` not failing.
     if: |
-      always() &&
+      (!cancelled()) &&
       needs.plan.result == 'success' &&
       needs.plan.outputs.need_upgrade_submit == 'true' &&
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
       needs.upgrade-prepare.result == 'success' &&
-      needs.upgrade-prepare.outputs.ready_to_broadcast == 'true'
+      needs.upgrade-prepare.outputs.ready_to_broadcast == 'true' &&
+      !inputs.stopBeforeSubmit
     runs-on: ubuntu-latest
     outputs:
       upgrade_submitted: ${{ steps.upgrade.outputs.upgrade_submitted }}
     environment:
-      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+      # Replace "ymax$n-main" suffixes with "ymax$n-mainnet", but preserve "ymax0-devnet".
+      name: ${{ inputs.target == 'ymax0-main' && 'ymax0-mainnet' || inputs.target == 'ymax1-main' && 'ymax1-mainnet' || inputs.target }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -309,23 +344,32 @@ jobs:
           set -euo pipefail
 
           export GRANTEE="$AUTHZ_GRANTEE"
-          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-            phase-upgrade-submit \
-            --target "$TARGET" \
-            --tag "$RELEASE_TAG"
+          {
+            packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+              phase-upgrade-submit \
+              --target "$TARGET" \
+              --tag "$RELEASE_TAG" \
+              2>&1 >&3 \
+              | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
+          } 3>&1
           echo "upgrade_submitted=true" >> "$GITHUB_OUTPUT"
 
   upgrade-confirm:
-    permissions:
-      contents: write
-    needs: [plan, pre-upgrade, upgrade-submit]
+    # This job depends upon `plan` succeeding and `pre-upgrade` not failing.
     if: |
-      always() &&
+      (!cancelled()) &&
       needs.plan.result == 'success' &&
       needs.plan.outputs.need_upgrade_confirm == 'true' &&
       (needs.plan.outputs.need_upgrade_submit != 'true' || needs.upgrade-submit.outputs.upgrade_submitted == 'true') &&
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
       contains(fromJSON('["success","skipped","failure"]'), needs.upgrade-submit.result)
+    needs:
+      - plan
+      - pre-upgrade
+      - upgrade-submit
+    permissions:
+      contents: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -333,6 +377,15 @@ jobs:
           persist-credentials: false
 
       - uses: ./.github/actions/setup-agoric-sdk-build
+
+      - name: Auth to Google Cloud for upgrade logs
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: simulationlab
+          workload_identity_provider: projects/60745596728/locations/global/workloadIdentityPools/github/providers/agoric-sdk
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
 
       - name: Run upgrade confirm phase
         env:
@@ -342,7 +395,12 @@ jobs:
           RELEASE_TAG: ${{ inputs.releaseTag }}
           TARGET: ${{ inputs.target }}
         run: |
-          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-            phase-upgrade-confirm \
-            --target "$TARGET" \
-            --tag "$RELEASE_TAG"
+          set -o pipefail
+          {
+            packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+              phase-upgrade-confirm \
+              --target "$TARGET" \
+              --tag "$RELEASE_TAG" \
+              2>&1 >&3 \
+              | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
+          } 3>&1

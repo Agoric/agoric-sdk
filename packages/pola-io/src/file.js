@@ -67,7 +67,12 @@ export const makeFileRd = (root, { fs = {}, fsp = {}, path = {} } = {}) => {
       relative: to => pathio.relative(there, to),
       stat: () => fspio.stat(there),
       readText: () => fspio.readFile(there, 'utf8'),
-      readJSON: () => self.readText().then(txt => JSON.parse(txt)),
+      /**
+       * @template [T=any]
+       * @returns {Promise<T>}
+       */
+      readJSON: () =>
+        self.readText().then(txt => /** @type {T} */ (JSON.parse(txt))),
       /** @param {string} [suffix] */
       basename: suffix => pathio.basename(there, suffix),
       existsSync: () => fsio.existsSync(there),

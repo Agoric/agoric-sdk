@@ -317,6 +317,8 @@ export const contractsMock = {
   },
   Ethereum: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    morphoBundler3: '0x6566194141eefa99Af43Bb5Aa71460Ca2Dc90245',
+    morphoGeneralAdapter1: '0x4A6c312ec70E8747a587EE860a0353cd42Be0aE0',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
@@ -328,10 +330,10 @@ export const contractsMock = {
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
     permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
+    universalRouter: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-    Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_morphoGauntletUsdc_Ethereum:
       '0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0',
     Beefy_morphoSmokehouseUsdc_Ethereum:
@@ -381,14 +383,7 @@ export const contractsMock = {
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-    Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_compoundUsdc_Arbitrum: '0xb9A27ba529634017b12e3cbbbFFb6dB7908a8C8B',
-    Beefy_compoundUsdc_Optimism: '0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F',
-    Beefy_morphoGauntletUsdc_Ethereum:
-      '0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0',
-    Beefy_morphoSmokehouseUsdc_Ethereum:
-      '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
-    Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
     oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
@@ -447,9 +442,12 @@ export const chainMetadataMock = harden({
     caipChainId: 'eip155:43114',
     chainName: 'Avalanche',
     tokenMetadataById: {
-      [makeTokenIdKey(avalancheRwd.tokenId)]: avalancheRwd,
-      [makeTokenIdKey(avalancheDai.tokenId)]: avalancheDai,
-      [makeTokenIdKey(avalancheUsdc.tokenId)]: avalancheUsdc,
+      [makeTokenIdKey(avalancheRwd.tokenId, `@${avalancheRwd.chainName}`)]:
+        avalancheRwd,
+      [makeTokenIdKey(avalancheDai.tokenId, `@${avalancheDai.chainName}`)]:
+        avalancheDai,
+      [makeTokenIdKey(avalancheUsdc.tokenId, `@${avalancheUsdc.chainName}`)]:
+        avalancheUsdc,
     },
   },
 } as const satisfies ChainTokenMetadata);

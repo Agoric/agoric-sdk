@@ -307,6 +307,9 @@ export const setupTrader = async (
     ibcBridge.addMockAck(msg, ack);
   }
 
+  // `dest` is the portfolio's predicted wallet address on each chain. The
+  // prediction depends on the chain's gateway, and `contractsMock` gives
+  // Ethereum, Optimism and Base the same gateway, so they share an address.
   const cctpTrafficParams = [
     // Ethereum
     {
@@ -322,6 +325,16 @@ export const setupTrader = async (
     {
       dest: '0x8fcc8340520552c3cc861acaaa752e2d38bff2bb',
       destinationDomain: 3,
+    },
+    // Optimism
+    {
+      dest: '0x5ea5b8bba287da59b100e85c6c5ec982e6f528ff',
+      destinationDomain: 2,
+    },
+    // Base
+    {
+      dest: '0x5ea5b8bba287da59b100e85c6c5ec982e6f528ff',
+      destinationDomain: 6,
     },
   ];
 

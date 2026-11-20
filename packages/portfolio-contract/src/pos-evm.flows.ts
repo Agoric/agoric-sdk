@@ -29,12 +29,14 @@ import {
   isERC4626MorphoInstrumentId,
   makeTokenIdKey,
   type ChainTokenMetadata,
+  type FlowFeatures,
   type MovementDesc,
 } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
+import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { Fail, q, X } from '@endo/errors';
-import { makeEvmAbiCallBatch } from './evm-facade.ts';
+import { makeEvmAbiCallBatch, makeEvmContract } from './evm-facade.ts';
 import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
 import { beefyVaultABI } from './interfaces/beefy.ts';
 import {
@@ -44,11 +46,19 @@ import {
 import { erc20ABI } from './interfaces/erc20.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
 import { merkleDistributorABI } from './interfaces/merkle-distributor.ts';
+import {
+  bundler3ABI,
+  generalAdapter1ABI,
+} from './interfaces/morpho-bundler3.ts';
 import { getOneInchSwapArgs, oneInchRouterABI } from './interfaces/one-inch.ts';
 import {
   tokenMessengerABI,
   tokenMessengerV2ABI,
 } from './interfaces/token-messenger.ts';
+import {
+  universalRouterABI,
+  balanceCheckErc20Schema,
+} from './interfaces/universal-router.ts';
 import { walletHelperABI } from './interfaces/wallet-helper.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -64,6 +74,7 @@ import {
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
+import type { TxId } from './resolver/types.ts';
 import type { PoolKey, EVMContractAddressesMap } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
 import {
@@ -94,10 +105,26 @@ export type EVMContext = {
   resolverClient: GuestInterface<ResolverKit['client']>;
   nobleForwardingChannel: `channel-${number}`;
   detail?: MovementDesc['detail'];
+  /**
+   * Features of the flow this step belongs to. Flows replaying from before a
+   * feature was introduced don't have it, so gate new host interactions on it.
+   */
+  features?: FlowFeatures;
+};
+
+/** Context for sending a GMP contract call. */
+export type GMPCallContext = EVMContext & {
+  /**
+   * Called with the txId of the GMP tx registered for this call, before it is
+   * sent.
+   */
+  onGmpTxId?: (txId: TxId) => void;
 };
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
+
+const MAX_UINT256 = 2n ** 256n - 1n;
 
 export const sendGMPContractCall: typeof sendLegacyGMPContractCall = async (
   ctx,
@@ -150,14 +177,14 @@ const assertSwapTokensConfigured = (
   chainName: AxelarChain,
 ) => {
   const { tokenMetadataById = {} } = chainMetadata[chainName] || {};
-  const tokenInKey = makeTokenIdKey(tokenIn);
-  const tokenOutKey = makeTokenIdKey(tokenOut);
+  const tokenInKey = makeTokenIdKey(tokenIn, `@${chainName}`);
+  const tokenOutKey = makeTokenIdKey(tokenOut, `@${chainName}`);
   tokenMetadataById[tokenInKey]?.usage?.includes('swapFrom') ||
-    Fail`swap tokenIn ${tokenIn} is not configured as a source token on ${q(chainName)}`;
+    Fail`swap tokenIn ${q(tokenIn)} is not configured as a source token on ${q(chainName)}`;
   tokenInKey !== tokenOutKey ||
-    Fail`swap tokenIn ${tokenIn} cannot be the same as tokenOut`;
+    Fail`swap tokenIn ${q(tokenIn)} cannot be the same as tokenOut`;
   tokenMetadataById[tokenOutKey]?.usage?.includes('swapTo') ||
-    Fail`swap tokenOut ${tokenOut} is not configured as a destination token on ${q(chainName)}`;
+    Fail`swap tokenOut ${q(tokenOut)} is not configured as a destination token on ${q(chainName)}`;
 };
 harden(assertSwapTokensConfigured);
 
@@ -172,7 +199,8 @@ const getDefaultSwapToTokenId = (
     ([tokenId, metadata]) => metadata.usage?.includes('swapTo') && tokenId,
   );
   if (swapTo.length === 1) return swapTo[0] as `0x${string}`;
-  const fallbackTokenKey = fallbackTokenId && makeTokenIdKey(fallbackTokenId);
+  const fallbackTokenKey =
+    fallbackTokenId && makeTokenIdKey(fallbackTokenId, `@${chainName}`);
   if (fallbackTokenKey) {
     const fallbackTokenMetadata = tokenMetadataById[fallbackTokenKey];
     if (fallbackTokenMetadata?.usage?.includes('swapTo')) {
@@ -262,7 +290,7 @@ export const CCTP = {
     const { chainId, remoteAddress } = dest;
     traceTransfer('transfer', denomAmount, 'to', remoteAddress);
     amount.value >= CCTP_OUTBOUND_THRESHOLD ||
-      Fail`too small to relay: ${q(amount)} below ${CCTP_OUTBOUND_THRESHOLD}`;
+      Fail`too small to relay: ${q(amount)} below ${q(CCTP_OUTBOUND_THRESHOLD)}`;
     const destinationAddress: AccountId = `${chainId}:${remoteAddress}`;
     const { ica } = src;
 
@@ -377,11 +405,13 @@ export const CCTPv2 = {
 
     const calls = session.finish();
 
-    const { txId, result } = ctx.resolverClient.createPendingTx({
+    const { resolverClient } = ctx;
+    const trackCctpBurn = !!ctx.features?.trackCctpBurn;
+    const cctpTxMeta = harden({
       type: TxType.CCTP_TO_EVM,
-      destinationAddress: `${dest.chainId}:${dest.remoteAddress}`,
+      destinationAddress: `${dest.chainId}:${dest.remoteAddress}` as AccountId,
       amountValue: amount.value,
-      sourceAddress: `${src.chainId}:${src.remoteAddress}`,
+      sourceAddress: `${src.chainId}:${src.remoteAddress}` as AccountId,
       cctpVersion: 2,
       ...(destinationCallerAddress
         ? {
@@ -390,10 +420,30 @@ export const CCTPv2 = {
           }
         : {}),
     });
+    const { txId, result } = resolverClient.createPendingTx(cctpTxMeta);
 
-    const sent = sendGMPContractCall(ctx, src, calls, ...optsArgs);
+    // Without trackCctpBurn, keep the exact host interactions of flows created
+    // before that feature, for replay fidelity.
+    const gmpCtx: GMPCallContext = trackCctpBurn
+      ? {
+          ...ctx,
+          onGmpTxId: burnTxId =>
+            resolverClient.updateTxMeta(
+              txId,
+              harden({ ...cctpTxMeta, burnTxId }),
+            ),
+        }
+      : ctx;
+    const sent = sendGMPContractCall(gmpCtx, src, calls, ...optsArgs);
     appendTxIds(optsArgs[0]?.progressTracker, [txId]);
-    await sent;
+    await (trackCctpBurn
+      ? sent.catch(reason => {
+          // The burn was not executed, so the CCTP transfer will never happen.
+          (result as unknown as Promise<void>).catch(() => {});
+          resolverClient.unsubscribe(txId, `burn failed: ${reason}`);
+          throw reason;
+        })
+      : sent);
     await result;
 
     traceTransfer('transfer complete');
@@ -456,6 +506,28 @@ export const swapRewardToStable = async (
 };
 harden(swapRewardToStable);
 
+const addMinimumBalanceCheck = (
+  session: ReturnType<typeof makeEvmAbiCallBatch>,
+  ctx: EVMContext,
+  owner: `0x${string}`,
+  token: `0x${string}`,
+  minimum: bigint,
+) => {
+  if (minimum === 0n) return;
+  const router =
+    ctx.addresses.universalRouter ||
+    Fail`Universal Router not configured for minimum withdrawal`;
+  const universalRouter = session.makeContract(router, universalRouterABI);
+  // No allow-revert bit: the whole batch fails.
+  universalRouter.execute(balanceCheckErc20Schema.commandByte, [
+    encodeAbiParameters(balanceCheckErc20Schema.inputs, [
+      owner,
+      token,
+      minimum,
+    ]),
+  ]);
+};
+
 export const AaveProtocol = {
   protocol: 'Aave',
   chains: keys(AxelarChain) as AxelarChain[],
@@ -482,6 +554,20 @@ export const AaveProtocol = {
     const calls = session.finish();
 
     return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
+  },
+  withdrawMax: async (ctx, minimumProceeds, dest, ...optsArgs) => {
+    const { addresses: a } = ctx;
+    const session = makeEvmAbiCallBatch();
+    addMinimumBalanceCheck(
+      session,
+      ctx,
+      dest.remoteAddress,
+      a.aaveUSDC,
+      minimumProceeds,
+    );
+    const aave = session.makeContract(a.aavePool, aavePoolABI);
+    aave.withdraw(a.usdc, MAX_UINT256, dest.remoteAddress);
+    return sendGMPContractCall(ctx, dest, session.finish(), ...optsArgs);
   },
   claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
     const { addresses: a } = ctx;
@@ -528,6 +614,20 @@ export const CompoundProtocol = {
 
     return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
+  withdrawMax: async (ctx, minimumProceeds, dest, ...optsArgs) => {
+    const { addresses: a } = ctx;
+    const session = makeEvmAbiCallBatch();
+    addMinimumBalanceCheck(
+      session,
+      ctx,
+      dest.remoteAddress,
+      a.compound,
+      minimumProceeds,
+    );
+    const compound = session.makeContract(a.compound, compoundABI);
+    compound.withdraw(a.usdc, MAX_UINT256);
+    return sendGMPContractCall(ctx, dest, session.finish(), ...optsArgs);
+  },
   claimRewards: async (ctx, dest, _claimParams, ...optsArgs) => {
     const { addresses: a } = ctx;
     const session = makeEvmAbiCallBatch();
@@ -567,10 +667,8 @@ export const BeefyProtocol = {
       assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
     const vault = session.makeContract(vaultAddress, beefyVaultABI);
     const walletHelper = session.makeContract(a.walletHelper, walletHelperABI);
-    // Max possible value for approval
-    const maxUint256 = 2n ** 256n - 1n;
     // Give infinite approval because we dont know the exact amount the helper will withdraw
-    vault.approve(a.walletHelper, maxUint256);
+    vault.approve(a.walletHelper, MAX_UINT256);
     walletHelper.beefyWithdrawUSDC(vaultAddress, amount.value);
     vault.approve(a.walletHelper, 0n);
     const calls = session.finish();
@@ -610,6 +708,49 @@ export const ERC4626Protocol = {
       assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
     const vault = session.makeContract(vaultAddress, erc4626ABI);
     vault.withdraw(amount.value, remoteAddress, remoteAddress);
+    const calls = session.finish();
+
+    await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
+  },
+  redeem: async (ctx, shares, dest, minimumProceeds, ...optsArgs) => {
+    const { addresses: a, poolKey } = ctx;
+    const { remoteAddress } = dest;
+    const session = makeEvmAbiCallBatch();
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`ERC4626 pool key ${q(poolKey)} not found in addresses`);
+    if (minimumProceeds > 0n) {
+      const { morphoBundler3, morphoGeneralAdapter1 } = a;
+      if (!morphoBundler3 || !morphoGeneralAdapter1) {
+        throw Fail`Morpho minimum redemption contracts not configured for ${q(poolKey)}`;
+      }
+      (shares > 0n && shares <= 10n ** 27n) ||
+        Fail`shares ${q(shares)} exceed the range for enforcing a minimum`;
+      const vault = session.makeContract(vaultAddress, erc20ABI);
+      vault.approve(morphoGeneralAdapter1, shares);
+      const adapter = makeEvmContract(generalAdapter1ABI);
+      const redeemData = adapter.erc4626Redeem(
+        vaultAddress,
+        shares,
+        (minimumProceeds * 10n ** 27n) / shares,
+        remoteAddress,
+        remoteAddress,
+      );
+      const bundler = session.makeContract(morphoBundler3, bundler3ABI);
+      bundler.multicall([
+        {
+          to: morphoGeneralAdapter1,
+          data: redeemData,
+          value: 0n,
+          skipRevert: false,
+          callbackHash:
+            '0x0000000000000000000000000000000000000000000000000000000000000000',
+        },
+      ]);
+    } else {
+      const vault = session.makeContract(vaultAddress, erc4626ABI);
+      vault.redeem(shares, remoteAddress, remoteAddress);
+    }
     const calls = session.finish();
 
     await sendGMPContractCall(ctx, dest, calls, ...optsArgs);

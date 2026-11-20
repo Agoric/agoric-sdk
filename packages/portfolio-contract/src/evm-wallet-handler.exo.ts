@@ -33,6 +33,7 @@ import type {
   StatusFor,
 } from '@agoric/portfolio-api';
 import {
+  MAX_YMAX_DEADLINE_OFFSET_SECONDS,
   YmaxPortfolioMessageSchema,
   type YmaxFullDomain,
   type YmaxPermitWitnessTransferFromData,
@@ -60,12 +61,11 @@ import type { PortfolioKit } from './portfolio.exo.ts';
 
 const trace = makeTracer('PEWH');
 
-const MAX_DEADLINE_OFFSET = 60n * 60n * 24n; // 1 day in seconds
 const MAX_SAFE_AGENT_ID = BigInt(Number.MAX_SAFE_INTEGER);
 
 const agentIdFromEIP712 = (agentId: bigint): number => {
   (agentId > 0n && agentId <= MAX_SAFE_AGENT_ID) ||
-    Fail`invalid delegation agent id ${agentId}`;
+    Fail`invalid delegation agent id ${q(agentId)}`;
   return Number(agentId);
 };
 
@@ -85,7 +85,13 @@ type EIP712Data = WithSignature<
 };
 
 type PortfolioEVMFacet = PortfolioKit['evmHandler'];
-interface PortfolioContractPublicFacet {
+
+/**
+ * Contract powers reserved for the EVM wallet handler. Not on the public
+ * facet: `openPortfolioFromEVM` wires the portfolio's `sourceAccountId`, which
+ * must only come from a verified EIP-712 signature.
+ */
+export interface EVMPortfolioPowers {
   openPortfolioFromEVM(
     data:
       | YmaxOperationDetails<'OpenPortfolio'>['data']
@@ -102,6 +108,11 @@ interface PortfolioContractPublicFacet {
     domain: YmaxFullDomain,
     portfolio?: Remote<PortfolioEVMFacet>,
   ): Promise<void>;
+  completeOwnershipTransfer(
+    portfolioId: bigint,
+    signer: Address,
+    domain: YmaxFullDomain,
+  ): Promise<PortfolioEVMFacet>;
 }
 
 /** @private */
@@ -222,14 +233,46 @@ export const prepareEVMPortfolioOperationManager = (
   zone: Zone,
   {
     vowTools: { asVow, watch, when },
-    portfolioContractPublicFacet,
+    evmPortfolioPowers,
     publishStatus,
   }: {
     vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
-    portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
+    evmPortfolioPowers: ERemote<EVMPortfolioPowers>;
     publishStatus: PublishStatus;
   },
 ) => {
+  /**
+   * Hold `evmHandler` in `wallet` and republish the wallet's portfolio paths.
+   *
+   * @returns the id of the attached portfolio
+   */
+  const attachPortfolio = async (
+    { portfolios }: EVMWallet,
+    walletNode: Remote<StorageNode>,
+    evmHandler: Remote<PortfolioEVMFacet>,
+  ): Promise<number> => {
+    const reader = await E(evmHandler).getReaderFacet();
+    const portfolioId = await E(reader).getPortfolioId();
+
+    portfolios.init(BigInt(portfolioId), evmHandler);
+
+    const portfolioPaths = await Promise.all(
+      [...portfolios.values()].map(async pHandler => {
+        const pReader = E(pHandler).getReaderFacet();
+        // Vow is fulfilled promptly
+        const path = await when(E(pReader).getStoragePath());
+        return path as StatusFor['evmWalletPortfolios'][number];
+      }),
+    );
+
+    publishStatus<'evmWalletPortfolios'>(
+      E(walletNode).makeChildNode('portfolio'),
+      portfolioPaths,
+    );
+
+    return portfolioId;
+  };
+
   const makeOutcomeHandlers = zone.exoClassKit(
     'OperationOutcomeHandlers',
     /// XXX should have interface guard
@@ -247,32 +290,14 @@ export const prepareEVMPortfolioOperationManager = (
           evmHandler,
           grantResult,
           autoFeaturesResult,
-        }: Awaited<
-          ReturnType<PortfolioContractPublicFacet['openPortfolioFromEVM']>
-        >) {
+        }: Awaited<ReturnType<EVMPortfolioPowers['openPortfolioFromEVM']>>) {
           await null;
           try {
-            const reader = await E(evmHandler).getReaderFacet();
-            const portfolioId = await E(reader).getPortfolioId();
-            const {
-              wallet: { portfolios },
+            const { wallet, storageNode } = this.state;
+            const portfolioId = await attachPortfolio(
+              wallet,
               storageNode,
-            } = this.state;
-
-            portfolios.init(BigInt(portfolioId), evmHandler);
-
-            const portfolioPaths = await Promise.all(
-              [...portfolios.values()].map(async pHandler => {
-                const pReader = E(pHandler).getReaderFacet();
-                // Vow is fulfilled promptly
-                const path = await when(E(pReader).getStoragePath());
-                return path as StatusFor['evmWalletPortfolios'][number];
-              }),
-            );
-
-            publishStatus<'evmWalletPortfolios'>(
-              E(storageNode).makeChildNode('portfolio'),
-              portfolioPaths,
+              evmHandler,
             );
 
             // A plain open (neither grantee nor features) keeps the bare
@@ -294,6 +319,27 @@ export const prepareEVMPortfolioOperationManager = (
                 : `portfolio${portfolioId}`;
 
             return this.facets.BasicOutcomeWatcher.onFulfilled(result);
+          } catch (e) {
+            return this.facets.BasicOutcomeWatcher.onRejected(e);
+          }
+        },
+        onRejected(reason: unknown) {
+          return this.facets.BasicOutcomeWatcher.onRejected(reason);
+        },
+      },
+      AcceptOwnershipOutcomeWatcher: {
+        async onFulfilled(evmHandler: Remote<PortfolioEVMFacet>) {
+          await null;
+          try {
+            const { wallet, storageNode } = this.state;
+            const portfolioId = await attachPortfolio(
+              wallet,
+              storageNode,
+              evmHandler,
+            );
+            return this.facets.BasicOutcomeWatcher.onFulfilled(
+              `portfolio${portfolioId}`,
+            );
           } catch (e) {
             return this.facets.BasicOutcomeWatcher.onRejected(e);
           }
@@ -357,7 +403,11 @@ export const prepareEVMPortfolioOperationManager = (
         status: 'pending',
       });
 
-      const { BasicOutcomeWatcher, OpenOutcomeWatcher } = makeOutcomeHandlers({
+      const {
+        AcceptOwnershipOutcomeWatcher,
+        BasicOutcomeWatcher,
+        OpenOutcomeWatcher,
+      } = makeOutcomeHandlers({
         wallet,
         address,
         storageNode,
@@ -367,6 +417,23 @@ export const prepareEVMPortfolioOperationManager = (
 
       await null;
       try {
+        if (operationDetails.operation === 'AcceptOwnership') {
+          // The portfolio is not held by this wallet yet, and its domain is
+          // validated against the portfolio when completing the transfer.
+          const {
+            data: { portfolio: portfolioId },
+            domain,
+            permitDetails,
+          } = operationDetails;
+          !permitDetails ||
+            Fail`${q(operationDetails.operation)} does not support deposit permits`;
+          const result = E(evmPortfolioPowers).completeOwnershipTransfer(
+            portfolioId,
+            address,
+            domain,
+          );
+          return watch(result, AcceptOwnershipOutcomeWatcher);
+        }
         const portfolioId =
           operationDetails.operation !== 'OpenPortfolio' &&
           operationDetails.operation !== 'OpenPortfolioWithAutoFeatures' &&
@@ -378,7 +445,7 @@ export const prepareEVMPortfolioOperationManager = (
             ? wallet.portfolios.get(BigInt(portfolioId))
             : undefined;
 
-        await E(portfolioContractPublicFacet).validateEVMMessageDomain(
+        await E(evmPortfolioPowers).validateEVMMessageDomain(
           operationDetails.domain,
           portfolio,
         );
@@ -391,7 +458,7 @@ export const prepareEVMPortfolioOperationManager = (
             if (!permitDetails) {
               throw Fail`Missing permit details for OpenPortfolio operation`;
             }
-            const result = E(portfolioContractPublicFacet).openPortfolioFromEVM(
+            const result = E(evmPortfolioPowers).openPortfolioFromEVM(
               data,
               permitDetails,
             );
@@ -646,7 +713,7 @@ export const prepareEVMWalletMessageHandler = (
             )}`;
           }
 
-          deadline < localChainTime + MAX_DEADLINE_OFFSET ||
+          deadline <= localChainTime + MAX_YMAX_DEADLINE_OFFSET_SECONDS ||
             Fail`Deadline too far in the future: ${q(deadline)} vs ${q(localChainTime)}`;
           insertNonce({ walletOwner, nonce, deadline });
 
@@ -697,14 +764,14 @@ export const prepareEVMWalletHandlerKit = (
     storageNode,
     vowTools,
     timerService,
-    portfolioContractPublicFacet,
+    evmPortfolioPowers,
     publishStatus,
     permit2Addresses,
   }: {
     storageNode: ERemote<StorageNode>;
     vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
     timerService: ERemote<TimerService>;
-    portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
+    evmPortfolioPowers: ERemote<EVMPortfolioPowers>;
     publishStatus: PublishStatus;
     permit2Addresses: { [chainId in `${number | bigint}`]?: Address };
   },
@@ -722,7 +789,7 @@ export const prepareEVMWalletHandlerKit = (
   const { insertNonce, removeExpiredNonces } = makeNonceManager(zone);
   const { handleOperation } = prepareEVMPortfolioOperationManager(zone, {
     vowTools,
-    portfolioContractPublicFacet,
+    evmPortfolioPowers,
     publishStatus,
   });
 

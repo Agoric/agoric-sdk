@@ -44,6 +44,8 @@ export const executeOffer = async <R = any>(
   when: VowTools['when'],
   spec: OfferSpec & { invitationSpec: { source: 'contract' } },
   providePurse?: (b: Brand) => Purse,
+  /** called with the offer result, before waiting for payouts */
+  onResult?: (result: unknown) => void,
 ) => {
   const { invitationSpec, proposal, offerArgs } = spec;
   assert.equal(invitationSpec.source, 'contract', 'not supported');
@@ -58,6 +60,7 @@ export const executeOffer = async <R = any>(
   );
   const seat = await E(zoe).offer(invitation, proposal, payments, offerArgs);
   const result = await when(E(seat).getOfferResult());
+  onResult?.(result);
   const payouts = await E(seat).getPayouts();
   return harden({ result, payouts });
 };
@@ -86,6 +89,13 @@ export interface WalletTool {
     M extends keyof StartedInstanceKit<SF>['publicFacet'],
   >(
     spec: InvitationMakerSpec<SF, M>,
+    opts?: {
+      /**
+       * Called with the offer result as soon as it is available, which can be
+       * well before the payouts (e.g. while a flow the offer started runs).
+       */
+      onResult?: (result: any) => void;
+    },
   ): Promise<{ result: any; payouts: AmountKeywordRecord }>;
   executeContinuingOffer(
     spec: OfferSpec & { invitationSpec: { source: 'continuing' } },
@@ -112,12 +122,19 @@ export const makeWallet = (
 
   const wallet: WalletTool = harden({
     getAssets: () => assets,
-    async executePublicOffer(spec) {
+    async executePublicOffer(spec, { onResult } = {}) {
       const { result, payouts } = await executeOffer(
         zoe,
         when,
         spec,
         providePurse,
+        r => {
+          // Allow continuing offers before the payouts arrive.
+          if (r && typeof r === 'object' && 'invitationMakers' in r) {
+            offerToInvitationMakers.set(spec.id, r.invitationMakers);
+          }
+          onResult?.(r);
+        },
       );
       const refund: AmountKeywordRecord = await deeplyFulfilledObject(
         objectMap(payouts, async pmt => E.when(pmt, wallet.deposit)),

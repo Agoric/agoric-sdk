@@ -9,7 +9,10 @@ import type {
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
-import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
+import {
+  computeTargetBalances,
+  TargetBalanceError,
+} from '@agoric/portfolio-api/src/target-balances.js';
 import type { ComputeTargetBalancesOptions } from '@agoric/portfolio-api/src/target-balances.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
@@ -34,6 +37,7 @@ import type {
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { EvmChain } from './pending-tx-manager.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
+import { WITHDRAWAL_LIQUIDITY_LIMIT_BPS } from './instrument-status.ts';
 
 const scale6 = (x: number) => {
   assert.typeof(x, 'number');
@@ -257,6 +261,7 @@ export type PlannerContext<
   | 'targetAllocation'
   | 'network'
   | 'instrumentBlocks'
+  | 'instrumentLiquidity'
 > & {
   feeBrand: Brand<'nat'>;
   gasEstimator: GasEstimator;
@@ -291,6 +296,8 @@ export const planDepositToAllocations: PlanMaker<{
     targetAllocation,
     depositFromChain: fromChain,
     instrumentBlocks: details.instrumentBlocks,
+    instrumentLiquidity: details.instrumentLiquidity,
+    withdrawalLiquidityLimitBps: WITHDRAWAL_LIQUIDITY_LIMIT_BPS,
   });
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
@@ -322,6 +329,8 @@ export const planRebalanceToAllocations: PlanMaker = async details => {
     network,
     targetAllocation,
     instrumentBlocks: details.instrumentBlocks,
+    instrumentLiquidity: details.instrumentLiquidity,
+    withdrawalLiquidityLimitBps: WITHDRAWAL_LIQUIDITY_LIMIT_BPS,
   });
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
@@ -337,28 +346,54 @@ export const planRebalanceToAllocations: PlanMaker = async details => {
   return flowDetail.plan;
 };
 
-/** Plan a rebalancing withdrawal from current balances and target weights. */
+/** Plan a rebalancing withdrawal, clamped to the available funds. */
 export const planWithdrawFromAllocations: PlanMaker<{
   amount: NatAmount;
   toChain?: SupportedChain;
 }> = async details => {
   const { amount, brand, currentBalances, network, targetAllocation } = details;
+  const { feeBrand, gasEstimator, toChain = 'agoric' } = details;
   const target = computeTargetBalances({
     brand,
     currentBalances,
     network,
     balanceDelta: -amount.value,
+    withdrawToChain: toChain,
     targetAllocation,
     instrumentBlocks: details.instrumentBlocks,
+    instrumentLiquidity: details.instrumentLiquidity,
+    withdrawalLiquidityLimitBps: WITHDRAWAL_LIQUIDITY_LIMIT_BPS,
   });
 
-  const { feeBrand, gasEstimator, toChain = 'agoric' } = details;
   const withdrawTo =
     // TODO(#12309): Remove the `<Cash>` special case in favor of `-agoric`.
     (toChain === 'agoric' ? '<Cash>' : `-${toChain}`) as AssetPlaceRef;
   const zeroAmount = AmountMath.make(brand, 0n);
+  // Target updates omit unchanged places. Their net balance decrease is the
+  // amount available to withdraw, which may be less than the request.
+  const withdrawalValue = typedEntries(target).reduce(
+    (total, [place, targetAmount]) => {
+      if (targetAmount) {
+        total +=
+          (getOwn(currentBalances, place)?.value ?? 0n) - targetAmount.value;
+      }
+      return total;
+    },
+    0n,
+  );
+  if (withdrawalValue <= 0n) {
+    // Nothing can be withdrawn right now (e.g., all funds are in blocked or
+    // illiquid positions, or are too small to move to the destination).
+    // A negative value would be an internal accounting error, but must still
+    // reject the flow rather than leave it awaiting a plan.
+    throw new TargetBalanceError(
+      'No funds are currently available to withdraw.',
+    );
+  }
+  const withdrawalAmount = AmountMath.make(brand, withdrawalValue);
+
   const resolvedCurrent = { ...currentBalances, [withdrawTo]: zeroAmount };
-  const resolvedTarget = { ...target, [withdrawTo]: amount };
+  const resolvedTarget = { ...target, [withdrawTo]: withdrawalAmount };
   const flowDetail = await planRebalanceFlow({
     network,
     current: resolvedCurrent,

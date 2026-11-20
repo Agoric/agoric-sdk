@@ -74,7 +74,7 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: check credentials
-        run: npm whoami
+        run: npm whoami || true
       - name: publish to NPM tag
         run: |
           set -e
@@ -169,7 +169,7 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
 
       - name: check credentials
-        run: npm whoami
+        run: npm whoami || true
 
       - name: publish release versions to NPM
         env:

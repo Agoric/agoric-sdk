@@ -627,7 +627,7 @@ const mainnetTokenMessengerV2 = (rows =>
   ]),
 );
 
-const cctpRelayer = '0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f';
+const cctpRelayer = '0x797680C6C74303564Fd55a45e86bc32a9712b537';
 
 /**
  * 1inch AggregationRouterV6, deployed at the same address on all supported EVM
@@ -646,6 +646,8 @@ const oneInchRouter = '0x111111125421cA6dc452d289314280a0f8842A65';
 const mainnetContracts = {
   Avalanche: {
     aavePool: aaveAddresses.mainnet.Avalanche,
+    morphoBundler3: '0x708e04d46D82d8f1D0A70a3Aa0a780F27fcb3F92',
+    morphoGeneralAdapter1: '0x8BcC016Ab7334A16DCcbEE9AB3FD6E52fEb29E96',
     compound: '0x', // TODO
     compoundRewardsController: '0x', // TODO
     depositFactory: depositFactoryAddresses.mainnet.Avalanche,
@@ -659,6 +661,7 @@ const mainnetContracts = {
     permit2: permit2Addresses.mainnet.Avalanche,
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
     tokenMessengerV2: mainnetTokenMessengerV2.Avalanche.Address,
+    universalRouter: '0x4Dae2f939ACf50408e13d58534Ff8c2776d45265',
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
     Beefy_re7_Avalanche: beefyVaultAddresses.re7.mainnet.Avalanche,
@@ -668,6 +671,8 @@ const mainnetContracts = {
   },
   Ethereum: {
     aavePool: aaveAddresses.mainnet.Ethereum,
+    morphoBundler3: '0x6566194141eefa99Af43Bb5Aa71460Ca2Dc90245',
+    morphoGeneralAdapter1: '0x4A6c312ec70E8747a587EE860a0353cd42Be0aE0',
     cctpRelayer,
     compound: compoundAddresses.mainnet.Ethereum,
     compoundRewardsController:
@@ -683,6 +688,7 @@ const mainnetContracts = {
     permit2: permit2Addresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
     tokenMessengerV2: mainnetTokenMessengerV2.Ethereum.Address,
+    universalRouter: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
     aaveUSDC: aaveUsdcAddresses.mainnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Ethereum,
     Beefy_morphoGauntletUsdc_Ethereum:
@@ -741,6 +747,8 @@ const mainnetContracts = {
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
+    morphoBundler3: '0xFBCd3C258feB131D8E038F2A3a670A7bE0507C05',
+    morphoGeneralAdapter1: '0x79481C87f24A3C4332442A2E9faaf675e5F141f0',
     cctpRelayer,
     compound: compoundAddresses.mainnet.Optimism,
     compoundRewardsController:
@@ -756,6 +764,7 @@ const mainnetContracts = {
     permit2: permit2Addresses.mainnet.Optimism,
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
     tokenMessengerV2: mainnetTokenMessengerV2['OP Mainnet'].Address,
+    universalRouter: '0xCb1355ff08Ab38bBCE60111F1bb2B784bE25D7e8',
     aaveUSDC: aaveUsdcAddresses.mainnet.Optimism,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Optimism,
     Beefy_compoundUsdc_Optimism:
@@ -768,6 +777,8 @@ const mainnetContracts = {
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
+    morphoBundler3: '0x1FA4431bC113D308beE1d46B0e98Cb805FB48C13',
+    morphoGeneralAdapter1: '0x9954aFB60BB5A222714c478ac86990F221788B88',
     cctpRelayer,
     compound: compoundAddresses.mainnet.Arbitrum,
     compoundRewardsController:
@@ -783,6 +794,7 @@ const mainnetContracts = {
     permit2: permit2Addresses.mainnet.Arbitrum,
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
     tokenMessengerV2: mainnetTokenMessengerV2.Arbitrum.Address,
+    universalRouter: '0x5E325eDA8064b456f4781070C0738d849c824258',
     aaveUSDC: aaveUsdcAddresses.mainnet.Arbitrum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Arbitrum,
     Beefy_compoundUsdc_Arbitrum:
@@ -799,6 +811,8 @@ const mainnetContracts = {
   },
   Base: {
     aavePool: aaveAddresses.mainnet.Base,
+    morphoBundler3: '0x6BFd8137e702540E7A42B74178A4a49Ba43920C4',
+    morphoGeneralAdapter1: '0xb98c948CFA24072e58935BC004a8A7b376AE746A',
     cctpRelayer,
     compound: compoundAddresses.mainnet.Base,
     compoundRewardsController: compoundRewardsControllerAddresses.mainnet.Base,
@@ -813,6 +827,7 @@ const mainnetContracts = {
     permit2: permit2Addresses.mainnet.Base,
     tokenMessenger: mainnetTokenMessenger.Base.Address,
     tokenMessengerV2: mainnetTokenMessengerV2.Base.Address,
+    universalRouter: '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD',
     aaveUSDC: aaveUsdcAddresses.mainnet.Base,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Base,
     Beefy_morphoSeamlessUsdc_Base:

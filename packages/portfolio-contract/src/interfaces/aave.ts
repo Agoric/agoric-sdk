@@ -25,6 +25,8 @@ export const aavePoolABI = [
     name: 'withdraw',
     inputs: [
       { name: 'asset', type: 'address' },
+      // amount = uint256.max withdraws the entire current balance.
+      // See https://github.com/aave/aave-v3-core/blob/master/contracts/protocol/libraries/logic/SupplyLogic.sol
       { name: 'amount', type: 'uint256' },
       { name: 'to', type: 'address' },
     ],

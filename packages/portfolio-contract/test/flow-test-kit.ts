@@ -48,7 +48,6 @@ import {
 import {
   onAgoricTransfer,
   executePlan as rawExecutePlan,
-  rebalance as rawRebalance,
   type OnTransferContext,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
@@ -545,17 +544,6 @@ export const mocks = (
     eip155ChainIdToAxelarChain,
   };
 
-  const rebalanceHost = (seat, offerArgs, kit) =>
-    rawRebalance(
-      orch,
-      ctx1,
-      seat,
-      offerArgs,
-      kit,
-      undefined,
-      DEFAULT_FLOW_CONFIG,
-    );
-
   const executePlanHost = (
     seat,
     offerArgs,
@@ -586,7 +574,6 @@ export const mocks = (
     gmpAddresses,
     vowTools,
     transferChannels,
-    rebalance: rebalanceHost as any,
     executePlan: executePlanHost as any,
     onAgoricTransfer: onAgoricTransferHost as any,
     proposalShapes: makeProposalShapes(USDC, BLD),

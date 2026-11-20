@@ -7,7 +7,11 @@
  */
 
 import type { TypeTag } from '@agoric/internal/src/tagged.js';
-import type { SupportedChain, YieldProtocol } from './constants.js';
+import type {
+  AxelarChain,
+  SupportedChain,
+  YieldProtocol,
+} from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type {
   AssetPlaceRef,
@@ -15,6 +19,7 @@ import type {
   InterChainAccountRef,
   LocalChainAccountRef,
   PortfolioBalancePlaceRef,
+  TypedHoldingDetail,
   WithdrawToChainRef,
 } from './types.js';
 
@@ -35,8 +40,24 @@ export type TokenUsage = 'swapFrom' | 'swapTo';
 
 export type TokenIdKey = TypeTag<string, 'TokenIdKey'>;
 
-export const makeTokenIdKey = (tokenId: string): TokenIdKey =>
-  (tokenId.startsWith('0x') ? tokenId.toLowerCase() : tokenId) as TokenIdKey;
+/**
+ * Canonicalize a token ID for comparison using its place's chain.
+ * Supply place when known; omitting it preserves legacy 0x lowercasing.
+ */
+export const makeTokenIdKey = (
+  tokenId: string,
+  place?: unknown,
+): TokenIdKey => {
+  if (typeof tokenId !== 'string') {
+    throw TypeError('tokenId must be a string');
+  }
+  // Canonical lowercase tokenIdKey on unspecified place or EVM.
+  const probablyEvm = place == null || isEvmChain(maybeChainOf(place));
+  if (probablyEvm && tokenId.startsWith('0x')) {
+    return tokenId.toLowerCase() as TokenIdKey;
+  }
+  return tokenId as TokenIdKey;
+};
 deepFreeze(makeTokenIdKey);
 
 /**
@@ -358,3 +379,81 @@ export const chainOf = (id: AssetPlaceRef): SupportedChain => {
   throw Error(`Cannot determine chain for ${id}`);
 };
 deepFreeze(chainOf);
+
+/** JS idiom for `Some SupportedChain | None`. */
+export const maybeChainOf = (id: unknown): SupportedChain | null => {
+  try {
+    return chainOf(id as AssetPlaceRef);
+  } catch {
+    return null;
+  }
+};
+deepFreeze(maybeChainOf);
+
+// Type-only coverage keeps this module Endo-free and checks additions to
+// AxelarChain without importing the runtime constants module.
+const evmChains = deepFreeze({
+  Arbitrum: true,
+  Avalanche: true,
+  Base: true,
+  Ethereum: true,
+  Optimism: true,
+} as const satisfies Record<AxelarChain, true>);
+
+/** Whether the specimen names an opted-in EVM chain. */
+export const isEvmChain = (specimen: unknown): boolean =>
+  typeof specimen === 'string' && Object.hasOwn(evmChains, specimen);
+deepFreeze(isEvmChain);
+
+/**
+ * Get a holding identity suitable for use as a PropertyKey.
+ * Place and kind compare exactly; token IDs compare canonical form,
+ * which is lowercased on the EVM.
+ *
+ * The original holding remains unchanged for signing and chain operations.
+ */
+export const getCanonicalHoldingKey = (
+  holding: Partial<Pick<TypedHoldingDetail, 'place' | 'kind' | 'tokenId'>>,
+): string => {
+  const { place = null, kind = null, tokenId = null } = holding;
+
+  if (tokenId == null) {
+    throw TypeError(`cannot canonicalize nullish tokenId`);
+  }
+
+  // Canonical key form.
+  return JSON.stringify([place, kind, makeTokenIdKey(tokenId, place)]);
+};
+deepFreeze(getCanonicalHoldingKey);
+
+/**
+ * Compare nonempty token IDs, requiring a 0x payload for EVM IDs.
+ * Empty native `$SYMBOL` identifiers never match, even each other.
+ */
+export const matchHoldingTokenId = (
+  holding: Pick<TypedHoldingDetail, 'place' | 'tokenId'> & {
+    kind?: TypedHoldingDetail['kind'];
+  },
+  tokenId: string,
+): boolean => {
+  const { tokenId: holdingTokenId } = holding;
+  if (!holdingTokenId || !tokenId) return false;
+
+  // EVM token IDs must contain a 0x-prefixed payload.
+  if (isEvmChain(maybeChainOf(holding.place))) {
+    if (
+      !holdingTokenId.startsWith('0x') ||
+      !tokenId.startsWith('0x') ||
+      holdingTokenId.length < 3 ||
+      tokenId.length < 3
+    ) {
+      return false;
+    }
+  }
+
+  return (
+    makeTokenIdKey(holdingTokenId, holding.place) ===
+    makeTokenIdKey(tokenId, holding.place)
+  );
+};
+deepFreeze(matchHoldingTokenId);

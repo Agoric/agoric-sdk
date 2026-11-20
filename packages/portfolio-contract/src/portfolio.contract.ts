@@ -73,8 +73,12 @@ import { E, type ERef } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord, Passable } from '@endo/pass-style';
 import { M, objectMap } from '@endo/patterns';
+import type { Address as EvmAddress } from 'abitype';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
-import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
+import {
+  prepareEVMWalletHandlerKit,
+  type EVMPortfolioPowers,
+} from './evm-wallet-handler.exo.ts';
 import {
   makePortfolioObservationsVerifier,
   type PortfolioObservationsVerifier,
@@ -93,6 +97,7 @@ import {
   BeefyPoolPlaces,
   ERC4626PoolPlaces,
   makeProposalShapes,
+  PoolPlaces,
   type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
@@ -151,10 +156,31 @@ const extractContractAddresses = <T extends keyof EVMContractAddresses>(
               ],
             ] as const)
           : []
-        : Fail`missing ${key} address for chain ${chainName}`,
+        : Fail`missing ${q(key)} address for chain ${q(chainName)}`,
     ),
   ) satisfies Partial<Record<AxelarChain, AccountId>>;
   return addresses;
+};
+
+/**
+ * Reject pool addresses listed under a chain other than the pool's own.
+ *
+ * Steps look up pool addresses on the chain where they run. A pool listed under
+ * another chain would let a step that reaches the pool from the wrong chain
+ * call that address there, where it may be an unrelated contract.
+ */
+export const assertPoolAddressesOnOwnChain = (
+  contracts: EVMContractAddressesMap,
+): void => {
+  for (const [chain, addresses] of Object.entries(contracts)) {
+    const misplaced = keys(addresses).filter(
+      key =>
+        Object.hasOwn(PoolPlaces, key) &&
+        PoolPlaces[key as keyof typeof PoolPlaces].chainName !== chain,
+    );
+    misplaced.length === 0 ||
+      Fail`contracts for ${q(chain)} list pools of other chains: ${q(misplaced)}`;
+  }
 };
 
 /**
@@ -241,6 +267,9 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
       remoteAccountRouter: M.string(),
       remoteAccountImplementation: M.string(),
       oneInchRouter: M.string(),
+      morphoBundler3: M.string(),
+      morphoGeneralAdapter1: M.string(),
+      universalRouter: M.string(),
     },
   );
 
@@ -303,6 +332,11 @@ export type EVMContractAddresses = {
   walletHelper: `0x${string}`;
   /** 1inch AggregationRouterV6; mainnet-only (1inch has no testnet support) */
   oneInchRouter?: `0x${string}`;
+  /** Morpho's atomic minimum-price redemption path. */
+  morphoBundler3?: `0x${string}`;
+  morphoGeneralAdapter1?: `0x${string}`;
+  /** Uniswap Universal Router supporting BALANCE_CHECK_ERC20. */
+  universalRouter?: `0x${string}`;
 } & Partial<BeefyContracts> &
   Partial<ERC4626Contracts>;
 
@@ -473,7 +507,7 @@ const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
  * @param zone - Durable storage zone for contract state persistence
  * @param tools - Orchestration tools for cross-chain operations and Zoe integration
  * @see {@link openPortfolio} for portfolio creation flow details
- * @see {@link rebalance} for position management flow details
+ * @see {@link executePlan} for position management flow details
  * @see {@link start}
  */
 export const contract = async (
@@ -502,6 +536,7 @@ export const contract = async (
 
   assert(brands.USDC, 'USDC missing from brands in terms');
   assert(brands.Fee, 'Fee missing from brands in terms');
+  assertPoolAddressesOnOwnChain(contracts);
 
   // Only register chains and assets if chainHub is empty to avoid conflicts on restart
   if (chainHub.isEmpty()) {
@@ -628,7 +663,9 @@ export const contract = async (
   // `config` argument (which defaults to the original, pre-progressTracker
   // behavior), but newly-invoked flows get `config = defaultFlowConfig`.
   //
-  // Create rebalance flow first - needed by preparePortfolioKit
+  // Create executePlan flow first - needed by preparePortfolioKit.
+  // `rebalance` is a tombstone (AGO-1394); it stays registered because
+  // async-flow requires every previously registered flow across upgrades.
   const orchFns1 = orchestrateAll(
     {
       executePlan: flows.executePlan,
@@ -654,15 +691,6 @@ export const contract = async (
       ...flowCfg(config),
       options,
     );
-  const rebalance: typeof orchFns1.rebalance = (
-    seat,
-    offerArgs,
-    kit,
-    startedFlow,
-    config = defaultFlowConfig,
-  ) =>
-    orchFns1.rebalance(seat, offerArgs, kit, startedFlow, ...flowCfg(config));
-
   // unused but must be defined for upgrade
   const { parseInboundTransfer: _obsolete } = orchestrateAll(
     { parseInboundTransfer: flows.parseInboundTransfer },
@@ -684,8 +712,18 @@ export const contract = async (
     txfrCtx,
   );
 
-  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
-  const getPortfolio = (id: number) => portfolios.get(id);
+  /**
+   * Each portfolio's kit, as of its creation: facets added to the kind by
+   * later upgrades are missing from older entries. Only `manager` has
+   * existed since the first release.
+   */
+  const portfolios = zone.mapStore<
+    number,
+    Pick<PortfolioKit, 'manager'> & Partial<PortfolioKit>
+  >('portfolios');
+  /** Get a portfolio's kit, with all of its current facets. */
+  const getPortfolio = (id: number): PortfolioKit =>
+    portfolios.get(id).manager.getKit();
 
   const plannerDelegations = zone.mapStore<
     PortfolioKit['planner'],
@@ -770,7 +808,6 @@ export const contract = async (
     inertSeat,
     vowTools,
     executePlan,
-    rebalance,
     onAgoricTransfer,
     proposalShapes,
     offerArgsShapes,
@@ -779,10 +816,12 @@ export const contract = async (
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
+    agoricUsdcDenom: ctx1.usdc.denom,
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
     verifyPortfolioObservations,
+    timerService,
   });
 
   /**
@@ -835,9 +874,8 @@ export const contract = async (
   // Access token gating has been removed; if provided, consume one for backward compatibility.
   const consumeAccessToken = brands.Access
     ? (seat: ZCFSeat) => {
-        const {
-          give: { Access: offeredAccess },
-        } = seat.getProposal() as ProposalType['openPortfolio'];
+        const { Access: offeredAccess } = seat.getProposal()
+          .give as ProposalType['openPortfolio']['give'];
         if (!offeredAccess) return;
         const Access = AmountMath.make(brands.Access, 1n);
         zcf.atomicRearrange(harden([[seat, usedAccessTokens, { Access }]]));
@@ -857,7 +895,7 @@ export const contract = async (
      *
      * @see {@link OfferArgsFor.openPortfolio} for offer arguments
      * @see {@link openPortfolio} for the underlying flow implementation
-     * @see {@link rebalance} for position management flow details
+     * @see {@link executePlan} for position management flow details
      */
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
@@ -898,6 +936,14 @@ export const contract = async (
         proposalShapes.openPortfolio,
       );
     },
+  } satisfies Record<PortfolioPublicInvitationMaker, any> & ThisType<any>);
+
+  /**
+   * Powers reserved for the EVM wallet handler, which only invokes them for
+   * EIP-712 messages whose signer it verified. Kept off the public facet so
+   * nobody else can open a portfolio with an unverified `sourceAccountId`.
+   */
+  const evmPortfolioPowers = zone.exo('EVMPortfolioPowers', interfaceTODO, {
     /**
      * Open a portfolio for EVM users with a signed Permit2 deposit.
      *
@@ -944,10 +990,10 @@ export const contract = async (
       const fromChain =
         eip155ChainIdToAxelarChain[`${Number(permitDetails.chainId)}`];
       if (!fromChain) {
-        throw Fail`no Axelar chain for EIP-155 chainId ${permitDetails.chainId}`;
+        throw Fail`no Axelar chain for EIP-155 chainId ${q(permitDetails.chainId)}`;
       }
       sameEvmAddress(permitDetails.token, contracts[fromChain].usdc) ||
-        Fail`permit2 token address ${permitDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
+        Fail`permit2 token address ${q(permitDetails.token)} does not match usdc contract address ${q(contracts[fromChain].usdc)} for chain ${q(fromChain)}`;
       const amount = AmountMath.make(brands.USDC, permitDetails.amount);
       const grantee =
         'grantee' in data && data.grantee !== undefined
@@ -1049,9 +1095,32 @@ export const contract = async (
         );
       }
     },
-  } satisfies Record<PortfolioPublicInvitationMaker, any> &
-    Record<'openPortfolioFromEVM' | 'validateEVMMessageDomain', any> &
-    ThisType<any>);
+    /**
+     * Complete the pending transfer of a portfolio from its Agoric owner to
+     * `signer`, who signed an `AcceptOwnership` message for it in `domain`.
+     *
+     * @returns the portfolio's evmHandler, for the new owner's wallet
+     */
+    async completeOwnershipTransfer(
+      portfolioId: bigint,
+      signer: EvmAddress,
+      domain: YmaxFullDomain,
+    ): Promise<PortfolioKit['evmHandler']> {
+      const id = Number(portfolioId);
+      const kit = portfolios.has(id)
+        ? getPortfolio(id)
+        : Fail`no portfolio${q(id)}`;
+      // Also checks that the domain chain is supported. The portfolio id
+      // alone does not tell ymax instances apart; the verifying contract does.
+      kit.evmHandler.validateRepresentativeInfo(
+        domain.chainId,
+        domain.verifyingContract,
+      );
+      // Resolves promptly
+      const { absValue: now } = await E(timerService).getCurrentTimestamp();
+      return kit.ownerTransfer.complete(signer, BigInt(domain.chainId), now);
+    },
+  } satisfies EVMPortfolioPowers);
 
   const prepareResultOnlyInvitation = <R>(
     description: string,
@@ -1092,7 +1161,7 @@ export const contract = async (
       storageNode: E(storageNode).makeChildNode('evmWallets'),
       vowTools,
       timerService,
-      portfolioContractPublicFacet: publicFacet,
+      evmPortfolioPowers,
       publishStatus,
       permit2Addresses,
     },

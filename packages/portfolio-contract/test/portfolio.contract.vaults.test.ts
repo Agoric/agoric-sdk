@@ -9,7 +9,6 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
-  setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
 } from './contract-setup.ts';
@@ -21,6 +20,7 @@ import {
   beefyTestMacro,
   getPortfolioInfoTimed,
   erc4626TestMacro,
+  setupPlannedTrader,
 } from './contract-test-support.ts';
 
 test(
@@ -55,7 +55,7 @@ test(
 );
 
 test('Withdraw from a Beefy position (future client)', async t => {
-  const { trader1, common, txResolver } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupPlannedTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -94,30 +94,24 @@ test('Withdraw from a Beefy position (future client)', async t => {
 
   const result = actual.result as any;
 
-  const withdrawP = trader1.rebalance(
-    t,
-    { give: {}, want: {} },
+  const withdrawP = trader1.withdraw(t, amount, [
     {
-      flow: [
-        {
-          src: 'Beefy_re7_Avalanche',
-          dest: '@Avalanche',
-          amount,
-          fee: feeCall,
-        },
-        {
-          src: '@Avalanche',
-          dest: '@agoric',
-          amount,
-        },
-        {
-          src: '@agoric',
-          dest: '<Cash>',
-          amount,
-        },
-      ],
+      src: 'Beefy_re7_Avalanche',
+      dest: '@Avalanche',
+      amount,
+      fee: feeCall,
     },
-  );
+    {
+      src: '@Avalanche',
+      dest: '@agoric',
+      amount,
+    },
+    {
+      src: '@agoric',
+      dest: '<Cash>',
+      amount,
+    },
+  ]);
 
   // GMP transaction settlement for the withdraw
   await txResolver.drainPending();
@@ -146,7 +140,7 @@ test(
 );
 
 test('Withdraw from an ERC4626 position', async t => {
-  const { trader1, common, txResolver } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupPlannedTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -185,30 +179,24 @@ test('Withdraw from an ERC4626 position', async t => {
 
   const result = actual.result as any;
 
-  const withdrawP = trader1.rebalance(
-    t,
-    { give: {}, want: {} },
+  const withdrawP = trader1.withdraw(t, amount, [
     {
-      flow: [
-        {
-          src: 'ERC4626_vaultU2_Ethereum',
-          dest: '@Ethereum',
-          amount,
-          fee: feeCall,
-        },
-        {
-          src: '@Ethereum',
-          dest: '@agoric',
-          amount,
-        },
-        {
-          src: '@agoric',
-          dest: '<Cash>',
-          amount,
-        },
-      ],
+      src: 'ERC4626_vaultU2_Ethereum',
+      dest: '@Ethereum',
+      amount,
+      fee: feeCall,
     },
-  );
+    {
+      src: '@Ethereum',
+      dest: '@agoric',
+      amount,
+    },
+    {
+      src: '@agoric',
+      dest: '<Cash>',
+      amount,
+    },
+  ]);
 
   // GMP transaction settlement for the withdraw
   await txResolver.drainPending();
@@ -233,7 +221,7 @@ test('Withdraw from an ERC4626 position', async t => {
 });
 
 test('claim rewards on Morpho ERC4626 position successfully', async t => {
-  const { trader1, common, txResolver } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupPlannedTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -312,6 +300,7 @@ test('claim rewards on Morpho ERC4626 position successfully', async t => {
   );
 
   // GMP transaction settlement for the claim
+  await trader1.whenPlanned();
   await txResolver.drainPending();
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
@@ -332,7 +321,7 @@ test('claim rewards on Morpho ERC4626 position successfully', async t => {
 });
 
 test('claim rewards on Compound position successfully', async t => {
-  const { trader1, common, txResolver } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupPlannedTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -373,7 +362,7 @@ test('claim rewards on Compound position successfully', async t => {
 
   const rebalanceP = trader1.rebalance(
     t,
-    { give: { Deposit: amount }, want: {} },
+    { give: {}, want: {} },
     {
       flow: [
         {
@@ -390,6 +379,7 @@ test('claim rewards on Compound position successfully', async t => {
     },
   );
 
+  await trader1.whenPlanned();
   await txResolver.drainPending();
 
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
