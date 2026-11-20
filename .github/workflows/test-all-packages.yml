@@ -628,6 +628,12 @@ jobs:
         with:
           node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
+      - uses: ./.github/actions/restore-golang
+        with:
+          go-version: '1.24'
+      - name: Build daemon for Solo CLI fixtures
+        if: matrix.engine != 'xs'
+        run: bin/agd version
       - name: yarn test (solo)
         if: (success() || failure())
         run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
