@@ -14,7 +14,7 @@ on:
         options:
           - ymax0-devnet
           - ymax0-main
-          - ymax1-main
+          - ymax1-mainnet-contract
       releaseTag:
         description: Release tag to create or use
         required: true
@@ -55,7 +55,7 @@ on:
         type: boolean
         default: false
       ymax1Planner:
-        description: 'Attest ymax1 planner state (must be "down" for ymax1-main upgrades). Operator is responsible for actually stopping the planner.'
+        description: 'Attest ymax1 planner state (must be "down" for ymax1-mainnet-contract upgrades). Operator is responsible for actually stopping the planner.'
         required: false
         type: choice
         options:
@@ -74,6 +74,7 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     outputs:
+      target: ${{ steps.plan.outputs.target }}
       need_bundle_build: ${{ steps.plan.outputs.need_bundle_build }}
       need_pre_upgrade: ${{ steps.plan.outputs.need_pre_upgrade }}
       need_upgrade_submit: ${{ steps.plan.outputs.need_upgrade_submit }}
@@ -97,12 +98,13 @@ jobs:
           MODE: deploy
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
-          TARGET: ${{ inputs.target }}
+          # Keep the CLI target and release asset names stable.
+          TARGET: ${{ inputs.target == 'ymax1-mainnet-contract' && 'ymax1-main' || inputs.target }}
         run: node .github/scripts/plan-ymax-release.mjs
 
   build-bundle:
     needs: plan
-    if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
+    if: needs.plan.outputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
     uses: ./.github/workflows/build-bundles.yml
     with:
       package: portfolio-deploy
@@ -121,7 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       # Replace "ymax$n-main" suffixes with "ymax$n-mainnet", but preserve "ymax0-devnet".
-      name: ${{ inputs.target == 'ymax0-main' && 'ymax0-mainnet' || inputs.target == 'ymax1-main' && 'ymax1-mainnet' || inputs.target }}
+      name: ${{ needs.plan.outputs.target == 'ymax0-main' && 'ymax0-mainnet' || needs.plan.outputs.target == 'ymax1-main' && 'ymax1-mainnet' || needs.plan.outputs.target }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -130,7 +132,7 @@ jobs:
       - uses: ./.github/actions/setup-agoric-sdk-build
 
       - name: Download bundle artifact
-        if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
+        if: needs.plan.outputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
         uses: actions/download-artifact@v8
         with:
           name: ${{ needs.build-bundle.outputs.artifact-name }}
@@ -138,11 +140,11 @@ jobs:
 
       - name: Run pre-upgrade phase
         env:
-          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          AGORIC_NET: ${{ needs.plan.outputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
           BRANCH: ${{ inputs.branch }}
           GITHUB_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
-          TARGET: ${{ inputs.target }}
+          TARGET: ${{ needs.plan.outputs.target }}
           YMAX_INSTALL_BUNDLE_MNEMONIC: ${{ secrets.YMAX_INSTALL_BUNDLE_MNEMONIC }}
         run: |
           set -o pipefail
@@ -157,10 +159,8 @@ jobs:
               | packages/portfolio-deploy/scripts/tee-to-github-step-summary.sh "$GITHUB_STEP_SUMMARY" >&2
           } 3>&1
 
-  # Does everything short of actually broadcasting: validates inputs, generates
-  # or re-validates the unsigned/detached artifacts, and reports whether a
-  # signed tx is ready. Unprotected (no environment) so it never prompts for
-  # approval (which is the purview of `upgrade-submit`).
+  # Validates signing inputs, generates or re-validates signing artifacts,
+  # and reports whether the upgrade is ready to submit.
   upgrade-prepare:
     permissions:
       contents: write
@@ -203,20 +203,20 @@ jobs:
       - name: Prepare upgrade signing state
         id: prepare
         env:
-          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          AGORIC_NET: ${{ needs.plan.outputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
           AUTHZ_GRANTEE: ${{ inputs.authzGrantee }}
           GITHUB_TOKEN: ${{ github.token }}
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
           SIGNING_KEY: ${{ inputs.signingKey }}
-          TARGET: ${{ inputs.target }}
+          TARGET: ${{ needs.plan.outputs.target }}
         run: |
           set -euo pipefail
 
           case "$SIGNING_KEY" in
             ci-secret)
-              # Attach privateArgs for review before upgrade-submit (and
-              # its approval gate), which then reuses them.
+              # Attach privateArgs for upgrade-submit to reuse. Operators can
+              # set stopBeforeSubmit to review them before broadcasting.
               {
                 packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
                   phase-upgrade-args \
@@ -278,7 +278,7 @@ jobs:
         if: inputs.stopBeforeSubmit
         env:
           RELEASE_TAG: ${{ inputs.releaseTag }}
-          TARGET: ${{ inputs.target }}
+          TARGET: ${{ needs.plan.outputs.target }}
         run: |
           message="Stopped before submitting the $TARGET upgrade (stopBeforeSubmit). Review the $TARGET-privateArgsOverrides-* and $TARGET-allegedPrivateArgs-* assets (incl. .diff) on release $RELEASE_TAG, then rerun without stopBeforeSubmit to submit."
           echo "::notice::$message"
@@ -287,21 +287,15 @@ jobs:
             printf '\n%s\n' "$message"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Enforced here, once a signed tx is actually ready, rather than
-      # earlier: this job can rerun freely while cosigners are still
-      # collecting signatures without requiring the planner be down for
-      # the whole wait. It's also checked before upgrade-submit's approval
-      # gate so a human is never asked to approve a broadcast that this
-      # step would immediately block anyway.
+      # Require the planner to be down once the workflow is ready to broadcast.
+      # Cosigners can collect signatures while the planner is still running.
       - name: Require ymax1 planner down
-        if: steps.prepare.outputs.ready_to_broadcast == 'true' && !inputs.stopBeforeSubmit && inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
+        if: steps.prepare.outputs.ready_to_broadcast == 'true' && !inputs.stopBeforeSubmit && needs.plan.outputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
         run: |
-          echo '::error::ymax1Planner must be down for ymax1-main. Stop the planner, then rerun this workflow with ymax1Planner=down.'
+          echo '::error::ymax1Planner must be down for ymax1-mainnet-contract. Stop the planner, then rerun this workflow with ymax1Planner=down.'
           exit 1
 
-  # Only job that broadcasts to chain, so it's the only one gated by
-  # environment approval — and only runs (so only ever prompts) once
-  # upgrade-prepare reports a signed tx is actually ready to send.
+  # Broadcasts to the chain once upgrade-prepare reports readiness.
   upgrade-submit:
     permissions:
       contents: write
@@ -320,8 +314,9 @@ jobs:
     outputs:
       upgrade_submitted: ${{ steps.upgrade.outputs.upgrade_submitted }}
     environment:
-      # Replace "ymax$n-main" suffixes with "ymax$n-mainnet", but preserve "ymax0-devnet".
-      name: ${{ inputs.target == 'ymax0-main' && 'ymax0-mainnet' || inputs.target == 'ymax1-main' && 'ymax1-mainnet' || inputs.target }}
+      # The shared ymax1-mainnet environment gates planner deployments and
+      # standalone confirmations. Release submissions use their own environment.
+      name: ${{ needs.plan.outputs.target == 'ymax0-main' && 'ymax0-mainnet' || needs.plan.outputs.target == 'ymax1-main' && 'ymax1-mainnet-contract' || needs.plan.outputs.target }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -332,14 +327,14 @@ jobs:
       - name: Run upgrade submit phase
         id: upgrade
         env:
-          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          AGORIC_NET: ${{ needs.plan.outputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
           AUTHZ_GRANTEE: ${{ inputs.authzGrantee }}
           GITHUB_TOKEN: ${{ github.token }}
           MNEMONIC: ${{ inputs.signingKey == 'ci-secret' && secrets.YMAX_CONTROL_MNEMONIC || '' }}
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
           SIGNING_KEY: ${{ inputs.signingKey }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
-          TARGET: ${{ inputs.target }}
+          TARGET: ${{ needs.plan.outputs.target }}
         run: |
           set -euo pipefail
 
@@ -389,11 +384,11 @@ jobs:
 
       - name: Run upgrade confirm phase
         env:
-          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          AGORIC_NET: ${{ needs.plan.outputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
           GITHUB_TOKEN: ${{ github.token }}
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
-          TARGET: ${{ inputs.target }}
+          TARGET: ${{ needs.plan.outputs.target }}
         run: |
           set -o pipefail
           {
