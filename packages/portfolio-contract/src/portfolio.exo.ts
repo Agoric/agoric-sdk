@@ -990,6 +990,7 @@ export const preparePortfolioKit = (
           const flowDetail: FlowDetail = {
             type: 'claimRewards',
             agent: `agent${agentId}`,
+            createdAtPolicyVersion: policyVersion,
             ...(agentMemo != null && { agentMemo }),
           };
           const startedFlow = manager.startFlow(flowDetail);

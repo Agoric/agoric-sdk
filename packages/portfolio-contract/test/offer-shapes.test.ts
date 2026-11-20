@@ -603,6 +603,12 @@ test('vstorage flow detail type matches shape', t => {
         result: { policyVersion: 1 },
       },
     },
+    delegatedClaimRewards: {
+      type: 'claimRewards',
+      agent: 'agent1',
+      agentMemo: 'memo',
+      createdAtPolicyVersion: 3,
+    },
   });
 
   const failCases = harden({

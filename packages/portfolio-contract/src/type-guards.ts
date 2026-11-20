@@ -315,7 +315,11 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
   ),
   M.splitRecord(
     { type: 'claimRewards' },
-    { agent: PortfolioAgentKeyShape, initiatingOperation: M.undefined() },
+    {
+      agent: PortfolioAgentKeyShape,
+      initiatingOperation: M.undefined(),
+      createdAtPolicyVersion: M.number(),
+    },
   ),
 );
 

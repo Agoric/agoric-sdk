@@ -764,7 +764,12 @@ test('planner starts delegated claimRewards and resolves its plan', async t => {
     policyVersion: 2,
     rebalanceCount: 1,
     flowsRunning: {
-      flow1: { type: 'claimRewards', agent: 'agent1', agentMemo: '12345' },
+      flow1: {
+        type: 'claimRewards',
+        agent: 'agent1',
+        agentMemo: '12345',
+        createdAtPolicyVersion: 2,
+      },
     },
   });
 });

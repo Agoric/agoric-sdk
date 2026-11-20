@@ -1989,6 +1989,17 @@ test('delegated requests reject an active claimRewards flow with matching sync s
   t.is(client.claimRewards({ syncState }), 'flow1');
   reader.checkVersion(syncState.policyVersion, syncState.rebalanceCount);
   const running = await getPortfolioStatus!(1);
+  t.like(
+    running.flowsRunning,
+    {
+      flow1: {
+        type: 'claimRewards',
+        agent: `agent${agentId}`,
+        createdAtPolicyVersion: syncState.policyVersion,
+      },
+    },
+    'delegated claims record the policy version they were requested at',
+  );
   const calls = getCallLog();
   for (const attempt of [
     () => client.rebalance({ syncState }),

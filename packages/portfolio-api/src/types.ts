@@ -445,6 +445,8 @@ export type FlowDetail =
       agent?: PortfolioAgentKey;
       agentMemo?: string;
       initiatingOperation?: undefined;
+      /** Policy version current when this flow was requested. */
+      createdAtPolicyVersion?: number;
     };
 
 /** linked list of concurrent failures, including dependencies */
