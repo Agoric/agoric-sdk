@@ -20,7 +20,8 @@
  *
  * This module has no runtime dependency on Endo, so that it can be used
  * outside of a locked-down (SES) environment, e.g. by the attestor. In
- * particular, the values it returns are not hardened.
+ * particular, the values it returns are not hardened, but they share no
+ * state with the caller's: the converters validate a copy of their input.
  */
 
 import type {
@@ -323,17 +324,45 @@ const balancesFromTypedHoldings = (
 };
 
 /**
+ * A deep copy of plain data (arrays, records and primitives), so that what is
+ * validated cannot then be changed through references the caller retains.
+ * Rejects anything else (e.g. a `Uint8Array`), which the converters' types
+ * never declare.
+ */
+const copyPlainData = <T>(value: T): T => {
+  if (Array.isArray(value)) return value.map(copyPlainData) as T;
+  if (typeof value === 'function') {
+    throw TypeError('expected plain data, got a function');
+  }
+  if (value !== null && typeof value === 'object') {
+    const proto = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null) {
+      throw TypeError(
+        `expected plain data, got ${Object.prototype.toString.call(value)}`,
+      );
+    }
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, copyPlainData(v)]),
+    ) as T;
+  }
+  return value;
+};
+
+/**
  * Author either legacy balances or typed holdings using the shared schema.
  * Typed holdings always carry `valueUusd`, with {@link VALUE_UUSD_UNKNOWN}
  * standing for an absent valuation. With typed holdings, `balances` may only
  * repeat what their `balanceUsdc` values derive (as decoding returns), so no
  * balance is silently dropped.
  */
-export const portfolioObservationsToEIP712 = ({
-  portfolioId,
-  syncState,
-  observations: { balances, holdings, instrumentTvls },
-}: PortfolioObservationsContent): PortfolioObservationsEIP712Input => {
+export const portfolioObservationsToEIP712 = (
+  content: PortfolioObservationsContent,
+): PortfolioObservationsEIP712Input => {
+  const {
+    portfolioId,
+    syncState,
+    observations: { balances, holdings, instrumentTvls },
+  } = copyPlainData(content);
   for (const [field, value] of Object.entries({
     portfolio: portfolioId,
     ...syncState,
@@ -382,7 +411,7 @@ export const portfolioObservationsToEIP712 = ({
   );
   return {
     portfolio: portfolioId,
-    syncState: { ...syncState },
+    syncState,
     holdings:
       holdings === undefined ? legacy : holdings.map(typedHoldingToEIP712),
     instruments,
@@ -397,12 +426,11 @@ export const portfolioObservationsToEIP712 = ({
  * A typed holding's {@link VALUE_UUSD_UNKNOWN} valuation decodes to an absent
  * `valueUusd`.
  */
-export const portfolioObservationsFromEIP712 = ({
-  portfolio,
-  syncState,
-  holdings,
-  instruments,
-}: PortfolioObservationsEIP712): PortfolioObservationsContent => {
+export const portfolioObservationsFromEIP712 = (
+  message: PortfolioObservationsEIP712,
+): PortfolioObservationsContent => {
+  const { portfolio, syncState, holdings, instruments } =
+    copyPlainData(message);
   const legacyBalances: PlanObservations['balances'] = {};
   const rawHoldings: TypedHoldingDetail[] = [];
   for (const holding of holdings) {
