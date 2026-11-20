@@ -1554,7 +1554,7 @@ test('delegated plans: allocation permission cannot submit reward claims', async
         ],
       },
     }),
-    { message: 'allocation plan does not support claimRewards' },
+    { message: 'reward claims and swaps are not supported here' },
   );
   await eventLoopIteration();
   const after = await peteKit.evmTrader.getPortfolioStatus();
