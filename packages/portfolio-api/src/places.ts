@@ -37,6 +37,11 @@ const deepFreeze = <T>(value: T): T => {
   return value;
 };
 
+/**
+ * Token metadata usage tags. The portfolio contract no longer consults them:
+ * reward swaps are restricted by signed observations and the contract's own
+ * protected tokens instead.
+ */
 export type TokenUsage = 'swapFrom' | 'swapTo';
 
 export type TokenIdKey = TypeTag<string, 'TokenIdKey'>;
