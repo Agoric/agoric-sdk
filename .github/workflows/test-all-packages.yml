@@ -223,6 +223,14 @@ jobs:
           node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
 
+      # portfolio-deploy tests build agd on demand. Pin the Go version
+      # restore-golang uses, as agd's dependencies don't build with Go 1.26,
+      # the runner images' default since 2026-11-18.
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.24'
+          cache-dependency-path: golang/cosmos/go.sum
+
       # We run separate steps for each package, to make it easier to drill down
       # into errors. If we wanted to just run everything, run 'yarn test' from
       # the top level.
@@ -621,6 +629,11 @@ jobs:
         with:
           node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
+      # solo tests build agd on demand; see test-quick.
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.24'
+          cache-dependency-path: golang/cosmos/go.sum
       - name: yarn test (solo)
         if: (success() || failure())
         run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
