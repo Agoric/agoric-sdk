@@ -97,7 +97,9 @@ test('external startup validates arguments and exposes only a sender after start
     },
     makeInputWorker: () => worker,
     makeMonitor: () =>
-      new Worker(new URL('../src/rpc-monitor-worker.js', import.meta.url)),
+      new Worker(
+        new URL('../src/rpc-monitor-worker-entrypoint.js', import.meta.url),
+      ),
     onFinish: () => finished.resolve(undefined),
     onError: finished.reject,
   };

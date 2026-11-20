@@ -34,9 +34,13 @@ loadAgcc(
           fs.writeFileSync(fd, text);
         },
         makeInputWorker: () =>
-          new Worker(new URL('./agd-input-worker.js', import.meta.url)),
+          new Worker(
+            new URL('./agd-input-worker-entrypoint.js', import.meta.url),
+          ),
         makeMonitor: () =>
-          new Worker(new URL('./rpc-monitor-worker.js', import.meta.url)),
+          new Worker(
+            new URL('./rpc-monitor-worker-entrypoint.js', import.meta.url),
+          ),
         logger: harden({ debug: rpcLog.debug }),
         onFinish: () => process.exit(0),
         onError: error => {

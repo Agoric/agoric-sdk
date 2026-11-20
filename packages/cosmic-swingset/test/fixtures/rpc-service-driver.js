@@ -19,7 +19,7 @@ const faultWorker = [
 const reader = new Worker(
   faultWorker && !mode.startsWith('monitor-')
     ? new URL('rpc-fault-worker.js', import.meta.url)
-    : new URL('../../src/agd-input-worker.js', import.meta.url),
+    : new URL('../../src/agd-input-worker-entrypoint.js', import.meta.url),
   { workerData: mode },
 );
 const inboundRequests = [];
@@ -98,7 +98,10 @@ const service = makeJsonRpcService(
       new Worker(
         mode.startsWith('monitor-')
           ? new URL('rpc-fault-worker.js', import.meta.url)
-          : new URL('../../src/rpc-monitor-worker.js', import.meta.url),
+          : new URL(
+              '../../src/rpc-monitor-worker-entrypoint.js',
+              import.meta.url,
+            ),
         { workerData: mode },
       ),
   },

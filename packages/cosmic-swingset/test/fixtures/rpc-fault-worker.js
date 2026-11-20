@@ -8,12 +8,12 @@ const port = parentPort;
 if (workerData === 'reader-early-exit' || workerData === 'monitor-early-exit')
   process.exit(17);
 if (workerData === 'monitor-exit') {
-  await import('../../src/rpc-monitor-worker.js');
+  await import('../../src/rpc-monitor-worker-entrypoint.js');
   parentPort.on('message', () => {
     process.exit(17);
   });
 } else {
-  await import('../../src/agd-input-worker.js');
+  await import('../../src/agd-input-worker-entrypoint.js');
   parentPort.on('message', message => {
     if (
       workerData === 'unknown-parent-message' &&

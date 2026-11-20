@@ -9,9 +9,13 @@ const bridge = makeAgcc(4, 5, {
     fs.writeFileSync(fd, text);
   },
   makeInputWorker: () =>
-    new Worker(new URL('../../src/agd-input-worker.js', import.meta.url)),
+    new Worker(
+      new URL('../../src/agd-input-worker-entrypoint.js', import.meta.url),
+    ),
   makeMonitor: () =>
-    new Worker(new URL('../../src/rpc-monitor-worker.js', import.meta.url)),
+    new Worker(
+      new URL('../../src/rpc-monitor-worker-entrypoint.js', import.meta.url),
+    ),
   onFinish: () => process.exit(0),
   onError: error => {
     fs.writeSync(2, String(error));

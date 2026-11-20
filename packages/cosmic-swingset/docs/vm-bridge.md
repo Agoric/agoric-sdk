@@ -139,7 +139,7 @@ request/reply correlation, completion, and shutdown. `agcc-agvm.js` adapts the
 application's port/message/replier interface to that service; it does not write
 RPC records or allocate correlation IDs independently.
 
-[`agd-input-worker.js`](../src/agd-input-worker.js) acquires the input stream and
+[`agd-input-worker-entrypoint.js`](../src/agd-input-worker-entrypoint.js) acquires the input stream and
 uses [`rpc-input.js`](../src/helpers/rpc-input.js) to parse and classify records.
 The reader owns the input descriptor, including closing it at completion. Pipes
 and sockets use libuv polling rather than a blocking filesystem read, so shutdown
@@ -187,7 +187,7 @@ cannot strand a caller.
 During publication, a waiter can report the generic `RPC transport failed`
 before the detailed diagnostic is available.
 
-[`rpc-monitor-worker.js`](../src/rpc-monitor-worker.js) independently watches a
+[`rpc-monitor-worker-entrypoint.js`](../src/rpc-monitor-worker-entrypoint.js) independently watches a
 `MessagePort` lease held by the reader. Reader disappearance closes the lease,
 allowing the monitor to publish failure while the main thread is blocked. The
 reader likewise fails if the monitor disappears. This also covers interruption

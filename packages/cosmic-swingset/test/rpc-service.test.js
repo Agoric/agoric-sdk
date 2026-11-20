@@ -28,7 +28,9 @@ test('RPC input EOF is a transport failure rather than successful completion', a
   const service = makeJsonRpcService(worker, 0, () => {}, {
     write: () => {},
     makeMonitor: () =>
-      new Worker(new URL('../src/rpc-monitor-worker.js', import.meta.url)),
+      new Worker(
+        new URL('../src/rpc-monitor-worker-entrypoint.js', import.meta.url),
+      ),
   });
   t.throws(() => service.call('before-start', []), { message: /not running/ });
   const finished = service.start();
