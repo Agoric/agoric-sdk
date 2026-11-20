@@ -203,8 +203,17 @@ shutdown path without a wire acknowledgement and is idempotent. Shutdown with
 pending calls fails instead of discarding them. Late replies after failure are
 ignored, and completion terminates both workers.
 
-Go bounds the handshake, then closes its pipe and reaps the VM even if the
-handshake failed or timed out. A single waiter owns process reaping; shutdown and
+Go closes admission to new actions and drains already-issued action RPCs before
+requesting the handshake. The drain and handshake have separate bounded waits;
+if draining times out, Go closes the RPC connection to release pending callers
+and reaps the child without attempting a handshake over outstanding work. This
+ordering prevents a signal from sending `agvm.Shutdown` ahead of an action reply.
+Successful finite commands use the same shutdown path before the Go parent
+returns, so export and bootstrap-state do not terminate the VM through an
+unexpected pipe EOF. Shutdown is idempotent across the signal and return paths.
+
+Go then closes its pipe and reaps the VM even if the handshake failed or timed
+out. A single waiter owns process reaping; shutdown and
 the unexpected-exit observer share that result. Existing interrupt/kill grace
 periods remain as a fallback and are cancelled when the VM exits. Expected exit
 during shutdown is not reported as premature VM exit.

@@ -109,6 +109,12 @@ const main = async () => {
         { code: 0, signal: null },
         `command ${args.join(' ')}; see ${command.logPath}`,
       );
+      if (mode === 'split' && args.includes('--split-vm=true')) {
+        const log = await fs.readFile(command.logPath, 'utf8');
+        assert.doesNotMatch(log, /RPC service failed|RPC transport failed/);
+        assert.match(log, /RPC shutdown starting/);
+        assert.match(log, /RPC service stopped/);
+      }
       return command.output();
     } finally {
       clearTimeout(timeout);
@@ -188,7 +194,7 @@ const main = async () => {
       const log = await fs.readFile(command.logPath, 'utf8');
       assert.doesNotMatch(
         log,
-        /premature VM exit|RPC service stopped.*Error|RPC transport failed/,
+        /premature VM exit|RPC service failed|RPC service stopped.*Error|RPC transport failed|CONSENSUS FAILURE/,
       );
       if (mode === 'split') {
         assert.match(log, /RPC shutdown starting/);

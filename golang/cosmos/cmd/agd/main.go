@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -92,33 +91,14 @@ func makeShutdown(cmd *exec.Cmd, writer *os.File) (func() error, <-chan struct{}
 // initialize JSON-RPC communications with the separate `--split-vm` VM process,
 // or just to give up control entirely to another binary.
 func main() {
-	var vmClient *rpc.Client
-	var shutdown func() error
-	var shuttingDown atomic.Bool
+	var controller *vmController
 
 	nodePort := 1
 	var sendToNode vm.Sender = func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
-		if vmClient == nil {
+		if controller == nil {
 			return "", errors.New("sendToVM called without VM client set up")
 		}
-
-		if jsonRequest == "shutdown" {
-			if shutdown != nil {
-				shuttingDown.Store(true)
-				requestErr := requestVMShutdown(vmClient, nodePort, TerminateSubprocessGracePeriod)
-				return "", errors.Join(requestErr, shutdown())
-			}
-			return "", nil
-		}
-
-		msg := vm.Message{
-			Port:       nodePort,
-			NeedsReply: needReply,
-			Data:       jsonRequest,
-		}
-		var reply string
-		err = vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
-		return reply, err
+		return controller.send(ctx, needReply, jsonRequest)
 	}
 
 	exitCode := 0
@@ -162,8 +142,7 @@ func main() {
 		if err := cmd.Start(); err != nil {
 			return err
 		}
-		var vmExited <-chan struct{}
-		shutdown, vmExited = makeShutdown(cmd, agdToVm)
+		reap, vmExited := makeShutdown(cmd, agdToVm)
 		if vmFromAgd.Close() != nil {
 			return err
 		}
@@ -183,13 +162,17 @@ func main() {
 		go vmServer.ServeCodec(jsonrpc.NewServerCodec(serverConn))
 
 		// Set up the VM client.
-		vmClient = jsonrpc.NewClient(clientConn)
+		activeController := &vmController{
+			client: jsonrpc.NewClient(clientConn), nodePort: nodePort,
+			reap: reap, timeout: TerminateSubprocessGracePeriod,
+		}
+		controller = activeController
 
 		go func() {
 			// Premature exit from `agd start` should exit the process.
 			<-vmExited
-			if !shuttingDown.Load() {
-				if err := shutdown(); err != nil && exitCode == 0 {
+			if !activeController.stopping.Load() {
+				if err := reap(); err != nil && exitCode == 0 {
 					os.Exit(1)
 				}
 				os.Exit(exitCode)
@@ -208,4 +191,11 @@ func main() {
 	}
 
 	daemon.RunWithController(sendToNode)
+	// Finite commands own the same handshake and reaping as signal shutdown.
+	if controller != nil {
+		if err := controller.shutdown(); err != nil {
+			fmt.Fprintf(os.Stderr, "VM shutdown failed: %v\n", err)
+			os.Exit(1)
+		}
+	}
 }
