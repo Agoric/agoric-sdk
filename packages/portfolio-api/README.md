@@ -43,8 +43,9 @@ comparisons use exact `place` and `kind` values and chain-aware canonical
 in lowercase; non-EVM identifiers compare with their original case. EVM
 contract addresses are stored as lowercase `0x` hex; other chain identifiers
 retain their canonical spelling and case for signing and chain operations.
-`claimable-reward` belongs to an instrument; `claimed-reward` belongs to a chain
-account.
+`claimable-reward` belongs to an instrument, or to the claiming EVM chain
+account when unattributed (for example Merkl rewards); `claimed-reward` belongs
+to a chain account.
 
 `tokenId` identifies the asset locally to the chain implied by `place`; it does
 not repeat the chain as a full CAIP-19 identifier. EVM contract holdings use the

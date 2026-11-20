@@ -68,6 +68,14 @@ export type EIP712IntegerInput =
   | `+${bigint}`
   | `0x${string}`;
 
+/**
+ * `0x`-prefixed hex-encoded bytes, as a `bytes` or `bytes<M>` value of EIP-712
+ * typed data (and its output from `normalizeAndValidateEIP712Data`). Hex
+ * digits of either case encode the same bytes. The type does not constrain
+ * length; `bytes<M>` values are checked at runtime.
+ */
+export type HexBytes = `0x${string}`;
+
 type StructToType<
   TD extends Record<string, readonly TypedDataParameter[]>,
   Fields extends readonly TypedDataParameter[],
