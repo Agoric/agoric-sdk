@@ -73,6 +73,17 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
     completion.reject(reason instanceof Error ? reason : Error(String(reason)));
     void terminateWorkers().catch(() => {});
   };
+  const failWorkerExit = reason => {
+    // Another worker's exit can arrive before the reader's FINISH_LOOP.
+    // Preserve any failure already published to the shared lifecycle.
+    try {
+      lifecycle.check();
+    } catch (error) {
+      fail(error);
+      return;
+    }
+    fail(reason);
+  };
   const assertRunning = () => {
     lifecycle.check();
     if (!started || settled || lifecycle.isStopping())
@@ -145,7 +156,7 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
   worker.on('messageerror', fail);
   worker.on('error', fail);
   worker.on('exit', code => {
-    if (!settled) fail(Error(`RPC input worker exited (${code})`));
+    if (!settled) failWorkerExit(Error(`RPC input worker exited (${code})`));
   });
   return harden({
     start() {
@@ -161,7 +172,7 @@ export const makeJsonRpcService = (worker, fd, dispatch, io) => {
         monitor.on('messageerror', fail);
         monitor.on('exit', code => {
           if (!settled && !lifecycle.isClosed())
-            fail(Error(`RPC lifetime monitor exited (${code})`));
+            failWorkerExit(Error(`RPC lifetime monitor exited (${code})`));
         });
         const { port1, port2 } = new MessageChannel();
         monitor.postMessage(

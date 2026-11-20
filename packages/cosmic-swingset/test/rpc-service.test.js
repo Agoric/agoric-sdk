@@ -6,12 +6,54 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { spawn } from 'node:child_process';
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { text } from 'node:stream/consumers';
 import { Worker } from 'node:worker_threads';
 import { makeJsonRpcService } from '../src/helpers/rpc-service.js';
+import { makeRpcLifecycle } from '../src/helpers/rpc-lifecycle.js';
+
+/** @import { MessagePort } from 'node:worker_threads'; */
+
+for (const exitingWorker of ['reader', 'monitor']) {
+  test(`${exitingWorker} exit preserves a previously published transport failure`, async t => {
+    /** @type {SharedArrayBuffer | undefined} */
+    let lifecycleBuffer;
+    /** @type {MessagePort[]} */
+    const leases = [];
+    const makeWorker = () => {
+      const events = new EventEmitter();
+      return Object.assign(events, {
+        postMessage(message) {
+          lifecycleBuffer = message.lifecycle;
+          leases.push(message.lease);
+        },
+        terminate: async () => 0,
+      });
+    };
+    const reader = makeWorker();
+    const monitor = makeWorker();
+    t.teardown(() => leases.forEach(lease => lease.close()));
+    const service = makeJsonRpcService(
+      /** @type {Worker} */ (/** @type {unknown} */ (reader)),
+      0,
+      () => {},
+      {
+        write: () => {},
+        makeMonitor: () =>
+          /** @type {Worker} */ (/** @type {unknown} */ (monitor)),
+      },
+    );
+    const finished = service.start();
+    assert(lifecycleBuffer);
+    makeRpcLifecycle(lifecycleBuffer).fail('Unexpected RPC input EOF');
+    // Exit delivery can overtake the reader's FINISH_LOOP message because
+    // the monitor and reader use separate event queues.
+    (exitingWorker === 'reader' ? reader : monitor).emit('exit', 0);
+    await t.throwsAsync(finished, { message: /Unexpected RPC input EOF/ });
+  });
+}
 
 test('RPC input EOF is a transport failure rather than successful completion', async t => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rpc-eof-'));
