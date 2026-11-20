@@ -11,7 +11,13 @@ import { makeHeapZone } from '@agoric/zone';
 import {
   PortfolioPlannerAgent,
   type PlanObservations,
+  type PortfolioDelegatedClaimRewardsParams,
+  type PortfolioSyncState,
 } from '@agoric/portfolio-api';
+import type {
+  PortfolioObservationsContent,
+  SignedPortfolioObservations,
+} from '@agoric/portfolio-api/src/observation-messages.js';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { preparePlanner } from '../src/planner.exo.ts';
 import {
@@ -22,9 +28,79 @@ import {
   makeOfferArgsShapes,
   type MovementDesc,
 } from '../src/type-guards-steps.ts';
+import { contractsMock } from './mocks.ts';
 import { makeStorageTools } from './supports.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
+
+/** Accept fakeSignedObservations without checking any signature. */
+const fakeVerifyObservations = async (signed: SignedPortfolioObservations) =>
+  harden({
+    ...(signed.message as unknown as PortfolioObservationsContent),
+    issuedAt: 0n,
+    deadline: 300n,
+    verifiedAt: 0n,
+  });
+
+/** A delegated request claiming Merkl rewards at the Ethereum account. */
+const makeMerklClaimParams = (
+  syncState: PortfolioSyncState,
+  flow: MovementDesc[] = [],
+): PortfolioDelegatedClaimRewardsParams =>
+  harden({
+    syncState,
+    agentMemo: '12345',
+    plan: {
+      flow: [
+        {
+          src: '@Ethereum',
+          dest: '@Ethereum',
+          amount: { brand: USDC, value: 0n },
+          claimRewards: { protocol: 'merkl', index: 0 },
+        },
+        ...flow,
+      ],
+    },
+    signedObservations: harden({
+      domain: {},
+      types: {},
+      primaryType: 'PortfolioObservations',
+      signature: '0x',
+      message: {
+        portfolioId: 1,
+        syncState,
+        observations: {
+          balances: { '@Ethereum': 0n },
+          instrumentTvls: {},
+          merklClaims: [
+            {
+              accountPlace: '@Ethereum',
+              distributor: contractsMock.Ethereum.merkleDistributor!,
+              tokenId: '0x00000000000000000000000000000000000000aa',
+              cumulativeAmount: 2n,
+              claimedAmount: 1n,
+              proofs: [],
+            },
+          ],
+        },
+      },
+    }) as unknown as SignedPortfolioObservations,
+  });
+
+/** Give a portfolio the Ethereum account where it claims Merkl rewards. */
+const provideEthereumAccount = (
+  { manager }: Pick<PortfolioKit, 'manager'>,
+  vt: ReturnType<typeof prepareVowTools>,
+) => {
+  const { ready } = manager.reserveAccountState('Ethereum');
+  void vt.when(ready).catch(() => {});
+  manager.initAccountInfo({
+    chainName: 'Ethereum',
+    chainId: 'eip155:1',
+    namespace: 'eip155',
+    remoteAddress: '0x9999999999999999999999999999999999999999',
+  });
+};
 
 test('planner exo resolvePlan method', async t => {
   const zone = makeHeapZone();
@@ -43,6 +119,8 @@ test('planner exo resolvePlan method', async t => {
       .makeChildNode('ymax0')
       .makeChildNode('portfolios'),
     vowTools: vt,
+    verifyPortfolioObservations: fakeVerifyObservations,
+    contracts: contractsMock,
     ...({} as any),
   });
   const aPortfolio = makePortfolio({ portfolioId: 1 });
@@ -535,6 +613,8 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
       t.like(permissions, { rebalance: true });
       plannerDelegations.set(aPortfolio.planner, client);
     },
+    verifyPortfolioObservations: fakeVerifyObservations,
+    contracts: contractsMock,
     ...({} as any),
   });
   const aPortfolio = makePortfolioKit({
@@ -572,7 +652,7 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
     agentMemo: '12345',
   };
 
-  const flowKey = planner.rebalance(1, rebalanceParams, plan);
+  const flowKey = await planner.rebalance(1, rebalanceParams, plan);
 
   t.is(flowKey, 'flow1');
   t.truthy(startedFlow);
@@ -627,6 +707,8 @@ test('planner cannot start delegated rebalance with new positions', async t => {
     ) {
       plannerDelegations.set(aPortfolio.planner, client);
     },
+    verifyPortfolioObservations: fakeVerifyObservations,
+    contracts: contractsMock,
     ...({} as any),
   });
   const aPortfolio = makePortfolioKit({
@@ -663,9 +745,22 @@ test('planner cannot start delegated rebalance with new positions', async t => {
     agentMemo: '12345',
   };
 
-  t.throws(() => planner.rebalance(1, rebalanceParams, newPositionPlan), {
+  await t.throwsAsync(planner.rebalance(1, rebalanceParams, newPositionPlan), {
     message: /plan cannot add positions/i,
   });
+
+  // The planner supplies its plan separately, not also in the params.
+  await t.throwsAsync(
+    planner.rebalance(
+      1,
+      { ...rebalanceParams, plan: { flow: newPositionPlan } },
+      newPositionPlan,
+    ),
+    {
+      message:
+        'a separate plan excludes a plan or signed observations in the params',
+    },
+  );
 });
 
 test('planner starts delegated claimRewards and resolves its plan', async t => {
@@ -712,6 +807,8 @@ test('planner starts delegated claimRewards and resolves its plan', async t => {
       t.like(permissions, { claimRewards: true });
       plannerDelegations.set(aPortfolio.planner, client);
     },
+    verifyPortfolioObservations: fakeVerifyObservations,
+    contracts: contractsMock,
     ...({} as any),
   });
   const aPortfolio = makePortfolioKit({
@@ -732,32 +829,30 @@ test('planner starts delegated claimRewards and resolves its plan', async t => {
   await aPortfolio.manager.setAutoFeatures({
     claimRewards: true,
   });
+  provideEthereumAccount(aPortfolio, vt);
 
-  const amount = { brand: USDC, value: 100n };
-  const plan: MovementDesc[] = [
-    {
-      src: 'Aave_Arbitrum',
-      dest: '@Arbitrum',
-      amount,
-      claimRewards: { protocol: 'aave', index: 0 },
-    },
-  ];
+  // setAutoFeatures granted the planner delegation, bumping policyVersion
+  // past the setTargetAllocation call above.
+  const claimRewardsParams = makeMerklClaimParams({
+    policyVersion: 2,
+    rebalanceCount: 0,
+  });
 
-  const claimRewardsParams = {
-    syncState: {
-      // setAutoFeatures granted the planner delegation, bumping policyVersion
-      // past the setTargetAllocation call above.
-      policyVersion: 2,
-      rebalanceCount: 0,
-    },
-    agentMemo: '12345',
-  };
-
-  const flowKey = planner.claimRewards(1, claimRewardsParams, plan);
+  const flowKey = await planner.claimRewards(1, claimRewardsParams);
 
   t.is(flowKey, 'flow1');
   t.truthy(startedFlow);
-  t.deepEqual(await vt.when(startedFlow!.stepsP as any), { plan });
+  t.like(await vt.when(startedFlow!.stepsP as any), {
+    plan: claimRewardsParams.plan,
+    boundSteps: {
+      0: {
+        kind: 'claimRewards',
+        protocol: 'merkl',
+        account: '@Ethereum',
+        expectedAmount: 1n,
+      },
+    },
+  });
 
   const portfolioStatus = await getPortfolioStatus(1);
   t.like(portfolioStatus, {
@@ -774,7 +869,7 @@ test('planner starts delegated claimRewards and resolves its plan', async t => {
   });
 });
 
-test('planner cannot start delegated claimRewards with new positions', async t => {
+test('planner claim plans may only claim and swap rewards', async t => {
   const zone = makeHeapZone();
   const vt = prepareVowTools(zone);
 
@@ -789,6 +884,7 @@ test('planner cannot start delegated claimRewards with new positions', async t =
 
   const board = makeFakeBoard();
   const storage = makeFakeStorageKit('published', { sequence: true });
+  const { getPortfolioStatus } = makeStorageTools(storage);
   const marshaller = board.getReadonlyMarshaller();
   const plannerDelegations = new Map<
     PortfolioKit['planner'],
@@ -813,6 +909,8 @@ test('planner cannot start delegated claimRewards with new positions', async t =
     ) {
       plannerDelegations.set(aPortfolio.planner, client);
     },
+    verifyPortfolioObservations: fakeVerifyObservations,
+    contracts: contractsMock,
     ...({} as any),
   });
   const aPortfolio = makePortfolioKit({
@@ -834,24 +932,27 @@ test('planner cannot start delegated claimRewards with new positions', async t =
     claimRewards: true,
   });
 
-  const amount = { brand: USDC, value: 100n };
-  const newPositionPlan: MovementDesc[] = [
-    { src: 'Aave_Arbitrum', dest: 'Compound_Arbitrum', amount },
-  ];
+  provideEthereumAccount(aPortfolio, vt);
 
-  const claimRewardsParams = {
-    syncState: {
+  const amount = { brand: USDC, value: 100n };
+  const claimRewardsParams = makeMerklClaimParams(
+    {
       // setAutoFeatures granted the planner delegation, bumping policyVersion
       // past the setTargetAllocation call above.
       policyVersion: 2,
       rebalanceCount: 0,
     },
-    agentMemo: '12345',
-  };
+    [{ src: '@Ethereum', dest: 'Aave_Ethereum', amount }],
+  );
 
-  t.throws(() => planner.claimRewards(1, claimRewardsParams, newPositionPlan), {
-    message: /plan cannot add positions/i,
+  await t.throwsAsync(planner.claimRewards(1, claimRewardsParams), {
+    message: 'a reward plan may only claim and swap rewards, not step 1',
   });
+  t.like(
+    await getPortfolioStatus(1),
+    { flowCount: 0, rebalanceCount: 0 },
+    'no flow is left behind',
+  );
 });
 
 test('planner cannot start claimRewards without features enabled', async t => {
@@ -895,6 +996,8 @@ test('planner cannot start claimRewards without features enabled', async t => {
       t.like(permissions, { claimRewards: true });
       plannerDelegations.set(aPortfolio.planner, client);
     },
+    verifyPortfolioObservations: fakeVerifyObservations,
+    contracts: contractsMock,
     ...({} as any),
   });
   const aPortfolio = makePortfolioKit({
@@ -913,25 +1016,12 @@ test('planner cannot start claimRewards without features enabled', async t => {
 
   aPortfolio.manager.setTargetAllocation({ Aave_Arbitrum: 100n });
 
-  const amount = { brand: USDC, value: 100n };
-  const plan: MovementDesc[] = [
-    {
-      src: 'Aave_Arbitrum',
-      dest: '@Arbitrum',
-      amount,
-      claimRewards: { protocol: 'aave', index: 0 },
-    },
-  ];
+  const claimRewardsParams = makeMerklClaimParams({
+    policyVersion: 1,
+    rebalanceCount: 0,
+  });
 
-  const claimRewardsParams = {
-    syncState: {
-      policyVersion: 1,
-      rebalanceCount: 0,
-    },
-    agentMemo: '12345',
-  };
-
-  t.throws(() => planner.claimRewards(1, claimRewardsParams, plan), {
+  await t.throwsAsync(planner.claimRewards(1, claimRewardsParams), {
     message: /planner delegation must be active/,
   });
 
@@ -943,7 +1033,7 @@ test('planner cannot start claimRewards without features enabled', async t => {
     claimRewards: false,
   });
 
-  t.throws(() => planner.claimRewards(1, claimRewardsParams, plan), {
+  await t.throwsAsync(planner.claimRewards(1, claimRewardsParams), {
     message: /auto-feature "claimRewards" must be enabled/,
   });
 });
@@ -1043,6 +1133,8 @@ test('planner cannot start rebalance without features enabled', async t => {
       t.like(permissions, { rebalance: true });
       plannerDelegations.set(aPortfolio.planner, client);
     },
+    verifyPortfolioObservations: fakeVerifyObservations,
+    contracts: contractsMock,
     ...({} as any),
   });
   const aPortfolio = makePortfolioKit({
@@ -1075,7 +1167,7 @@ test('planner cannot start rebalance without features enabled', async t => {
     agentMemo: '12345',
   };
 
-  t.throws(() => planner.rebalance(1, rebalanceParams, plan), {
+  await t.throwsAsync(planner.rebalance(1, rebalanceParams, plan), {
     message: /planner delegation must be active/,
   });
 
@@ -1087,7 +1179,7 @@ test('planner cannot start rebalance without features enabled', async t => {
     rebalance: false,
   });
 
-  t.throws(() => planner.rebalance(1, rebalanceParams, plan), {
+  await t.throwsAsync(planner.rebalance(1, rebalanceParams, plan), {
     message: /auto-feature "rebalance" must be enabled/,
   });
 });
@@ -1108,6 +1200,8 @@ test('planner can reject a plan due to insufficient funds', async t => {
       .makeChildNode('ymax0')
       .makeChildNode('portfolios'),
     vowTools: vt,
+    verifyPortfolioObservations: fakeVerifyObservations,
+    contracts: contractsMock,
     ...({} as any),
   });
   const aPortfolio = makePortfolio({ portfolioId: 1 });

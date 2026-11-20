@@ -14,7 +14,15 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
-import type { AxelarChain } from '@agoric/portfolio-api';
+import type {
+  AxelarChain,
+  PortfolioDelegatedClaimRewardsParams,
+  PortfolioSyncState,
+} from '@agoric/portfolio-api';
+import type {
+  PortfolioObservationsContent,
+  SignedPortfolioObservations,
+} from '@agoric/portfolio-api/src/observation-messages.js';
 import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -67,6 +75,68 @@ const makeSpies = <T extends Record<string, Callable>>(
   // @ts-expect-error generics
   return { spies, log };
 };
+
+/** Observations that the test setup verifies without checking a signature. */
+const fakeSignedObservations = (content: PortfolioObservationsContent) =>
+  harden({
+    domain: {},
+    types: {},
+    primaryType: 'PortfolioObservations',
+    message: content,
+    signature: '0x',
+  }) as unknown as SignedPortfolioObservations;
+
+/** Give a portfolio the Ethereum account where it claims Merkl rewards. */
+const provideEthereumAccount = (
+  { manager }: Pick<PortfolioKit, 'manager'>,
+  vowTools: ReturnType<typeof prepareVowTools>,
+) => {
+  const { ready } = manager.reserveAccountState('Ethereum');
+  void vowTools.when(ready).catch(() => {});
+  manager.initAccountInfo({
+    chainName: 'Ethereum',
+    chainId: 'eip155:1',
+    namespace: 'eip155',
+    remoteAddress: '0x9999999999999999999999999999999999999999',
+  });
+};
+
+/** A delegated request claiming Merkl rewards at the Ethereum account. */
+const makeMerklClaimParams = (
+  portfolioId: number,
+  syncState: PortfolioSyncState,
+): PortfolioDelegatedClaimRewardsParams =>
+  harden({
+    syncState,
+    plan: {
+      flow: [
+        {
+          src: '@Ethereum',
+          dest: '@Ethereum',
+          amount: { brand: USDC, value: 0n },
+          claimRewards: { protocol: 'merkl', index: 0 },
+        },
+      ],
+    },
+    signedObservations: fakeSignedObservations({
+      portfolioId,
+      syncState,
+      observations: {
+        balances: { '@Ethereum': 0n },
+        instrumentTvls: {},
+        merklClaims: [
+          {
+            accountPlace: '@Ethereum',
+            distributor: contractsMock.Ethereum.merkleDistributor!,
+            tokenId: '0x00000000000000000000000000000000000000aa',
+            cumulativeAmount: 2n,
+            claimedAmount: 1n,
+            proofs: [],
+          },
+        ],
+      },
+    }),
+  });
 
 const makeTestSetup = (
   opts: {
@@ -162,6 +232,14 @@ const makeTestSetup = (
     contracts: contractsMock,
     walletBytecode,
     transferChannels,
+    // The "signature" of fakeSignedObservations is not checked.
+    verifyPortfolioObservations: async signed =>
+      harden({
+        ...(signed.message as unknown as PortfolioObservationsContent),
+        issuedAt: 0n,
+        deadline: 300n,
+        verifiedAt: 0n,
+      }),
     // rest are not used for this test
     ...({} as any),
   });
@@ -1274,7 +1352,9 @@ test('delegation rebalance creates flow and calls executePlan', async t => {
 
   t.is(
     // grantDelegation bumped policyVersion to 1
-    client.rebalance({ syncState: { policyVersion: 1, rebalanceCount: 0 } }),
+    await client.rebalance({
+      syncState: { policyVersion: 1, rebalanceCount: 0 },
+    }),
     'flow1',
   );
   t.like(getCallLog()[1], ['executePlan', , {}, , undefined, { flowId: 1 }]);
@@ -1300,7 +1380,9 @@ test('delegation rebalance rejects a current target outside its mandate', async 
   ];
 
   t.is(
-    client.rebalance({ syncState: { policyVersion: 2, rebalanceCount: 0 } }),
+    await client.rebalance({
+      syncState: { policyVersion: 2, rebalanceCount: 0 },
+    }),
     'flow1',
   );
   const startedFlow = getCallLog()[1][5] as {
@@ -1353,6 +1435,7 @@ test('rejected pre-signed allocation preserves an existing account reservation',
           observations: { balances: { '@Arbitrum': 0n }, instrumentTvls: {} },
           issuedAt: 0n,
           deadline: 300n,
+          verifiedAt: 0n,
         }),
       ),
     { message: /mandate\.maxWeight:"Aave_Arbitrum"/ },
@@ -1410,8 +1493,10 @@ const effectivePermissionCases: Array<
 
 for (const [title, permissions, allowed] of effectivePermissionCases) {
   test(`effective delegation permissions: ${title}`, async t => {
-    const { makePortfolioKit, getCallLog } = makeTestSetup();
-    const { manager, reporter } = makePortfolioKit({ portfolioId: 21 });
+    const { makePortfolioKit, getCallLog, vowTools } = makeTestSetup();
+    const kit = makePortfolioKit({ portfolioId: 21 });
+    const { manager, reporter } = kit;
+    provideEthereumAccount(kit, vowTools);
     manager.setTargetAllocation({ Aave_Base: 50n, Compound_Arbitrum: 50n });
     await manager.grantDelegation('agoric1delegate', permissions);
     const [, client] = getCallLog()[0] as [
@@ -1420,16 +1505,21 @@ for (const [title, permissions, allowed] of effectivePermissionCases) {
     ];
     const syncState = harden({ policyVersion: 2, rebalanceCount: 0 });
 
+    const attempts = {
+      rebalance: () => client.rebalance({ syncState }),
+      claimRewards: () =>
+        client.claimRewards(makeMerklClaimParams(21, syncState)),
+    };
     for (const op of ['rebalance', 'claimRewards'] as const) {
       const calls = getCallLog().length;
-      const attempt = () => client[op]({ syncState });
+      const attempt = attempts[op];
       if (allowed[op]) {
-        const flowKey = attempt();
+        const flowKey = await attempt();
         t.regex(flowKey, /^flow\d+$/, op);
         t.is(getCallLog().length, calls + 1, `${op} starts a flow`);
         reporter.finishFlow(Number(flowKey.slice('flow'.length)));
       } else {
-        t.throws(attempt, {
+        await t.throwsAsync(attempt, {
           message: `delegation "agent1" does not have required permission "${op}"`,
         });
         t.is(getCallLog().length, calls, `${op} denial starts no flow`);
@@ -1474,6 +1564,7 @@ test('allocation delegation with rebalance: false may only update its target', a
           observations: { balances: {}, instrumentTvls: {} },
           issuedAt: 0n,
           deadline: 300n,
+          verifiedAt: 0n,
         }),
       ),
     denied,
@@ -1481,6 +1572,131 @@ test('allocation delegation with rebalance: false may only update its target', a
   t.is(getCallLog().length, 1, 'denied plans start no flow');
 
   t.is(await client.setTargetAllocation(params), 'flow1');
+});
+
+test('reward steps in delegated plans need the authority to claim rewards', async t => {
+  const { makePortfolioKit, getCallLog, vowTools } = makeTestSetup();
+  const grant = async (
+    portfolioId: number,
+    permissions: Parameters<PortfolioKit['manager']['grantDelegation']>[1],
+  ) => {
+    const kit = makePortfolioKit({ portfolioId });
+    provideEthereumAccount(kit, vowTools);
+    kit.manager.setTargetAllocation({ USDN: 100n });
+    await kit.manager.grantDelegation('agoric1delegate', permissions);
+    const [, client] = getCallLog()
+      .filter(([name]) => name === 'deliverDelegation')
+      .at(-1) as [
+      'deliverDelegation',
+      ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+    ];
+    // setTargetAllocation and grantDelegation each bumped policyVersion.
+    const syncState = harden({ policyVersion: 2, rebalanceCount: 0 });
+    return { kit, client, claim: makeMerklClaimParams(portfolioId, syncState) };
+  };
+  const denied = (permission: string) => ({
+    message: `delegation "agent1" does not have required permission "${permission}"`,
+  });
+
+  {
+    // The planner's grant when auto-claim is off.
+    const { client, claim } = await grant(1, {
+      allocation: false,
+      rebalance: true,
+      claimRewards: false,
+    });
+    await t.throwsAsync(client.rebalance(claim), denied('claimRewards'));
+    await t.throwsAsync(client.claimRewards(claim), denied('claimRewards'));
+    await t.throwsAsync(
+      client.setTargetAllocation({
+        ...claim,
+        targetAllocation: { USDN: 100n },
+      }),
+      denied('allocation'),
+    );
+  }
+  {
+    const { client, claim } = await grant(2, {
+      allocation: true,
+      claimRewards: false,
+    });
+    await t.throwsAsync(
+      client.setTargetAllocation({
+        ...claim,
+        targetAllocation: { USDN: 100n },
+      }),
+      denied('claimRewards'),
+    );
+  }
+  {
+    const { client, claim } = await grant(3, {
+      allocation: true,
+      rebalance: false,
+      claimRewards: true,
+    });
+    await t.throwsAsync(client.rebalance(claim), denied('rebalance'));
+    await t.throwsAsync(
+      client.claimRewards({
+        ...claim,
+        plan: {
+          flow: [
+            ...claim.plan.flow,
+            {
+              src: '@Ethereum',
+              dest: '@Ethereum',
+              amount: { brand: USDC, value: 1n },
+            },
+          ],
+        },
+      }),
+      { message: 'a reward plan may only claim and swap rewards, not step 1' },
+      'claim plans cannot smuggle other movements',
+    );
+    t.is(await client.claimRewards(claim), 'flow1');
+  }
+  {
+    // Inherited from allocation.
+    const { kit, client, claim } = await grant(4, { allocation: true });
+    t.is(await client.rebalance(claim), 'flow1');
+    t.notThrows(
+      () => kit.reader.checkVersion(2, 1),
+      'the submitted plan is counted like a planner-resolved one',
+    );
+    const [, , , , , started] = getCallLog().at(-1) as [
+      'executePlan',
+      ...Parameters<PortfolioKitDeps['executePlan']>,
+    ];
+    t.like(await vowTools.when(started!.stepsP), {
+      plan: claim.plan,
+      boundSteps: { 0: { kind: 'claimRewards', protocol: 'merkl' } },
+    });
+  }
+});
+
+test('a delegated claim requires its plan and evidence up front', async t => {
+  const { makePortfolioKit, getCallLog, vowTools } = makeTestSetup();
+  const kit = makePortfolioKit({ portfolioId: 1 });
+  await kit.manager.grantDelegation('agoric1delegate', { claimRewards: true });
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+  const syncState = harden({ policyVersion: 1, rebalanceCount: 0 });
+  const claim = makeMerklClaimParams(1, syncState);
+  const { plan: _plan, ...noPlan } = claim;
+  const { signedObservations: _s, ...noEvidence } = claim;
+  for (const params of [{ syncState }, noPlan, noEvidence]) {
+    await t.throwsAsync(client.claimRewards(params as any), {
+      message: /Must have missing properties/,
+    });
+  }
+  await t.throwsAsync(client.claimRewards(claim), {
+    message: 'reward step 0 requires an existing "@Ethereum" account',
+  });
+  t.is(getCallLog().length, 1, 'no flow is started');
+
+  provideEthereumAccount(kit, vowTools);
+  t.is(await client.claimRewards(claim), 'flow1');
 });
 
 test('revoked delegation client is no longer usable', async t => {
@@ -1575,7 +1791,9 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
 
   t.is(
     // the two setAutoFeatures calls above each bumped policyVersion once
-    client.rebalance({ syncState: { policyVersion: 2, rebalanceCount: 0 } }),
+    await client.rebalance({
+      syncState: { policyVersion: 2, rebalanceCount: 0 },
+    }),
     'flow1',
   );
   t.is(getCallLog().length, 2);
@@ -1599,9 +1817,8 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
       state: 'active',
     },
   });
-  t.throws(
-    () =>
-      client.rebalance({ syncState: { policyVersion: 1, rebalanceCount: 0 } }),
+  await t.throwsAsync(
+    client.rebalance({ syncState: { policyVersion: 1, rebalanceCount: 0 } }),
     {
       message:
         /delegation "agent1" does not have required permission "rebalance"/,
@@ -1887,7 +2104,9 @@ for (const activeType of [
     const storage = makeFakeStorageKit('published', { sequence: true });
     const { makePortfolioKit, getCallLog, getPortfolioStatus, vowTools } =
       makeTestSetup({ storage });
-    const { manager, planner, reporter } = makePortfolioKit({ portfolioId: 1 });
+    const kit = makePortfolioKit({ portfolioId: 1 });
+    const { manager, planner, reporter } = kit;
+    provideEthereumAccount(kit, vowTools);
     manager.setTargetAllocation({ USDN: 100n });
     await manager.grantDelegation('agoric1delegate', {
       allocation: true,
@@ -1915,11 +2134,14 @@ for (const activeType of [
       rebalanceCount: before.rebalanceCount,
     });
     const calls = getCallLog();
+    const claimParams = makeMerklClaimParams(1, syncState);
     for (const attempt of [
       () => client.rebalance({ syncState }),
-      () => client.claimRewards({ syncState }),
+      () => client.claimRewards(claimParams),
     ]) {
-      t.throws(attempt, { message: 'portfolio already has a running flow' });
+      await t.throwsAsync(attempt, {
+        message: 'portfolio already has a running flow',
+      });
     }
     await t.throwsAsync(
       client.setTargetAllocation({
@@ -1941,12 +2163,12 @@ for (const activeType of [
       planner.resolveFlowPlan(flowId, []);
       await vowTools.when(stepsP);
     }
-    t.throws(() => client.claimRewards({ syncState }), {
+    await t.throwsAsync(client.claimRewards(claimParams), {
       message: 'portfolio already has a running flow',
     });
     reporter.finishFlow(flowId);
     t.is(
-      client.claimRewards({ syncState }),
+      await client.claimRewards(claimParams),
       'flow2',
       'denials do not consume flow IDs',
     );
@@ -1955,12 +2177,11 @@ for (const activeType of [
 
 test('delegated requests reject an active claimRewards flow with matching sync state', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
-  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
-    storage,
-  });
-  const { manager, reader, delegationHelper, reporter } = makePortfolioKit({
-    portfolioId: 1,
-  });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus, vowTools } =
+    makeTestSetup({ storage });
+  const kit = makePortfolioKit({ portfolioId: 1 });
+  const { manager, reader, delegationHelper, reporter } = kit;
+  provideEthereumAccount(kit, vowTools);
   manager.setTargetAllocation({ USDN: 100n });
   const { agentId } = await manager.grantDelegation('agoric1delegate', {
     allocation: true,
@@ -1978,16 +2199,23 @@ test('delegated requests reject an active claimRewards flow with matching sync s
     rebalanceCount: before.rebalanceCount,
   });
 
+  t.is(await client.claimRewards(makeMerklClaimParams(1, syncState)), 'flow1');
+  // Like a plan resolved by the planner, the submitted plan is counted.
+  const current = harden({
+    ...syncState,
+    rebalanceCount: syncState.rebalanceCount + 1,
+  });
+  reader.checkVersion(current.policyVersion, current.rebalanceCount);
   // Model observations verified before a claimRewards request won the race.
   const verifiedObservations = harden({
     portfolioId: 1,
-    syncState,
-    observations: { balances: {}, instrumentTvls: {} },
+    syncState: current,
+    observations: { balances: { '@Ethereum': 0n }, instrumentTvls: {} },
     issuedAt: 0n,
     deadline: 300n,
+    verifiedAt: 0n,
   });
-  t.is(client.claimRewards({ syncState }), 'flow1');
-  reader.checkVersion(syncState.policyVersion, syncState.rebalanceCount);
+  const claimParams = makeMerklClaimParams(1, current);
   const running = await getPortfolioStatus!(1);
   t.like(
     running.flowsRunning,
@@ -2002,21 +2230,23 @@ test('delegated requests reject an active claimRewards flow with matching sync s
   );
   const calls = getCallLog();
   for (const attempt of [
-    () => client.rebalance({ syncState }),
-    () => client.claimRewards({ syncState }),
-    () =>
+    async () => client.rebalance({ syncState: current }),
+    async () => client.claimRewards(claimParams),
+    async () =>
       delegationHelper.submitTargetAllocation(
         client,
         agentId,
         {
-          syncState,
+          syncState: current,
           targetAllocation: { USDN: 100n },
           plan: { flow: [] },
         },
         verifiedObservations,
       ),
   ]) {
-    t.throws(attempt, { message: 'portfolio already has a running flow' });
+    await t.throwsAsync(attempt, {
+      message: 'portfolio already has a running flow',
+    });
   }
 
   t.deepEqual(await getPortfolioStatus!(1), running);
@@ -2024,7 +2254,7 @@ test('delegated requests reject an active claimRewards flow with matching sync s
   reporter.finishFlow(1);
 
   t.is(
-    client.rebalance({ syncState }),
+    await client.rebalance({ syncState: current }),
     'flow2',
     'rejected requests do not consume flow IDs',
   );
@@ -2032,10 +2262,11 @@ test('delegated requests reject an active claimRewards flow with matching sync s
 
 test('delegated starts ignore older stuck flows once the last allocated flow finishes', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
-  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
-    storage,
-  });
-  const { manager, reporter } = makePortfolioKit({ portfolioId: 1 });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus, vowTools } =
+    makeTestSetup({ storage });
+  const kit = makePortfolioKit({ portfolioId: 1 });
+  const { manager, reporter } = kit;
+  provideEthereumAccount(kit, vowTools);
   await manager.grantDelegation('agoric1delegate', { claimRewards: true });
   const [, client] = getCallLog()[0] as [
     'deliverDelegation',
@@ -2049,16 +2280,21 @@ test('delegated starts ignore older stuck flows once the last allocated flow fin
     policyVersion: before.policyVersion,
     rebalanceCount: before.rebalanceCount,
   });
-  t.throws(() => client.claimRewards({ syncState }), {
+  const claimAt = (rebalanceCount: number) =>
+    client.claimRewards(
+      makeMerklClaimParams(1, { ...syncState, rebalanceCount }),
+    );
+  const { rebalanceCount } = syncState;
+  await t.throwsAsync(claimAt(rebalanceCount), {
     message: 'portfolio already has a running flow',
   });
   reporter.finishFlow(2);
-  t.is(client.claimRewards({ syncState }), 'flow3');
-  t.throws(() => client.claimRewards({ syncState }), {
+  t.is(await claimAt(rebalanceCount), 'flow3');
+  await t.throwsAsync(claimAt(rebalanceCount + 1), {
     message: 'portfolio already has a running flow',
   });
   reporter.finishFlow(3);
-  t.is(client.claimRewards({ syncState }), 'flow4');
+  t.is(await claimAt(rebalanceCount + 1), 'flow4');
   t.deepEqual(Object.keys((await getPortfolioStatus!(1)).flowsRunning!), [
     'flow1',
     'flow4',
@@ -2067,9 +2303,8 @@ test('delegated starts ignore older stuck flows once the last allocated flow fin
 
 test('owner rebalances may start while a delegated or owner flow is running', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
-  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
-    storage,
-  });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus, vowTools } =
+    makeTestSetup({ storage });
   // An EVM-owned portfolio, and an Agoric-owned one: each owner has its own
   // way to rebalance.
   const evmKit = makePortfolioKit({
@@ -2087,8 +2322,10 @@ test('owner rebalances may start while a delegated or owner flow is running', as
         targetAllocation: { USDN: 50n },
       }),
   ];
-  for (const [i, { manager }] of [evmKit, agoricKit].entries()) {
+  for (const [i, kit] of [evmKit, agoricKit].entries()) {
+    const { manager } = kit;
     const portfolioId = i + 1;
+    provideEthereumAccount(kit, vowTools);
     await manager.grantDelegation('agoric1delegate', { claimRewards: true });
     manager.setTargetAllocation({ USDN: 100n });
     const [, client] = getCallLog()
@@ -2100,12 +2337,12 @@ test('owner rebalances may start while a delegated or owner flow is running', as
     const before = await getPortfolioStatus!(portfolioId);
 
     t.is(
-      client.claimRewards({
-        syncState: {
+      await client.claimRewards(
+        makeMerklClaimParams(portfolioId, {
           policyVersion: before.policyVersion,
           rebalanceCount: before.rebalanceCount,
-        },
-      }),
+        }),
+      ),
       'flow1',
     );
     t.is(ownerRebalances[i](), 'flow2');

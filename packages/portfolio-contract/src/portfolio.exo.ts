@@ -48,6 +48,7 @@ import {
   type PortfolioDelegatedClaimRewardsParams,
   type PortfolioDelegatedRebalanceParams,
   type PortfolioDelegatedSetTargetAllocationParams,
+  type PortfolioSyncState,
   type PortfolioGrantResult,
   type PortfolioDelegationLifecycleResult,
   type PortfolioPendingOwnerTransfer,
@@ -68,7 +69,7 @@ import {
   type TargetAllocation as EIP712Allocation,
   type YmaxFullDomain,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
-import { chainOf } from '@agoric/portfolio-api/src/places.js';
+import { chainOf, isInstrumentId } from '@agoric/portfolio-api/src/places.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { MapStore } from '@agoric/store';
 import type { TimerService, TimestampRecord } from '@agoric/time';
@@ -97,8 +98,10 @@ import {
   assertMandateForPlanObservations,
   type BindingDetailAccess,
   type BoundStep,
+  hasRewardSteps,
   needsObservations,
   vetAllocationPlan,
+  vetRewardPlan,
   vetObservationPlaces,
 } from './delegation-limits.ts';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
@@ -552,7 +555,7 @@ export const preparePortfolioKit = (
     timerService: ERemote<TimerService>;
   },
 ) => {
-  const planBindingAddresses: BindingDetailAccess = {
+  const planBindingAddresses = {
     getUsdcTokenId: account =>
       account === '@agoric'
         ? agoricUsdcDenom
@@ -570,6 +573,63 @@ export const preparePortfolioKit = (
       const chainContracts = contracts[chainOf(src) as AxelarChain];
       return hasMinimumRedemptionContracts(src, chainContracts);
     },
+    getEvmContracts: chain => contracts[chain],
+  } satisfies BindingDetailAccess;
+
+  /**
+   * Check that verified observations are of this portfolio at `syncState`,
+   * and return what binding their evidence needs.
+   */
+  const checkVerifiedObservations = (
+    portfolioId: number,
+    syncState: PortfolioSyncState,
+    verified: VerifiedPortfolioObservations | undefined,
+  ) => {
+    // The delegation client verified the signed observations.
+    if (!verified) {
+      throw Fail`a plan requires verified observations`;
+    }
+    const { portfolioId: observedId, syncState: observedSyncState } = verified;
+    observedId === portfolioId ||
+      Fail`observations are for portfolio ${q(observedId)}`;
+    (observedSyncState.policyVersion === syncState.policyVersion &&
+      observedSyncState.rebalanceCount === syncState.rebalanceCount) ||
+      Fail`observations sync state ${q(observedSyncState)} does not match ${q(syncState)}`;
+    return harden({
+      observations: verified.observations,
+      bindingAccess: { ...planBindingAddresses, now: verified.verifiedAt },
+    });
+  };
+
+  /** Places observations of the portfolio must cover. */
+  const getCurrentBalancePlaces = ({
+    accounts,
+    positions,
+  }: Pick<PortfolioKitState, 'accounts' | 'positions'>) =>
+    harden([
+      ...[...accounts.keys()].map(chain => `@${chain}` as const),
+      ...positions.keys(),
+    ]);
+
+  /**
+   * Reward steps act on existing places only: claims and swaps of a chain
+   * account, and claims of an instrument position.
+   */
+  const vetRewardStepPlaces = (
+    { accounts, positions }: Pick<PortfolioKitState, 'accounts' | 'positions'>,
+    plan: FundsFlowPlan,
+  ) => {
+    for (const [
+      step,
+      { src, dest, claimRewards, swap },
+    ] of plan.flow.entries()) {
+      if (!claimRewards && !swap) continue;
+      (dest.startsWith('@') && accounts.has(dest.slice(1) as SupportedChain)) ||
+        Fail`reward step ${q(step)} requires an existing ${q(dest)} account`;
+      !isInstrumentId(src) ||
+        positions.has(src) ||
+        Fail`reward step ${q(step)} requires an existing ${q(src)} position`;
+    }
   };
 
   // Ephemeral node cache
@@ -829,25 +889,21 @@ export const preparePortfolioKit = (
             {
               allocation: true,
               ...(plan !== undefined && { rebalance: true }),
+              ...(plan && hasRewardSteps(plan) && { claimRewards: true }),
             },
           );
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
-          if (plan !== undefined || verifiedObservations !== undefined) {
-            // The delegation client verified the signed observations.
-            if (!verifiedObservations) {
-              throw Fail`a plan requires verified observations`;
-            }
-            const { portfolioId, syncState: observedSyncState } =
-              verifiedObservations;
-            portfolioId === this.state.portfolioId ||
-              Fail`observations are for portfolio ${q(portfolioId)}`;
-            (observedSyncState.policyVersion === policyVersion &&
-              observedSyncState.rebalanceCount === rebalanceCount) ||
-              Fail`observations sync state ${q(observedSyncState)} does not match ${q(syncState)}`;
-          }
-          const observations = verifiedObservations?.observations;
+          const checked =
+            plan !== undefined || verifiedObservations !== undefined
+              ? checkVerifiedObservations(
+                  this.state.portfolioId,
+                  syncState,
+                  verifiedObservations,
+                )
+              : undefined;
+          const observations = checked?.observations;
           const { permissions } = delegation;
           const vetPlan = () =>
             vetAllocationPlan(
@@ -855,19 +911,18 @@ export const preparePortfolioKit = (
               targetAllocation,
               plan,
               observations,
-              planBindingAddresses,
+              checked?.bindingAccess ?? planBindingAddresses,
             );
           // Pre-signed plans can be checked completely before assigning a flow.
           // Requests for a planner-supplied plan retain the existing lifecycle.
           let vettedPlan: ReturnType<typeof vetAllocationPlan> | undefined;
           if (plan && observations) {
-            const currentBalancePlaces = harden([
-              ...[...this.state.accounts.keys()].map(
-                chain => `@${chain}` as const,
-              ),
-              ...this.state.positions.keys(),
-            ]);
-            vetObservationPlaces(currentBalancePlaces, plan, observations);
+            vetObservationPlaces(
+              getCurrentBalancePlaces(this.state),
+              plan,
+              observations,
+            );
+            vetRewardStepPlaces(this.state, plan);
             vettedPlan = vetPlan();
           }
 
@@ -927,21 +982,55 @@ export const preparePortfolioKit = (
         submitRebalance(
           client: PortfolioDelegationClient,
           agentId: number,
-          delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
+          delegatedRebalanceParams: Omit<
+            PortfolioDelegatedRebalanceParams,
+            'signedObservations'
+          >,
+          verifiedObservations?: VerifiedPortfolioObservations,
         ): FlowKey {
           const { reader, manager, delegationHelper } = this.facets;
+          const { syncState, agentMemo, plan } = delegatedRebalanceParams;
           const delegation = delegationHelper.getAuthorizedDelegation(
             client,
             agentId,
-            { rebalance: true },
+            {
+              rebalance: true,
+              ...(plan && hasRewardSteps(plan) && { claimRewards: true }),
+            },
           );
-          const { syncState, agentMemo } = delegatedRebalanceParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
           const { permissions } = delegation;
+          // A plan of the agent is vetted completely before assigning a flow,
+          // against the current target, which it cannot change.
+          let boundSteps: ResolvedFlowPlan['boundSteps'];
+          if (plan !== undefined || verifiedObservations !== undefined) {
+            const { observations, bindingAccess } = checkVerifiedObservations(
+              this.state.portfolioId,
+              syncState,
+              verifiedObservations,
+            );
+            if (!plan) throw Fail`verified observations require a plan`;
+            const targetAllocation =
+              reader.getTargetAllocation() ??
+              Fail`delegated rebalance requires target allocation`;
+            vetObservationPlaces(
+              getCurrentBalancePlaces(this.state),
+              plan,
+              observations,
+            );
+            vetRewardStepPlaces(this.state, plan);
+            ({ boundSteps } = vetAllocationPlan(
+              permissions,
+              targetAllocation,
+              plan,
+              observations,
+              bindingAccess,
+            ));
+          }
           const targetAllocation =
-            typeof permissions.allocation === 'object'
+            !plan && typeof permissions.allocation === 'object'
               ? (reader.getTargetAllocation() ??
                 Fail`delegated rebalance requires target allocation`)
               : undefined;
@@ -960,7 +1049,14 @@ export const preparePortfolioKit = (
           void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
-          if (targetAllocation) {
+          if (plan) {
+            // Record the submitted plan as the planner does when resolving one.
+            this.facets.planner.submitVersion(policyVersion, rebalanceCount);
+            manager.resolveExecutionPlan(
+              flowId,
+              harden({ plan, ...(boundSteps && { boundSteps }) }),
+            );
+          } else if (targetAllocation) {
             try {
               assertMandateForAllocation(permissions, targetAllocation);
             } catch (reason) {
@@ -971,19 +1067,40 @@ export const preparePortfolioKit = (
           }
           return `flow${flowId}`;
         },
+        /**
+         * Start a flow claiming rewards, and swapping them, with a plan that
+         * may do nothing else, vetted completely beforehand, so that a
+         * rejected request leaves no flow behind.
+         */
         submitClaimRewards(
           client: PortfolioDelegationClient,
           agentId: number,
-          delegatedClaimRewardsParams: PortfolioDelegatedClaimRewardsParams,
+          delegatedClaimRewardsParams: Omit<
+            PortfolioDelegatedClaimRewardsParams,
+            'signedObservations'
+          >,
+          verifiedObservations: VerifiedPortfolioObservations,
         ): FlowKey {
           const { reader, manager, delegationHelper } = this.facets;
           delegationHelper.getAuthorizedDelegation(client, agentId, {
             claimRewards: true,
           });
-          const { syncState, agentMemo } = delegatedClaimRewardsParams;
+          const { syncState, agentMemo, plan } = delegatedClaimRewardsParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
+          const { observations, bindingAccess } = checkVerifiedObservations(
+            this.state.portfolioId,
+            syncState,
+            verifiedObservations,
+          );
+          const boundSteps = vetRewardPlan(plan, observations, bindingAccess);
+          vetObservationPlaces(
+            getCurrentBalancePlaces(this.state),
+            plan,
+            observations,
+          );
+          vetRewardStepPlaces(this.state, plan);
 
           // Check and reserve synchronously, after any observation verification.
           insistLatestFlowFinished(this.state);
@@ -998,6 +1115,9 @@ export const preparePortfolioKit = (
           void executePlan(inertSeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
+          // Record the submitted plan as the planner does when resolving one.
+          this.facets.planner.submitVersion(policyVersion, rebalanceCount);
+          manager.resolveExecutionPlan(flowId, harden({ plan, boundSteps }));
           return `flow${flowId}`;
         },
       },

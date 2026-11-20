@@ -1525,7 +1525,7 @@ test('delegated plans: signed TVL mandate failure creates no flow', async t => {
   t.deepEqual(after.flowsRunning, before.flowsRunning);
 });
 
-test('delegated plans: allocation permission cannot submit reward claims', async t => {
+test('delegated plans: inherited reward claims need an existing account', async t => {
   const { peteKit, portfolioId, delegationClient, signObservations, usdc } =
     await setupPlanDelegation(t);
   const before = await peteKit.evmTrader.getPortfolioStatus();
@@ -1554,7 +1554,7 @@ test('delegated plans: allocation permission cannot submit reward claims', async
         ],
       },
     }),
-    { message: 'reward claims and swaps are not supported here' },
+    { message: 'reward step 0 requires an existing "@Arbitrum" account' },
   );
   await eventLoopIteration();
   const after = await peteKit.evmTrader.getPortfolioStatus();

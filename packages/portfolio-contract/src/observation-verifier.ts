@@ -53,6 +53,11 @@ export type VerifiedPortfolioObservations = PortfolioObservationsContent & {
   issuedAt: bigint;
   /** When the observations expire, in seconds since the epoch. */
   deadline: bigint;
+  /**
+   * The chain time at which the observations were verified, in seconds since
+   * the epoch, e.g. to check the expiry of evidence they contain.
+   */
+  verifiedAt: bigint;
 };
 
 /**
@@ -140,7 +145,7 @@ export const makePortfolioObservationsVerifier = ({
     now <= issuedAt + MAX_OBSERVATION_AGE_SECONDS ||
       Fail`observations issued too long ago: ${q(issuedAt)} vs ${q(now)}`;
 
-    return harden({ ...content, issuedAt, deadline });
+    return harden({ ...content, issuedAt, deadline, verifiedAt: now });
   };
   return harden(verifyPortfolioObservations);
 };

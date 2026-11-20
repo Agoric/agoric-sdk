@@ -805,14 +805,30 @@ export type PortfolioSyncState = Pick<
   'policyVersion' | 'rebalanceCount'
 >;
 
+/**
+ * A delegated rebalance request. Without a plan, the planner supplies one;
+ * otherwise the plan requires observations of the portfolio at `syncState`,
+ * signed by the observation service. Its steps may also claim and swap
+ * rewards (selecting signed evidence), with the authority to claim rewards.
+ */
 export type PortfolioDelegatedRebalanceParams = {
   syncState: PortfolioSyncState;
   agentMemo?: string;
+  plan?: FundsFlowPlan;
+  signedObservations?: SignedPortfolioObservations;
 };
 
+/**
+ * A delegated request to claim rewards, and swap them for USDC, with a plan
+ * whose steps only do so, selecting the claim evidence and swap instructions
+ * of observations of the portfolio at `syncState`, signed by the observation
+ * service.
+ */
 export type PortfolioDelegatedClaimRewardsParams = {
   syncState: PortfolioSyncState;
   agentMemo?: string;
+  plan: FundsFlowPlan;
+  signedObservations: SignedPortfolioObservations;
 };
 
 /**
