@@ -886,6 +886,12 @@ export const preparePortfolioKit = (
               );
             }
             if (plan) {
+              // Record the submitted plan as the planner does when resolving
+              // one, against the state resulting from committing its target.
+              this.facets.planner.submitVersion(
+                this.state.policyVersion,
+                this.state.rebalanceCount,
+              );
               this.facets.manager.resolveExecutionPlan(
                 flowId,
                 harden({

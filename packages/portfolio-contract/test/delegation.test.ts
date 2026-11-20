@@ -1461,6 +1461,11 @@ test('delegated plans: the signed observations are verified and checked against 
   const afterAccepted = await peteKit.evmTrader.getPortfolioStatus();
   t.is(afterAccepted.flowCount, before.flowCount + 1);
   t.deepEqual(afterAccepted.targetAllocation, planTargetAllocation);
+  t.like(
+    afterAccepted,
+    { policyVersion: before.policyVersion + 1, rebalanceCount: 1 },
+    'the committed target and submitted plan advance sync state like the planner',
+  );
   const flow = await peteKit.readPublished(
     `portfolios.portfolio${portfolioId}.flows.${flowKey}`,
   );
