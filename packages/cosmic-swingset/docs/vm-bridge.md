@@ -250,3 +250,66 @@ layout, ownership, state machine, generator handoffs, and stale-ID regression.
 It also describes F5's strict UTF-8 decoding, incremental encoding into reusable
 destinations, explicit byte counts, and insufficient-capacity behavior. Line
 input rejects malformed UTF-8 before parsing RPC records.
+
+## Verification in CI and locally
+
+The `VM integration (embedded)` and `VM integration (split)` matrix jobs in
+[`test-golang.yml`](../../../.github/workflows/test-golang.yml) run on every pull
+request, merge-group run, and push to master. They run the same lifecycle probe
+against the real daemon, native addon or pipe adapter, SwingSet kernel, and XS
+worker. The bootstrap vat is intentionally small: it registers an inbound
+bridge handler and writes a known value through the storage bridge. This tests
+the transport independently of application proposal bootstrapping.
+
+Run either mode from the SDK root after installing dependencies and building:
+
+```sh
+bin/agd build
+node packages/cosmic-swingset/tools/test-vm-mode.js embedded
+node packages/cosmic-swingset/tools/test-vm-mode.js split
+```
+
+The probe invokes `bin/agd`, creates an isolated validator home, uses loopback
+ports, waits for committed blocks, and queries the vat's stored value. It then
+checks bounded SIGINT shutdown, exports genesis and SwingStore artifacts,
+restarts the chain, and reconstructs a copy's consensus state using the live
+node as a light-client source. The copy retains application/SwingStore data but
+has empty consensus databases. `comet bootstrap-state` runs without `--height`,
+so it must open the application to obtain its committed height. The two RPC
+server entries point at this same isolated source; this verifies the command
+and transport, not independent-provider trust or adversarial state sync.
+
+Embedded SIGINT shutdown uses exit code 98. Split shutdown can return 0 through
+the SDK or 98 through its signal handler; the test additionally requires both
+the explicit RPC shutdown event and completed worker teardown. Each subprocess
+has bounded execution or shutdown, and failure cleanup kills its process group.
+Logs and generated homes remain in the printed artifact directory; CI uploads
+command logs on failure. Set `VM_TEST_ARTIFACTS` to choose that directory.
+
+The focused tests run in the ordinary package test job. Their coverage maps to
+the protocol boundaries as follows:
+
+| Test | Contract checked |
+| --- | --- |
+| [`sync-xfer.test.js`](../test/sync-xfer.test.js) | Real worker/client/server transfers, static wire bytes, every yielded and returned chunk, state/length validation, repeated reuse, reentrancy rejection, and the deterministic stale response-ID race (16518 → 16519). |
+| [`utf8-codec.test.js`](../test/utf8-codec.test.js) | Encoding into reusable destinations, Unicode boundaries, malformed/truncated UTF-8, small capacities, and peer abort on codec errors. |
+| [`rpc-service.test.js`](../test/rpc-service.test.js) | Request/reply correlation, forbidden overlapping synchronous calls, asynchronous settlements out of order, malformed records, unexpected worker messages, input/write failures, pending-reply EOF, and reader/monitor termination during blocked or partial transfers. |
+| [`read-fd-lines.test.js`](../test/read-fd-lines.test.js) | Fragmented/coalesced records, line endings, sizes through 1 MiB, strict decoding, EOF, cancellation, and input/dispatch errors. |
+| [`agcc.test.js`](../test/agcc.test.js) | Both adapter interfaces, service-error handling, node-port assertion, descriptor selection, and real bidirectional pipes. |
+
+These checks have no throughput target. Separate upgrade and sustained follower
+runs are outside this verification scope.
+
+The lifecycle regression also verifies successful completion of embedded
+`bootstrap-state`. Both it and `start` open the application through `OnAppHook`,
+which prepares the VM connection. Only the `start` command invokes
+`OnStartHook`, after validating configuration, to treat an unexpected VM return
+as exit code 99. Opening the application for a finite command does not imply
+that it must run forever.
+
+After a finite embedded command completes, its Go goroutine terminates the
+process with C `_Exit`. This preserves immediate termination without libc exit
+handlers running alongside Node's main thread. On Darwin, Go's `os.Exit` uses
+libc `exit`; native export testing exposed an intermittent abort during Node
+inspector cleanup on that path. The lifecycle probe requires two successful
+exports with identical application state before it proceeds to bootstrap-state.

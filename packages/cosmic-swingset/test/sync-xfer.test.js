@@ -80,6 +80,37 @@ function* collectBytes() {
   }
 }
 
+test('worker UTF-8 transfer matches a static wire vector in both directions', async t => {
+  const worker = makeWorker(t);
+  const client = makeTransferClient(makeTransferBuffer(12));
+  const expected = [
+    0, 65, 0xc3, 0xa9, 0xe6, 0x96, 0x87, 0xf0, 0x9f, 0xa6, 0x89,
+  ];
+  let written = once(worker, 'message');
+  client.prepareToRead(buf =>
+    worker.postMessage({ buf, mode: 'text', text: '\0Aé文🦉' }),
+  );
+  t.deepEqual(client.read(collectBytes()), expected);
+  t.deepEqual(await written, ['written']);
+  written = once(worker, 'message');
+  // Explicit chunks split both BMP and supplementary code points; the final
+  // byte is the encoder's return value, not a yield.
+  client.prepareToRead(buf =>
+    worker.postMessage({
+      buf,
+      chunks: [
+        Uint8Array.of(0, 65, 0xc3),
+        Uint8Array.of(0xa9, 0xe6, 0x96),
+        Uint8Array.of(0x87, 0xf0, 0x9f),
+        Uint8Array.of(0xa6),
+        Uint8Array.of(0x89),
+      ],
+    }),
+  );
+  t.is(client.read(makeTextDecoder()), '\0Aé文🦉');
+  t.deepEqual(await written, ['written']);
+});
+
 test('buffer layout and size bounds require representable nonempty fixed payloads', t => {
   for (const size of [
     0,

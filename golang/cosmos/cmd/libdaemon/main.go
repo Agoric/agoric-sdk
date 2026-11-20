@@ -116,15 +116,21 @@ func RunAgCosmosDaemon(toNode C.sendFunc, cosmosArgs []*C.char) {
 
 		// We run in the background, but exit when the job is over.
 		exitCode := 0
-		daemoncmd.OnStartHook = func(srv *vm.AgdServer, logger log.Logger, appOpts servertypes.AppOptions) error {
+		daemoncmd.OnAppHook = func(srv *vm.AgdServer, logger log.Logger, appOpts servertypes.AppOptions) error {
 			agdServer = srv
-			// We tried running start, which should never exit, so exit with non-zero
-			// code if we ever stop.
+			return nil
+		}
+		daemoncmd.OnStartHook = func(_ *vm.AgdServer, _ log.Logger, _ servertypes.AppOptions) error {
+			// start should not return without an explicit shutdown.
 			exitCode = 99
 			return nil
 		}
 		daemon.RunWithController(sendToNode)
-		os.Exit(exitCode)
+		// A c-shared Go runtime runs alongside Node's main thread. On Darwin,
+		// os.Exit uses libc exit, whose process-wide cleanup can race Node's
+		// teardown (observed as an inspector mutex abort after export). Match
+		// immediate process termination without running libc exit handlers here.
+		C._Exit(C.int(exitCode))
 	}()
 }
 

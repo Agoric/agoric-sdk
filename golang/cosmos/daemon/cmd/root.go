@@ -56,7 +56,12 @@ import (
 )
 
 var AppName = "agd"
+
+// OnStartHook runs only for the start command, after configuration validation.
 var OnStartHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
+
+// OnAppHook prepares the VM connection when a command opens the application.
+var OnAppHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 var OnExportHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 
 // CustomAppConfig extends the base config struct.
@@ -265,6 +270,9 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 				if _, err = swingset.SwingsetConfigFromViper(viper); err != nil {
 					return err
 				}
+				if OnStartHook != nil {
+					return OnStartHook(ac.agdServer, server.GetServerContextFromCmd(cmd).Logger, viper)
+				}
 				return nil
 			}
 			appendToPreRunE(command, preRunE)
@@ -403,8 +411,8 @@ func (ac appCreator) newApp(
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
-	if OnStartHook != nil {
-		if err := OnStartHook(ac.agdServer, logger, appOpts); err != nil {
+	if OnAppHook != nil {
+		if err := OnAppHook(ac.agdServer, logger, appOpts); err != nil {
 			panic(err)
 		}
 	}

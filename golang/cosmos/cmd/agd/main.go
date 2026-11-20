@@ -200,11 +200,11 @@ func main() {
 	}
 
 	daemoncmd.OnExportHook = launchVM
+	daemoncmd.OnAppHook = launchVM
 	daemoncmd.OnStartHook = func(agdServer *vm.AgdServer, logger log.Logger, appOpts servertypes.AppOptions) error {
-		// We tried running start, which should never exit, so exit with non-zero
-		// code if we do.
+		// An unexpected VM exit while running the node is an error.
 		exitCode = 99
-		return launchVM(agdServer, logger, appOpts)
+		return nil
 	}
 
 	daemon.RunWithController(sendToNode)

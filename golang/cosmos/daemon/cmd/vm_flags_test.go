@@ -6,7 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"cosmossdk.io/log"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/cosmos/cosmos-sdk/server"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
@@ -62,6 +65,51 @@ func TestVMFlagsOnAppCommands(t *testing.T) {
 			path, err := command.Flags().GetString("vm-path")
 			require.NoError(t, err)
 			require.Equal(t, "default", path)
+		})
+	}
+}
+
+func TestStartHookRunsOnlyForStart(t *testing.T) {
+	oldStart, oldApp := OnStartHook, OnAppHook
+	t.Cleanup(func() { OnStartHook, OnAppHook = oldStart, oldApp })
+	for _, commandPath := range [][]string{{"start"}, {"comet", "bootstrap-state"}, {"tendermint", "bootstrap-state"}, {"rollback"}} {
+		t.Run(filepath.Join(commandPath...), func(t *testing.T) {
+			startCalls := 0
+			OnStartHook = func(_ *vm.AgdServer, _ log.Logger, _ servertypes.AppOptions) error {
+				startCalls++
+				return nil
+			}
+			OnAppHook = func(_ *vm.AgdServer, _ log.Logger, _ servertypes.AppOptions) error {
+				panic("application hook reached")
+			}
+			root, _ := NewRootCmd(nil)
+			command, _, err := root.Find(commandPath)
+			require.NoError(t, err)
+			// A path token named start must not classify bootstrap-state as start.
+			home := filepath.Join(t.TempDir(), "start")
+			// server/cmd.Execute normally installs this persistent flag.
+			root.PersistentFlags().String("home", home, "application home")
+			require.NoError(t, command.ParseFlags([]string{"--home=" + home}))
+			serverCtx := server.NewDefaultContext()
+			require.NoError(t, serverCtx.Viper.BindPFlags(command.Flags()))
+			command.SetContext(context.WithValue(context.Background(), server.ServerContextKey, serverCtx))
+			require.NoError(t, server.SetCmdServerContext(command, serverCtx))
+			require.NoError(t, root.PersistentPreRunE(command, nil))
+			serverCtx.Viper.Set("minimum-gas-prices", "0ubld")
+			if command.PreRunE != nil {
+				require.NoError(t, command.PreRunE(command, nil))
+			}
+			wantStartCalls := 0
+			if command.Name() == "start" {
+				wantStartCalls = 1
+			}
+			require.Equal(t, wantStartCalls, startCalls)
+			// Opening an application invokes its own hook, never the start hook.
+			ac := appCreator{}
+			require.PanicsWithValue(t, "application hook reached", func() {
+				ac.newApp(log.NewNopLogger(), nil, nil, serverCtx.Viper)
+			})
+			require.Equal(t, wantStartCalls, startCalls)
 		})
 	}
 }
