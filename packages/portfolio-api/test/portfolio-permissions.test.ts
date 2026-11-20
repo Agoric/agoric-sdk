@@ -4,6 +4,7 @@ import test from 'ava';
 import { matches, mustMatch } from '@endo/patterns';
 
 import {
+  getEffectivePortfolioPermissions,
   portfolioPermissionsFromEIP712,
   portfolioPermissionsToEIP712,
   PortfolioPermissionsEIP712Shape,
@@ -166,4 +167,61 @@ test('permission wire conversion rejects non-user-facing authority', t => {
       { message: new RegExp(authority) },
     );
   }
+});
+
+test('effective permissions inherit stepwise and stop at explicit false', t => {
+  const cases = [
+    [{}, [false, false, false]],
+    [{ allocation: false }, [false, false, false]],
+    [{ allocation: true }, [true, true, true]],
+    [{ allocation: {} }, [true, true, true]],
+    [{ allocation: { maxWeightBps: 5_000n } }, [true, true, true]],
+    [{ allocation: true, rebalance: false }, [true, false, false]],
+    [
+      { allocation: { maxWeightBps: 5_000n }, rebalance: false },
+      [true, false, false],
+    ],
+    [
+      { allocation: true, rebalance: false, claimRewards: true },
+      [true, false, true],
+    ],
+    [{ allocation: true, claimRewards: false }, [true, true, false]],
+    [
+      { allocation: false, rebalance: true, claimRewards: false },
+      [false, true, false],
+    ],
+    [{ allocation: false, rebalance: true }, [false, true, true]],
+    [{ rebalance: true }, [false, true, true]],
+    [{ rebalance: false }, [false, false, false]],
+    [{ claimRewards: true }, [false, false, true]],
+    [{ allocation: false, claimRewards: true }, [false, false, true]],
+  ] as const;
+  for (const [permissions, [allocation, rebalance, claimRewards]] of cases) {
+    const stored = harden(permissions);
+    mustMatch(stored, PortfolioPermissionsShape);
+    t.deepEqual(
+      getEffectivePortfolioPermissions(stored),
+      { allocation, rebalance, claimRewards },
+      `${JSON.stringify(stored, (_k, v) => (typeof v === 'bigint' ? `${v}n` : v))}`,
+    );
+  }
+});
+
+test('effective permissions are distinct from the stored permission keys', t => {
+  const stored = harden({ allocation: { maxWeightBps: 5_000n } });
+  const effective = getEffectivePortfolioPermissions(stored);
+  // Every authority is resolved to a boolean, never left absent or carrying
+  // constraints, and the stored record is left untouched.
+  t.deepEqual(effective, {
+    allocation: true,
+    rebalance: true,
+    claimRewards: true,
+  });
+  t.deepEqual(stored, { allocation: { maxWeightBps: 5_000n } });
+  t.true(Object.isFrozen(effective));
+  // The user-facing wire form cannot express the inherited authorities.
+  t.deepEqual(portfolioPermissionsToEIP712(stored), {
+    allocation: true,
+    maxWeightBps: 5_000n,
+  });
 });

@@ -158,6 +158,52 @@ export const portfolioPermissionsToEIP712 = (
 };
 
 /**
+ * The authority actually conferred by a {@link PortfolioPermissions} record,
+ * after inheritance. Unlike the stored (or signed) permission keys, every
+ * authority is resolved to a boolean, and none is ever absent.
+ */
+export type EffectivePortfolioPermissions = {
+  allocation: boolean;
+  rebalance: boolean;
+  claimRewards: boolean;
+};
+
+/**
+ * Resolve the effective authority of stored permissions, using **stepwise**
+ * inheritance down the chain `allocation` → `rebalance` → `claimRewards`:
+ *
+ * - `allocation` is granted by `true` or by a constraint object (even `{}`),
+ *   and denied when absent or `false`.
+ * - an absent `rebalance` inherits the effective `allocation`.
+ * - an absent `claimRewards` inherits the effective `rebalance`.
+ *
+ * An explicit `false` therefore blocks inheritance by lower permissions: with
+ * `{ allocation: true, rebalance: false }`, `claimRewards` is denied. An
+ * explicit `true` is an independent grant, regardless of higher permissions.
+ *
+ * This is the single source of truth for every consumer (contract, YDS,
+ * MCP, planner), including the planner's own auto-feature opt-out. Callers
+ * are expected to have validated `permissions` against
+ * {@link PortfolioPermissionsShape} when they come from an untrusted source.
+ *
+ * @param permissions
+ */
+export const getEffectivePortfolioPermissions = (
+  permissions: PortfolioPermissions,
+): EffectivePortfolioPermissions => {
+  const { allocation, rebalance, claimRewards } = permissions;
+  const effectiveAllocation = allocation !== undefined && allocation !== false;
+  const effectiveRebalance = rebalance ?? effectiveAllocation;
+  const effectiveClaimRewards = claimRewards ?? effectiveRebalance;
+  return harden({
+    allocation: effectiveAllocation,
+    rebalance: effectiveRebalance,
+    claimRewards: effectiveClaimRewards,
+  });
+};
+harden(getEffectivePortfolioPermissions);
+
+/**
  * Extensible app-level shape for portfolio permissions.
  *
  * Future versions may add more permission keys while preserving the

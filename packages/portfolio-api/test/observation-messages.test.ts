@@ -53,6 +53,34 @@ test('portfolioObservationsToEIP712 omits absent entries', t => {
   t.deepEqual(instruments, []);
 });
 
+test('portfolioObservationsToEIP712 returns what it validated', t => {
+  let reads = 0;
+  const syncState = {
+    get policyVersion() {
+      reads += 1;
+      return reads === 1 ? 3 : -1;
+    },
+    rebalanceCount: 7,
+  };
+  const { syncState: signed } = portfolioObservationsToEIP712({
+    ...observation,
+    syncState,
+  });
+  t.is(signed.policyVersion, 3);
+  t.is(reads, 1);
+});
+
+test('the converters only accept plain data', t => {
+  t.throws(
+    () =>
+      portfolioObservationsFromEIP712({
+        ...wire,
+        holdings: [new Uint8Array(1)],
+      } as any),
+    { message: /expected plain data, got \[object Uint8Array\]/ },
+  );
+});
+
 test('the domain is distinct from Ymax portfolio operations', t => {
   t.like(
     ymaxObservationMessageKit.getStandaloneDomain(1n, `0x${'1'.repeat(40)}`),

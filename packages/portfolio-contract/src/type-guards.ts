@@ -158,7 +158,16 @@ export const TargetAllocationShapeExt: TypedPattern<Record<string, NatValue>> =
 export const PortfolioBalancePlaceRefShapeExt: TypedPattern<PortfolioBalancePlaceRef> =
   M.string();
 
-export const PlanObservationsShape: TypedPattern<PlanObservations> =
+/**
+ * Observations a planner may supply without a signature. They exclude reward
+ * evidence, which is only accepted from signed observations for now.
+ */
+export type PlannerPlanObservations = Pick<
+  PlanObservations,
+  'balances' | 'instrumentTvls' | 'holdings'
+>;
+
+export const PlanObservationsShape: TypedPattern<PlannerPlanObservations> =
   M.splitRecord(
     {
       balances: M.recordOf(PortfolioBalancePlaceRefShapeExt, M.nat()),

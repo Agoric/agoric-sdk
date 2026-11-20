@@ -13,6 +13,7 @@ import type { InstrumentId } from '../src/instruments.js';
 import type { PublishedTx } from '../src/resolver.js';
 import type {
   AssetPlaceRef,
+  ClaimRewardsSelector,
   FlowDetail,
   FlowKey,
   FlowStatus,
@@ -35,6 +36,7 @@ import type {
   ProposalType,
   SeatKeyword,
   StatusFor,
+  SwapSelector,
   TargetAllocation,
 } from '../src/types.js';
 
@@ -520,3 +522,9 @@ expectType<StatusFor['features']>(
 expectAssignable<keyof typeof SupportedChain>(
   null as unknown as keyof typeof AxelarChain,
 );
+
+// Claim and swap selectors designate signed evidence by index.
+expectAssignable<ClaimRewardsSelector>({ protocol: 'merkl', index: 0 });
+expectAssignable<SwapSelector>({ provider: '1inch', index: 0 });
+expectNotAssignable<ClaimRewardsSelector>({ protocol: 'morpho', index: 0 });
+expectNotAssignable<SwapSelector>({ provider: 'oneInch', index: 0 });
