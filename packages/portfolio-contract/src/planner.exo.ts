@@ -72,11 +72,14 @@ export const preparePlanner = (
     rejectPlan: M.call(portfolioIdShape, flowIdShape, M.string())
       .optional(policyVersionShape, rebalanceCountShape)
       .returns(),
+    // The delegation client checks the content of the plan and observations
+    // supplied in the params.
     rebalance: M.callWhen(
       portfolioIdShape,
       PortfolioDelegatedRebalanceParamsShape,
-      planCompatShape,
-    ).returns(FlowKeyShape),
+    )
+      .optional(planCompatShape)
+      .returns(FlowKeyShape),
     // The delegation client checks the content of the plan and observations.
     claimRewards: M.callWhen(
       portfolioIdShape,
@@ -137,10 +140,16 @@ export const preparePlanner = (
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.rejectFlowPlan(flowId, reason);
       },
+      /**
+       * Rebalance through the planner's delegation, with either:
+       * - a plan in the params, selecting attestor-signed observations, which
+       *   the delegation verifies and vets like that of any other agent, or
+       * - a separate plan, without observations.
+       */
       async rebalance(
         portfolioId: number,
         delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
-        planOrSteps: FundsFlowPlan | MovementDesc[],
+        planOrSteps?: FundsFlowPlan | MovementDesc[],
       ): Promise<FlowKey> {
         const portfolioPlanner = getPortfolioPlanner(portfolioId);
         const delegationClient = getPlannerDelegation(portfolioPlanner);
@@ -156,6 +165,13 @@ export const preparePlanner = (
         );
 
         const { plan, signedObservations } = delegatedRebalanceParams;
+        if (planOrSteps === undefined) {
+          plan !== undefined ||
+            Fail`a plan is required, either with signed observations or separately`;
+          // The delegation resolves the flow's plan with its bound steps, and
+          // records its submission (see `submitVersion`).
+          return delegationClient.rebalance(delegatedRebalanceParams);
+        }
         (plan === undefined && signedObservations === undefined) ||
           Fail`a separate plan excludes a plan or signed observations in the params`;
 

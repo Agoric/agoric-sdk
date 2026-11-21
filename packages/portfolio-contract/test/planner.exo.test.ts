@@ -763,6 +763,133 @@ test('planner cannot start delegated rebalance with new positions', async t => {
   );
 });
 
+test('planner rebalances with a plan selecting signed observations', async t => {
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone);
+
+  let startedFlow: { stepsP: unknown; flowId: number } | undefined;
+  const mockExecutePlan = (_seat, _offerArgs, _kit, _flowDetail, flow) => {
+    startedFlow = flow;
+    return vt.asVow(() => undefined);
+  };
+  const mockZcf = {
+    makeEmptySeatKit: () => ({
+      zcfSeat: null as any,
+    }),
+  } as ZCF;
+
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  const marshaller = board.getReadonlyMarshaller();
+  const plannerDelegations = new Map<
+    PortfolioKit['planner'],
+    PortfolioDelegationClient
+  >();
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    executePlan: mockExecutePlan as any,
+    zcf: mockZcf,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
+    deliverDelegation(
+      client: PortfolioDelegationClient,
+      _portfolioId,
+      _agentId,
+      _grantee,
+      _permissions,
+    ) {
+      plannerDelegations.set(aPortfolio.planner, client);
+    },
+    verifyPortfolioObservations: fakeVerifyObservations,
+    contracts: contractsMock,
+    ...({} as any),
+  });
+  const aPortfolio = makePortfolioKit({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
+
+  const makePlanner = preparePlanner(zone, {
+    getPortfolioPlanner: mockGetPortfolioPlanner,
+    getPlannerDelegation: portfolioPlanner =>
+      plannerDelegations.get(portfolioPlanner),
+    shapes: makeOfferArgsShapes(USDC),
+  });
+  const planner = makePlanner();
+
+  aPortfolio.manager.setTargetAllocation({ Aave_Arbitrum: 100n });
+  await aPortfolio.manager.setAutoFeatures({ rebalance: true });
+  provideEthereumAccount(aPortfolio, vt);
+
+  // setAutoFeatures granted the planner delegation, bumping policyVersion
+  // past the setTargetAllocation call above.
+  const signedParams = makeMerklClaimParams({
+    policyVersion: 2,
+    rebalanceCount: 0,
+  });
+  const {
+    plan: _plan,
+    signedObservations: _signed,
+    ...bareParams
+  } = signedParams;
+  const separatePlan: MovementDesc[] = [];
+
+  await t.throwsAsync(planner.rebalance(1, bareParams), {
+    message:
+      'a plan is required, either with signed observations or separately',
+  });
+  await t.throwsAsync(planner.rebalance(1, signedParams, separatePlan), {
+    message:
+      'a separate plan excludes a plan or signed observations in the params',
+  });
+  await t.throwsAsync(
+    planner.rebalance(
+      1,
+      { ...bareParams, signedObservations: signedParams.signedObservations },
+      separatePlan,
+    ),
+    {
+      message:
+        'a separate plan excludes a plan or signed observations in the params',
+    },
+  );
+  await t.throwsAsync(planner.rebalance(1, signedParams), {
+    message:
+      'delegation "agent1" does not have required permission "claimRewards"',
+  });
+  t.like(
+    await getPortfolioStatus(1),
+    { flowCount: 0, rebalanceCount: 0 },
+    'no flow is left behind',
+  );
+
+  await aPortfolio.manager.setAutoFeatures({ claimRewards: true });
+  // The regrant bumped policyVersion again.
+  const flowKey = await planner.rebalance(
+    1,
+    makeMerklClaimParams({ policyVersion: 3, rebalanceCount: 0 }),
+  );
+
+  t.is(flowKey, 'flow1');
+  t.like(await vt.when(startedFlow!.stepsP as any), {
+    plan: signedParams.plan,
+    boundSteps: { 0: { kind: 'claimRewards', protocol: 'merkl' } },
+  });
+  t.like(await getPortfolioStatus(1), {
+    policyVersion: 3,
+    rebalanceCount: 1,
+    flowsRunning: {
+      flow1: { type: 'rebalance', agent: 'agent1', agentMemo: '12345' },
+    },
+  });
+});
+
 test('planner starts delegated claimRewards and resolves its plan', async t => {
   const zone = makeHeapZone();
   const vt = prepareVowTools(zone);
