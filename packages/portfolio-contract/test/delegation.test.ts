@@ -1520,6 +1520,70 @@ test('delegated plans: signed TVL mandate failure creates no flow', async t => {
   t.deepEqual(after.flowsRunning, before.flowsRunning);
 });
 
+test('delegated plans: instrument round trips and small supplies create no flow or policy change', async t => {
+  const { peteKit, portfolioId, delegationClient, signObservations, usdc } =
+    await setupPlanDelegation(t);
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const syncState = getSyncState(before);
+  const signedObservations = await signObservations({
+    portfolioId,
+    syncState,
+    observations: {
+      balances: {
+        '@agoric': 10_000_000n,
+        '@Arbitrum': 0n,
+        Aave_Arbitrum: 0n,
+        Compound_Arbitrum: 0n,
+      },
+      instrumentTvls: {},
+    },
+  });
+  const transfer = {
+    src: '@agoric',
+    dest: '@Arbitrum',
+    amount: usdc.make(10_000_000n),
+  } as const;
+  const supply = {
+    src: '@Arbitrum',
+    dest: 'Aave_Arbitrum',
+    amount: usdc.make(5_000_000n),
+  } as const;
+  for (const [flow, message] of [
+    [
+      [transfer, { ...supply, amount: usdc.make(4_999_999n) }],
+      /agent instrument movement requires at least 5000000/,
+    ],
+    [
+      [
+        transfer,
+        supply,
+        {
+          src: 'Aave_Arbitrum',
+          dest: '@Arbitrum',
+          amount: usdc.make(5_000_000n),
+        },
+      ],
+      /cannot withdraw from and deposit into/,
+    ],
+  ] as const) {
+    await t.throwsAsync(
+      E(delegationClient).setTargetAllocation({
+        targetAllocation: { Aave_Arbitrum: 1n, Compound_Arbitrum: 0n },
+        syncState,
+        signedObservations,
+        plan: { flow: [...flow] },
+      }),
+      { message },
+    );
+    await eventLoopIteration();
+    const after = await peteKit.evmTrader.getPortfolioStatus();
+    t.is(after.flowCount, before.flowCount);
+    t.deepEqual(getSyncState(after), syncState);
+    t.deepEqual(after.targetAllocation, before.targetAllocation);
+    t.deepEqual(after.flowsRunning, before.flowsRunning);
+  }
+});
+
 test('delegated plans: allocation permission cannot submit reward claims', async t => {
   const { peteKit, portfolioId, delegationClient, signObservations, usdc } =
     await setupPlanDelegation(t);

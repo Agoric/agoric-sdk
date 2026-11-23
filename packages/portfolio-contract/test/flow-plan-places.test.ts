@@ -2,7 +2,9 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import PROD_NETWORK from '@agoric/portfolio-api/src/network/prod-network.js';
 import {
+  MIN_AGENT_INSTRUMENT_MOVE_UUSDC,
   vetFlowPlanPlaces,
   type FlowPlanContext,
 } from '../src/flow-plan-places.ts';
@@ -21,6 +23,123 @@ const evm = (
   flowType: FlowPlanContext['flowType'],
   chains: Pick<FlowPlanContext, 'fromChain' | 'toChain'> = {},
 ): FlowPlanContext => ({ flowType, isEvmPortfolio: true, ...chains });
+
+test('agent instrument minimum is 5 USDC and at least five times every transfer minimum', t => {
+  t.is(MIN_AGENT_INSTRUMENT_MOVE_UUSDC, 5_000_000n);
+  for (const { src, dest, min = 0n } of PROD_NETWORK.links) {
+    t.true(
+      MIN_AGENT_INSTRUMENT_MOVE_UUSDC >= 5n * min,
+      `${src} -> ${dest}: ${min}`,
+    );
+  }
+});
+
+test('rejects withdrawals and deposits at the same instrument in either order', t => {
+  for (const instrument of ['Aave_Arbitrum', 'USDN']) {
+    const account = instrument === 'USDN' ? '@noble' : '@Arbitrum';
+    const withdrawal = step(instrument, account);
+    const deposit = step(account, instrument);
+    for (const flow of [
+      [withdrawal, deposit],
+      [deposit, withdrawal],
+    ]) {
+      for (const order of [undefined, []]) {
+        t.throws(
+          () => vetFlowPlanPlaces(cosmos('rebalance'), { flow, order }),
+          {
+            message: /cannot withdraw from and deposit into/,
+          },
+        );
+      }
+    }
+  }
+});
+
+test('chain accounts may send and receive in either direction', t => {
+  const flow = [step('@Base', '@Arbitrum'), step('@Arbitrum', '@Base')];
+  t.notThrows(() => vetFlowPlanPlaces(evm('rebalance'), flow));
+});
+
+test('agent instrument movements require at least 5 USDC per step', t => {
+  const context = { ...evm('rebalance'), isAgentFlow: true };
+  for (const [src, dest] of [
+    ['@Arbitrum', 'Aave_Arbitrum'],
+    ['Aave_Arbitrum', '@Arbitrum'],
+  ]) {
+    for (const value of [0n, 1n, 4_999_999n, 5_000_000n, 5_000_001n]) {
+      const movement = {
+        ...step(src, dest),
+        amount: AmountMath.make(USDC, value),
+      };
+      if (value < 5_000_000n) {
+        t.throws(() => vetFlowPlanPlaces(context, [movement]), {
+          message: /agent instrument movement requires at least 5000000/,
+        });
+      } else {
+        t.notThrows(() => vetFlowPlanPlaces(context, [movement]));
+      }
+      t.notThrows(() => vetFlowPlanPlaces(evm('rebalance'), [movement]));
+    }
+  }
+  // Two small supplies cannot pool their amounts to meet the per-step minimum.
+  t.throws(
+    () =>
+      vetFlowPlanPlaces(context, [
+        step('@Arbitrum', 'Aave_Arbitrum'),
+        step('@Arbitrum', 'Aave_Arbitrum'),
+      ]),
+    {
+      message: /agent instrument movement requires at least 5000000/,
+    },
+  );
+  t.notThrows(() =>
+    vetFlowPlanPlaces(context, [
+      { ...step('@Base', '@Arbitrum'), amount: AmountMath.make(USDC, 1n) },
+      { ...step('@Arbitrum', '@Base'), amount: AmountMath.make(USDC, 1n) },
+    ]),
+  );
+});
+
+test('agent max and share withdrawals require 5 USDC guaranteed proceeds', t => {
+  const context = { ...evm('rebalance'), isAgentFlow: true };
+  for (const [src, withdraw] of [
+    ['Aave_Arbitrum', { max: true }],
+    ['ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum', { amountOfShares: 10n }],
+  ] as const) {
+    for (const value of [0n, 4_999_999n, 5_000_000n]) {
+      const movement = {
+        ...step(src, '@Arbitrum'),
+        withdraw,
+        amount: AmountMath.make(USDC, value),
+      };
+      if (value < MIN_AGENT_INSTRUMENT_MOVE_UUSDC) {
+        t.throws(() => vetFlowPlanPlaces(context, [movement]), {
+          message: /agent instrument movement requires at least 5000000/,
+        });
+      } else {
+        t.notThrows(() => vetFlowPlanPlaces(context, [movement]));
+      }
+    }
+  }
+});
+
+test('claiming rewards is not a withdrawal of invested principal', t => {
+  const claim = {
+    ...step('Aave_Arbitrum', '@Arbitrum'),
+    amount: AmountMath.make(USDC, 0n),
+    claimRewards: { tokens: [], minAmounts: [] },
+  };
+  const supply = {
+    ...step('@Arbitrum', 'Aave_Arbitrum'),
+    amount: AmountMath.make(USDC, 5_000_000n),
+  };
+  t.notThrows(() =>
+    vetFlowPlanPlaces({ ...evm('claimRewards'), isAgentFlow: true }, [
+      claim,
+      supply,
+    ]),
+  );
+});
 
 test('accepts plans of a normal shape', t => {
   const cases: [FlowPlanContext, MovementDesc[]][] = [

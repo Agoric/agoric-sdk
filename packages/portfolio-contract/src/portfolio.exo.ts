@@ -212,6 +212,7 @@ type RunningFlowDetail = {
 const flowPlanContext = (detail: FlowDetail, isEvmPortfolio: boolean) => ({
   flowType: detail.type,
   isEvmPortfolio,
+  isAgentFlow: !!detail.agent,
   ...(detail.type === 'deposit' && { fromChain: detail.fromChain }),
   ...(detail.type === 'withdraw' && { toChain: detail.toChain }),
 });

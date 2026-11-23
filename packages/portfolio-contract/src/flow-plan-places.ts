@@ -1,10 +1,11 @@
 /**
- * @file Check that a plan's deposit and withdrawal places fit its flow.
+ * @file Check a plan's places and instrument movements before admission.
  * @see {@link vetFlowPlanPlaces}
  */
 import type { FlowDetail, FundsFlowPlan } from '@agoric/portfolio-api';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import { Fail, q } from '@endo/errors';
+import { isInstrumentId } from '@agoric/portfolio-api/src/type-guards.js';
+import { b, Fail, q } from '@endo/errors';
 import {
   getChainNameOfPlaceRef,
   getDepositChainOfPlaceRef,
@@ -18,6 +19,8 @@ export type FlowPlanContext = {
   flowType: FlowDetail['type'];
   /** Whether the portfolio was opened from EVM (has a `sourceAccountId`) */
   isEvmPortfolio: boolean;
+  /** Set from the contract's flow attribution, never from the submitted plan. */
+  isAgentFlow?: boolean;
   /** EVM chain of the owner's deposit, for EVM deposit flows */
   fromChain?: string;
   /** EVM chain of the owner's withdrawal, for EVM withdraw flows */
@@ -78,8 +81,44 @@ export const vetInstrumentAccountChain = ({
 };
 harden(vetInstrumentAccountChain);
 
+/** Minimum guaranteed USDC quantity for each agent supply or withdrawal. */
+export const MIN_AGENT_INSTRUMENT_MOVE_UUSDC = 5_000_000n;
+
+/** Reject principal round trips; chain accounts may send and receive freely. */
+export const vetNoInstrumentRoundTrips = (
+  planOrSteps: FundsFlowPlan | MovementDesc[],
+): void => {
+  const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
+  const sources = new Set(
+    steps
+      .filter(step => !step.claimRewards)
+      .map(step => step.src)
+      .filter(isInstrumentId),
+  );
+  for (const { dest } of steps) {
+    if (isInstrumentId(dest) && sources.has(dest)) {
+      throw Fail`plan cannot withdraw from and deposit into ${q(dest)}`;
+    }
+  }
+};
+harden(vetNoInstrumentRoundTrips);
+
+/** Reward claims and account transfers do not move invested principal. */
+export const vetAgentInstrumentMinimum = (
+  planOrSteps: FundsFlowPlan | MovementDesc[],
+): void => {
+  const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
+  for (const { src, dest, amount, claimRewards } of steps) {
+    if (claimRewards || (!isInstrumentId(src) && !isInstrumentId(dest)))
+      continue;
+    amount.value >= MIN_AGENT_INSTRUMENT_MOVE_UUSDC ||
+      Fail`agent instrument movement requires at least ${b(String(MIN_AGENT_INSTRUMENT_MOVE_UUSDC))} micro-USDC: ${q(src)} -> ${q(dest)}`;
+  }
+};
+harden(vetAgentInstrumentMinimum);
+
 /**
- * Reject plans whose deposit or withdrawal places don't fit the flow.
+ * Reject plans whose places or instrument movements don't fit the flow.
  *
  * Seat places (`<Deposit>`, `<Cash>`) and EVM owner places (`+Chain`,
  * `-Chain`) move funds into or out of a portfolio. They're only meaningful in
@@ -96,8 +135,11 @@ harden(vetInstrumentAccountChain);
  *   unrestricted here. Revisit with #12309.
  * - A step between an instrument and an account stays on the instrument's
  *   chain ({@link vetInstrumentAccountChain}).
+ * - An instrument cannot be both supplied and withdrawn in one plan.
+ * - Agent supplies and withdrawals each guarantee at least 5 USDC. Transfers
+ *   between chain accounts and reward claims are exempt from that minimum.
  *
- * TODO(#11782): this checks places only; other plan semantics remain unvetted.
+ * TODO(#11782): other plan semantics remain unvetted.
  */
 export const vetFlowPlanPlaces = (
   context: FlowPlanContext,
@@ -138,5 +180,7 @@ export const vetFlowPlanPlaces = (
       );
     }
   }
+  vetNoInstrumentRoundTrips(steps);
+  if (context.isAgentFlow) vetAgentInstrumentMinimum(steps);
 };
 harden(vetFlowPlanPlaces);

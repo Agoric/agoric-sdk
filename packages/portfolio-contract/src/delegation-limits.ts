@@ -24,7 +24,11 @@ import {
 import type { Address as EvmAddress } from 'abitype';
 import { b, Fail, q } from '@endo/errors';
 import { getPrincipalWithdrawalProtocol } from './principal-withdrawal.ts';
-import { vetInstrumentAccountChain } from './flow-plan-places.ts';
+import {
+  vetAgentInstrumentMinimum,
+  vetInstrumentAccountChain,
+  vetNoInstrumentRoundTrips,
+} from './flow-plan-places.ts';
 import { maxWeightClosure } from './max-weight-closure.ts';
 import { fullOrder, makeDependencies, makeSchedule } from './schedule-order.ts';
 
@@ -360,7 +364,7 @@ const decodePlan = (
         if (principal.amount === 0n) {
           valueUusd === 0n ||
             Fail`empty principal holding has nonzero valuation at ${q(src)}`;
-          // Supplies after observation are credited at parity.
+          // Keep the requested debit so funding rejects a positive withdrawal.
           debitValueUusd = amount.value;
         } else {
           // Round down so remaining USD exposure is not understated.
@@ -775,9 +779,9 @@ const projectPlanBalances = (
 };
 
 /**
- * Reject plans that claim rewards, add positions, finish above target ceilings,
- * or whose partial failure could increase a position balance above both its
- * target allocation ceiling and its initial balance. Only the final-balance
+ * Reject plans that claim rewards, add positions, round-trip an instrument,
+ * finish above target ceilings, or allow partial failure to increase a position
+ * above both its target allocation ceiling and its initial balance. Only the final-balance
  * check allows a shared {@link MAX_CHAIN_ALLOCATION_DIVERGENCE_UUSDC} per chain. Partial-failure,
  * mandate, and position checks remain exact.
  *
@@ -800,6 +804,7 @@ export const vetPlanAllocation = (
   // is deferred during controlled ymax0 testing; enforce it before opening
   // plan submission to untrusted agents.
   vetNoNewPositions(targetAllocation, plan);
+  vetNoInstrumentRoundTrips(plan);
   const balances = projectPlanBalances(
     decodedPlan,
     observations,
@@ -845,6 +850,7 @@ export const vetAllocationPlan = (
   );
   assertMandateForPlanObservations(permissions, targetAllocation, observations);
   const boundSteps = bindSteps(decodedPlan.flow, addresses);
+  vetAgentInstrumentMinimum(plan);
   return harden({
     commitNow: true,
     ...(keys(boundSteps).length && { boundSteps }),

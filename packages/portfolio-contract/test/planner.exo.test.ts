@@ -26,6 +26,65 @@ import { makeStorageTools } from './supports.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
+test('execution plan admission enforces instrument rules using flow attribution', async t => {
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone);
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const makePortfolio = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
+    marshaller: board.getReadonlyMarshaller(),
+    portfoliosNode: storage.rootNode.makeChildNode('portfolios'),
+    vowTools: vt,
+    ...({} as any),
+  });
+  const portfolio = makePortfolio({ portfolioId: 1 });
+  const move = (
+    src: MovementDesc['src'],
+    dest: MovementDesc['dest'],
+    value: bigint,
+  ): MovementDesc => ({ src, dest, amount: { brand: USDC, value } });
+  const cases = [
+    { flow: [move('@Arbitrum', 'Aave_Arbitrum', 4_999_999n)], small: true },
+    { flow: [move('Aave_Arbitrum', '@Arbitrum', 4_999_999n)], small: true },
+    { flow: [move('@Arbitrum', 'Aave_Arbitrum', 5_000_000n)] },
+    { flow: [move('Aave_Arbitrum', '@Arbitrum', 5_000_000n)] },
+    { flow: [move('@Base', '@Arbitrum', 1n), move('@Arbitrum', '@Base', 1n)] },
+    {
+      flow: [
+        move('Aave_Arbitrum', '@Arbitrum', 5_000_000n),
+        move('@Arbitrum', 'Aave_Arbitrum', 5_000_000n),
+      ],
+      roundTrip: true,
+    },
+  ];
+  for (const agent of [undefined, 'agent1'] as const) {
+    for (const { flow, small, roundTrip } of cases) {
+      const { flowId, stepsP } = portfolio.manager.startFlow({
+        type: 'rebalance',
+        ...(agent && { agent }),
+      });
+      const outcome = vt.when(stepsP);
+      const message = roundTrip
+        ? /cannot withdraw from and deposit into/
+        : agent && small
+          ? /agent instrument movement requires at least 5000000/
+          : undefined;
+      if (message) {
+        t.throws(() => portfolio.planner.resolveFlowPlan(flowId, { flow }), {
+          message,
+        });
+        await t.throwsAsync(outcome, { message });
+      } else {
+        portfolio.planner.resolveFlowPlan(flowId, { flow });
+        t.deepEqual(await outcome, { plan: { flow } });
+      }
+      portfolio.reporter.finishFlow(flowId);
+    }
+  }
+});
+
 test('planner exo resolvePlan method', async t => {
   const zone = makeHeapZone();
 
@@ -556,7 +615,7 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
     rebalance: true,
   });
 
-  const amount = { brand: USDC, value: 100n };
+  const amount = { brand: USDC, value: 5_000_000n };
   const plan: MovementDesc[] = [
     { src: '@agoric', dest: '@noble', amount },
     { src: '@noble', dest: 'USDN', amount },

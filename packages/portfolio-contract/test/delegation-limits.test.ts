@@ -376,6 +376,29 @@ test('zero-step plan stays within its risk envelope', t => {
   t.true(withinRiskEnvelope(balances, balances, targetAllocation));
 });
 
+test('allocation plans reject same-instrument round trips', t => {
+  const amount = { brand: USDC, value: 5_000_000n };
+  const withdrawal: MovementDesc = { src: 'Aave_Base', dest: '@Base', amount };
+  const deposit: MovementDesc = { src: '@Base', dest: 'Aave_Base', amount };
+  for (const flow of [
+    [withdrawal, deposit],
+    [deposit, withdrawal],
+  ]) {
+    t.throws(
+      () =>
+        vetPlanAllocation(
+          { Aave_Base: 1n, '@Base': 1n },
+          { flow },
+          {
+            balances: { Aave_Base: 10_000_000n, '@Base': 10_000_000n },
+            instrumentTvls: {},
+          },
+        ),
+      { message: /cannot withdraw from and deposit into/ },
+    );
+  }
+});
+
 /**
  * Liveness condition:
  *
@@ -442,6 +465,85 @@ testProp(
   { numRuns: 1_000 },
 );
 
+testProp(
+  'monotone agent plans admit funded dependencies and keep every partial execution safe',
+  [
+    arbSafelyReachableScenario,
+    fc.array(fc.boolean(), { minLength: 16, maxLength: 16 }),
+  ],
+  (t, { pre, request }, extraDependencies) => {
+    // Scale every nonzero quantity to at least 5 USDC, including split steps.
+    const unit = 5_000_000n;
+    const initial = Object.fromEntries(
+      Object.entries(pre.balances).map(([place, value]) => [
+        place,
+        value * unit,
+      ]),
+    );
+    const flow = request.plan.flow.flatMap(movement => {
+      const first = movement.amount.value / 2n;
+      return [first, movement.amount.value - first]
+        .filter(value => value > 0n)
+        .map(value => ({
+          ...movement,
+          amount: { brand: USDC, value: value * unit },
+        }));
+    });
+    const withdrawals = flow.flatMap(({ src }, index) =>
+      isInstrumentId(src) ? [index] : [],
+    );
+    const order: NonNullable<FundsFlowPlan['order']> = flow.map(
+      ({ dest }, index) => [
+        index,
+        [
+          ...(isInstrumentId(dest) ? withdrawals : []),
+          ...flow.flatMap((_, prior) =>
+            prior < index && extraDependencies[index * 4 + prior]
+              ? [prior]
+              : [],
+          ),
+        ],
+      ],
+    );
+    const plan = { flow, order };
+    t.notThrows(() =>
+      vetAllocationPlan({ allocation: true }, request.targetAllocation, plan, {
+        balances: initial,
+        instrumentTvls: {},
+      }),
+    );
+
+    // Enumerate subsets independently of the execution scheduler. Every set
+    // closed under prerequisites can be the successful part of a failed plan.
+    for (let selected = 0; selected < 2 ** flow.length; selected += 1) {
+      const includes = (index: number) =>
+        Math.floor(selected / 2 ** index) % 2 === 1;
+      if (
+        !order.every(
+          ([index, dependencies]) =>
+            !includes(index) || dependencies.every(includes),
+        )
+      )
+        continue;
+      const current = { ...initial };
+      flow.forEach(({ src, dest, amount }, index) => {
+        if (!includes(index)) return;
+        current[src] -= amount.value;
+        current[dest] += amount.value;
+      });
+      t.true(
+        Object.values(current).every(value => value >= 0n),
+        'partial execution is funded',
+      );
+      t.true(
+        withinRiskEnvelope(initial, current, request.targetAllocation),
+        'partial execution stays within the risk envelope',
+      );
+    }
+  },
+  { numRuns: 1_000 },
+);
+
 /**
  * The safety constraint intentionally prohibits some useful agent actions. An
  * Aave runtime constraint might require depositing $0.95 before withdrawing
@@ -482,8 +584,7 @@ test('safety rejects a temporary increase needed to reduce exposure', t => {
     { Aave_Arbitrum: 100_050_000n, '@Arbitrum': 100_050_000n },
   );
   t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
-    message:
-      /plan (final|intermediate) balance exceeds target allocation.*Aave_Arbitrum/,
+    message: /cannot withdraw from and deposit into.*Aave_Arbitrum/,
   });
 });
 
@@ -1156,7 +1257,7 @@ test('plan vetting uses the execution scheduler dependency semantics', t => {
   const planObservations: PlanObservations = {
     balances: {
       Aave_Arbitrum: 100n,
-      Compound_Arbitrum: 100n,
+      Compound_Arbitrum: 0n,
       '@Arbitrum': 0n,
     },
     instrumentTvls: {},
@@ -1170,7 +1271,7 @@ test('plan vetting uses the execution scheduler dependency semantics', t => {
       },
       {
         src: '@Arbitrum',
-        dest: 'Aave_Arbitrum',
+        dest: 'Compound_Arbitrum',
         amount: { brand: USDC, value: 100n },
       },
     ],
@@ -1183,14 +1284,10 @@ test('plan vetting uses the execution scheduler dependency semantics', t => {
   t.deepEqual(schedule.ready(), [0]);
   schedule.complete(0);
   t.deepEqual(schedule.ready(), [1]);
-  // Execution withdraws before supplying, so Aave never exceeds its initial
-  // or target share. Partial-plan validation should use those same dependencies.
+  // Repeated entries retain the dependency: execution must withdraw from
+  // Aave before the initially empty account can supply Compound.
   t.notThrows(() =>
-    vetPlanAllocation(
-      { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
-      plan,
-      planObservations,
-    ),
+    vetPlanAllocation({ Compound_Arbitrum: 1n }, plan, planObservations),
   );
 });
 
@@ -1263,8 +1360,7 @@ test('plan allocation rejects unsafe partial success among unordered steps', t =
   };
 
   t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
-    message:
-      /plan (final|intermediate) balance exceeds target allocation.*Aave_Arbitrum/,
+    message: /cannot withdraw from and deposit into.*Aave_Arbitrum/,
   });
 });
 
@@ -1621,7 +1717,7 @@ for (const initialBalance of [0n, 1_000_000n, 2_000_000n]) {
           balances: { '@Base': 10_000_000n, Aave_Base: initialBalance },
           instrumentTvls: {},
         }),
-      { message: /plan intermediate balance exceeds target allocation/ },
+      { message: /cannot withdraw from and deposit into.*Aave_Base/ },
     );
   });
 }
@@ -1892,7 +1988,10 @@ for (const investment of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
 
 test('Redemption binds observed shares to the configured vault', t => {
   const { instrument, shares, observations, movement } =
-    makeMorphoMaximumWithdrawalCase({ shareQuantity: 50n });
+    makeMorphoMaximumWithdrawalCase({
+      shareQuantity: 50n,
+      minimumProceeds: 5_000_000n,
+    });
   const plan = {
     flow: [{ ...movement, boundSteps: { shares: 999n } }],
   };
@@ -1917,6 +2016,7 @@ test('Redemption binds observed shares to the configured vault', t => {
         src: instrument,
         vaultAddress: holdingTokens.vault,
         shares: 50n,
+        minimumProceeds: 5_000_000n,
       },
     },
   });
@@ -1930,6 +2030,7 @@ test('Redemption binds observed shares to the configured vault', t => {
           src: instrument,
           vaultAddress: holdingTokens.vault,
           shares: 20n,
+          minimumProceeds: 5_000_000n,
         },
       },
     },
@@ -1948,7 +2049,9 @@ test('Redemption binds observed shares to the configured vault', t => {
     message: /no configured vault/,
   });
   t.deepEqual(
-    vet({ flow: [{ ...movement, amount: { brand: USDC, value: 1n } }] }),
+    vet({
+      flow: [{ ...movement, amount: { brand: USDC, value: 5_000_001n } }],
+    }),
     {
       commitNow: true,
       boundSteps: {
@@ -1957,7 +2060,7 @@ test('Redemption binds observed shares to the configured vault', t => {
           src: instrument,
           vaultAddress: holdingTokens.vault,
           shares: 50n,
-          minimumProceeds: 1n,
+          minimumProceeds: 5_000_001n,
         },
       },
     },
@@ -1968,7 +2071,7 @@ test('Redemption binds observed shares to the configured vault', t => {
         {
           ...movement,
           withdraw: { amountOfShares: 20n },
-          amount: { brand: USDC, value: 1n },
+          amount: { brand: USDC, value: 5_000_001n },
         },
       ],
     }).boundSteps?.[0],
@@ -1977,7 +2080,7 @@ test('Redemption binds observed shares to the configured vault', t => {
       src: instrument,
       vaultAddress: holdingTokens.vault,
       shares: 20n,
-      minimumProceeds: 1n,
+      minimumProceeds: 5_000_001n,
     },
   );
   t.throws(
@@ -2478,52 +2581,6 @@ test('Reject exact withdrawals when USDC withdrawn exceeds USD value removed', t
   });
 });
 
-test('Exact withdrawals after a supply spend the new principal', t => {
-  const src = 'Aave_Ethereum';
-  const plan: FundsFlowPlan = {
-    flow: [
-      { src: '@Ethereum', dest: src, amount: { brand: USDC, value: 60n } },
-      { src, dest: '@Ethereum', amount: { brand: USDC, value: 20n } },
-      { src: '@Ethereum', dest: src, amount: { brand: USDC, value: 20n } },
-    ],
-  };
-  const holdings = [
-    makeHolding({
-      place: '@Ethereum',
-      kind: 'token',
-      amount: 100n,
-      valueUusd: 100n,
-    }),
-    makeHolding({ place: src, kind: 'principal', amount: 0n, valueUusd: 0n }),
-  ];
-  for (const hybrid of [false, true]) {
-    const observations: PlanObservations = {
-      balances: hybrid ? { '@Ethereum': 100n, [src]: 0n } : {},
-      holdings: hybrid
-        ? holdings.map(holding => ({ ...holding, balanceUsdc: holding.amount }))
-        : holdings,
-      instrumentTvls: {},
-    };
-    t.notThrows(() =>
-      vetPlanAllocation(
-        { [src]: 60n, '@Ethereum': 40n },
-        plan,
-        observations,
-        () => holdingTokens.usdc,
-      ),
-    );
-    t.throws(
-      () =>
-        vetPlanAllocation(
-          { '@Ethereum': 1n },
-          { flow: [plan.flow[1]!] },
-          observations,
-        ),
-      { message: /unfunded plan movement/ },
-    );
-  }
-});
-
 test('max with legacy balances requires principal evidence', t => {
   const plan: FundsFlowPlan = {
     flow: [
@@ -2697,8 +2754,13 @@ for (const src of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
       cash,
       emptyDest,
     ]);
-    t.notThrows(() =>
-      check({ flow: [{ ...move, amount: { brand: USDC, value: 0n } }] }, empty),
+    t.throws(
+      () =>
+        check(
+          { flow: [{ ...move, amount: { brand: USDC, value: 0n } }] },
+          empty,
+        ),
+      { message: /agent instrument movement requires at least 5000000/ },
     );
     t.throws(() => check(undefined, empty), {
       message: /empty principal holding cannot meet proceeds minimum/,
