@@ -66,6 +66,8 @@ harden(AxelarGMPMessageType);
  * @property {string} functionSignature
  * @property {unknown[]} args
  * @property {Abi} [abi]
+ * @property {`0x${string}`} [calldataSuffix] bytes appended after the
+ *   ABI-encoded call, outside its arguments (e.g. provider tracking data)
  */
 
 /**
