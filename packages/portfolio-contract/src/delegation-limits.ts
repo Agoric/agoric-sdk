@@ -24,9 +24,12 @@ import {
 import type { Address as EvmAddress } from 'abitype';
 import { b, Fail, q } from '@endo/errors';
 import { getPrincipalWithdrawalProtocol } from './principal-withdrawal.ts';
-import { vetInstrumentAccountChain } from './flow-plan-places.ts';
-import { maxWeightClosure } from './max-weight-closure.ts';
-import { fullOrder, makeDependencies, makeSchedule } from './schedule-order.ts';
+import {
+  vetAgentInstrumentMinimum,
+  vetInstrumentAccountChain,
+  vetNoInstrumentRoundTrips,
+} from './flow-plan-places.ts';
+import { fullOrder, makeSchedule } from './schedule-order.ts';
 
 const { entries, keys, values } = Object;
 
@@ -360,7 +363,7 @@ const decodePlan = (
         if (principal.amount === 0n) {
           valueUusd === 0n ||
             Fail`empty principal holding has nonzero valuation at ${q(src)}`;
-          // Supplies after observation are credited at parity.
+          // Keep the requested debit so funding rejects a positive withdrawal.
           debitValueUusd = amount.value;
         } else {
           // Round down so remaining USD exposure is not understated.
@@ -588,61 +591,28 @@ const vetAllocationCeilings = (
  * applies here: adding slack to the observed initial balance would let repeated
  * partial failures ratchet exposure upward.
  *
- * Let S be the number of plan steps, D the number of distinct dependency
- * edges, and I the number of referenced instruments. This runs one
- * maximum-weight closure per instrument, for O(I * S * (S + D)^2) worst-case
- * time and O(S^2) peak space, excluding bigint arithmetic. With the default
- * linear order D is O(S), so the time bound is O(I * S^3); a dense explicit
- * order can raise it to O(I * S^5).
- *
- * The closure graph is rebuilt synchronously for each instrument. Keep
- * admitted plan sizes and instrument counts bounded, and benchmark this path
- * before increasing either limit materially.
+ * Round trips have already been rejected, so an instrument's balance is
+ * monotone: its peak is either its initial balance or its final balance.
+ * Checking final increases suffices for every partial execution, regardless
+ * of dependencies. This scan is linear in the observed/projected places.
  */
 const vetPartialPlanAllocation = (
   targetAllocation: TargetAllocation,
-  plan: DecodedPlan,
+  balances: Map<string, bigint>,
   observations: PlanObservations,
 ) => {
   const initialBalances = sumValueUusdByPlace(observations);
   const totalBalance = sumOptionalBigints([...initialBalances.values()]);
   const totalPortions = sumPortions(targetAllocation);
-  const { flow } = plan;
-  const steps = [...flow.keys()];
-  const dependencies = makeDependencies(
-    flow.length,
-    plan.order ?? fullOrder(flow.length),
-  );
-  const instruments = new Set(
-    [
-      ...keys(targetAllocation),
-      ...initialBalances.keys(),
-      ...flow.flatMap(({ src, dest }) => [src, dest]),
-    ].filter(isInstrumentId),
-  );
-
-  for (const place of instruments) {
+  for (const [place, balance] of balances) {
+    if (!isInstrumentId(place)) continue;
     const initialBalance = initialBalances.get(place) ?? 0n;
-    const maxDelta = maxWeightClosure(
-      steps,
-      index => {
-        const movement = flow[index]!;
-        if (movement.kind === 'claimRewards') return 0n;
-        const { src, dest, amount } = movement;
-        if (dest === place) return amount.value;
-        if (src === place) return -movement.debitValueUusd;
-        return 0n;
-      },
-      index => [...(dependencies.get(index) ?? [])],
-    );
-    const maxBalance = initialBalance + maxDelta;
+    if (balance <= initialBalance) continue;
     const ceiling = targetAllocation[place] ?? 0n;
     const withinTarget =
-      totalPortions > 0n &&
-      maxBalance * totalPortions <= totalBalance * ceiling;
+      totalPortions > 0n && balance * totalPortions <= totalBalance * ceiling;
     withinTarget ||
-      maxBalance <= initialBalance ||
-      Fail`plan intermediate balance exceeds target allocation at ${q(place)}: initial balance ${q(initialBalance)}, peak balance ${q(maxBalance)} of total ${q(totalBalance)} vs target portion ${q(ceiling)} of ${q(totalPortions)}`;
+      Fail`plan intermediate balance exceeds target allocation at ${q(place)}: initial balance ${q(initialBalance)}, peak balance ${q(balance)} of total ${q(totalBalance)} vs target portion ${q(ceiling)} of ${q(totalPortions)}`;
   }
 };
 
@@ -775,9 +745,9 @@ const projectPlanBalances = (
 };
 
 /**
- * Reject plans that claim rewards, add positions, finish above target ceilings,
- * or whose partial failure could increase a position balance above both its
- * target allocation ceiling and its initial balance. Only the final-balance
+ * Reject plans that claim rewards, add positions, round-trip an instrument,
+ * finish above target ceilings, or allow partial failure to increase a position
+ * above both its target allocation ceiling and its initial balance. Only the final-balance
  * check allows a shared {@link MAX_CHAIN_ALLOCATION_DIVERGENCE_UUSDC} per chain. Partial-failure,
  * mandate, and position checks remain exact.
  *
@@ -800,13 +770,14 @@ export const vetPlanAllocation = (
   // is deferred during controlled ymax0 testing; enforce it before opening
   // plan submission to untrusted agents.
   vetNoNewPositions(targetAllocation, plan);
+  vetNoInstrumentRoundTrips(plan);
   const balances = projectPlanBalances(
     decodedPlan,
     observations,
     getUsdcTokenId,
   );
   vetAllocationCeilings(balances, targetAllocation);
-  vetPartialPlanAllocation(targetAllocation, decodedPlan, observations);
+  vetPartialPlanAllocation(targetAllocation, balances, observations);
   return decodedPlan;
 };
 harden(vetPlanAllocation);
@@ -845,6 +816,7 @@ export const vetAllocationPlan = (
   );
   assertMandateForPlanObservations(permissions, targetAllocation, observations);
   const boundSteps = bindSteps(decodedPlan.flow, addresses);
+  vetAgentInstrumentMinimum(plan);
   return harden({
     commitNow: true,
     ...(keys(boundSteps).length && { boundSteps }),

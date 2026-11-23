@@ -25,7 +25,12 @@ import type { MapStore } from '@agoric/store';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
 import { E, Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import { encodeFunctionData, parseAbi } from 'viem';
+import {
+  decodeFunctionData,
+  encodeFunctionData,
+  getAddress,
+  parseAbi,
+} from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { decodeMultiCalls } from './abi-utils.ts';
@@ -414,6 +419,10 @@ for (const instrument of [
       const observedShares = 7_654_321_123_456_789n;
       const observedValue = 100_000_000n;
       const shareWithdrawal = maximum || shares !== undefined;
+      const minimumProceeds =
+        protocolType === 'ERC4626' && shareWithdrawal
+          ? 5_000_000n
+          : observedValue;
       const useHoldings = shareWithdrawal || typedHoldings;
       const observations: PlanObservations = useHoldings
         ? {
@@ -456,12 +465,7 @@ for (const instrument of [
               {
                 src: instrument,
                 dest: '@Ethereum',
-                // Principal exits enforce the observed value; share cases use zero.
-                amount: usdc.make(
-                  protocolType === 'ERC4626' && shareWithdrawal
-                    ? 0n
-                    : observedValue,
-                ),
+                amount: usdc.make(minimumProceeds),
                 fee: bld.make(100n),
                 ...(maximum && { withdraw: { max: true } }),
                 ...(shares !== undefined && {
@@ -543,7 +547,54 @@ for (const instrument of [
         default:
           throw Error('test definition failure: unhandled protocol type');
       }
-      if (protocolType === 'ERC4626' || !maximum) {
+      if (protocolType === 'ERC4626' && shareWithdrawal) {
+        const quantity = shares ?? observedShares;
+        t.is(calls.length, 2);
+        t.deepEqual(calls[0], {
+          target: protocolAddress,
+          data: encodeFunctionData({
+            abi: parseAbi([
+              'function approve(address spender, uint256 amount) returns (bool)',
+            ]),
+            functionName: 'approve',
+            args: [addresses.morphoGeneralAdapter1, quantity],
+          }),
+        });
+        t.is(
+          calls[1]!.target.toLowerCase(),
+          addresses.morphoBundler3.toLowerCase(),
+        );
+        const {
+          args: [bundle],
+        } = decodeFunctionData({
+          abi: parseAbi([
+            'function multicall((address to, bytes data, uint256 value, bool skipRevert, bytes32 callbackHash)[] bundle) payable',
+          ]),
+          data: calls[1]!.data,
+        });
+        t.is(bundle.length, 1);
+        const call = bundle[0]!;
+        t.is(
+          call.to.toLowerCase(),
+          addresses.morphoGeneralAdapter1.toLowerCase(),
+        );
+        t.is(call.value, 0n);
+        t.false(call.skipRevert);
+        t.is(call.callbackHash, `0x${'00'.repeat(32)}`);
+        const redeem = decodeFunctionData({
+          abi: parseAbi([
+            'function erc4626Redeem(address vault, uint256 shares, uint256 minSharePriceE27, address receiver, address owner)',
+          ]),
+          data: call.data,
+        });
+        t.deepEqual(redeem.args, [
+          getAddress(protocolAddress),
+          quantity,
+          (minimumProceeds * 10n ** 27n) / quantity,
+          getAddress(address),
+          getAddress(address),
+        ]);
+      } else if (protocolType === 'ERC4626' || !maximum) {
         t.deepEqual(calls, [{ target: protocolAddress, data: expectCallData }]);
       } else {
         t.deepEqual(calls.at(-1), {
