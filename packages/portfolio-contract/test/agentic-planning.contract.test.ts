@@ -11,6 +11,7 @@ import type {
   PlanObservations,
   FlowKey,
   FundsFlowPlan,
+  PortfolioDelegatedClaimRewardsParams,
   PortfolioDelegatedSetTargetAllocationParams,
   TypedHoldingDetail,
 } from '@agoric/portfolio-api';
@@ -222,26 +223,6 @@ const makeAgent = (
       }) satisfies PortfolioDelegatedSetTargetAllocationParams;
 
       return E(delegationClient).setTargetAllocation(submitted);
-    },
-    /** Claim (and swap) rewards with evidence attested for the plan. */
-    async claimRewards(
-      claimPlan: FundsFlowPlan,
-      observations: PlanObservations,
-    ) {
-      assert(delegationClient, 'delegation not redeemed');
-      const before = await portfolioRead.getPortfolioStatus();
-      const syncState = harden({
-        policyVersion: before.policyVersion,
-        rebalanceCount: before.rebalanceCount,
-      });
-      const signedObservations = await mcp.attest(
-        portfolioRead.getPortfolioId(),
-        syncState,
-        observations,
-      );
-      return E(delegationClient).claimRewards(
-        harden({ syncState, plan: claimPlan, signedObservations }),
-      );
     },
     getDelegationClient() {
       assert(delegationClient, 'delegation not redeemed');
@@ -922,246 +903,287 @@ test('valid attested plan is rejected while the opening flow is active', async t
 
 const MERKL_REWARD = '0x00000000000000000000000000000000000000aa' as const;
 
-test(
-  'delegated Merkl claim funds a dependent 1inch swap, whose failure leaves the claim',
-  expectUnhandled(1),
-  async t => {
-    const fixture = await setupTest(t, {
-      defaultFlowConfig: { features: { experimentalSwap: true } },
-    });
-    const {
-      outgoingTransferAt,
-      transmitVTransferEvent,
-      zoe,
-      creatorFacet,
-      portfolioRead,
-      usdc,
-      bld,
-    } = fixture;
-    const eth = contractsMock.Ethereum;
-    const instrument = 'Aave_Ethereum';
-    const observedValue = 100_000_000n;
+for (const submitter of ['agent', 'planner'] as const) {
+  test(
+    `delegated Merkl claim by the ${submitter} funds a dependent 1inch swap, whose failure leaves the claim`,
+    expectUnhandled(1),
+    async t => {
+      const fixture = await setupTest(t, {
+        defaultFlowConfig: { features: { experimentalSwap: true } },
+      });
+      const {
+        outgoingTransferAt,
+        transmitVTransferEvent,
+        zoe,
+        creatorFacet,
+        portfolioRead,
+        usdc,
+        bld,
+      } = fixture;
+      const eth = contractsMock.Ethereum;
+      const instrument = 'Aave_Ethereum';
+      const observedValue = 100_000_000n;
 
-    // A first plan withdraws from the position, provisioning the account where
-    // rewards accrue.
-    const agent = await openDelegatedPortfolio(
-      fixture,
-      {
-        initialAllocation: [{ instrument, portion: 100n }],
-        targetAllocation: { [instrument]: 100n },
-        plan: {
-          flow: [
-            {
-              src: instrument,
-              dest: '@Ethereum',
-              amount: usdc.make(observedValue),
-              fee: bld.make(100n),
-            },
-          ],
-        },
-      },
-      harden({
-        balances: { ...emptyAccountBalances, [instrument]: observedValue },
-        instrumentTvls: {},
-      }),
-      observedValue,
-    );
-    const withdrawalFlow = await agent.wake();
-    const resolver = await getResolverMakers(zoe, creatorFacet);
-    await pendingVstorageWrites();
-    await transmitVTransferEvent('acknowledgementPacket', -1);
-    await settleTransaction(zoe, resolver, 0);
-    await pendingVstorageWrites();
-    const withdrawalTx = decodeMultiCalls(
-      outgoingTransferAt(-1).message.memo,
-    ).id;
-    await transmitVTransferEvent('acknowledgementPacket', -1);
-    await settleTransaction(zoe, resolver, Number(withdrawalTx.slice(2)));
-    await pendingVstorageWrites();
-    const flowPath = (flowKey: FlowKey) =>
-      `${publishedPortfolioPath(portfolioRead)}.flows.${flowKey}` as const;
-    t.is(
-      (await portfolioRead.readPublished(flowPath(withdrawalFlow))).state,
-      'done',
-    );
-
-    const status = await portfolioRead.getPortfolioStatus();
-    const remoteAddress = status.accountIdByChain.Ethereum!.split(':').at(-1)!;
-    // The attested snapshot covers every place of the portfolio, and the
-    // evidence the agent asked for.
-    const observations: PlanObservations = harden({
-      balances: {
-        ...Object.fromEntries(
-          Object.keys(status.accountIdByChain).map(chain => [`@${chain}`, 0n]),
-        ),
-        ...Object.fromEntries(status.positionKeys.map(key => [key, 0n])),
-      },
-      instrumentTvls: {},
-      merklClaims: [
+      // A first plan withdraws from the position, provisioning the account where
+      // rewards accrue.
+      const agent = await openDelegatedPortfolio(
+        fixture,
         {
-          accountPlace: '@Ethereum',
-          distributor: eth.merkleDistributor!,
-          tokenId: MERKL_REWARD,
-          cumulativeAmount: 3_000n,
-          claimedAmount: 1_000n,
-          proofs: [
-            '0x1111111111111111111111111111111111111111111111111111111111111111',
-          ],
-        },
-      ],
-      oneInchSwaps: [
-        {
-          accountPlace: '@Ethereum',
-          tokenIn: MERKL_REWARD,
-          tokenOut: eth.usdc,
-          amountIn: 2_000n,
-          quotedAmountOut: 3_000_000n,
-          minAmountOut: 2_940_000n,
-          slippageBps: 200,
-          // Far in the future of the mock chain time.
-          expiresAt: 2n ** 40n,
-          flags: 0n,
-          executor: '0x2222222222222222222222222222222222222222',
-          srcReceiver: '0x3333333333333333333333333333333333333333',
-          data: '0xdeadbeef',
-          // As appended by the 1inch API.
-          calldataSuffix: '0x1a2b3c4d',
-        },
-      ],
-    });
-    const claimPlan: FundsFlowPlan = harden({
-      flow: [
-        {
-          src: '@Ethereum',
-          dest: '@Ethereum',
-          amount: usdc.make(0n),
-          fee: bld.make(100n),
-          claimRewards: { protocol: 'merkl', index: 0 },
-        },
-        {
-          src: '@Ethereum',
-          dest: '@Ethereum',
-          amount: usdc.make(2_940_000n),
-          fee: bld.make(100n),
-          swap: { provider: '1inch', index: 0 },
-        },
-      ],
-      order: [[1, [0]]],
-    });
-
-    // Rejected before creating any flow.
-    const flowCount = status.flowCount;
-    const client = agent.getDelegationClient();
-    await t.throwsAsync(
-      E(client).claimRewards(
-        harden({
-          syncState: {
-            policyVersion: status.policyVersion,
-            rebalanceCount: status.rebalanceCount,
+          initialAllocation: [{ instrument, portion: 100n }],
+          targetAllocation: { [instrument]: 100n },
+          plan: {
+            flow: [
+              {
+                src: instrument,
+                dest: '@Ethereum',
+                amount: usdc.make(observedValue),
+                fee: bld.make(100n),
+              },
+            ],
           },
-        }) as any,
-      ),
-      { message: /plan/ },
-      'a claim requires a plan and signed evidence',
-    );
-    await t.throwsAsync(
-      agent.claimRewards(claimPlan, {
-        ...observations,
+        },
+        harden({
+          balances: { ...emptyAccountBalances, [instrument]: observedValue },
+          instrumentTvls: {},
+        }),
+        observedValue,
+      );
+      const withdrawalFlow = await agent.wake();
+      const resolver = await getResolverMakers(zoe, creatorFacet);
+      await pendingVstorageWrites();
+      await transmitVTransferEvent('acknowledgementPacket', -1);
+      await settleTransaction(zoe, resolver, 0);
+      await pendingVstorageWrites();
+      const withdrawalTx = decodeMultiCalls(
+        outgoingTransferAt(-1).message.memo,
+      ).id;
+      await transmitVTransferEvent('acknowledgementPacket', -1);
+      await settleTransaction(zoe, resolver, Number(withdrawalTx.slice(2)));
+      await pendingVstorageWrites();
+      const flowPath = (flowKey: FlowKey) =>
+        `${publishedPortfolioPath(portfolioRead)}.flows.${flowKey}` as const;
+      t.is(
+        (await portfolioRead.readPublished(flowPath(withdrawalFlow))).state,
+        'done',
+      );
+
+      // The owner's auto-claim lets the planner claim through its delegation.
+      let submitClaim: (
+        params: PortfolioDelegatedClaimRewardsParams,
+      ) => Promise<FlowKey>;
+      if (submitter === 'planner') {
+        await fixture.trader.setAutoFeatures({ claimRewards: true });
+        await pendingVstorageWrites();
+        const planner = makeDirectPlannerClient(zoe, creatorFacet);
+        await planner.redeem();
+        submitClaim = params =>
+          E(planner.stub).claimRewards(portfolioRead.getPortfolioId(), params);
+      } else {
+        submitClaim = params =>
+          E(agent.getDelegationClient()).claimRewards(params);
+      }
+
+      const status = await portfolioRead.getPortfolioStatus();
+      const syncState = harden({
+        policyVersion: status.policyVersion,
+        rebalanceCount: status.rebalanceCount,
+      });
+      const claimRewards = async (
+        plan: FundsFlowPlan,
+        evidence: PlanObservations,
+      ) =>
+        submitClaim(
+          harden({
+            syncState,
+            plan,
+            signedObservations: await fixture.mcp.attest(
+              portfolioRead.getPortfolioId(),
+              syncState,
+              evidence,
+            ),
+          }),
+        );
+      const remoteAddress = status.accountIdByChain
+        .Ethereum!.split(':')
+        .at(-1)!;
+      // The attested snapshot covers every place of the portfolio, and the
+      // evidence the agent asked for.
+      const observations: PlanObservations = harden({
+        balances: {
+          ...Object.fromEntries(
+            Object.keys(status.accountIdByChain).map(chain => [
+              `@${chain}`,
+              0n,
+            ]),
+          ),
+          ...Object.fromEntries(status.positionKeys.map(key => [key, 0n])),
+        },
+        instrumentTvls: {},
+        merklClaims: [
+          {
+            accountPlace: '@Ethereum',
+            distributor: eth.merkleDistributor!,
+            tokenId: MERKL_REWARD,
+            cumulativeAmount: 3_000n,
+            claimedAmount: 1_000n,
+            proofs: [
+              '0x1111111111111111111111111111111111111111111111111111111111111111',
+            ],
+          },
+        ],
         oneInchSwaps: [
-          { ...observations.oneInchSwaps![0], tokenIn: eth.aaveUSDC },
+          {
+            accountPlace: '@Ethereum',
+            tokenIn: MERKL_REWARD,
+            tokenOut: eth.usdc,
+            amountIn: 2_000n,
+            quotedAmountOut: 3_000_000n,
+            minAmountOut: 2_940_000n,
+            slippageBps: 200,
+            // Far in the future of the mock chain time.
+            expiresAt: 2n ** 40n,
+            flags: 0n,
+            executor: '0x2222222222222222222222222222222222222222',
+            srcReceiver: '0x3333333333333333333333333333333333333333',
+            data: '0xdeadbeef',
+            // As appended by the 1inch API.
+            calldataSuffix: '0x1a2b3c4d',
+          },
         ],
-      }),
-      { message: /is a protected token of "Ethereum"/ },
-      'attested swaps of principal tokens are rejected',
-    );
-    t.is((await portfolioRead.getPortfolioStatus()).flowCount, flowCount);
-
-    const claimFlow = await agent.claimRewards(claimPlan, observations);
-    await pendingVstorageWrites();
-    t.like(await portfolioRead.readPublished(flowPath(claimFlow)), {
-      type: 'claimRewards',
-      agent: 'agent1',
-      createdAtPolicyVersion: status.policyVersion,
-    });
-
-    // The claim executes first, for the account itself.
-    const claim = decodeMultiCalls(outgoingTransferAt(-1).message.memo);
-    t.deepEqual(
-      claim.calls.map(({ target }) => target.toLowerCase()),
-      [eth.merkleDistributor!.toLowerCase()],
-    );
-    t.deepEqual(
-      claim.calls[0].data,
-      encodeFunctionData({
-        abi: parseAbi([
-          'function claim(address[] users, address[] tokens, uint256[] amounts, bytes32[][] proofs)',
-        ]),
-        functionName: 'claim',
-        args: [
-          [remoteAddress as `0x${string}`],
-          [MERKL_REWARD],
-          [3_000n],
-          [observations.merklClaims![0].proofs],
+      });
+      const claimPlan: FundsFlowPlan = harden({
+        flow: [
+          {
+            src: '@Ethereum',
+            dest: '@Ethereum',
+            amount: usdc.make(0n),
+            fee: bld.make(100n),
+            claimRewards: { protocol: 'merkl', index: 0 },
+          },
+          {
+            src: '@Ethereum',
+            dest: '@Ethereum',
+            amount: usdc.make(2_940_000n),
+            fee: bld.make(100n),
+            swap: { provider: '1inch', index: 0 },
+          },
         ],
-      }),
-    );
-    await transmitVTransferEvent('acknowledgementPacket', -1);
-    await settleTransaction(zoe, resolver, Number(claim.id.slice(2)));
-    await pendingVstorageWrites();
+        order: [[1, [0]]],
+      });
 
-    // Then the swap, spending exactly its input, for at least its minimum.
-    const swap = decodeMultiCalls(outgoingTransferAt(-1).message.memo);
-    t.not(swap.id, claim.id);
-    t.deepEqual(
-      swap.calls.map(({ target }) => target.toLowerCase()),
-      [MERKL_REWARD, eth.oneInchRouter!.toLowerCase(), MERKL_REWARD],
-    );
-    t.true(
-      swap.calls[1].data.endsWith('1a2b3c4d'),
-      'the router call ends with the signed calldata suffix',
-    );
-    // e.g. the distributor paid less than expected: the swap fails.
-    await transmitVTransferEvent('acknowledgementPacket', -1);
-    await settleTransaction(zoe, resolver, Number(swap.id.slice(2)), 'failed');
-    await pendingVstorageWrites();
-    // Activity can show what each step does, without proofs or routes.
-    const steps = await portfolioRead.readPublished(
-      `${flowPath(claimFlow)}.steps`,
-    );
-    t.like(steps, [
-      {
-        how: 'Merkl',
-        src: '@Ethereum',
-        dest: '@Ethereum',
-        rewardClaim: {
-          protocol: 'merkl',
-          tokenId: MERKL_REWARD,
-          expectedAmount: 2_000n,
-        },
-      },
-      {
-        how: 'swap',
-        tokenSwap: {
-          provider: '1inch',
-          tokenIn: MERKL_REWARD,
-          tokenOut: eth.usdc,
-          amountIn: 2_000n,
-          quotedAmountOut: 3_000_000n,
-          minAmountOut: 2_940_000n,
-        },
-      },
-    ]);
-    t.false(
-      /proof|deadbeef|1a2b3c4d|srcReceiver|executor|cumulativeAmount|calldataSuffix|"claimRewards":|"swap":/.test(
-        JSON.stringify(steps, (_k, v) => (typeof v === 'bigint' ? `${v}` : v)),
-      ),
-      'published steps omit evidence details',
-    );
+      // Rejected before creating any flow.
+      const flowCount = status.flowCount;
+      await t.throwsAsync(
+        submitClaim(harden({ syncState }) as any),
+        { message: /plan/ },
+        'a claim requires a plan and signed evidence',
+      );
+      await t.throwsAsync(
+        claimRewards(claimPlan, {
+          ...observations,
+          oneInchSwaps: [
+            { ...observations.oneInchSwaps![0], tokenIn: eth.aaveUSDC },
+          ],
+        }),
+        { message: /is a protected token of "Ethereum"/ },
+        'attested swaps of principal tokens are rejected',
+      );
+      t.is((await portfolioRead.getPortfolioStatus()).flowCount, flowCount);
 
-    const done = await portfolioRead.readPublished(flowPath(claimFlow));
-    t.like(done, { state: 'fail', step: 2 }, 'the swap step failed');
-    t.deepEqual((await portfolioRead.getPortfolioStatus()).flowsRunning, {});
-  },
-);
+      const claimFlow = await claimRewards(claimPlan, observations);
+      await pendingVstorageWrites();
+      t.like(await portfolioRead.readPublished(flowPath(claimFlow)), {
+        type: 'claimRewards',
+        agent: submitter === 'agent' ? 'agent1' : 'agent2',
+        createdAtPolicyVersion: status.policyVersion,
+      });
+
+      // The claim executes first, for the account itself.
+      const claim = decodeMultiCalls(outgoingTransferAt(-1).message.memo);
+      t.deepEqual(
+        claim.calls.map(({ target }) => target.toLowerCase()),
+        [eth.merkleDistributor!.toLowerCase()],
+      );
+      t.deepEqual(
+        claim.calls[0].data,
+        encodeFunctionData({
+          abi: parseAbi([
+            'function claim(address[] users, address[] tokens, uint256[] amounts, bytes32[][] proofs)',
+          ]),
+          functionName: 'claim',
+          args: [
+            [remoteAddress as `0x${string}`],
+            [MERKL_REWARD],
+            [3_000n],
+            [observations.merklClaims![0].proofs],
+          ],
+        }),
+      );
+      await transmitVTransferEvent('acknowledgementPacket', -1);
+      await settleTransaction(zoe, resolver, Number(claim.id.slice(2)));
+      await pendingVstorageWrites();
+
+      // Then the swap, spending exactly its input, for at least its minimum.
+      const swap = decodeMultiCalls(outgoingTransferAt(-1).message.memo);
+      t.not(swap.id, claim.id);
+      t.deepEqual(
+        swap.calls.map(({ target }) => target.toLowerCase()),
+        [MERKL_REWARD, eth.oneInchRouter!.toLowerCase(), MERKL_REWARD],
+      );
+      t.true(
+        swap.calls[1].data.endsWith('1a2b3c4d'),
+        'the router call ends with the signed calldata suffix',
+      );
+      // e.g. the distributor paid less than expected: the swap fails.
+      await transmitVTransferEvent('acknowledgementPacket', -1);
+      await settleTransaction(
+        zoe,
+        resolver,
+        Number(swap.id.slice(2)),
+        'failed',
+      );
+      await pendingVstorageWrites();
+      // Activity can show what each step does, without proofs or routes.
+      const steps = await portfolioRead.readPublished(
+        `${flowPath(claimFlow)}.steps`,
+      );
+      t.like(steps, [
+        {
+          how: 'Merkl',
+          src: '@Ethereum',
+          dest: '@Ethereum',
+          rewardClaim: {
+            protocol: 'merkl',
+            tokenId: MERKL_REWARD,
+            expectedAmount: 2_000n,
+          },
+        },
+        {
+          how: 'swap',
+          tokenSwap: {
+            provider: '1inch',
+            tokenIn: MERKL_REWARD,
+            tokenOut: eth.usdc,
+            amountIn: 2_000n,
+            quotedAmountOut: 3_000_000n,
+            minAmountOut: 2_940_000n,
+          },
+        },
+      ]);
+      t.false(
+        /proof|deadbeef|1a2b3c4d|srcReceiver|executor|cumulativeAmount|calldataSuffix|"claimRewards":|"swap":/.test(
+          JSON.stringify(steps, (_k, v) =>
+            typeof v === 'bigint' ? `${v}` : v,
+          ),
+        ),
+        'published steps omit evidence details',
+      );
+
+      const done = await portfolioRead.readPublished(flowPath(claimFlow));
+      t.like(done, { state: 'fail', step: 2 }, 'the swap step failed');
+      t.deepEqual((await portfolioRead.getPortfolioStatus()).flowsRunning, {});
+    },
+  );
+}
 
 // #endregion
