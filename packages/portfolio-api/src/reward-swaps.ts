@@ -17,6 +17,13 @@ const BPS_DENOMINATOR = 10_000n;
 export const MAX_REWARD_SWAP_SLIPPAGE_BPS = 200;
 
 /**
+ * The maximum length in bytes of the `calldataSuffix` of 1inch swap
+ * instructions, bounding what signed instructions and GMP calls carry for
+ * bytes of unconfirmed meaning (1inch has been seen to append 4).
+ */
+export const MAX_ONE_INCH_CALLDATA_SUFFIX_BYTES = 32;
+
+/**
  * The least minimum output acceptable for a swap quoted to output
  * `quotedAmountOut` with a tolerance of `slippageBps`, rounding up so that
  * the tolerance is never exceeded:

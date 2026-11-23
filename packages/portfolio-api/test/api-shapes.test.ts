@@ -175,6 +175,7 @@ test('PlanObservationsShape accepts optional reward evidence', t => {
         executor: token,
         srcReceiver: token,
         data: '0x',
+        calldataSuffix: '0x',
       },
     ],
   };

@@ -189,6 +189,7 @@ test('verifies optional claim evidence and swap instructions', async t => {
           executor: ROUTER,
           srcReceiver: ROUTER,
           data: '0xdeadbeef',
+          calldataSuffix: '0x',
         },
       ],
     },

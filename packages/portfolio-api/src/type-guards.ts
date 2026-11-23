@@ -144,6 +144,7 @@ export const OneInchSwapInstructionsShape: CastedPattern<OneInchSwapInstructions
       executor: M.string(),
       srcReceiver: M.string(),
       data: M.string(),
+      calldataSuffix: M.string(),
     },
     {},
     {},

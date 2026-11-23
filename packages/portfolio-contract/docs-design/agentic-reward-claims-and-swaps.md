@@ -60,7 +60,7 @@ observations = {
   oneInchSwaps: [
     { accountPlace: '@Base', tokenIn: MORPHO, tokenOut: USDC, amountIn: 2e18,
       quotedAmountOut: 3_000_000n, minAmountOut: 2_940_000n, slippageBps: 200,
-      expiresAt, flags: 0n, executor, srcReceiver, data },
+      expiresAt, flags: 0n, executor, srcReceiver, data, calldataSuffix },
   ],
 };
 plan = {

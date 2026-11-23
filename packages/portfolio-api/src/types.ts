@@ -296,6 +296,13 @@ export type OneInchSwapInstructions = {
   srcReceiver: EvmAddress;
   /** provider route internal: opaque executor calldata */
   data: HexBytes;
+  /**
+   * Bytes the provider appends after the ABI-encoded `swap()` arguments
+   * (e.g. 1inch adds 4), with no known effect on execution and an unconfirmed
+   * meaning; `0x` if none. At most `MAX_ONE_INCH_CALLDATA_SUFFIX_BYTES`.
+   * Not part of `data`.
+   */
+  calldataSuffix: HexBytes;
 };
 
 /**

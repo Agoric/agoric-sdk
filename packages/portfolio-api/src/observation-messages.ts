@@ -48,6 +48,7 @@ import {
   maybeChainOf,
   getCanonicalHoldingKey,
 } from './places.ts';
+import { MAX_ONE_INCH_CALLDATA_SUFFIX_BYTES } from './reward-swaps.ts';
 import type {
   MerklClaimEvidence,
   OneInchSwapInstructions,
@@ -160,6 +161,7 @@ const ObservationSubTypes = {
     { name: 'executor', type: 'address' },
     { name: 'srcReceiver', type: 'address' },
     { name: 'data', type: 'bytes' },
+    { name: 'calldataSuffix', type: 'bytes' },
   ],
 } as const satisfies Record<string, readonly TypedDataParameter[]>;
 
@@ -577,6 +579,13 @@ const assertOneInchSwaps: (
     }
     if (slippageBps > 10_000) {
       throw RangeError(`[${label}] invalid slippageBps: ${slippageBps}`);
+    }
+    // The EIP-712 layer checks that it is hex bytes.
+    const suffixBytes = (swap.calldataSuffix.length - 2) / 2;
+    if (suffixBytes > MAX_ONE_INCH_CALLDATA_SUFFIX_BYTES) {
+      throw RangeError(
+        `[${label}] calldataSuffix of ${suffixBytes} bytes exceeds ${MAX_ONE_INCH_CALLDATA_SUFFIX_BYTES}`,
+      );
     }
   });
 };
