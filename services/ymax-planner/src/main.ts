@@ -40,6 +40,7 @@ import {
 
 import {
   connectFirstHealthyAgoricRpc,
+  waitForBetterAgoricRpc,
   waitForHealthyAgoricRpc,
 } from './agoric-rpc.ts';
 import { FETCH_HEADERS, loadConfig } from './config.ts';
@@ -135,10 +136,13 @@ type YdsTransactionSubmitBody = {
 const AGORIC_MAX_MESSAGE_GAP_MS = 60_000;
 
 /**
- * While on a fallback Agoric RPC, how often to check the preferred one, and how
- * many consecutive healthy checks it needs before the planner switches back.
+ * How often to check the health of Agoric RPCs while running. The one in use is
+ * abandoned for a healthy other after this many consecutive unhealthy checks.
+ * While on a fallback, the preferred one needs this many consecutive healthy
+ * checks before the planner switches back.
  */
-const PREFERRED_AGORIC_RPC_CHECK_INTERVAL_MS = 60_000;
+const AGORIC_RPC_CHECK_INTERVAL_MS = 60_000;
+const AGORIC_RPC_UNHEALTHY_CHECKS = 3;
 const PREFERRED_AGORIC_RPC_HEALTHY_CHECKS = 5;
 
 const logChainAppInfo = async (
@@ -659,22 +663,21 @@ export const main = async (
       feeBrandName: env.FEE_BRAND_NAME || 'BLD',
       balanceCacheTtlMs: YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
     });
-    // On a fallback RPC, stop once the preferred one has recovered, so that a
-    // restart (with a fresh scan of vstorage) switches back to it.
+    // Switching RPCs takes a restart (with a fresh scan of vstorage), so stop
+    // when another RPC should be used. On a fallback, that is once the
+    // preferred one has recovered.
     const preferredRpcAddr = agoricRpcAddrs[0];
     const stopRechecks = makeAbortController();
+    const makeRecheckTicks = () =>
+      generateInterval(AGORIC_RPC_CHECK_INTERVAL_MS, undefined, {
+        signal: stopRechecks.signal,
+      });
     const preferredRecoveredP =
       agoricRpcIndex === 0
         ? new Promise<never>(() => {})
         : waitForHealthyAgoricRpc(
             preferredRpcAddr,
-            generateInterval(
-              PREFERRED_AGORIC_RPC_CHECK_INTERVAL_MS,
-              undefined,
-              {
-                signal: stopRechecks.signal,
-              },
-            ),
+            makeRecheckTicks(),
             agoricRpcPowers,
             {
               ...agoricRpcCriteria,
@@ -683,10 +686,30 @@ export const main = async (
           ).then(() => {
             throw Fail`Preferred Agoric RPC ${q(preferredRpcAddr)} recovered; exiting to switch back to it from ${q(agoricRpcAddr)}`;
           });
-    await Promise.race([engineP, preferredRecoveredP]).finally(() => {
-      stopRechecks.abort();
-      rpc.close();
-    });
+    // On any RPC, it is also once that one stays unhealthy (e.g., its queries
+    // stall while its websocket still delivers blocks) and another is healthy.
+    const otherRpcAddrs = agoricRpcAddrs.filter(addr => addr !== agoricRpcAddr);
+    const betterRpcP =
+      otherRpcAddrs.length === 0
+        ? new Promise<never>(() => {})
+        : waitForBetterAgoricRpc(
+            agoricRpcAddr,
+            otherRpcAddrs,
+            makeRecheckTicks(),
+            { ...agoricRpcPowers, log: console.warn },
+            {
+              ...agoricRpcCriteria,
+              unhealthyChecks: AGORIC_RPC_UNHEALTHY_CHECKS,
+            },
+          ).then(({ betterRpcAddr, failure }) => {
+            throw Fail`Agoric RPC ${q(agoricRpcAddr)} is unhealthy (${q(String(failure))}); exiting to switch to ${q(betterRpcAddr)}`;
+          });
+    await Promise.race([engineP, preferredRecoveredP, betterRpcP]).finally(
+      () => {
+        stopRechecks.abort();
+        rpc.close();
+      },
+    );
   });
 };
 
