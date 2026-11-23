@@ -19,6 +19,7 @@ import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   decodeFunctionData,
+  encodeFunctionData,
   decodeAbiParameters,
   getAbiItem,
   getAddress,
@@ -242,6 +243,7 @@ const makeOneInchSwap = (chain: AxelarChain, minAmountOut: bigint) =>
     executor: '0x2222222222222222222222222222222222222222', // opaque to us
     srcReceiver: '0x3333333333333333333333333333333333333333', // opaque to us
     data: '0xdeadbeef', // opaque executor calldata
+    calldataSuffix: '0x1a2b3c4d', // as appended by the 1inch API
   } as const);
 
 /**
@@ -2755,6 +2757,11 @@ test('swap reward token to stable token via 1inch', async t => {
     decodeSwap(swapCall.data),
     expectedSwap,
     'contract reconstructed the swap() args with pinned dstToken/dstReceiver',
+  );
+  t.is(
+    swapCall.data,
+    `${encodeFunctionData({ abi: oneInchRouterABI, ...expectedSwap } as any)}${swap.calldataSuffix.slice(2)}`,
+    'the signed suffix follows the encoded arguments, as 1inch appends it',
   );
 
   t.is(approveReset.target.toLowerCase(), tokenIn);

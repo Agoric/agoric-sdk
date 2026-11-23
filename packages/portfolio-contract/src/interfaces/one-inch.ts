@@ -75,6 +75,8 @@ harden(oneInchRouterABI);
  *
  * The result is spread into `makeContract(router, oneInchRouterABI).swap(...)`,
  * which ABI-encodes it through the same path as every other GMP contract call.
+ * The signed `calldataSuffix` is not an argument: the caller appends it after
+ * the encoded call, as 1inch does.
  */
 export const getOneInchSwapArgs = (
   swap: Pick<

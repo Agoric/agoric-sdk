@@ -444,7 +444,14 @@ export const swapRewardToStable = async (
   // Reset the allowance so the router cannot retain a spending grant if it
   // consumed less than amountIn.
   token.approve(router, 0n);
-  const calls = session.finish();
+  const [approve, routerSwap, reset] = session.finish();
+  // Reproduce the provider's calldata: its suffix follows the ABI-encoded
+  // arguments, outside of them.
+  const calls = harden([
+    approve,
+    { ...routerSwap, calldataSuffix: swap.calldataSuffix },
+    reset,
+  ]);
 
   return sendGMPContractCall(ctx, gInfo, calls, ...optsArgs);
 };

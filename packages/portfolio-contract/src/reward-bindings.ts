@@ -75,6 +75,8 @@ export type SwapBoundStep = Readonly<
     executor: EvmAddress;
     srcReceiver: EvmAddress;
     data: HexBytes;
+    /** appended after the router call's ABI-encoded arguments */
+    calldataSuffix: HexBytes;
   }
 >;
 

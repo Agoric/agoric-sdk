@@ -31,6 +31,7 @@ const swap: SwapBoundStep = harden({
   executor: EXECUTOR,
   srcReceiver: SRC_RECEIVER,
   data: '0xdeadbeef',
+  calldataSuffix: '0x',
 });
 
 const controlled = { receiver: RECEIVER } as const;
