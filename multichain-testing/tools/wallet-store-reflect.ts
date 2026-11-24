@@ -3,11 +3,11 @@ import {
   type SigningSmartWalletKit,
   retryUntilCondition,
   type RetryOptions,
+  type BroadcastFee,
 } from '@agoric/client-utils';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { EMethods } from '@agoric/vow/src/E.js';
 import type { Instance } from '@agoric/zoe';
-import type { StdFee } from '@cosmjs/amino';
 
 export const walletUpdates = (
   getLastUpdate: () => Promise<UpdateRecord>,
@@ -74,7 +74,7 @@ export const reflectWalletStore = (
     log: (...args: unknown[]) => void;
     setTimeout: typeof globalThis.setTimeout;
     fresh: () => number | string;
-    fee?: StdFee;
+    fee?: BroadcastFee;
   },
 ) => {
   const up = walletUpdates(sig.query.getLastUpdate, retryOpts);
