@@ -112,23 +112,34 @@ authoritative request.
 
 ### Operations exposed to the grantee
 
-The delegation client facet exposes two fund-management methods, each guarded
-by a distinct permission:
+The delegation client facet exposes three fund-management methods, each
+guarded by an effective permission (see
+[Permissions as a parameter](#permissions-as-a-parameter)):
 
-- `setTargetAllocation({ targetAllocation, syncState, agentMemo? })` requires
-  `allocation`. The wrapper enforces the exact-key-set mandate described above;
-  the portfolio delegation helper then validates the active delegation,
-  permission, and sync state before starting an attributed rebalance flow. The
-  proposed target becomes policy only after all mandate checks pass.
-- `rebalance({ syncState, agentMemo? })` requires `rebalance`. It starts a
-  rebalance flow under the current policy without changing the target
-  allocation. This is currently used by the Ymax planner delegation for the
-  auto-rebalance feature, not by the external EVM `Grant` operation.
+- `setTargetAllocation({ targetAllocation, syncState, agentMemo?, plan?,
+  signedObservations? })` requires `allocation`. The wrapper enforces the
+  exact-key-set mandate described above; the portfolio delegation helper then
+  validates the active delegation, permission, and sync state before starting
+  an attributed rebalance flow. The proposed target becomes policy only after
+  all mandate checks pass. Supplying a plan also requires `rebalance`.
+- `rebalance({ syncState, agentMemo?, plan?, signedObservations? })` requires
+  `rebalance`. It starts a rebalance flow under the current policy without
+  changing the target allocation. Without a plan, the planner supplies one;
+  this is how the Ymax planner delegation implements auto-rebalance. The
+  planner may instead forward a plan with signed observations through its
+  delegation, which vets it like any agent's.
+- `claimRewards({ syncState, agentMemo?, plan, signedObservations })` requires
+  `claimRewards`, and both a plan and signed observations: its plan may only
+  claim rewards and swap them for USDC (see
+  [Agentic reward claims and swaps](agentic-reward-claims-and-swaps.md)).
 
-Neither method accepts an arbitrary flow plan from the delegation client.
-`Deposit` and `Withdraw` are not exposed. The wrapper holds only the narrowed
-portfolio delegation-helper facet and never exposes the portfolio's manager or
-other fund-moving facets.
+A plan supplied by the agent always comes with observations of the portfolio
+signed by the observation service, and is vetted completely against them, and
+against the delegation's mandate, before any flow starts. Its steps that claim
+or swap rewards additionally require `claimRewards`. `Deposit` and `Withdraw`
+are not exposed. The wrapper holds only the narrowed portfolio
+delegation-helper facet and never exposes the portfolio's manager or other
+fund-moving facets.
 
 `syncState` contains `policyVersion` and `rebalanceCount`, matching the planner
 submission protocol (see [planner.exo.ts](../src/planner.exo.ts) and
@@ -157,13 +168,23 @@ type PortfolioPermissions = {
         maxVaultShareBps?: number;
       };
   rebalance?: boolean;
+  claimRewards?: boolean;
 };
 ```
 
+Permissions are inherited stepwise, down `allocation` → `rebalance` →
+`claimRewards` (`getEffectivePortfolioPermissions`): `allocation` is granted
+by `true` or a constraint object; an absent `rebalance` inherits the effective
+`allocation`, and an absent `claimRewards` the effective `rebalance`. An
+explicit `false` blocks inheritance (`{ allocation: true, rebalance: false }`
+may only update its target, without a plan, and cannot claim rewards), while
+an explicit `true` is an independent grant.
+
 The external EIP-712 representation keeps required `allocation: boolean` and
 uses one optional scalar for each quantitative field. This preserves explicit
-zero without a sentinel. The `rebalance` permission remains app-only and is
-assigned internally to the planner delegation.
+zero without a sentinel. The `rebalance` and `claimRewards` permissions remain
+app-only: an EIP-712 grant inherits both from `allocation`, while the planner
+delegation is assigned explicit booleans from the owner's auto-features.
 
 Delegated allocation acceptance first allocates and publishes an attributed
 flow. It then applies the configured maximum weight to every non-cash position.

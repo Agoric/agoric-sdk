@@ -76,6 +76,7 @@ test('verifies observations signed by the attestor', async t => {
     ...observation,
     issuedAt: ISSUED_AT,
     deadline: ISSUED_AT + OBSERVATION_LIFETIME,
+    verifiedAt: NOW,
   });
 });
 
@@ -131,6 +132,7 @@ test('verifies chain-local holding identities and micro-USD valuations', async t
     ...content,
     issuedAt: ISSUED_AT,
     deadline: ISSUED_AT + OBSERVATION_LIFETIME,
+    verifiedAt: NOW,
   });
 
   // Both the chain-local identifier and valuation must remain authenticated.
@@ -172,7 +174,7 @@ test('verifies optional claim evidence and swap instructions', async t => {
           tokenId: rewardToken,
           cumulativeAmount: 3n * 10n ** 18n,
           claimedAmount: 10n ** 18n,
-          proof: [`0x${'12'.repeat(32)}`],
+          proofs: [`0x${'12'.repeat(32)}`],
         },
       ],
       oneInchSwaps: [
@@ -189,6 +191,7 @@ test('verifies optional claim evidence and swap instructions', async t => {
           executor: ROUTER,
           srcReceiver: ROUTER,
           data: '0xdeadbeef',
+          calldataSuffix: '0x',
         },
       ],
     },
@@ -208,6 +211,7 @@ test('verifies optional claim evidence and swap instructions', async t => {
     ...content,
     issuedAt: ISSUED_AT,
     deadline: ISSUED_AT + OBSERVATION_LIFETIME,
+    verifiedAt: NOW,
   });
 
   const [swap] = signed.message.oneInchSwaps!;
@@ -274,6 +278,7 @@ test('accepts string-encoded integers', async t => {
     ...observation,
     issuedAt: ISSUED_AT,
     deadline: ISSUED_AT + OBSERVATION_LIFETIME,
+    verifiedAt: NOW,
   });
 });
 

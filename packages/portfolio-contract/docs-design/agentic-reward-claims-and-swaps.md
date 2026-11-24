@@ -7,11 +7,9 @@ observation service (YDS, signing as the attestor) supplies signed claim
 **evidence** and swap **instructions**, plan steps **select** them by index,
 and the contract verifies both before deriving the calls it executes.
 
-This note only sketches the expected operation; contract enforcement lands
-with [AGO-1720](https://linear.app/agoric/issue/AGO-1720) and YDS evidence
-with [AGO-1719](https://linear.app/agoric/issue/AGO-1719). The full
-specification and
-its rationale are in the
+This note sketches the operation; YDS evidence is
+[AGO-1719](https://linear.app/agoric/issue/AGO-1719). The full specification
+and its rationale are in the
 [implementation design](https://linear.app/agoric/document/agentic-reward-claiming-and-swapping-implementation-design-bd877e47078e)
 ([AGO-1620](https://linear.app/agoric/issue/AGO-1620)).
 
@@ -55,12 +53,12 @@ observations = {
   ],
   merklClaims: [
     { accountPlace: '@Base', distributor, tokenId: MORPHO,
-      cumulativeAmount: 3e18, claimedAmount: 1e18, proof: [/* … */] },
+      cumulativeAmount: 3e18, claimedAmount: 1e18, proofs: [/* … */] },
   ],
   oneInchSwaps: [
     { accountPlace: '@Base', tokenIn: MORPHO, tokenOut: USDC, amountIn: 2e18,
       quotedAmountOut: 3_000_000n, minAmountOut: 2_940_000n, slippageBps: 200,
-      expiresAt, flags: 0n, executor, srcReceiver, data },
+      expiresAt, flags: 0n, executor, srcReceiver, data, calldataSuffix },
   ],
 };
 plan = {
@@ -130,6 +128,35 @@ plan = {
   and builds the bound steps it executes. YDS filtering and quoting are not
   authorization.
 
+## Contract entry points
+
+- Delegated `claimRewards({ syncState, plan, signedObservations })` requires
+  effective `claimRewards`, its plan may only claim and swap, and it is
+  rejected before any flow starts unless all checks pass. The planner's
+  `claimRewards` forwards attestor-signed observations to its own delegation.
+  Its `rebalance` may do the same, with the plan in its params instead of as a
+  separate argument, so a planner rebalance plan can also claim and swap.
+- Delegated `rebalance` and `setTargetAllocation` plans may also include
+  claims and swaps, given effective `claimRewards` in addition to their own
+  permissions, and are then vetted against the target allocation: a swap's
+  enforced minimum may fund later movements, a claim's estimate never does.
+- Claims and swaps act only on an existing chain account (and Aave or
+  Compound position). They execute only from the bound steps derived on
+  submission, re-checked against configuration before dispatch.
+- Published flow steps summarize each claim (`rewardClaim`) and swap
+  (`tokenSwap`) from their evidence, without proofs or route data.
+
+## Trust boundary
+
+The contract denyset keeps configured principal and cash tokens out of
+reward swaps even if the attestor is compromised, and every swap pays only
+the configured USDC to the portfolio's own account, spending exactly its
+signed input. The attestor still decides which other tokens are rewards that
+may be sold, their claim evidence, the quoted price (the minimum output is
+only relative to the quote), and the provider route, which the contract does
+not interpret. Attestor integrity thus remains a security assumption for any
+token held by the account that the contract's configuration does not know.
+
 ## API declarations
 
 In `@agoric/portfolio-api`:
@@ -144,3 +171,7 @@ In `@agoric/portfolio-api`:
   [portfolio-permissions.ts](../../portfolio-api/src/portfolio-permissions.ts)
 - `MAX_REWARD_SWAP_SLIPPAGE_BPS`, `getMinAmountOutForSlippage`:
   [reward-swaps.ts](../../portfolio-api/src/reward-swaps.ts)
+
+In this package, binding and execution checks are in
+[reward-bindings.ts](../src/reward-bindings.ts), and plan vetting in
+[delegation-limits.ts](../src/delegation-limits.ts).

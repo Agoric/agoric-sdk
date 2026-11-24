@@ -122,7 +122,7 @@ export const MerklClaimEvidenceShape: CastedPattern<MerklClaimEvidence> =
       tokenId: M.string(),
       cumulativeAmount: M.nat(),
       claimedAmount: M.nat(),
-      proof: M.arrayOf(M.string()),
+      proofs: M.arrayOf(M.string()),
     },
     {},
     {},
@@ -144,6 +144,7 @@ export const OneInchSwapInstructionsShape: CastedPattern<OneInchSwapInstructions
       executor: M.string(),
       srcReceiver: M.string(),
       data: M.string(),
+      calldataSuffix: M.string(),
     },
     {},
     {},
@@ -240,16 +241,35 @@ export const PortfolioSyncStateShape: CastedPattern<PortfolioSyncState> =
     rebalanceCount: M.number(),
   });
 
+/**
+ * Structural shape of a plan, or of signed observations, in delegated
+ * requests. The contract validates their content.
+ */
+const DelegatedPlanEnvelopeShape = M.splitRecord(
+  { flow: M.array() },
+  { order: M.array() },
+  {},
+);
+const SignedObservationsEnvelopeShape = M.record();
+
 export const PortfolioDelegatedRebalanceParamsShape: CastedPattern<PortfolioDelegatedRebalanceParams> =
   M.splitRecord(
     { syncState: PortfolioSyncStateShape },
-    { agentMemo: PortfolioFlowAgentMemoShape },
+    {
+      agentMemo: PortfolioFlowAgentMemoShape,
+      plan: DelegatedPlanEnvelopeShape,
+      signedObservations: SignedObservationsEnvelopeShape,
+    },
     {},
   );
 
 export const PortfolioDelegatedClaimRewardsParamsShape: CastedPattern<PortfolioDelegatedClaimRewardsParams> =
   M.splitRecord(
-    { syncState: PortfolioSyncStateShape },
+    {
+      syncState: PortfolioSyncStateShape,
+      plan: DelegatedPlanEnvelopeShape,
+      signedObservations: SignedObservationsEnvelopeShape,
+    },
     { agentMemo: PortfolioFlowAgentMemoShape },
     {},
   );

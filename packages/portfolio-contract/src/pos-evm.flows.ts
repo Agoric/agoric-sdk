@@ -12,7 +12,6 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { makeTracer } from '@agoric/internal';
-import { partialMap } from '@agoric/internal/src/js-utils.js';
 import { encodeHex } from '@agoric/internal/src/hex.js';
 import type {
   AccountId,
@@ -26,8 +25,6 @@ import {
   leftPadEthAddressTo32Bytes,
 } from '@agoric/orchestration/src/utils/address.js';
 import {
-  isERC4626MorphoInstrumentId,
-  makeTokenIdKey,
   type ChainTokenMetadata,
   type FlowFeatures,
   type MovementDesc,
@@ -74,6 +71,7 @@ import {
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
+import type { ClaimBoundStep, SwapBoundStep } from './reward-bindings.ts';
 import type { TxId } from './resolver/types.ts';
 import type { PoolKey, EVMContractAddressesMap } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
@@ -169,47 +167,6 @@ const nobleDomain = 4;
 
 // XXX concession to test legibility
 const TEST_NOBLE_ADDRESS = 'noble1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqe6u37k';
-
-const assertSwapTokensConfigured = (
-  chainMetadata: ChainTokenMetadata,
-  tokenIn: `0x${string}`,
-  tokenOut: `0x${string}`,
-  chainName: AxelarChain,
-) => {
-  const { tokenMetadataById = {} } = chainMetadata[chainName] || {};
-  const tokenInKey = makeTokenIdKey(tokenIn, `@${chainName}`);
-  const tokenOutKey = makeTokenIdKey(tokenOut, `@${chainName}`);
-  tokenMetadataById[tokenInKey]?.usage?.includes('swapFrom') ||
-    Fail`swap tokenIn ${q(tokenIn)} is not configured as a source token on ${q(chainName)}`;
-  tokenInKey !== tokenOutKey ||
-    Fail`swap tokenIn ${q(tokenIn)} cannot be the same as tokenOut`;
-  tokenMetadataById[tokenOutKey]?.usage?.includes('swapTo') ||
-    Fail`swap tokenOut ${q(tokenOut)} is not configured as a destination token on ${q(chainName)}`;
-};
-harden(assertSwapTokensConfigured);
-
-const getDefaultSwapToTokenId = (
-  chainMetadata: ChainTokenMetadata,
-  chainName: AxelarChain,
-  fallbackTokenId?: `0x${string}`,
-): `0x${string}` => {
-  const { tokenMetadataById = {} } = chainMetadata[chainName] || {};
-  const swapTo = partialMap(
-    Object.entries(tokenMetadataById),
-    ([tokenId, metadata]) => metadata.usage?.includes('swapTo') && tokenId,
-  );
-  if (swapTo.length === 1) return swapTo[0] as `0x${string}`;
-  const fallbackTokenKey =
-    fallbackTokenId && makeTokenIdKey(fallbackTokenId, `@${chainName}`);
-  if (fallbackTokenKey) {
-    const fallbackTokenMetadata = tokenMetadataById[fallbackTokenKey];
-    if (fallbackTokenMetadata?.usage?.includes('swapTo')) {
-      return fallbackTokenKey as `0x${string}`;
-    }
-  }
-  throw Fail`swap tokenOut must be specified when ${q(chainName)} has ${swapTo.length} configured destination tokens`;
-};
-harden(getDefaultSwapToTokenId);
 
 const bech32ToBytes32 = (addr: Bech32Address) => {
   if (addr === 'noble1test') {
@@ -457,54 +414,67 @@ export const CCTPv2 = {
 harden(CCTPv2);
 
 /**
- * Swap a reward token to a stable token on an EVM chain via 1inch
+ * Swap a reward token to USDC on an EVM chain via 1inch, as bound from signed
+ * swap instructions (see `bindRewardSwap`).
+ *
+ * Approves exactly `amountIn` of `tokenIn` for the router, and resets the
+ * allowance afterwards, so the route can spend nothing else.
+ *
  * @see {@link https://business.1inch.com/portal/documentation/apis/swap/classic-swap/quick-start}
  */
 export const swapRewardToStable = async (
   ctx: EVMContext,
   gInfo: Parameters<typeof sendGMPContractCall>[1],
-  amount: MovementDesc['amount'],
-  swap: MovementDesc['swap'],
+  swap: SwapBoundStep,
   ...optsArgs: [OrchestrationOptions?]
 ) => {
-  const { addresses: a } = ctx;
-  assert(swap, 'swap params required for reward-token swap');
-  const { provider, tokenIn, amountIn } = swap;
-  const tokenOut =
-    swap.tokenOut ||
-    getDefaultSwapToTokenId(ctx.chainMetadata, gInfo.chainName, a.usdc);
   // The calldata layout and router are provider-specific; only 1inch is
-  // supported so far. Branch explicitly so a new provider must add its own
-  provider === '1inch' || Fail`unsupported swap provider ${q(provider)}`;
-  assertSwapTokensConfigured(
-    ctx.chainMetadata,
-    tokenIn,
-    tokenOut,
-    gInfo.chainName,
-  );
-  const router =
-    a.oneInchRouter ||
-    Fail`oneInchRouter not configured for ${q(gInfo.chainId)}`;
+  // supported so far. Branch explicitly so a new provider must add its own.
+  swap.provider === '1inch' ||
+    Fail`unsupported swap provider ${q(swap.provider)}`;
+  const { router, tokenIn, amountIn } = swap;
 
   const session = makeEvmAbiCallBatch();
   const token = session.makeContract(tokenIn, erc20ABI);
   token.approve(router, amountIn);
   const oneInchRouter = session.makeContract(router, oneInchRouterABI);
   oneInchRouter.swap(
-    ...getOneInchSwapArgs(swap, {
-      tokenOut,
-      receiver: gInfo.remoteAddress,
-      minReturnAmount: amount.value,
-    }),
+    ...getOneInchSwapArgs(swap, { receiver: gInfo.remoteAddress }),
   );
   // Reset the allowance so the router cannot retain a spending grant if it
   // consumed less than amountIn.
   token.approve(router, 0n);
-  const calls = session.finish();
+  const [approve, routerSwap, reset] = session.finish();
+  // Reproduce the provider's calldata: its suffix follows the ABI-encoded
+  // arguments, outside of them.
+  const calls = harden([
+    approve,
+    { ...routerSwap, calldataSuffix: swap.calldataSuffix },
+    reset,
+  ]);
 
   return sendGMPContractCall(ctx, gInfo, calls, ...optsArgs);
 };
 harden(swapRewardToStable);
+
+/**
+ * Claim a Merkl entitlement for the portfolio's own account, as bound from
+ * signed claim evidence (see `bindRewardClaim`). The distributor verifies the
+ * proof and pays only what was not claimed yet; a stale proof reverts.
+ */
+export const claimMerklRewards = async (
+  ctx: EVMContext,
+  gInfo: Parameters<typeof sendGMPContractCall>[1],
+  claim: ClaimBoundStep & { protocol: 'merkl' },
+  ...optsArgs: [OrchestrationOptions?]
+) => {
+  const { distributor, tokenId, cumulativeAmount, proofs } = claim;
+  const session = makeEvmAbiCallBatch();
+  const md = session.makeContract(distributor, merkleDistributorABI);
+  md.claim([gInfo.remoteAddress], [tokenId], [cumulativeAmount], [[...proofs]]);
+  return sendGMPContractCall(ctx, gInfo, session.finish(), ...optsArgs);
+};
+harden(claimMerklRewards);
 
 const addMinimumBalanceCheck = (
   session: ReturnType<typeof makeEvmAbiCallBatch>,
@@ -569,22 +539,18 @@ export const AaveProtocol = {
     aave.withdraw(a.usdc, MAX_UINT256, dest.remoteAddress);
     return sendGMPContractCall(ctx, dest, session.finish(), ...optsArgs);
   },
-  claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
-    const { addresses: a } = ctx;
-    const { tokens, minAmounts: amounts } = claimParams;
-    if (!tokens.length || !amounts.length) {
-      throw Fail`Aave claimRewards requires at least one token and amount`;
+  claimRewards: async (ctx, dest, claim, ...optsArgs) => {
+    if (claim.protocol !== 'aave') {
+      throw Fail`Aave cannot claim ${q(claim.protocol)} rewards`;
     }
+    const { controller, asset, tokenId } = claim;
     const session = makeEvmAbiCallBatch();
     const aaveRewardsController = session.makeContract(
-      a.aaveRewardsController,
+      controller,
       aaveRewardsControllerABI,
     );
-    aaveRewardsController.claimRewardsToSelf(
-      [a.aaveUSDC],
-      amounts[0],
-      tokens[0],
-    );
+    // Claim all the rewards of the token accrued when this executes.
+    aaveRewardsController.claimRewardsToSelf([asset], MAX_UINT256, tokenId);
     const calls = session.finish();
 
     await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
@@ -628,14 +594,17 @@ export const CompoundProtocol = {
     compound.withdraw(a.usdc, MAX_UINT256);
     return sendGMPContractCall(ctx, dest, session.finish(), ...optsArgs);
   },
-  claimRewards: async (ctx, dest, _claimParams, ...optsArgs) => {
-    const { addresses: a } = ctx;
+  claimRewards: async (ctx, dest, claim, ...optsArgs) => {
+    if (claim.protocol !== 'compound') {
+      throw Fail`Compound cannot claim ${q(claim.protocol)} rewards`;
+    }
+    const { controller, comet } = claim;
     const session = makeEvmAbiCallBatch();
     const compoundRewardsController = session.makeContract(
-      a.compoundRewardsController,
+      controller,
       compoundRewardsControllerABI,
     );
-    compoundRewardsController.claim(a.compound, dest.remoteAddress, true);
+    compoundRewardsController.claim(comet, dest.remoteAddress, true);
     const calls = session.finish();
 
     await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
@@ -754,35 +723,6 @@ export const ERC4626Protocol = {
     const calls = session.finish();
 
     await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
-  },
-  claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
-    await null;
-    if (isERC4626MorphoInstrumentId(ctx.poolKey)) {
-      // This instrument can only withdraw precise amounts, so interpret the minAmounts as such.
-      const { tokens, minAmounts: amounts, morpho } = claimParams;
-      if (!tokens || !amounts || !morpho?.proofs) {
-        throw Fail`ERC4626 claimRewards requires tokens, amounts, and morpho.proofs`;
-      }
-      const { proofs } = morpho;
-      const lengths = [tokens, amounts, proofs].map(arr => arr.length);
-      if (new Set(lengths).size !== 1) {
-        throw Fail`ERC4626 claimRewards requires tokens, amounts, and morpho.proofs to be of uniform count`;
-      }
-      // The claiming account is this position's EVM wallet; derive one `user`
-      // per claim entry rather than accepting it as an untrusted input.
-      const { remoteAddress } = dest;
-      const users = tokens.map(() => remoteAddress);
-      const { addresses: a } = ctx;
-      const distributor =
-        a.merkleDistributor ||
-        assert.fail('merkleDistributor address not configured');
-      const session = makeEvmAbiCallBatch();
-      const md = session.makeContract(distributor, merkleDistributorABI);
-      md.claim(users, tokens, amounts, proofs);
-      const calls = session.finish();
-
-      await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
-    }
   },
 } as const satisfies ProtocolDetail<
   'ERC4626',

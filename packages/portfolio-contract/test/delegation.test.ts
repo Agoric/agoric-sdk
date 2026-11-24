@@ -1461,6 +1461,11 @@ test('delegated plans: the signed observations are verified and checked against 
   const afterAccepted = await peteKit.evmTrader.getPortfolioStatus();
   t.is(afterAccepted.flowCount, before.flowCount + 1);
   t.deepEqual(afterAccepted.targetAllocation, planTargetAllocation);
+  t.like(
+    afterAccepted,
+    { policyVersion: before.policyVersion + 1, rebalanceCount: 1 },
+    'the committed target and submitted plan advance sync state like the planner',
+  );
   const flow = await peteKit.readPublished(
     `portfolios.portfolio${portfolioId}.flows.${flowKey}`,
   );
@@ -1520,7 +1525,7 @@ test('delegated plans: signed TVL mandate failure creates no flow', async t => {
   t.deepEqual(after.flowsRunning, before.flowsRunning);
 });
 
-test('delegated plans: allocation permission cannot submit reward claims', async t => {
+test('delegated plans: inherited reward claims need an existing account', async t => {
   const { peteKit, portfolioId, delegationClient, signObservations, usdc } =
     await setupPlanDelegation(t);
   const before = await peteKit.evmTrader.getPortfolioStatus();
@@ -1544,12 +1549,12 @@ test('delegated plans: allocation permission cannot submit reward claims', async
             src: 'Aave_Arbitrum',
             dest: '@Arbitrum',
             amount: usdc.make(0n),
-            claimRewards: { tokens: [], minAmounts: [] },
+            claimRewards: { protocol: 'aave', index: 0 },
           },
         ],
       },
     }),
-    { message: 'allocation plan does not support claimRewards' },
+    { message: 'reward step 0 requires an existing "@Arbitrum" account' },
   );
   await eventLoopIteration();
   const after = await peteKit.evmTrader.getPortfolioStatus();

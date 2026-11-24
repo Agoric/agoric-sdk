@@ -24,6 +24,15 @@ import {
 import type { Address as EvmAddress } from 'abitype';
 import { b, Fail, q } from '@endo/errors';
 import { getPrincipalWithdrawalProtocol } from './principal-withdrawal.ts';
+import {
+  bindRewardClaim,
+  bindRewardSwap,
+  vetRewardSwapBudgets,
+  type ClaimBoundStep,
+  type GetEvmContracts,
+  type RewardBoundStep,
+  type SwapBoundStep,
+} from './reward-bindings.ts';
 import { vetInstrumentAccountChain } from './flow-plan-places.ts';
 import { maxWeightClosure } from './max-weight-closure.ts';
 import { fullOrder, makeDependencies, makeSchedule } from './schedule-order.ts';
@@ -127,11 +136,16 @@ const MICRO_USDC_PER_USD = 1_000_000n;
 /**
  * Check observation-dependent limits against the evidence attached to a plan.
  * Observation authentication is the caller's responsibility.
+ *
+ * @param addedValueUusd value the plan adds to the observed portfolio, such
+ *   as the enforced minimum outputs of its reward swaps, which its movements
+ *   may invest
  */
 export const assertMandateForPlanObservations = (
   permissions: PortfolioPermissions,
   targetAllocation: TargetAllocation,
   observations: PlanObservations,
+  addedValueUusd = 0n,
 ): void => {
   const allocation = permissions.allocation;
   if (typeof allocation !== 'object') return;
@@ -141,7 +155,8 @@ export const assertMandateForPlanObservations = (
   const portfolioValueUusd =
     maxVaultShareBps === undefined
       ? 0n
-      : sumOptionalBigints([...sumValueUusdByPlace(observations).values()]);
+      : sumOptionalBigints([...sumValueUusdByPlace(observations).values()]) +
+        addedValueUusd;
 
   for (const [instrument, portion = 0n] of entries(targetAllocation)) {
     if (isInterChainAccountRef(instrument) || portion === 0n) continue;
@@ -181,19 +196,9 @@ export const vetNoNewPositions = (
 };
 harden(vetNoNewPositions);
 
-/** Reject plans whose swap outputs cannot be valued by mandate checks. */
-export const vetNoSwaps = (
-  planOrSteps: FundsFlowPlan | MovementDesc[],
-): void => {
-  const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
-  for (const { swap } of steps) {
-    !swap || Fail`allocation plan does not support swap`;
-  }
-};
-harden(vetNoSwaps);
-
 /**
- * Closed operations for mandate analysis. Reward claims have no USDC amount.
+ * Closed operations for mandate analysis. Reward claims have no USDC amount,
+ * while reward swaps produce at least their minimum USDC output.
  *
  * XXX Move the operation union and decoder to `@agoric/portfolio-api`. Extend
  * the variants for execution's supply, withdrawal, transfer, and swap routes.
@@ -224,9 +229,19 @@ type PlanOperation =
     })
   | {
       kind: 'claimRewards';
-      src: InstrumentId;
+      src: PortfolioBalancePlaceRef;
       dest: InterChainAccountRef;
-      claimRewards: NonNullable<MovementDesc['claimRewards']>;
+      bound: ClaimBoundStep;
+    }
+  | {
+      kind: 'swap';
+      src: InterChainAccountRef;
+      dest: InterChainAccountRef;
+      /** Enforced minimum USDC output, credited to `dest`. */
+      amount: MovementDesc['amount'];
+      /** Rewards carry no valuation, so a swap debits no exposure. */
+      debitValueUusd: 0n;
+      bound: SwapBoundStep;
     };
 
 type DecodedPlan = Omit<FundsFlowPlan, 'flow'> & { flow: PlanOperation[] };
@@ -244,6 +259,10 @@ export type BindingDetailAccess = {
   getProtocolAddress?: GetProtocolAddress;
   getVaultAddress?: GetVaultAddress;
   hasMinimumRedemptionContracts?: (src: InstrumentId) => boolean;
+  /** Required to bind reward claims and swaps. */
+  getEvmContracts?: GetEvmContracts;
+  /** Current time, in seconds since the epoch, to check swap expiry. */
+  now?: bigint;
 };
 
 /**
@@ -254,16 +273,49 @@ export type BindingDetailAccess = {
 const decodePlan = (
   plan: FundsFlowPlan,
   observations: PlanObservations,
+  access: Pick<BindingDetailAccess, 'getEvmContracts' | 'now'> = {},
 ): DecodedPlan => {
-  // Swap output values are not yet available to mandate analysis.
-  vetNoSwaps(plan);
   const flow = plan.flow.map((movement): PlanOperation => {
-    const { src, dest, amount, claimRewards, withdraw } = movement;
+    const { src, dest, amount, claimRewards, swap, withdraw } = movement;
     if (!isPortfolioBalancePlaceRef(src)) {
       throw Fail`allocation plan does not support deposit or withdrawal place ${q(src)}`;
     }
     if (!isPortfolioBalancePlaceRef(dest)) {
       throw Fail`allocation plan does not support deposit or withdrawal place ${q(dest)}`;
+    }
+    if (claimRewards || swap) {
+      !claimRewards ||
+        !swap ||
+        Fail`a step cannot both claim and swap rewards at ${q(src)}`;
+      !withdraw || Fail`a reward step cannot withdraw at ${q(src)}`;
+      const { getEvmContracts, now } = access;
+      if (!getEvmContracts || now === undefined) {
+        throw Fail`reward claims and swaps are not supported here`;
+      }
+      if (claimRewards) {
+        const bound = bindRewardClaim(
+          movement,
+          claimRewards,
+          observations,
+          getEvmContracts,
+        );
+        return { kind: 'claimRewards', src, dest: bound.account, bound };
+      }
+      const bound = bindRewardSwap(
+        movement,
+        swap!,
+        observations,
+        getEvmContracts,
+        now,
+      );
+      return {
+        kind: 'swap',
+        src: bound.account,
+        dest: bound.account,
+        amount,
+        debitValueUusd: 0n,
+        bound,
+      };
     }
     src !== dest ||
       Fail`allocation plan does not support self-movement at ${q(src)}`;
@@ -278,8 +330,6 @@ const decodePlan = (
         if (!destIsChainAccount) {
           throw Fail`share redemption requires a Morpho source and its chain account destination: ${q(src)} -> ${q(dest)}`;
         }
-        !claimRewards ||
-          Fail`share redemption cannot also claim rewards at ${q(src)}`;
         const candidates = (observations.holdings || []).filter(
           holding => holding.place === src && holding.kind === 'shares',
         );
@@ -315,8 +365,6 @@ const decodePlan = (
       ) {
         throw Fail`maximum withdrawal requires a compatible source and its chain account destination: ${q(src)} -> ${q(dest)}`;
       }
-      !claimRewards ||
-        Fail`maximum withdrawal cannot also claim rewards at ${q(src)}`;
       withdraw?.amountOfShares === undefined ||
         Fail`principal withdrawal does not support amountOfShares at ${q(src)}`;
       const candidates = (observations.holdings || []).filter(
@@ -342,49 +390,45 @@ const decodePlan = (
         },
       };
     }
-    if (!claimRewards) {
-      // Exact withdrawals from shares still treat micro-USDC as micro-USD at
-      // parity until observations include an underlying USDC quantity (AGO-1709).
-      const principal =
-        isInstrumentId(src) && getPrincipalWithdrawalProtocol(src)
-          ? observations.holdings?.find(
-              holding => holding.place === src && holding.kind === 'principal',
-            )
-          : undefined;
-      let debitValueUusd = amount.value;
-      if (principal) {
-        const { valueUusd } = principal;
-        if (valueUusd === undefined) {
-          throw Fail`missing holding valuation for ${q(src)}`;
-        }
-        if (principal.amount === 0n) {
-          valueUusd === 0n ||
-            Fail`empty principal holding has nonzero valuation at ${q(src)}`;
-          // Supplies after observation are credited at parity.
-          debitValueUusd = amount.value;
-        } else {
-          // Round down so remaining USD exposure is not understated.
-          debitValueUusd = (valueUusd * amount.value) / principal.amount;
-        }
+    // Exact withdrawals from shares still treat micro-USDC as micro-USD at
+    // parity until observations include an underlying USDC quantity (AGO-1709).
+    const principal =
+      isInstrumentId(src) && getPrincipalWithdrawalProtocol(src)
+        ? observations.holdings?.find(
+            holding => holding.place === src && holding.kind === 'principal',
+          )
+        : undefined;
+    let debitValueUusd = amount.value;
+    if (principal) {
+      const { valueUusd } = principal;
+      if (valueUusd === undefined) {
+        throw Fail`missing holding valuation for ${q(src)}`;
       }
-      return {
-        kind: 'move',
-        src,
-        dest,
-        amount,
-        debitValueUusd,
-      };
+      if (principal.amount === 0n) {
+        valueUusd === 0n ||
+          Fail`empty principal holding has nonzero valuation at ${q(src)}`;
+        // Supplies after observation are credited at parity.
+        debitValueUusd = amount.value;
+      } else {
+        // Round down so remaining USD exposure is not understated.
+        debitValueUusd = (valueUusd * amount.value) / principal.amount;
+      }
     }
-
-    if (
-      !isInstrumentId(src) ||
-      !isInterChainAccountRef(dest) ||
-      dest !== `@${chainOf(src)}`
-    ) {
-      throw Fail`claimRewards requires an instrument source and its chain account destination: ${q(src)} -> ${q(dest)}`;
-    }
-    return { kind: 'claimRewards', src, dest, claimRewards };
+    return {
+      kind: 'move',
+      src,
+      dest,
+      amount,
+      debitValueUusd,
+    };
   });
+  vetRewardSwapBudgets(
+    flow.map(op =>
+      op.kind === 'claimRewards' || op.kind === 'swap' ? op.bound : undefined,
+    ),
+    plan.order,
+    observations,
+  );
   const exactSources = new Set(
     flow
       .filter(({ kind, src }) => kind === 'move' && isInstrumentId(src))
@@ -404,24 +448,26 @@ const decodePlan = (
   });
 };
 
-export type BoundStep = Readonly<
-  | {
-      kind: 'redeemShares';
-      src: ERC4626InstrumentId;
-      vaultAddress: EvmAddress;
-      shares: bigint;
-      minimumProceeds?: bigint;
-    }
-  | {
-      kind: 'withdrawMax';
-      src: InstrumentId;
-      protocolAddress: EvmAddress;
-      tokenAddress: EvmAddress;
-      /** Observed underlying quantity; zero skips an already empty position. */
-      amount: bigint;
-      minimumProceeds?: bigint;
-    }
->;
+export type BoundStep =
+  | Readonly<
+      | {
+          kind: 'redeemShares';
+          src: ERC4626InstrumentId;
+          vaultAddress: EvmAddress;
+          shares: bigint;
+          minimumProceeds?: bigint;
+        }
+      | {
+          kind: 'withdrawMax';
+          src: InstrumentId;
+          protocolAddress: EvmAddress;
+          tokenAddress: EvmAddress;
+          /** Observed underlying quantity; zero skips an already empty position. */
+          amount: bigint;
+          minimumProceeds?: bigint;
+        }
+    >
+  | RewardBoundStep;
 
 const MAX_MINIMUM_BEARING_SHARES = 10n ** 27n;
 
@@ -489,6 +535,11 @@ const bindSteps = (
         };
         break;
       }
+      case 'claimRewards':
+      case 'swap':
+        // Bound from signed evidence when decoded.
+        bound[step] = movement.bound;
+        break;
       default: // no-op
     }
   }
@@ -588,6 +639,18 @@ const vetAllocationCeilings = (
  * applies here: adding slack to the observed initial balance would let repeated
  * partial failures ratchet exposure upward.
  *
+ * A reward swap adds its enforced minimum output to the portfolio total, which
+ * excludes reward holdings, but only in outcomes where it completed. So the
+ * ceiling of a position with target portion `c` of `P` must hold for every
+ * dependency-closed set `S` of completed steps:
+ * `P * (initial + delta(S)) <= c * (total + swapCredit(S))`, that is,
+ * `P * initial + max_S(P * delta(S) - c * swapCredit(S)) <= c * total`.
+ * This is conservative for a position initially above its target: the
+ * initial-balance exception applies to outcomes that don't increase it, but
+ * they still count in the maximum, so swap proceeds cannot raise its ceiling
+ * enough to let it grow. Excluding them exactly would need a constrained
+ * closure. TODO(AGO-1778): lift this limitation.
+ *
  * Let S be the number of plan steps, D the number of distinct dependency
  * edges, and I the number of referenced instruments. This runs one
  * maximum-weight closure per instrument, for O(I * S * (S + D)^2) worst-case
@@ -621,35 +684,60 @@ const vetPartialPlanAllocation = (
     ].filter(isInstrumentId),
   );
 
+  const dependenciesOf = (index: number) => [
+    ...(dependencies.get(index) ?? []),
+  ];
+  const deltaAt = (place: InstrumentId, index: number) => {
+    const movement = flow[index]!;
+    if (movement.kind === 'claimRewards' || movement.kind === 'swap') {
+      return 0n;
+    }
+    const { src, dest, amount } = movement;
+    if (dest === place) return amount.value;
+    if (src === place) return -movement.debitValueUusd;
+    return 0n;
+  };
+  const hasSwaps = flow.some(({ kind }) => kind === 'swap');
+  const swapCreditAt = (index: number) => {
+    const movement = flow[index]!;
+    return movement.kind === 'swap' ? movement.amount.value : 0n;
+  };
+
   for (const place of instruments) {
     const initialBalance = initialBalances.get(place) ?? 0n;
     const maxDelta = maxWeightClosure(
       steps,
-      index => {
-        const movement = flow[index]!;
-        if (movement.kind === 'claimRewards') return 0n;
-        const { src, dest, amount } = movement;
-        if (dest === place) return amount.value;
-        if (src === place) return -movement.debitValueUusd;
-        return 0n;
-      },
-      index => [...(dependencies.get(index) ?? [])],
+      index => deltaAt(place, index),
+      dependenciesOf,
     );
-    const maxBalance = initialBalance + maxDelta;
+    if (maxDelta <= 0n) continue;
     const ceiling = targetAllocation[place] ?? 0n;
+    const maxExcess =
+      totalPortions === 0n
+        ? undefined
+        : !hasSwaps
+          ? totalPortions * maxDelta
+          : maxWeightClosure(
+              steps,
+              index =>
+                totalPortions * deltaAt(place, index) -
+                ceiling * swapCreditAt(index),
+              dependenciesOf,
+            );
     const withinTarget =
-      totalPortions > 0n &&
-      maxBalance * totalPortions <= totalBalance * ceiling;
+      maxExcess !== undefined &&
+      totalPortions * initialBalance + maxExcess <= totalBalance * ceiling;
     withinTarget ||
-      maxBalance <= initialBalance ||
-      Fail`plan intermediate balance exceeds target allocation at ${q(place)}: initial balance ${q(initialBalance)}, peak balance ${q(maxBalance)} of total ${q(totalBalance)} vs target portion ${q(ceiling)} of ${q(totalPortions)}`;
+      Fail`plan intermediate balance exceeds target allocation at ${q(place)}: initial balance ${q(initialBalance)}, peak balance ${q(initialBalance + maxDelta)} of total ${q(totalBalance)} vs target portion ${q(ceiling)} of ${q(totalPortions)}`;
   }
 };
 
 /**
  * Simulate dependency-ordered execution to calculate final balances.
  *
- * Reward claims do not change the projected balances.
+ * Reward claims do not change the projected balances: they guarantee no
+ * proceeds. A reward swap credits its account with its enforced minimum USDC
+ * output, which later movements may then spend.
  *
  * @throws {Error} if a destination position lacks an observed starting balance
  * @throws {Error} if a concurrently ready group lacks sufficient funds
@@ -750,6 +838,15 @@ const projectPlanBalances = (
     for (const ix of ready) {
       const movement = flow[ix];
       if (!movement || movement.kind === 'claimRewards') continue;
+      if (movement.kind === 'swap') {
+        // Only the enforced minimum output is guaranteed to arrive.
+        const { dest, amount } = movement;
+        incrementBy(balances, dest, amount.value);
+        if (remainingCash.has(dest)) {
+          incrementBy(remainingCash, dest, amount.value);
+        }
+        continue;
+      }
       const { src, dest, amount, debitValueUusd } = movement;
       incrementBy(balances, src, -debitValueUusd);
       incrementBy(balances, dest, amount.value);
@@ -775,8 +872,9 @@ const projectPlanBalances = (
 };
 
 /**
- * Reject plans that claim rewards, add positions, finish above target ceilings,
- * or whose partial failure could increase a position balance above both its
+ * Reject plans that add positions, finish above target ceilings, spend
+ * unfunded reward swaps, or whose partial failure could increase a position
+ * balance above both its
  * target allocation ceiling and its initial balance. Only the final-balance
  * check allows a shared {@link MAX_CHAIN_ALLOCATION_DIVERGENCE_UUSDC} per chain. Partial-failure,
  * mandate, and position checks remain exact.
@@ -788,12 +886,9 @@ export const vetPlanAllocation = (
   plan: FundsFlowPlan,
   observations: PlanObservations,
   getUsdcTokenId?: GetUsdcTokenId,
+  rewardAccess: Pick<BindingDetailAccess, 'getEvmContracts' | 'now'> = {},
 ): DecodedPlan => {
-  const decodedPlan = decodePlan(plan, observations);
-  for (const { kind } of decodedPlan.flow) {
-    kind !== 'claimRewards' ||
-      Fail`allocation plan does not support claimRewards`;
-  }
+  const decodedPlan = decodePlan(plan, observations, rewardAccess);
   // TODO(AGO-1303): Enforce on-chain fee limits, including repeated submissions:
   // https://linear.app/agoric/issue/AGO-1303/on-chain-fee-rate-limit
   // Agent-selected fees spend from the shared contract account. Fee protection
@@ -842,8 +937,19 @@ export const vetAllocationPlan = (
     plan,
     observations,
     addresses.getUsdcTokenId,
+    addresses,
   );
-  assertMandateForPlanObservations(permissions, targetAllocation, observations);
+  // Reward holdings are not part of the observed value, but swapping them
+  // adds at least the swaps' minimum outputs.
+  const swapProceeds = sumOptionalBigints(
+    decodedPlan.flow.map(op => (op.kind === 'swap' ? op.amount.value : 0n)),
+  );
+  assertMandateForPlanObservations(
+    permissions,
+    targetAllocation,
+    observations,
+    swapProceeds,
+  );
   const boundSteps = bindSteps(decodedPlan.flow, addresses);
   return harden({
     commitNow: true,
@@ -851,3 +957,33 @@ export const vetAllocationPlan = (
   });
 };
 harden(vetAllocationPlan);
+
+/** Whether a plan claims or swaps rewards. */
+export const hasRewardSteps = (plan: FundsFlowPlan): boolean =>
+  plan.flow.some(({ claimRewards, swap }) => !!claimRewards || !!swap);
+harden(hasRewardSteps);
+
+/**
+ * Vet a plan that may only claim rewards and swap them, against the attested
+ * observations of the portfolio. Such a plan moves no principal, so it
+ * involves no target allocation.
+ *
+ * @returns execution instructions bound to the plan
+ * @throws {Error} if a step does anything else, or does not match the
+ *   evidence it selects, or if a swap is not funded
+ */
+export const vetRewardPlan = (
+  plan: FundsFlowPlan,
+  observations: PlanObservations,
+  access: Required<Pick<BindingDetailAccess, 'getEvmContracts' | 'now'>>,
+): NonNullable<VettedAllocationPlan['boundSteps']> => {
+  plan.flow.length > 0 || Fail`a reward plan must have steps`;
+  for (const [step, { claimRewards, swap }] of plan.flow.entries()) {
+    claimRewards ||
+      swap ||
+      Fail`a reward plan may only claim and swap rewards, not step ${q(step)}`;
+  }
+  const decodedPlan = decodePlan(plan, observations, access);
+  return bindSteps(decodedPlan.flow, access);
+};
+harden(vetRewardPlan);

@@ -12,6 +12,7 @@ import {
   type PortfolioDelegatedRebalanceParams,
 } from '@agoric/portfolio-api';
 import type { Zone } from '@agoric/zone';
+import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import { vetNoNewPositions } from './delegation-limits.ts';
@@ -71,15 +72,18 @@ export const preparePlanner = (
     rejectPlan: M.call(portfolioIdShape, flowIdShape, M.string())
       .optional(policyVersionShape, rebalanceCountShape)
       .returns(),
-    rebalance: M.call(
+    // The delegation client checks the content of the plan and observations
+    // supplied in the params.
+    rebalance: M.callWhen(
       portfolioIdShape,
       PortfolioDelegatedRebalanceParamsShape,
-      planCompatShape,
-    ).returns(FlowKeyShape),
-    claimRewards: M.call(
+    )
+      .optional(planCompatShape)
+      .returns(FlowKeyShape),
+    // The delegation client checks the content of the plan and observations.
+    claimRewards: M.callWhen(
       portfolioIdShape,
       PortfolioDelegatedClaimRewardsParamsShape,
-      planCompatShape,
     ).returns(FlowKeyShape),
   });
 
@@ -136,11 +140,17 @@ export const preparePlanner = (
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.rejectFlowPlan(flowId, reason);
       },
-      rebalance(
+      /**
+       * Rebalance through the planner's delegation, with either:
+       * - a plan in the params, selecting attestor-signed observations, which
+       *   the delegation verifies and vets like that of any other agent, or
+       * - a separate plan, without observations.
+       */
+      async rebalance(
         portfolioId: number,
         delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
-        planOrSteps: FundsFlowPlan | MovementDesc[],
-      ): FlowKey {
+        planOrSteps?: FundsFlowPlan | MovementDesc[],
+      ): Promise<FlowKey> {
         const portfolioPlanner = getPortfolioPlanner(portfolioId);
         const delegationClient = getPlannerDelegation(portfolioPlanner);
         assert(
@@ -154,9 +164,22 @@ export const preparePlanner = (
           `portfolio ${portfolioId} auto-feature "rebalance" must be enabled`,
         );
 
+        const { plan, signedObservations } = delegatedRebalanceParams;
+        if (planOrSteps === undefined) {
+          plan !== undefined ||
+            Fail`a plan is required, either with signed observations or separately`;
+          // The delegation resolves the flow's plan with its bound steps, and
+          // records its submission (see `submitVersion`).
+          return delegationClient.rebalance(delegatedRebalanceParams);
+        }
+        (plan === undefined && signedObservations === undefined) ||
+          Fail`a separate plan excludes a plan or signed observations in the params`;
+
         // The flow created by rebalance is guaranteed to have its plan sync kit
-        // fully ready.
-        const flowKey = delegationClient.rebalance(delegatedRebalanceParams);
+        // fully ready. Without observations to verify, it starts promptly.
+        const flowKey = await delegationClient.rebalance(
+          delegatedRebalanceParams,
+        );
         const flowId = flowIdFromKey(flowKey);
         trace.sub(`portfolio${portfolioId}`).sub(flowKey)(
           'TODO(#11782): vet delegated plan',
@@ -170,11 +193,15 @@ export const preparePlanner = (
         portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
         return flowKey;
       },
-      claimRewards(
+      /**
+       * Claim rewards, and swap them, through the planner's delegation, with
+       * a plan selecting attestor-signed evidence, which the delegation
+       * verifies and vets like that of any other agent.
+       */
+      async claimRewards(
         portfolioId: number,
         delegatedClaimRewardsParams: PortfolioDelegatedClaimRewardsParams,
-        planOrSteps: FundsFlowPlan | MovementDesc[],
-      ): FlowKey {
+      ): Promise<FlowKey> {
         const portfolioPlanner = getPortfolioPlanner(portfolioId);
         const delegationClient = getPlannerDelegation(portfolioPlanner);
         assert(
@@ -188,23 +215,9 @@ export const preparePlanner = (
           `portfolio ${portfolioId} auto-feature "claimRewards" must be enabled`,
         );
 
-        // The flow created by claimRewards is guaranteed to have its plan
-        // sync kit fully ready.
-        const flowKey = delegationClient.claimRewards(
-          delegatedClaimRewardsParams,
-        );
-        const flowId = flowIdFromKey(flowKey);
-        trace.sub(`portfolio${portfolioId}`).sub(flowKey)(
-          'TODO(#11782): vet delegated plan',
-          planOrSteps,
-        );
-        vetNoNewPositions(portfolioPlanner.getTargetAllocation(), planOrSteps);
-        portfolioPlanner.submitVersion(
-          delegatedClaimRewardsParams.syncState.policyVersion,
-          delegatedClaimRewardsParams.syncState.rebalanceCount,
-        );
-        portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
-        return flowKey;
+        // The delegation resolves the flow's plan with its bound steps, and
+        // records its submission (see `submitVersion`).
+        return delegationClient.claimRewards(delegatedClaimRewardsParams);
       },
     },
     {

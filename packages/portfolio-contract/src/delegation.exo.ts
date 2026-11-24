@@ -10,8 +10,6 @@ import type { TypedPattern } from '@agoric/internal';
 import { SignedEIP712DataShape } from '@agoric/orchestration';
 import {
   PortfolioAutoFeaturesExtShape,
-  PortfolioDelegatedClaimRewardsParamsShape,
-  PortfolioDelegatedRebalanceParamsShape,
   PortfolioFlowAgentMemoShape,
   PortfolioSyncStateShape,
   type FlowKey,
@@ -24,7 +22,7 @@ import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { vetNoSwaps } from './delegation-limits.ts';
+import { hasRewardSteps } from './delegation-limits.ts';
 import type { PortfolioObservationsVerifier } from './observation-verifier.ts';
 import { TargetAllocationShape } from './type-guards.ts';
 import type { makeOfferArgsShapes } from './type-guards-steps.ts';
@@ -51,6 +49,35 @@ const makePortfolioDelegatedSetTargetAllocationParamsShape = (
     },
     {},
   ) as TypedPattern<PortfolioDelegatedSetTargetAllocationParams>;
+
+const makePortfolioDelegatedRebalanceParamsShape = (
+  planShape: TypedPattern<FundsFlowPlan>,
+) =>
+  M.splitRecord(
+    { syncState: PortfolioSyncStateShape },
+    {
+      agentMemo: PortfolioFlowAgentMemoShape,
+      plan: planShape,
+      // Only the envelope: the content is validated when verifying it.
+      signedObservations: SignedEIP712DataShape,
+    },
+    {},
+  ) as TypedPattern<PortfolioDelegatedRebalanceParams>;
+
+/** A claim requires its plan and signed evidence up front. */
+const makePortfolioDelegatedClaimRewardsParamsShape = (
+  planShape: TypedPattern<FundsFlowPlan>,
+) =>
+  M.splitRecord(
+    {
+      syncState: PortfolioSyncStateShape,
+      plan: planShape,
+      // Only the envelope: the content is validated when verifying it.
+      signedObservations: SignedEIP712DataShape,
+    },
+    { agentMemo: PortfolioFlowAgentMemoShape },
+    {},
+  ) as TypedPattern<PortfolioDelegatedClaimRewardsParams>;
 
 type DelegationState = {
   agentId: number;
@@ -83,21 +110,19 @@ const DelegationReaderI = M.interface('PortfolioDelegationReader', {
   getAutoFeatures: M.call().returns(M.opt(PortfolioAutoFeaturesExtShape)),
 });
 
-const makeDelegationClientI = (
-  setTargetAllocationParamsShape: TypedPattern<PortfolioDelegatedSetTargetAllocationParams>,
-) =>
+const makeDelegationClientI = (planShape: TypedPattern<FundsFlowPlan>) =>
   M.interface('PortfolioDelegationClient', {
     getReader: M.call().returns(M.remotable('PortfolioDelegationReader')),
-    rebalance: M.call(PortfolioDelegatedRebalanceParamsShape).returns(
-      M.string(),
-    ),
-    claimRewards: M.call(PortfolioDelegatedClaimRewardsParamsShape).returns(
-      M.string(),
-    ),
     // Async to allow for prompt asynchronous validation of the params.
-    setTargetAllocation: M.callWhen(setTargetAllocationParamsShape).returns(
-      M.string(),
-    ),
+    rebalance: M.callWhen(
+      makePortfolioDelegatedRebalanceParamsShape(planShape),
+    ).returns(M.string()),
+    claimRewards: M.callWhen(
+      makePortfolioDelegatedClaimRewardsParamsShape(planShape),
+    ).returns(M.string()),
+    setTargetAllocation: M.callWhen(
+      makePortfolioDelegatedSetTargetAllocationParamsShape(planShape),
+    ).returns(M.string()),
   });
 
 /**
@@ -115,9 +140,7 @@ export const preparePortfolioDelegationKit = (
     shapes: Pick<ReturnType<typeof makeOfferArgsShapes>, 'plan'>;
   },
 ) => {
-  const DelegationClientI = makeDelegationClientI(
-    makePortfolioDelegatedSetTargetAllocationParamsShape(shapes.plan),
-  );
+  const DelegationClientI = makeDelegationClientI(shapes.plan);
 
   return zone.exoClassKit(
     'PortfolioDelegation',
@@ -153,20 +176,59 @@ export const preparePortfolioDelegationKit = (
         getReader() {
           return this.facets.reader;
         },
-        rebalance(params: PortfolioDelegatedRebalanceParams): FlowKey {
+        /**
+         * Rebalance toward the current target allocation, with the plan of
+         * the planner, or with a plan of the agent, which requires signed
+         * observations.
+         */
+        async rebalance(
+          params: PortfolioDelegatedRebalanceParams,
+        ): Promise<FlowKey> {
           const { portfolioAccess, agentId } = this.state;
+          const { signedObservations, ...rebalanceParams } = params;
+          const { plan } = params;
+          // Don't let an unauthorized client cause any verification work.
+          // Authorization is checked again once verification resolves.
+          portfolioAccess.getAuthorizedDelegation(this.facets.client, agentId, {
+            rebalance: true,
+            ...(plan && hasRewardSteps(plan) && { claimRewards: true }),
+          });
+          (plan === undefined) === (signedObservations === undefined) ||
+            Fail`a plan requires signed observations, and vice versa`;
+          // Resolves promptly. Everything below is checked after it does.
+          const verifiedObservations = await (signedObservations &&
+            verifyPortfolioObservations(signedObservations));
+          // Only pass on the observations as verified.
           return portfolioAccess.submitRebalance(
             this.facets.client,
             agentId,
-            params,
+            harden(rebalanceParams),
+            verifiedObservations,
           );
         },
-        claimRewards(params: PortfolioDelegatedClaimRewardsParams): FlowKey {
+        /**
+         * Claim rewards, and swap them for USDC, with a plan of the agent
+         * selecting signed evidence.
+         */
+        async claimRewards(
+          params: PortfolioDelegatedClaimRewardsParams,
+        ): Promise<FlowKey> {
           const { portfolioAccess, agentId } = this.state;
+          // Don't let an unauthorized client cause any verification work.
+          // Authorization is checked again once verification resolves.
+          portfolioAccess.getAuthorizedDelegation(this.facets.client, agentId, {
+            claimRewards: true,
+          });
+          const { signedObservations, ...claimParams } = params;
+          // Resolves promptly. Everything below is checked after it does.
+          const verifiedObservations =
+            await verifyPortfolioObservations(signedObservations);
+          // Only pass on the observations as verified.
           return portfolioAccess.submitClaimRewards(
             this.facets.client,
             agentId,
-            params,
+            harden(claimParams),
+            verifiedObservations,
           );
         },
         async setTargetAllocation(
@@ -175,13 +237,17 @@ export const preparePortfolioDelegationKit = (
           const { portfolioAccess, agentId } = this.state;
           // Don't let an unauthorized client cause any verification work.
           // Authorization is checked again once verification resolves.
+          // Supplying a plan also requires the authority to rebalance, so that
+          // `rebalance: false` limits an agent to target-only updates.
           portfolioAccess.getAuthorizedDelegation(this.facets.client, agentId, {
             allocation: true,
+            ...(params.plan !== undefined && { rebalance: true }),
+            ...(params.plan &&
+              hasRewardSteps(params.plan) && { claimRewards: true }),
           });
           const { signedObservations, ...allocationParams } = params;
           (params.plan === undefined) === (signedObservations === undefined) ||
             Fail`a plan requires signed observations, and vice versa`;
-          if (params.plan) vetNoSwaps(params.plan);
           // Resolves promptly. Everything below is checked after it does.
           const verifiedObservations = await (signedObservations &&
             verifyPortfolioObservations(signedObservations));

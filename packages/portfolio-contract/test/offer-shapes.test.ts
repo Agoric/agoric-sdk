@@ -209,41 +209,52 @@ test('plans can carry usdnOut', t => {
   t.notThrows(() => mustMatch(specimen, shapes.plan));
 });
 
-test('plans can carry 1inch swap params', t => {
+test('plans select reward claim evidence and swap instructions', t => {
   const shapes = makeOfferArgsShapes(USDC);
-  const amount = usdc(200n);
   const specimen = harden({
     flow: [
       {
-        src: '@Avalanche',
-        dest: '@Avalanche',
-        amount,
-        swap: {
-          provider: '1inch',
-          tokenIn: '0x0000000000000000000000000000000000000abc',
-          amountIn: 5_000_000n,
-          flags: 0n,
-          executor: '0x2222222222222222222222222222222222222222',
-          srcReceiver: '0x3333333333333333333333333333333333333333',
-          data: '0xdeadbeef',
-        },
+        src: '@Base',
+        dest: '@Base',
+        amount: usdc(0n),
+        claimRewards: { protocol: 'merkl', index: 0 },
+      },
+      {
+        src: '@Base',
+        dest: '@Base',
+        amount: usdc(200n),
+        swap: { provider: '1inch', index: 0 },
       },
     ],
+    order: [[1, [0]]],
   });
   t.notThrows(() => mustMatch(specimen, shapes.plan));
 
-  const withTokenOut = harden({
-    flow: [
-      {
-        ...specimen.flow[0],
-        swap: {
-          ...specimen.flow[0].swap,
-          tokenOut: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-        },
-      },
-    ],
-  });
-  t.notThrows(() => mustMatch(withTokenOut, shapes.plan));
+  // Execution details only come from signed evidence, never from the plan.
+  for (const [name, step] of Object.entries({
+    oldClaim: {
+      ...specimen.flow[0],
+      claimRewards: { tokens: [], minAmounts: [] },
+    },
+    claimProof: {
+      ...specimen.flow[0],
+      claimRewards: { protocol: 'merkl', index: 0, proofs: [] },
+    },
+    unknownProtocol: {
+      ...specimen.flow[0],
+      claimRewards: { protocol: 'morpho', index: 0 },
+    },
+    swapRoute: {
+      ...specimen.flow[1],
+      swap: { provider: '1inch', index: 0, data: '0xdeadbeef' },
+    },
+    negativeIndex: {
+      ...specimen.flow[1],
+      swap: { provider: '1inch', index: -1 },
+    },
+  })) {
+    t.false(matches(harden({ flow: [step] }), shapes.plan), name);
+  }
 });
 
 test('movementDescShape allows unknown additional properties', t => {
@@ -602,6 +613,12 @@ test('vstorage flow detail type matches shape', t => {
         status: 'ok',
         result: { policyVersion: 1 },
       },
+    },
+    delegatedClaimRewards: {
+      type: 'claimRewards',
+      agent: 'agent1',
+      agentMemo: 'memo',
+      createdAtPolicyVersion: 3,
     },
   });
 

@@ -28,6 +28,7 @@ import type {
   SelectableObservations,
   TypedHoldingDetail,
 } from '../src/types.ts';
+import { MAX_ONE_INCH_CALLDATA_SUFFIX_BYTES } from '../src/reward-swaps.ts';
 import { runWithoutLockdown } from './without-lockdown.ts';
 
 const addr = (digit: string) => `0x${digit.repeat(40)}` as const;
@@ -53,7 +54,7 @@ const merklClaim: MerklClaimEvidence = {
   tokenId: morphoToken,
   cumulativeAmount: 3n * 10n ** 18n,
   claimedAmount: 10n ** 18n,
-  proof: [`0x${'12'.repeat(32)}`, `0x${'34'.repeat(32)}`],
+  proofs: [`0x${'12'.repeat(32)}`, `0x${'34'.repeat(32)}`],
 };
 const oneInchSwap: OneInchSwapInstructions = {
   accountPlace: '@Base',
@@ -68,6 +69,8 @@ const oneInchSwap: OneInchSwapInstructions = {
   executor: addr('f'),
   srcReceiver: addr('f'),
   data: '0xdeadbeef',
+  // As observed from the 1inch API.
+  calldataSuffix: '0x1a2b3c4d',
 };
 const allEvidence: Required<SelectableObservations> = {
   aaveClaims: [aaveClaim],
@@ -210,7 +213,7 @@ test('evidence uses the declared EIP-712 scalar types', t => {
     types[struct].find(f => f.name === name)?.type;
   t.is(typeOf('AaveClaim', 'tokenId'), 'address');
   t.is(typeOf('AaveClaim', 'expectedAmount'), 'uint256');
-  t.is(typeOf('MerklClaim', 'proof'), 'bytes32[]');
+  t.is(typeOf('MerklClaim', 'proofs'), 'bytes32[]');
   t.is(typeOf('OneInchSwap', 'slippageBps'), 'uint16');
   t.is(typeOf('OneInchSwap', 'expiresAt'), 'uint64');
   t.is(typeOf('OneInchSwap', 'data'), 'bytes');
@@ -252,7 +255,7 @@ test('every evidence field affects the signature digest', t => {
       { tokenId: addr('2') },
       { cumulativeAmount: 4n * 10n ** 18n },
       { claimedAmount: 0n },
-      { proof: [merklClaim.proof[0]] },
+      { proofs: [merklClaim.proofs[0]] },
     ],
     oneInchSwaps: [
       { accountPlace: '@Arbitrum' },
@@ -267,6 +270,8 @@ test('every evidence field affects the signature digest', t => {
       { executor: addr('2') },
       { srcReceiver: addr('2') },
       { data: '0x' },
+      { calldataSuffix: '0x' },
+      { calldataSuffix: '0x1a2b3c4e' },
     ],
   };
   for (const key of evidenceKeys) {
@@ -311,7 +316,7 @@ test('the EIP-712 layer rejects malformed evidence primitives', t => {
     ],
     [
       'short proof node',
-      { merklClaims: [{ ...merklClaim, proof: ['0x1234'] }] },
+      { merklClaims: [{ ...merklClaim, proofs: ['0x1234'] }] },
     ],
     [
       'fractional slippage',
@@ -322,6 +327,14 @@ test('the EIP-712 layer rejects malformed evidence primitives', t => {
       { oneInchSwaps: [{ ...oneInchSwap, expiresAt: 2n ** 64n }] },
     ],
     ['odd-length data', { oneInchSwaps: [{ ...oneInchSwap, data: '0xabc' }] }],
+    [
+      'odd-length calldata suffix',
+      { oneInchSwaps: [{ ...oneInchSwap, calldataSuffix: '0x1a2b3' }] },
+    ],
+    [
+      'non-hex calldata suffix',
+      { oneInchSwaps: [{ ...oneInchSwap, calldataSuffix: '0xzz' }] },
+    ],
   ];
   const signed = readSigned(messageFor(allEvidence));
   for (const [label, evidence] of malformed) {
@@ -391,12 +404,12 @@ const invalidCases: [
   [
     'Merkl claim at an instrument',
     { merklClaims: [{ ...merklClaim, accountPlace: 'Aave_Base' }] },
-    /\[merklClaims\[0\]\] invalid account place/,
+    /\[merklClaims\[0\]\] invalid EVM account place/,
   ],
   [
     'Merkl claim off EVM',
     { merklClaims: [{ ...merklClaim, accountPlace: '@noble' }] },
-    /\[merklClaims\[0\]\] invalid account place/,
+    /\[merklClaims\[0\]\] invalid EVM account place/,
   ],
   [
     'Merkl claim already over-claimed',
@@ -417,7 +430,7 @@ const invalidCases: [
   [
     'swap at an instrument',
     { oneInchSwaps: [{ ...oneInchSwap, accountPlace: 'Aave_Base' }] },
-    /\[oneInchSwaps\[0\]\] invalid account place/,
+    /\[oneInchSwaps\[0\]\] invalid EVM account place/,
   ],
   [
     'swap of a token for itself',
@@ -439,6 +452,18 @@ const invalidCases: [
     { oneInchSwaps: [{ ...oneInchSwap, slippageBps: 10_001 }] },
     /\[oneInchSwaps\[0\]\] invalid slippageBps/,
   ],
+  [
+    'swap calldata suffix above its limit',
+    {
+      oneInchSwaps: [
+        {
+          ...oneInchSwap,
+          calldataSuffix: `0x${'ab'.repeat(MAX_ONE_INCH_CALLDATA_SUFFIX_BYTES + 1)}`,
+        },
+      ],
+    },
+    /\[oneInchSwaps\[0\]\] calldataSuffix of 33 bytes exceeds 32/,
+  ],
 ];
 for (const [label, evidence, error] of invalidCases) {
   test(`evidence rejects ${label} on encoding and decoding`, t => {
@@ -455,6 +480,21 @@ for (const [label, evidence, error] of invalidCases) {
     t.throws(() => portfolioObservationsFromEIP712(wire), { message: error });
   });
 }
+
+test('a swap calldata suffix may be empty, or up to its limit', t => {
+  for (const calldataSuffix of [
+    '0x',
+    oneInchSwap.calldataSuffix,
+    `0x${'ab'.repeat(MAX_ONE_INCH_CALLDATA_SUFFIX_BYTES)}`,
+  ] as const) {
+    const swap = { ...oneInchSwap, calldataSuffix };
+    t.deepEqual(
+      decode({ oneInchSwaps: [swap] }).observations.oneInchSwaps,
+      [swap],
+      `${(calldataSuffix.length - 2) / 2} bytes`,
+    );
+  }
+});
 
 test('evidence addresses may be checksummed, and compare without case', t => {
   // Base USDC, in its EIP-55 checksummed spelling.
@@ -597,7 +637,7 @@ test('evidence is usable without lockdown', async t => {
         tokenId: '0x${'b'.repeat(40)}',
         cumulativeAmount: 3n,
         claimedAmount: 1n,
-        proof: ['0x${'12'.repeat(32)}'],
+        proofs: ['0x${'12'.repeat(32)}'],
       }],
     };
     const message = m.ymaxObservationMessageKit.getStandaloneOperationData(

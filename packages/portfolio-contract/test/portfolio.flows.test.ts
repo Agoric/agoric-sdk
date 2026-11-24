@@ -19,6 +19,7 @@ import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   decodeFunctionData,
+  encodeFunctionData,
   decodeAbiParameters,
   getAbiItem,
   getAddress,
@@ -38,7 +39,6 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
-import { makeTokenIdKey } from '@agoric/portfolio-api/src/type-guards.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import { Far } from '@endo/far';
@@ -54,6 +54,7 @@ import {
   bundler3ABI,
   generalAdapter1ABI,
 } from '../src/interfaces/morpho-bundler3.ts';
+import { merkleDistributorABI } from '../src/interfaces/merkle-distributor.ts';
 import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
 import {
   universalRouterABI,
@@ -84,11 +85,8 @@ import {
   wayFromSrcToDest,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
-import {
-  CCTPv2,
-  swapRewardToStable,
-  type EVMContext,
-} from '../src/pos-evm.flows.ts';
+import type { EVMContractAddresses } from '../src/portfolio.contract.ts';
+import { CCTPv2, type EVMContext } from '../src/pos-evm.flows.ts';
 import {
   agoricToNoble,
   makeSwapLockMessages,
@@ -121,7 +119,6 @@ import {
 } from './flow-test-kit.ts';
 import {
   axelarIdsMock,
-  chainMetadataMock,
   contractsMock,
   gmpAddresses,
   planUSDNDeposit,
@@ -194,6 +191,60 @@ const executeSteps = (
     undefined,
     config,
   );
+
+/**
+ * Run a plan with the bindings the contract derives from signed evidence, the
+ * way delegated plans are resolved.
+ */
+const executeBoundPlan = (
+  orch: Orchestrator,
+  ctx: PortfolioInstanceContext,
+  seat: ZCFSeat,
+  plan: { flow: MovementDesc[] },
+  boundSteps: NonNullable<ResolvedFlowPlan['boundSteps']>,
+  pKit: GuestInterface<PortfolioKit>,
+  config?: FlowConfig,
+) => {
+  const started = pKit.manager.startFlow({ type: 'rebalance' });
+  pKit.manager.resolveExecutionPlan(
+    started.flowId,
+    harden({ plan, boundSteps }),
+  );
+  return executePlan(orch, ctx, seat, {}, pKit, undefined, started, config);
+};
+
+const REWARD_TOKEN = '0x0000000000000000000000000000000000000abc' as const;
+
+/** A bound Aave claim, as derived from signed `aaveClaims` evidence. */
+const makeAaveClaim = (chain: AxelarChain) =>
+  harden({
+    kind: 'claimRewards',
+    protocol: 'aave',
+    src: `Aave_${chain}`,
+    account: `@${chain}`,
+    controller: contractsMock[chain].aaveRewardsController,
+    asset: contractsMock[chain].aaveUSDC,
+    tokenId: REWARD_TOKEN,
+    expectedAmount: 1_234_567n,
+  } as const);
+
+/** A bound 1inch swap, as derived from signed `oneInchSwaps` instructions. */
+const makeOneInchSwap = (chain: AxelarChain, minAmountOut: bigint) =>
+  harden({
+    kind: 'swap',
+    provider: '1inch',
+    account: `@${chain}`,
+    router: contractsMock[chain].oneInchRouter!,
+    tokenIn: REWARD_TOKEN,
+    tokenOut: contractsMock[chain].usdc,
+    amountIn: 5_000_000n,
+    quotedAmountOut: minAmountOut,
+    minAmountOut,
+    executor: '0x2222222222222222222222222222222222222222', // opaque to us
+    srcReceiver: '0x3333333333333333333333333333333333333333', // opaque to us
+    data: '0xdeadbeef', // opaque executor calldata
+    calldataSuffix: '0x1a2b3c4d', // as appended by the 1inch API
+  } as const);
 
 /**
  * Open a portfolio the way production does: the offer names a target
@@ -841,12 +892,9 @@ test.skip('claim rewards on Aave position', async t => {
   );
 
   const kit = await ctx.makePortfolioKit();
-  const claimRewards = {
-    tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
-    minAmounts: [1_234_567n],
-  };
+  const claim = makeAaveClaim('Arbitrum');
   await Promise.all([
-    executeSteps(
+    executeBoundPlan(
       orch,
       ctx,
       offer.seat,
@@ -857,10 +905,11 @@ test.skip('claim rewards on Aave position', async t => {
             src: 'Aave_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards,
+            claimRewards: { protocol: 'aave', index: 0 },
           },
         ],
       },
+      { 0: claim },
       kit,
     ),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
@@ -890,8 +939,8 @@ test.skip('claim rewards on Aave position', async t => {
   const [assets, claimAmount, reward] = call.args as [string[], bigint, string];
   t.is(assets.length, 1);
   t.is(assets[0].toLowerCase(), contractsMock.Arbitrum.aaveUSDC.toLowerCase());
-  t.is(claimAmount, claimRewards.minAmounts[0]);
-  t.is(reward.toLowerCase(), claimRewards.tokens[0].toLowerCase());
+  t.is(claimAmount, 2n ** 256n - 1n, 'claims everything accrued');
+  t.is(reward.toLowerCase(), claim.tokenId.toLowerCase());
 });
 
 test('open portfolio with Beefy position', async t => {
@@ -2598,44 +2647,35 @@ test('swap reward token to stable token via 1inch', async t => {
   assert(avalancheAccountId, 'Avalanche remote account provisioned');
   const receiver = parseAccountId(avalancheAccountId).accountAddress;
 
-  // Phase 2: the planner supplies decomposed 1inch swap params; the contract
+  // Phase 2: signed swap instructions are bound to the step; the contract
   // reconstructs the swap() calldata, pinning dstReceiver to our own account.
   // Run the swap step and check the reconstructed call.
-  const tokenIn = '0x0000000000000000000000000000000000000abc' as const;
-  const amountIn = 5_000_000n;
-  const { oneInchRouter, usdc } = contractsMock.Avalanche;
-  const swapParams = {
-    provider: '1inch',
-    tokenIn,
-    amountIn,
-    flags: 0n,
-    executor: '0x2222222222222222222222222222222222222222', // opaque to us
-    srcReceiver: '0x3333333333333333333333333333333333333333', // opaque to us
-    data: '0xdeadbeef', // opaque executor calldata
-  } as const;
-  // The router's min USDC out is the movement amount, not part of the swap desc.
-  const minReturnAmount = amount.value;
+  const { oneInchRouter } = contractsMock.Avalanche;
+  const swap = makeOneInchSwap('Avalanche', amount.value);
+  const { tokenIn, amountIn, tokenOut } = swap;
+  // The router's min USDC out is the signed minimum, also the movement amount.
+  const minReturnAmount = swap.minAmountOut;
   // The contract must reconstruct this, filling dstToken/dstReceiver itself.
   // viem returns checksummed addresses from decodeFunctionData.
   const expectedSwap = {
     functionName: 'swap',
     args: [
-      getAddress(swapParams.executor),
+      getAddress(swap.executor),
       {
         srcToken: getAddress(tokenIn),
-        dstToken: getAddress(usdc),
-        srcReceiver: getAddress(swapParams.srcReceiver),
+        dstToken: getAddress(tokenOut),
+        srcReceiver: getAddress(swap.srcReceiver),
         dstReceiver: getAddress(receiver as `0x${string}`),
         amount: amountIn,
         minReturnAmount,
-        flags: swapParams.flags,
+        flags: 0n,
       },
-      swapParams.data,
+      swap.data,
     ],
   };
 
   const seat2 = makeMockSeat({ Deposit: amount }, undefined, log);
-  const swapP = executeSteps(
+  const swapP = executeBoundPlan(
     orch,
     ctx,
     seat2,
@@ -2646,10 +2686,11 @@ test('swap reward token to stable token via 1inch', async t => {
           dest: '@Avalanche',
           amount,
           fee: feeCall,
-          swap: swapParams,
+          swap: { provider: '1inch', index: 0 },
         },
       ],
     },
+    { 0: swap },
     kit,
     {
       ...DEFAULT_FLOW_CONFIG,
@@ -2717,6 +2758,11 @@ test('swap reward token to stable token via 1inch', async t => {
     expectedSwap,
     'contract reconstructed the swap() args with pinned dstToken/dstReceiver',
   );
+  t.is(
+    swapCall.data,
+    `${encodeFunctionData({ abi: oneInchRouterABI, ...expectedSwap } as any)}${swap.calldataSuffix.slice(2)}`,
+    'the signed suffix follows the encoded arguments, as 1inch appends it',
+  );
 
   t.is(approveReset.target.toLowerCase(), tokenIn);
   t.deepEqual(decodeApprove(approveReset.data), {
@@ -2736,21 +2782,11 @@ test('swap fails when experimentalSwap feature is disabled', async t => {
 
   const kit = await ctx.makePortfolioKit();
 
-  const swapParams = {
-    provider: '1inch',
-    tokenIn: '0x0000000000000000000000000000000000000abc',
-    amountIn: 5_000_000n,
-    flags: 0n,
-    executor: '0x2222222222222222222222222222222222222222',
-    srcReceiver: '0x3333333333333333333333333333333333333333',
-    data: '0xdeadbeef',
-  } as const;
-
   const seat = makeMockSeat({ Deposit: amount }, undefined, log);
   // DEFAULT_FLOW_CONFIG has no `experimentalSwap` feature flag set, so the
   // swap step must be rejected before any GMP calls are made.
   await t.throwsAsync(() =>
-    executeSteps(
+    executeBoundPlan(
       orch,
       ctx,
       seat,
@@ -2761,10 +2797,11 @@ test('swap fails when experimentalSwap feature is disabled', async t => {
             dest: '@Avalanche',
             amount,
             fee: feeCall,
-            swap: swapParams,
+            swap: { provider: '1inch', index: 0 },
           },
         ],
       },
+      { 0: makeOneInchSwap('Avalanche', amount.value) },
       kit,
       DEFAULT_FLOW_CONFIG,
     ),
@@ -2783,91 +2820,129 @@ test('swap fails when experimentalSwap feature is disabled', async t => {
   t.regex(`${failCall?.reason}`, /swap not supported/);
 });
 
-test('swap rejects unconfigured token values', async t => {
+test('reward claims and swaps execute only bound evidence', async t => {
   const amount = AmountMath.make(USDC, 1_000_000n);
-  const baseCtx = {
-    addresses: contractsMock.Avalanche,
-    chainMetadata: chainMetadataMock,
-  } as unknown as EVMContext;
-  const gInfo = {
-    chainId: 'eip155:43114',
-    chainName: 'Avalanche',
-  } as unknown as Parameters<typeof swapRewardToStable>[1];
-  const baseSwap = {
-    provider: '1inch',
-    amountIn: 5_000_000n,
-    flags: 0n,
-    executor: '0x2222222222222222222222222222222222222222',
-    srcReceiver: '0x3333333333333333333333333333333333333333',
-    data: '0xdeadbeef',
-  } as const;
-
-  await t.throwsAsync(
-    () =>
-      swapRewardToStable(baseCtx, gInfo, amount, {
-        ...baseSwap,
-        tokenIn: '0x0000000000000000000000000000000000000def',
-      }),
-    { message: /not configured as a source token/ },
-  );
-  await t.throwsAsync(
-    () =>
-      swapRewardToStable(baseCtx, gInfo, amount, {
-        ...baseSwap,
-        tokenIn: '0x0000000000000000000000000000000000000abc',
-        tokenOut: '0x0000000000000000000000000000000000000fed',
-      }),
-    { message: /not configured as a destination token/ },
-  );
-  await t.throwsAsync(
-    () =>
-      swapRewardToStable(baseCtx, gInfo, amount, {
-        ...baseSwap,
-        tokenIn: '0x0000000000000000000000000000000000000abc',
-        tokenOut: '0x0000000000000000000000000000000000000abc',
-      }),
-    { message: /cannot be the same as tokenOut/ },
-  );
-
-  const extraSwapToToken = harden({
-    caipChainId: 'eip155:43114',
-    chainName: 'Avalanche',
-    tokenId: '0x0000000000000000000000000000000000000fed',
-    symbol: 'USDT',
-    decimals: 6,
-    usage: ['swapTo'],
+  const feeCall = AmountMath.make(BLD, 100n);
+  const config = {
+    ...DEFAULT_FLOW_CONFIG,
+    features: { ...DEFAULT_FLOW_CONFIG?.features, experimentalSwap: true },
+  };
+  const swapStep: MovementDesc = {
+    src: '@Avalanche',
+    dest: '@Avalanche',
+    amount,
+    fee: feeCall,
+    swap: { provider: '1inch', index: 0 },
+  };
+  const claimStep: MovementDesc = {
+    src: 'Aave_Avalanche',
+    dest: '@Avalanche',
+    amount: make(USDC, 0n),
+    fee: feeCall,
+    claimRewards: { protocol: 'aave', index: 0 },
+  };
+  const swap = makeOneInchSwap('Avalanche', amount.value);
+  const claim = makeAaveClaim('Avalanche');
+  const cases: Array<
+    [
+      string,
+      MovementDesc,
+      NonNullable<ResolvedFlowPlan['boundSteps']>,
+      RegExp,
+      Partial<PortfolioInstanceContext>?,
+    ]
+  > = [
+    ['unbound swap', swapStep, {}, /require a bound step at movement 0/],
+    ['unbound claim', claimStep, {}, /require a bound step at movement 0/],
+    [
+      'swap bound to a claim',
+      swapStep,
+      { 0: claim },
+      /claim evidence does not match movement/,
+    ],
+    [
+      'claim bound to a swap',
+      claimStep,
+      { 0: swap },
+      /swap instructions do not match movement/,
+    ],
+    [
+      'swap amount other than its minimum',
+      { ...swapStep, amount: make(USDC, amount.value - 1n) },
+      { 0: swap },
+      /swap instructions do not match movement/,
+    ],
+    [
+      'claim with an amount',
+      { ...claimStep, amount: make(USDC, 1n) },
+      { 0: claim },
+      /claim evidence does not match movement/,
+    ],
+    [
+      'claim evidence for another instrument',
+      claimStep,
+      { 0: { ...claim, src: 'Aave_Arbitrum' } },
+      /claim evidence does not match movement/,
+    ],
+    [
+      'protected swap input',
+      swapStep,
+      { 0: { ...swap, tokenIn: contractsMock.Avalanche.aaveUSDC } },
+      /is a protected token of "Avalanche"/,
+    ],
+  ];
+  const changed = (addresses: Partial<EVMContractAddresses>) => ({
+    contracts: {
+      ...contractsMock,
+      Avalanche: { ...contractsMock.Avalanche, ...addresses },
+    },
   });
-  const multiSwapToCtx = {
-    ...baseCtx,
-    addresses: {
-      ...contractsMock.Avalanche,
-      usdc: '0x0000000000000000000000000000000000000bad',
-    },
-    chainMetadata: harden({
-      ...chainMetadataMock,
-      Avalanche: {
-        ...chainMetadataMock.Avalanche,
-        tokenMetadataById: {
-          ...chainMetadataMock.Avalanche.tokenMetadataById,
-          [makeTokenIdKey(
-            extraSwapToToken.tokenId,
-            `@${extraSwapToToken.chainName}`,
-          )]: extraSwapToToken,
-        },
-      },
-    }),
-  } as unknown as EVMContext;
-  await t.throwsAsync(
-    () =>
-      swapRewardToStable(multiSwapToCtx, gInfo, amount, {
-        ...baseSwap,
-        tokenIn: '0x0000000000000000000000000000000000000abc',
+  cases.push(
+    [
+      'changed router',
+      swapStep,
+      { 0: swap },
+      /swap configuration no longer matches on "Avalanche"/,
+      changed({ oneInchRouter: '0x0000000000000000000000000000000000000001' }),
+    ],
+    [
+      'changed USDC',
+      swapStep,
+      { 0: swap },
+      /swap configuration no longer matches on "Avalanche"/,
+      changed({ usdc: '0x0000000000000000000000000000000000000001' }),
+    ],
+    [
+      'changed rewards controller',
+      claimStep,
+      { 0: claim },
+      /"aave" claim configuration no longer matches on "Avalanche"/,
+      changed({
+        aaveRewardsController: '0x0000000000000000000000000000000000000001',
       }),
-    {
-      message:
-        /tokenOut must be specified when "Avalanche" has 2 configured destination tokens/,
-    },
+    ],
   );
+  for (const [name, step, boundSteps, message, ctxChange] of cases) {
+    const { orch, ctx, offer } = mocks({}, { Deposit: amount });
+    const kit = await ctx.makePortfolioKit();
+    await t.throwsAsync(
+      executeBoundPlan(
+        orch,
+        { ...ctx, ...ctxChange },
+        offer.seat,
+        { flow: [step] },
+        boundSteps,
+        kit,
+        config,
+      ),
+      { message },
+      name,
+    );
+    t.false(
+      offer.log.some(({ _method }) => _method === 'transfer'),
+      `${name}: no GMP transfer`,
+    );
+  }
 });
 
 // EVM wallet integration flow
@@ -3151,17 +3226,34 @@ test('wayFromSrcToDest handles @Avalanche -> @Avalanche (reward swap)', t => {
     src: '@Avalanche',
     dest: '@Avalanche',
     amount,
-    swap: {
-      provider: '1inch',
-      tokenIn: '0x0000000000000000000000000000000000000abc',
-      amountIn: 5_000_000n,
-      flags: 0n,
-      executor: '0x2222222222222222222222222222222222222222',
-      srcReceiver: '0x3333333333333333333333333333333333333333',
-      data: '0xdeadbeef',
-    },
+    swap: { provider: '1inch', index: 0 },
   });
   t.deepEqual(actual, { how: 'swap', chain: 'Avalanche' });
+});
+
+test('wayFromSrcToDest handles @Base -> @Base (Merkl claim)', t => {
+  const amount = AmountMath.make(USDC, 0n);
+  const actual = wayFromSrcToDest({
+    src: '@Base',
+    dest: '@Base',
+    amount,
+    claimRewards: { protocol: 'merkl', index: 0 },
+  });
+  t.deepEqual(actual, { how: 'Merkl', chain: 'Base' });
+});
+
+test('wayFromSrcToDest rejects instrument claims from an account', t => {
+  const amount = AmountMath.make(USDC, 0n);
+  t.throws(
+    () =>
+      wayFromSrcToDest({
+        src: '@Base',
+        dest: '@Base',
+        amount,
+        claimRewards: { protocol: 'aave', index: 0 },
+      }),
+    { message: /"aave" claims must come from an instrument/ },
+  );
 });
 
 test('wayFromSrcToDest rejects @Avalanche -> @Avalanche without swap params', t => {
@@ -4331,33 +4423,22 @@ test('nobleToAgoric.apply transfers uusdc from Noble ICA', async t => {
   ]);
 });
 
-test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
+test('wayFromSrcToDest handles claimRewards for a Compound position', t => {
   const amount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const claimRewards = {
-    tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
-    minAmounts: [1_234_567n],
-    morpho: {
-      proofs: [
-        [
-          '0x1111111111111111111111111111111111111111111111111111111111111111',
-          '0x2222222222222222222222222222222222222222222222222222222222222222',
-        ],
-      ] as `0x${string}`[][],
-    },
-  };
+  const claimRewards = { protocol: 'compound', index: 0 } as const;
   const actual = wayFromSrcToDest({
-    src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
-    dest: '@Ethereum',
+    src: 'Compound_Arbitrum',
+    dest: '@Arbitrum',
     amount,
     fee: feeCall,
     claimRewards,
   });
   t.deepEqual(actual, {
     claimRewards,
-    how: 'ERC4626',
-    poolKey: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
-    dest: 'Ethereum',
+    how: 'Compound',
+    poolKey: 'Compound_Arbitrum',
+    dest: 'Arbitrum',
   });
 });
 
@@ -4374,46 +4455,47 @@ test('wayFromSrcToDest with different dest and poolKey should fail', t => {
   );
 });
 
-test('claim rewards from ERC4626 position', async t => {
-  const amount = AmountMath.make(USDC, 1_000_000n);
+test('claim Merkl rewards for a chain account', async t => {
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, txResolver } = mocks(
     {},
-    { Deposit: amount },
+    { Deposit: AmountMath.make(USDC, 1_000_000n) },
   );
 
   const kit = await ctx.makePortfolioKit();
   const emptyAmount = AmountMath.make(USDC, 0n);
 
-  const claimRewards = {
-    tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
-    minAmounts: [1_234_567n],
-    morpho: {
-      proofs: [
-        [
-          '0x1111111111111111111111111111111111111111111111111111111111111111',
-          '0x2222222222222222222222222222222222222222222222222222222222222222',
-        ],
-      ] as `0x${string}`[][],
-    },
-  };
+  const claim = harden({
+    kind: 'claimRewards',
+    protocol: 'merkl',
+    account: '@Ethereum',
+    distributor: contractsMock.Ethereum.merkleDistributor!,
+    tokenId: '0x0000000000000000000000000000000000000002',
+    cumulativeAmount: 3_000_000n,
+    expectedAmount: 2_000_000n,
+    proofs: [
+      '0x1111111111111111111111111111111111111111111111111111111111111111',
+      '0x2222222222222222222222222222222222222222222222222222222222222222',
+    ],
+  } as const);
 
   await Promise.all([
-    executeSteps(
+    executeBoundPlan(
       orch,
       ctx,
       offer.seat,
       {
         flow: [
           {
+            src: '@Ethereum',
             dest: '@Ethereum',
-            src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards,
+            claimRewards: { protocol: 'merkl', index: 0 },
           },
         ],
       },
+      { 0: claim },
       kit,
     ),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
@@ -4423,38 +4505,43 @@ test('claim rewards from ERC4626 position', async t => {
 
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
-  t.like(log, [
-    { _method: 'monitorTransfers' },
-    { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
-    { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
-    { _method: 'exit', _cap: 'seat' },
-  ]);
-
-  const rawMemo = log[4].opts!.memo;
-  const decoded = decodeFunctionCall(rawMemo, [
-    'claim(address[],address[],uint256[],bytes32[][])',
-  ]);
-  t.is(decoded.calls.length, 1);
-  const [call] = decoded.calls;
+  const claimMemo = log
+    .filter((e: any) => e._method === 'transfer' && e.opts?.memo)
+    .map((e: any) => {
+      try {
+        return decodeMultiCalls(e.opts.memo);
+      } catch {
+        return undefined;
+      }
+    })
+    .find(
+      decoded =>
+        decoded?.calls.length === 1 &&
+        decoded.calls[0].target.toLowerCase() ===
+          claim.distributor.toLowerCase(),
+    );
+  assert(claimMemo, 'found Merkl claim call');
+  const call = decodeFunctionData({
+    abi: merkleDistributorABI,
+    data: claimMemo.calls[0].data,
+  });
   t.is(call.functionName, 'claim');
-  const [users, tokens, amounts, proofs] = call.args as [
+  const [users, tokens, amounts, proofs] = call.args as unknown as [
     string[],
     string[],
     bigint[],
     string[][],
   ];
-  // `users` is derived from the position's EVM wallet, one entry per claim.
-  // The decoder returns EIP-55 checksummed addresses, so compare case-insensitively.
+  // The claim is for the account's own address; the decoder returns EIP-55
+  // checksummed addresses, so compare case-insensitively.
   const { remoteAddress } = kit.reader.getGMPInfo('Ethereum');
   t.deepEqual(
     users.map(u => u.toLowerCase()),
-    claimRewards.tokens.map(() => remoteAddress.toLowerCase()),
+    [remoteAddress.toLowerCase()],
   );
-  t.deepEqual(tokens, claimRewards.tokens);
-  t.deepEqual(amounts, claimRewards.minAmounts);
-  t.deepEqual(proofs, claimRewards.morpho.proofs);
+  t.deepEqual(tokens, [claim.tokenId]);
+  t.deepEqual(amounts, [claim.cumulativeAmount], 'cumulative, not expected');
+  t.deepEqual(proofs, [claim.proofs]);
 });
 
 test('claim rewards from Compound position', async t => {
@@ -4469,7 +4556,7 @@ test('claim rewards from Compound position', async t => {
   const emptyAmount = AmountMath.make(USDC, 0n);
 
   await Promise.all([
-    executeSteps(
+    executeBoundPlan(
       orch,
       ctx,
       offer.seat,
@@ -4480,9 +4567,21 @@ test('claim rewards from Compound position', async t => {
             src: 'Compound_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards: { tokens: [], minAmounts: [] },
+            claimRewards: { protocol: 'compound', index: 0 },
           },
         ],
+      },
+      {
+        0: {
+          kind: 'claimRewards',
+          protocol: 'compound',
+          src: 'Compound_Arbitrum',
+          account: '@Arbitrum',
+          controller: contractsMock.Arbitrum.compoundRewardsController,
+          comet: contractsMock.Arbitrum.compound,
+          tokenId: REWARD_TOKEN,
+          expectedAmount: 1n,
+        },
       },
       kit,
     ),

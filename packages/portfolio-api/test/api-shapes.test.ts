@@ -158,7 +158,7 @@ test('PlanObservationsShape accepts optional reward evidence', t => {
         tokenId: token,
         cumulativeAmount: 2n,
         claimedAmount: 1n,
-        proof: [`0x${'12'.repeat(32)}`],
+        proofs: [`0x${'12'.repeat(32)}`],
       },
     ],
     oneInchSwaps: [
@@ -175,6 +175,7 @@ test('PlanObservationsShape accepts optional reward evidence', t => {
         executor: token,
         srcReceiver: token,
         data: '0x',
+        calldataSuffix: '0x',
       },
     ],
   };
@@ -220,7 +221,7 @@ test('claim and swap selectors designate evidence by index', t => {
     { protocol: 'merkl', index: -1 },
     { protocol: 'merkl', index: 0n },
     { protocol: 'merkl' },
-    { protocol: 'merkl', index: 0, proof: [] },
+    { protocol: 'merkl', index: 0, proofs: [] },
     { tokens: [], minAmounts: [] },
   ]) {
     t.false(

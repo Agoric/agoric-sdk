@@ -3,9 +3,9 @@
  * @see {@link oneInchRouterABI}
  * @see {@link getOneInchSwapArgs}
  */
-import type { OneInchSwapDesc } from '@agoric/portfolio-api';
 import type { Abi, Hex } from 'viem';
 import type { AbiContractArgs } from '../evm-facade.ts';
+import type { SwapBoundStep } from '../reward-bindings.ts';
 
 /**
  * The generic `swap` entry point:
@@ -50,35 +50,50 @@ export const oneInchRouterABI = [
 harden(oneInchRouterABI);
 
 /**
- * Build the args for 1inch V6 `swap()` from the planner-supplied
- * {@link OneInchSwapDesc}, plugging in the fund-safety fields the contract controls.
+ * Build the args for 1inch V6 `swap()` from a {@link SwapBoundStep}, derived
+ * by the contract from attestor-signed swap instructions, plugging in the
+ * fund-safety fields the contract controls.
  *
- * The contract never trusts an opaque calldata blob: a compromised planner or
- * 1inch API could otherwise craft a swap that sends the proceeds to an
- * arbitrary address or token. By building the call ourselves we make the
- * fund-safety fields correct by construction rather than checked after decode:
- * - `srcToken` is the reward token we are approving,
- * - `dstToken` is the configured stable token,
+ * The contract never trusts an opaque calldata blob: compromised instructions
+ * could otherwise craft a swap that sends the proceeds to an arbitrary
+ * address. By building the call ourselves we make the fund-safety fields
+ * correct by construction rather than checked after decode:
+ * - `srcToken` is the reward token we are approving, and `amount` equals the
+ *   approved `amountIn`,
+ * - `dstToken` is the configured USDC, as checked when binding,
  * - `dstReceiver` is this portfolio's own remote account,
- * - `amount` equals the approved `amountIn`, and
- * - `minReturnAmount` is the contract-controlled USDC floor, taken from the
- *   movement `amount`
+ * - `minReturnAmount` is the signed `minAmountOut`, which is also the
+ *   movement `amount`, and
+ * - `flags` is always 0, excluding partial fills that would only guarantee a
+ *   proportional minimum.
  *
  * These guarantee the proceeds can only ever arrive in our own account as USDC,
  * pulling no more than we approved, and the router reverts unless at least
  * `minReturnAmount` of USDC reaches `dstReceiver`. `executor`, `srcReceiver`,
- * and `data` are route internals: opaque to us, trusted only because the
- * planner produced them.
+ * and `data` are route internals: opaque to us, and trusted only as far as
+ * the attestor that signed them.
  *
  * The result is spread into `makeContract(router, oneInchRouterABI).swap(...)`,
  * which ABI-encodes it through the same path as every other GMP contract call.
+ * The signed `calldataSuffix` is not an argument: the caller appends it after
+ * the encoded call, as 1inch does.
  */
 export const getOneInchSwapArgs = (
-  swap: OneInchSwapDesc,
-  controlled: { tokenOut: Hex; receiver: Hex; minReturnAmount: bigint },
+  swap: Pick<
+    SwapBoundStep,
+    | 'tokenIn'
+    | 'tokenOut'
+    | 'amountIn'
+    | 'minAmountOut'
+    | 'executor'
+    | 'srcReceiver'
+    | 'data'
+  >,
+  controlled: { receiver: Hex },
 ): AbiContractArgs<typeof oneInchRouterABI, 'swap'> => {
-  const { tokenIn, amountIn, flags, executor, srcReceiver, data } = swap;
-  const { tokenOut, receiver, minReturnAmount } = controlled;
+  const { tokenIn, tokenOut, amountIn, minAmountOut, executor, srcReceiver } =
+    swap;
+  const { receiver } = controlled;
   return [
     executor,
     {
@@ -87,10 +102,10 @@ export const getOneInchSwapArgs = (
       srcReceiver,
       dstReceiver: receiver,
       amount: amountIn,
-      minReturnAmount,
-      flags,
+      minReturnAmount: minAmountOut,
+      flags: 0n,
     },
-    data,
+    swap.data,
   ];
 };
 harden(getOneInchSwapArgs);

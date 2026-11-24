@@ -21,9 +21,11 @@ import {
   vetObservationPlaces,
   vetAllocationPlan,
   vetPlanAllocation,
+  vetRewardPlan,
 } from '../src/delegation-limits.ts';
 import type { MovementDesc } from '../src/type-guards-steps.ts';
 import { makeSchedule } from '../src/schedule-order.ts';
+import { contractsMock } from './mocks.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -1037,98 +1039,405 @@ test('plan allocation rejects transient disallowed positions', t => {
   });
 });
 
-test('claimRewards cannot hide a supply above the allocation ceiling', t => {
-  const planObservations: PlanObservations = {
-    balances: {
-      '@Arbitrum': 100n,
-      Aave_Arbitrum: 50n,
-      Compound_Arbitrum: 50n,
+// #region reward claims and swaps
+
+const NOW = 1_000n;
+const rewardAccess = harden({
+  getEvmContracts: (chain: keyof typeof contractsMock) => contractsMock[chain],
+  now: NOW,
+});
+const REWARD_TOKEN = '0x00000000000000000000000000000000000000aa' as const;
+const arbitrumUsdc = contractsMock.Arbitrum.usdc;
+/** Signed reward evidence for Arbitrum, selected by the plans below. */
+const rewardEvidence = harden({
+  aaveClaims: [
+    {
+      instrumentId: 'Aave_Arbitrum',
+      tokenId: REWARD_TOKEN,
+      expectedAmount: 2_000n,
     },
-    instrumentTvls: {},
-  };
-  const plan: FundsFlowPlan = {
-    flow: [
-      {
-        src: '@Arbitrum',
-        dest: 'Aave_Arbitrum',
-        amount: { brand: USDC, value: 100n },
-        claimRewards: { tokens: [], minAmounts: [] },
-      },
-    ],
-  };
+  ],
+  oneInchSwaps: [
+    {
+      accountPlace: '@Arbitrum',
+      tokenIn: REWARD_TOKEN,
+      tokenOut: arbitrumUsdc,
+      amountIn: 2_000n,
+      quotedAmountOut: 50n,
+      minAmountOut: 49n,
+      slippageBps: 200,
+      expiresAt: NOW + 60n,
+      flags: 0n,
+      executor: '0x2222222222222222222222222222222222222222',
+      srcReceiver: '0x3333333333333333333333333333333333333333',
+      data: '0xdeadbeef',
+      calldataSuffix: '0x',
+    },
+  ],
+} as const) satisfies Partial<PlanObservations>;
+const claimStep: MovementDesc = harden({
+  src: 'Aave_Arbitrum',
+  dest: '@Arbitrum',
+  amount: { brand: USDC, value: 0n },
+  claimRewards: { protocol: 'aave', index: 0 },
+});
+const swapStep: MovementDesc = harden({
+  src: '@Arbitrum',
+  dest: '@Arbitrum',
+  amount: { brand: USDC, value: 49n },
+  swap: { provider: '1inch', index: 0 },
+});
+const rewardObservations: PlanObservations = harden({
+  balances: {},
+  holdings: [
+    {
+      place: '@Arbitrum',
+      kind: 'token',
+      tokenId: arbitrumUsdc,
+      amount: 0n,
+      valueUusd: 0n,
+    },
+    {
+      place: 'Aave_Arbitrum',
+      kind: 'principal',
+      tokenId: arbitrumUsdc,
+      amount: 50n,
+      valueUusd: 50n,
+    },
+    {
+      place: 'Compound_Arbitrum',
+      kind: 'principal',
+      tokenId: arbitrumUsdc,
+      amount: 10n,
+      valueUusd: 10n,
+    },
+  ],
+  instrumentTvls: {},
+  ...rewardEvidence,
+});
+const rewardTarget = harden({ Aave_Arbitrum: 50n, Compound_Arbitrum: 50n });
+
+test('reward steps require the context to bind them', t => {
   t.throws(
     () =>
       vetPlanAllocation(
-        { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
-        plan,
-        planObservations,
+        rewardTarget,
+        { flow: [claimStep] },
+        rewardObservations,
+        () => arbitrumUsdc,
       ),
-    {
-      message:
-        /claimRewards requires an instrument source and its chain account destination/,
-    },
+    { message: 'reward claims and swaps are not supported here' },
   );
 });
 
-test('allocation plan rejects a well-formed reward claim', t => {
-  const planObservations: PlanObservations = {
-    balances: {
-      '@Arbitrum': 0n,
-      Aave_Arbitrum: 50n,
-      Compound_Arbitrum: 50n,
+test('allocation plans bind reward claims and swaps to their evidence', t => {
+  const { boundSteps } = vetAllocationPlan(
+    { allocation: true },
+    rewardTarget,
+    { flow: [claimStep, swapStep] },
+    rewardObservations,
+    { getUsdcTokenId: () => arbitrumUsdc, ...rewardAccess },
+  );
+  t.like(boundSteps, {
+    0: {
+      kind: 'claimRewards',
+      protocol: 'aave',
+      src: 'Aave_Arbitrum',
+      tokenId: REWARD_TOKEN,
+      expectedAmount: 2_000n,
     },
-    instrumentTvls: {},
-  };
+    1: { kind: 'swap', tokenIn: REWARD_TOKEN, minAmountOut: 49n },
+  });
+});
+
+test('a claim cannot hide a supply', t => {
   t.throws(
     () =>
       vetPlanAllocation(
-        { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
+        rewardTarget,
         {
           flow: [
             {
-              src: 'Aave_Arbitrum',
-              dest: '@Arbitrum',
-              amount: { brand: USDC, value: 0n },
-              claimRewards: { tokens: [], minAmounts: [] },
+              ...claimStep,
+              src: '@Arbitrum',
+              dest: 'Aave_Arbitrum',
+              amount: { brand: USDC, value: 100n },
             },
           ],
         },
-        planObservations,
+        rewardObservations,
+        () => arbitrumUsdc,
+        rewardAccess,
       ),
-    { message: 'allocation plan does not support claimRewards' },
+    { message: /claim step amount must be zero/ },
   );
 });
 
-test('allocation plan rejects a reward claim after an ordinary movement', t => {
-  const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
-  const planObservations: PlanObservations = {
-    balances: {
-      '@Arbitrum': 0n,
-      Aave_Arbitrum: 100n,
-      Compound_Arbitrum: 100n,
-    },
-    instrumentTvls: {},
+test('reward steps cannot also withdraw', t => {
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        rewardTarget,
+        { flow: [{ ...claimStep, withdraw: { max: true } }] },
+        rewardObservations,
+        () => arbitrumUsdc,
+        rewardAccess,
+      ),
+    { message: /a reward step cannot withdraw at "Aave_Arbitrum"/ },
+  );
+});
+
+test('only a swap minimum funds later movements, not claims', t => {
+  const supply: MovementDesc = {
+    src: '@Arbitrum',
+    dest: 'Compound_Arbitrum',
+    amount: { brand: USDC, value: 20n },
   };
-  const plan: FundsFlowPlan = {
-    flow: [
+  // Compound stays within its target of the initial total (60), at all times.
+  const target = rewardTarget;
+  t.notThrows(
+    () =>
+      vetPlanAllocation(
+        target,
+        { flow: [claimStep, swapStep, supply] },
+        rewardObservations,
+        () => arbitrumUsdc,
+        rewardAccess,
+      ),
+    'swap proceeds fund a dependent supply',
+  );
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        target,
+        {
+          flow: [claimStep, swapStep, supply],
+          order: [
+            [1, [0]],
+            [2, [0]],
+          ],
+        },
+        rewardObservations,
+        () => arbitrumUsdc,
+        rewardAccess,
+      ),
+    { message: /unfunded USDC movement from "@Arbitrum"/ },
+    'a supply concurrent with the swap is not funded by it',
+  );
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        target,
+        {
+          flow: [claimStep, { ...supply, amount: { brand: USDC, value: 1n } }],
+        },
+        rewardObservations,
+        () => arbitrumUsdc,
+        rewardAccess,
+      ),
+    { message: /unfunded USDC movement from "@Arbitrum"/ },
+    'an expected claim is not cash',
+  );
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        target,
+        { flow: [claimStep, swapStep], order: [] },
+        rewardObservations,
+        () => arbitrumUsdc,
+        rewardAccess,
+      ),
+    { message: /unfunded reward swap at step 1/ },
+    'a swap concurrent with its claim is not funded by it',
+  );
+});
+
+/** Held rewards swapped for exactly 0.98 USDC, with cash and Aave principal. */
+const makeSwapObservations = ({
+  cash = 0n,
+  aave = 0n,
+}: {
+  cash?: bigint;
+  aave?: bigint;
+}): PlanObservations =>
+  harden({
+    balances: {},
+    holdings: [
       {
-        src: 'Aave_Arbitrum',
-        dest: '@Arbitrum',
-        amount: { brand: USDC, value: 1n },
+        place: '@Arbitrum',
+        kind: 'token',
+        tokenId: arbitrumUsdc,
+        amount: cash,
+        valueUusd: cash,
       },
       {
-        src: 'Compound_Arbitrum',
-        dest: '@Arbitrum',
-        amount: { brand: USDC, value: 0n },
-        claimRewards: { tokens: [], minAmounts: [] },
+        place: '@Arbitrum',
+        kind: 'claimed-reward',
+        tokenId: REWARD_TOKEN,
+        amount: 2_000n,
+      },
+      {
+        place: 'Aave_Arbitrum',
+        kind: 'principal',
+        tokenId: arbitrumUsdc,
+        amount: aave,
+        valueUusd: aave,
+      },
+      {
+        place: 'Compound_Arbitrum',
+        kind: 'principal',
+        tokenId: arbitrumUsdc,
+        amount: 0n,
+        valueUusd: 0n,
       },
     ],
-  };
-
-  t.throws(() => vetPlanAllocation(targetAllocation, plan, planObservations), {
-    message: 'allocation plan does not support claimRewards',
+    instrumentTvls: {},
+    oneInchSwaps: [
+      {
+        ...rewardEvidence.oneInchSwaps[0],
+        quotedAmountOut: 1_000_000n,
+        minAmountOut: 980_000n,
+      },
+    ],
   });
+const swapProceedsStep: MovementDesc = harden({
+  ...swapStep,
+  amount: { brand: USDC, value: 980_000n },
 });
+const supplyStep = (dest: InstrumentId): MovementDesc =>
+  harden({ src: '@Arbitrum', dest, amount: { brand: USDC, value: 980_000n } });
+
+test('swap proceeds may be fully reinvested at the target', t => {
+  for (const aave of [0n, 980_000n]) {
+    t.notThrows(
+      () =>
+        vetPlanAllocation(
+          { Aave_Arbitrum: 100n },
+          { flow: [swapProceedsStep, supplyStep('Aave_Arbitrum')] },
+          makeSwapObservations({ aave }),
+          () => arbitrumUsdc,
+          rewardAccess,
+        ),
+      `with initial principal ${aave}`,
+    );
+  }
+});
+
+test('swap proceeds count toward the total only once swapped', t => {
+  // Supplying the cash to Compound is 50% of the total without the swap,
+  // above its 40% target, but 33% after it.
+  const target = { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n };
+  const observations = makeSwapObservations({
+    cash: 980_000n,
+    aave: 980_000n,
+  });
+  const flow = [swapProceedsStep, supplyStep('Compound_Arbitrum')];
+  t.notThrows(
+    () =>
+      vetPlanAllocation(
+        target,
+        { flow },
+        observations,
+        () => arbitrumUsdc,
+        rewardAccess,
+      ),
+    'the supply depends on the swap',
+  );
+  t.throws(
+    () =>
+      vetPlanAllocation(
+        target,
+        { flow, order: [] },
+        observations,
+        () => arbitrumUsdc,
+        rewardAccess,
+      ),
+    {
+      message:
+        /plan intermediate balance exceeds target allocation at "Compound_Arbitrum"/,
+    },
+    'the supply may complete without the swap',
+  );
+});
+
+test('swap proceeds count toward the vault-share mandate', t => {
+  // The cash and the swap proceeds are each worth 0.98 USD.
+  const observations = (tvlUsd: bigint): PlanObservations =>
+    harden({
+      ...makeSwapObservations({ cash: 980_000n }),
+      instrumentTvls: { Aave_Arbitrum: { tvlUsd } },
+    });
+  const vet = (tvlUsd: bigint) =>
+    vetAllocationPlan(
+      { allocation: { maxVaultShareBps: 100n } },
+      { Aave_Arbitrum: 100n },
+      {
+        flow: [
+          swapProceedsStep,
+          {
+            ...supplyStep('Aave_Arbitrum'),
+            amount: { brand: USDC, value: 1_960_000n },
+          },
+        ],
+      },
+      observations(tvlUsd),
+      { getUsdcTokenId: () => arbitrumUsdc, ...rewardAccess },
+    );
+  t.throws(() => vet(98n), {
+    message:
+      /^mandate.maxVaultShare:"Aave_Arbitrum": .* with portfolio value "\[1960000n\]" micro-USD/,
+  });
+  t.notThrows(() => vet(196n), '1% of the vault is all of the 1.96 USD');
+});
+
+test('reward plans may only claim and swap', t => {
+  t.like(
+    vetRewardPlan(
+      { flow: [claimStep, swapStep] },
+      rewardObservations,
+      rewardAccess,
+    ),
+    { 0: { kind: 'claimRewards' }, 1: { kind: 'swap' } },
+  );
+  t.throws(
+    () =>
+      vetRewardPlan(
+        {
+          flow: [
+            claimStep,
+            swapStep,
+            {
+              src: '@Arbitrum',
+              dest: 'Compound_Arbitrum',
+              amount: { brand: USDC, value: 49n },
+            },
+          ],
+        },
+        rewardObservations,
+        rewardAccess,
+      ),
+    {
+      message: 'a reward plan may only claim and swap rewards, not step 2',
+    },
+  );
+  t.throws(
+    () => vetRewardPlan({ flow: [] }, rewardObservations, rewardAccess),
+    {
+      message: 'a reward plan must have steps',
+    },
+  );
+  t.throws(
+    () =>
+      vetRewardPlan(
+        { flow: [claimStep, claimStep] },
+        rewardObservations,
+        rewardAccess,
+      ),
+    { message: /duplicate reward claim/ },
+  );
+});
+
+// #endregion
 
 test('plan funding follows declared dependencies, not array order', t => {
   const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
@@ -1303,39 +1612,6 @@ for (const [src, dest] of [
     );
   });
 }
-
-test('allocation plan rejects swap steps', t => {
-  const targetAllocation = { Aave_Arbitrum: 100n };
-  const observations: PlanObservations = {
-    balances: {
-      Aave_Arbitrum: 100n,
-      '@Avalanche': 10n,
-    },
-    instrumentTvls: {},
-  };
-  const plan: FundsFlowPlan = {
-    flow: [
-      {
-        src: '@Avalanche',
-        dest: '@Avalanche',
-        amount: { brand: USDC, value: 10n },
-        swap: {
-          provider: '1inch',
-          tokenIn: '0x0000000000000000000000000000000000000abc',
-          amountIn: 10n,
-          flags: 0n,
-          executor: '0x2222222222222222222222222222222222222222',
-          srcReceiver: '0x3333333333333333333333333333333333333333',
-          data: '0xdeadbeef',
-        },
-      },
-    ],
-  };
-
-  t.throws(() => vetPlanAllocation(targetAllocation, plan, observations), {
-    message: /allocation plan does not support swap/,
-  });
-});
 
 test('allocation plan rejects cyclic dependencies', t => {
   const targetAllocation = { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n };
@@ -2319,12 +2595,12 @@ test('Maximum Morpho withdrawals target the position’s own chain account', t =
           flow: [
             {
               ...movement,
-              claimRewards: { tokens: [], minAmounts: [] },
+              claimRewards: { protocol: 'aave', index: 0 },
             },
           ],
         },
       ),
-    { message: /share redemption cannot also claim rewards/ },
+    { message: /a reward step cannot withdraw/ },
   );
 });
 
@@ -2688,9 +2964,9 @@ for (const src of ['Aave_Ethereum', 'Compound_Ethereum'] as const) {
     t.throws(
       () =>
         check({
-          flow: [{ ...move, claimRewards: { tokens: [], minAmounts: [] } }],
+          flow: [{ ...move, claimRewards: { protocol: 'aave', index: 0 } }],
         }),
-      { message: /cannot also claim rewards/ },
+      { message: /a reward step cannot withdraw/ },
     );
     const empty = makeHoldingObservations([
       { ...holding, amount: 0n, valueUusd: 0n },

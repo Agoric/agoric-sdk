@@ -33,7 +33,8 @@ export const gmpAddresses = {
 };
 
 /**
- * Constructs a contract call object with ABI encoding.
+ * Constructs a contract call object with ABI encoding, followed by its
+ * `calldataSuffix`, if any.
  *
  * @param {ContractCall} data - The data for the contract call.
  * @returns {AbiEncodedContractCall} The encoded contract call object.
@@ -43,7 +44,11 @@ export const constructContractCall = ({
   functionSignature,
   args,
   abi,
+  calldataSuffix = '0x',
 }) => {
+  if (!/^0x(?:[0-9a-fA-F]{2})*$/.test(calldataSuffix)) {
+    throw TypeError(`calldataSuffix must be hex bytes: ${calldataSuffix}`);
+  }
   const [name, paramsRaw] = functionSignature.split('(');
   const params = paramsRaw.replace(')', '').split(',').filter(Boolean);
   const resolvedAbi = abi ?? [
@@ -54,13 +59,14 @@ export const constructContractCall = ({
     },
   ];
 
+  const encoded = encodeFunctionData({
+    abi: resolvedAbi,
+    functionName: name,
+    args,
+  });
   return {
     target,
-    data: encodeFunctionData({
-      abi: resolvedAbi,
-      functionName: name,
-      args,
-    }),
+    data: /** @type {`0x${string}`} */ (`${encoded}${calldataSuffix.slice(2)}`),
   };
 };
 
@@ -74,11 +80,7 @@ export const constructContractCall = ({
 export const buildGMPPayload = (contractCalls, id = '') => {
   const abiEncodedContractCalls = [];
   for (const call of contractCalls) {
-    const { target, functionSignature, args, abi } = call;
-
-    abiEncodedContractCalls.push(
-      constructContractCall({ target, functionSignature, args, abi }),
-    );
+    abiEncodedContractCalls.push(constructContractCall(call));
   }
 
   const abiEncodedData = encodeAbiParameters(
