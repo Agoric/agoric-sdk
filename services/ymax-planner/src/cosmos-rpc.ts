@@ -72,15 +72,15 @@ export class CosmosRPCClient extends JSONRPCClient {
   constructor(
     url: string | URL,
     {
-      WebSocket,
       heartbeats,
       maxMessageGapMs,
       now,
+      WebSocket,
     }: {
-      WebSocket: new (url: URL) => RpcWebSocket;
       heartbeats?: AsyncIterable<unknown>;
       maxMessageGapMs?: number;
       now?: () => number;
+      WebSocket: new (url: URL) => RpcWebSocket;
     },
   ) {
     const wsUrl = new URL('/websocket', url);
@@ -137,7 +137,7 @@ export class CosmosRPCClient extends JSONRPCClient {
           if (
             now &&
             maxMessageGapMs !== undefined &&
-            subscriptions.size > 0 &&
+            subscriptions.size &&
             lastMessageTime !== undefined &&
             now() - lastMessageTime > maxMessageGapMs
           ) {

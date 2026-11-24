@@ -1,41 +1,29 @@
 import { Fail, q } from '@endo/errors';
 
-/** How old a node's latest block may be for the node to count as healthy. */
-export const MAX_AGORIC_BLOCK_AGE_MS = 60_000;
-
-/**
- * How long to wait for a node to open a websocket and answer the health check's
- * requests.
- */
-export const AGORIC_RPC_PROBE_TIMEOUT_MS = 15_000;
-
-/** The `code` of the error for a node that serves another chain. */
-export const AGORIC_CHAIN_ID_MISMATCH = 'AGORIC_CHAIN_ID_MISMATCH';
-
-/**
- * A cheap query answered by the chain app, as the planner's own vstorage and
- * account queries are: the children of vstorage path "published".
- */
+const AGORIC_CHAIN_ID_MISMATCH = 'AGORIC_CHAIN_ID_MISMATCH';
+const AGORIC_RPC_PROBE_TIMEOUT_MS = 15 * 1000;
+const MAX_AGORIC_BLOCK_AGE_MS = 60 * 1000;
 const QUERY_PROBE = {
-  path: '/agoric.vstorage.Query/Children',
-  // Hex of a protobuf-encoded QueryChildrenRequest { path: "published" }.
   data: '0a097075626c6973686564',
   height: '0',
+  path: '/agoric.vstorage.Query/Children',
   prove: false,
 };
 
-/** The parts of a CosmosRPCClient used here. */
-type RpcClient = {
-  opened(): Promise<void>;
-  closed(): Promise<unknown>;
-  close(): void;
-  request(
-    method: string,
-    params: Record<string, unknown>,
-  ): PromiseLike<unknown>;
+type AgoricRpcCriteria = {
+  chainId: string;
+  maxBlockAgeMs?: number;
+  requireSynced?: boolean;
+  timeoutMs?: number;
 };
 
-/** The parts of a CometBFT `status` result checked here. */
+type AgoricRpcPowers<C extends RpcClient = RpcClient> = {
+  clearTimeout: typeof globalThis.clearTimeout;
+  makeRpcClient: (rpcAddr: string) => C;
+  now: () => number;
+  setTimeout: typeof globalThis.setTimeout;
+};
+
 type CometStatus = {
   node_info: { network: string };
   sync_info: {
@@ -45,8 +33,129 @@ type CometStatus = {
   };
 };
 
-const isRecord = (specimen: unknown): specimen is Record<string, unknown> =>
-  typeof specimen === 'object' && specimen !== null;
+type RpcClient = {
+  close(): void;
+  closed(): Promise<unknown>;
+  opened(): Promise<void>;
+  request(
+    method: string,
+    params: Record<string, unknown>,
+  ): PromiseLike<unknown>;
+};
+
+const checkAgoricRpcStatus = async (
+  rpc: Pick<RpcClient, 'request'>,
+  {
+    chainId,
+    maxBlockAgeMs = MAX_AGORIC_BLOCK_AGE_MS,
+    now,
+    requireSynced = true,
+  }: Omit<AgoricRpcCriteria, 'timeoutMs'> & { now: () => number },
+) => {
+  const status = await rpc.request('status', {});
+
+  if (!isCometStatus(status)) {
+    throw Fail`Unexpected status result: ${status}`;
+  }
+  const network = status.node_info.network;
+  if (network !== chainId) {
+    const err = Error(
+      `Expected chain ID ${JSON.stringify(chainId)}, got ${JSON.stringify(network)}`,
+    );
+    Object.defineProperty(err, 'code', {
+      value: AGORIC_CHAIN_ID_MISMATCH,
+      enumerable: true,
+    });
+    throw err;
+  }
+
+  if (!requireSynced) return status;
+  const syncInfo = status.sync_info;
+  const { catching_up: catchingUp, latest_block_height: height } = syncInfo;
+  !catchingUp || Fail`Node is catching up at height ${q(height)}`;
+  const blockAgeMs = now() - Date.parse(syncInfo.latest_block_time);
+  blockAgeMs <= maxBlockAgeMs ||
+    Fail`Latest block ${q(height)} is ${q(blockAgeMs)}ms old`;
+  const queried = await rpc.request('abci_query', QUERY_PROBE);
+  const response = isRecord(queried) ? queried.response : undefined;
+  (isRecord(response) && response.code === 0) ||
+    Fail`Query probe failed: ${queried}`;
+  return status;
+};
+
+export const connectFirstHealthyAgoricRpc = async <C extends RpcClient>(
+  criteria: AgoricRpcCriteria,
+  powers: AgoricRpcPowers<C> & { log: (...args: unknown[]) => void },
+  rpcAddrs: Array<string>,
+) => {
+  const failures: Array<string> = [];
+
+  await null;
+
+  !!rpcAddrs.length || Fail`No Agoric RPC endpoints`;
+
+  for (const [index, rpcAddr] of rpcAddrs.entries()) {
+    const isLast = index === rpcAddrs.length - 1;
+
+    try {
+      const { rpc, status } = await connectHealthyAgoricRpc(
+        {
+          ...criteria,
+          requireSynced: !isLast && criteria.requireSynced !== false,
+        },
+        powers,
+        rpcAddr,
+      );
+      return { failures, index, rpc, rpcAddr, status };
+    } catch (err) {
+      if (isChainIdMismatch(err))
+        throw Error(`Agoric RPC ${rpcAddr} serves the wrong chain`, {
+          cause: err,
+        });
+
+      powers.log(`Agoric RPC ${rpcAddr} is unavailable:`, err);
+      const message = err instanceof Error ? err.message : String(err);
+      failures.push(`${rpcAddr}: ${message}`);
+    }
+  }
+
+  throw Fail`No healthy Agoric RPC among ${q(rpcAddrs)}: ${q(failures)}`;
+};
+
+const connectHealthyAgoricRpc = async <C extends RpcClient>(
+  {
+    timeoutMs = AGORIC_RPC_PROBE_TIMEOUT_MS,
+    ...statusCriteria
+  }: AgoricRpcCriteria,
+  { makeRpcClient, now, setTimeout, clearTimeout }: AgoricRpcPowers<C>,
+  rpcAddr: string,
+) => {
+  await null;
+
+  const rpc = makeRpcClient(rpcAddr);
+  rpc.closed().catch(() => {});
+
+  const probe = async () => {
+    await rpc.opened();
+    return checkAgoricRpcStatus(rpc, { ...statusCriteria, now });
+  };
+
+  try {
+    const status = await withTimeout(
+      probe(),
+      timeoutMs,
+      { setTimeout, clearTimeout },
+      `Probing Agoric RPC ${rpcAddr}`,
+    );
+    return { rpc, status };
+  } catch (err) {
+    rpc.close();
+    throw err;
+  }
+};
+
+const isChainIdMismatch = (err: unknown) =>
+  isRecord(err) && err.code === AGORIC_CHAIN_ID_MISMATCH;
 
 const isCometStatus = (specimen: unknown): specimen is CometStatus => {
   if (!isRecord(specimen)) return false;
@@ -61,27 +170,79 @@ const isCometStatus = (specimen: unknown): specimen is CometStatus => {
   );
 };
 
-/** Whether `err` says that a node serves a chain other than the expected one. */
-export const isChainIdMismatch = (err: unknown) =>
-  isRecord(err) && err.code === AGORIC_CHAIN_ID_MISMATCH;
+const isRecord = (specimen: unknown): specimen is Record<string, unknown> =>
+  typeof specimen === 'object' && specimen !== null;
 
-export type AgoricRpcPowers<C extends RpcClient = RpcClient> = {
-  makeRpcClient: (rpcAddr: string) => C;
-  /** Wall-clock time in milliseconds, for comparing with block times. */
-  now: () => number;
-  setTimeout: typeof globalThis.setTimeout;
-  clearTimeout: typeof globalThis.clearTimeout;
+const probeAgoricRpc = async (
+  criteria: AgoricRpcCriteria,
+  powers: AgoricRpcPowers,
+  rpcAddr: string,
+) => {
+  const { rpc } = await connectHealthyAgoricRpc(criteria, powers, rpcAddr);
+  rpc.close();
 };
 
-export type AgoricRpcCriteria = {
-  chainId: string;
-  maxBlockAgeMs?: number;
-  /**
-   * When false, only check the chain ID, not that the node is in sync and
-   * answers queries.
-   */
-  requireSynced?: boolean;
-  timeoutMs?: number;
+export const waitForBetterAgoricRpc = async (
+  {
+    unhealthyChecks,
+    ...criteria
+  }: AgoricRpcCriteria & { unhealthyChecks: number },
+  otherRpcAddrs: Array<string>,
+  powers: AgoricRpcPowers & { log: (...args: Array<unknown>) => void },
+  rpcAddr: string,
+  ticks: AsyncIterable<unknown>,
+) => {
+  let consecutive = 0;
+
+  await null;
+
+  for await (const _ of ticks) {
+    let failure: unknown;
+    try {
+      await probeAgoricRpc(criteria, powers, rpcAddr);
+      consecutive = 0;
+    } catch (err) {
+      consecutive += 1;
+      failure = err;
+      powers.log(
+        `Agoric RPC ${rpcAddr} failed health check (${consecutive} in a row):`,
+        err,
+      );
+    }
+
+    if (consecutive >= unhealthyChecks)
+      for (const betterRpcAddr of otherRpcAddrs)
+        try {
+          await probeAgoricRpc(criteria, powers, betterRpcAddr);
+          return { betterRpcAddr, failure };
+        } catch {
+          // Not better; stay unless another is.
+        }
+  }
+
+  throw Fail`Stopped checking Agoric RPC ${q(rpcAddr)}`;
+};
+
+export const waitForHealthyAgoricRpc = async (
+  { healthyChecks, ...criteria }: AgoricRpcCriteria & { healthyChecks: number },
+  powers: AgoricRpcPowers,
+  rpcAddr: string,
+  ticks: AsyncIterable<unknown>,
+) => {
+  let consecutive = 0;
+
+  await null;
+
+  for await (const _ of ticks) {
+    try {
+      await probeAgoricRpc(criteria, powers, rpcAddr);
+      consecutive += 1;
+      if (consecutive >= healthyChecks) return;
+    } catch {
+      consecutive = 0;
+    }
+  }
+  throw Fail`Stopped checking Agoric RPC ${q(rpcAddr)}`;
 };
 
 const withTimeout = async <T>(
@@ -106,198 +267,4 @@ const withTimeout = async <T>(
   } finally {
     clearTimeout(timer);
   }
-};
-
-/**
- * Check that the node behind `rpc` serves `chainId` and, unless
- * `requireSynced` is false, that it isn't catching up, has a recent block, and
- * answers a query to the chain app (a node can answer `status` promptly while
- * its queries stall). Returns its status (the CometBFT `status` result).
- */
-export const checkAgoricRpcStatus = async (
-  rpc: Pick<RpcClient, 'request'>,
-  {
-    chainId,
-    maxBlockAgeMs = MAX_AGORIC_BLOCK_AGE_MS,
-    requireSynced = true,
-    now,
-  }: Omit<AgoricRpcCriteria, 'timeoutMs'> & { now: () => number },
-) => {
-  const status = await rpc.request('status', {});
-  if (!isCometStatus(status)) {
-    throw Fail`Unexpected status result: ${status}`;
-  }
-  const network = status.node_info.network;
-  if (network !== chainId) {
-    const err = Error(
-      `Expected chain ID ${JSON.stringify(chainId)}, got ${JSON.stringify(network)}`,
-    );
-    Object.defineProperty(err, 'code', {
-      value: AGORIC_CHAIN_ID_MISMATCH,
-      enumerable: true,
-    });
-    throw err;
-  }
-  if (!requireSynced) return status;
-  const syncInfo = status.sync_info;
-  const { catching_up: catchingUp, latest_block_height: height } = syncInfo;
-  !catchingUp || Fail`Node is catching up at height ${q(height)}`;
-  const blockAgeMs = now() - Date.parse(syncInfo.latest_block_time);
-  // NaN (from an unparseable time) also fails this.
-  blockAgeMs <= maxBlockAgeMs ||
-    Fail`Latest block ${q(height)} is ${q(blockAgeMs)}ms old`;
-  const queried = await rpc.request('abci_query', QUERY_PROBE);
-  const response = isRecord(queried) ? queried.response : undefined;
-  (isRecord(response) && response.code === 0) ||
-    Fail`Query probe failed: ${queried}`;
-  return status;
-};
-
-/**
- * Connect to the Agoric RPC node at `rpcAddr` and check its health per
- * `checkAgoricRpcStatus`. Resolves to the connected client, or closes it and
- * rejects.
- */
-export const connectHealthyAgoricRpc = async <C extends RpcClient>(
-  rpcAddr: string,
-  { makeRpcClient, now, setTimeout, clearTimeout }: AgoricRpcPowers<C>,
-  {
-    timeoutMs = AGORIC_RPC_PROBE_TIMEOUT_MS,
-    ...statusCriteria
-  }: AgoricRpcCriteria,
-) => {
-  await null;
-  const rpc = makeRpcClient(rpcAddr);
-  // A failed connection rejects `closed()`; don't let that go unhandled.
-  rpc.closed().catch(() => {});
-  try {
-    const status = await withTimeout(
-      (async () => {
-        await rpc.opened();
-        return checkAgoricRpcStatus(rpc, { ...statusCriteria, now });
-      })(),
-      timeoutMs,
-      { setTimeout, clearTimeout },
-      `Probing Agoric RPC ${rpcAddr}`,
-    );
-    return { rpc, status };
-  } catch (err) {
-    rpc.close();
-    throw err;
-  }
-};
-
-/**
- * Connect to the first healthy Agoric RPC node in `rpcAddrs`, in order. The
- * last one, having nothing to fall back to, need only serve the right chain.
- * Rejects if none qualifies, or as soon as one serves another chain: that is
- * a configuration error, which falling back would hide.
- */
-export const connectFirstHealthyAgoricRpc = async <C extends RpcClient>(
-  rpcAddrs: readonly string[],
-  powers: AgoricRpcPowers<C> & { log: (...args: unknown[]) => void },
-  criteria: AgoricRpcCriteria,
-) => {
-  await null;
-  rpcAddrs.length > 0 || Fail`No Agoric RPC endpoints`;
-  const failures: string[] = [];
-  for (const [index, rpcAddr] of rpcAddrs.entries()) {
-    const isLast = index === rpcAddrs.length - 1;
-    try {
-      const { rpc, status } = await connectHealthyAgoricRpc(rpcAddr, powers, {
-        ...criteria,
-        requireSynced: !isLast && criteria.requireSynced !== false,
-      });
-      return { rpc, rpcAddr, index, status, failures };
-    } catch (err) {
-      if (isChainIdMismatch(err)) {
-        throw Error(`Agoric RPC ${rpcAddr} serves the wrong chain`, {
-          cause: err,
-        });
-      }
-      powers.log(`Agoric RPC ${rpcAddr} is unavailable:`, err);
-      const message = err instanceof Error ? err.message : String(err);
-      failures.push(`${rpcAddr}: ${message}`);
-    }
-  }
-  throw Fail`No healthy Agoric RPC among ${q(rpcAddrs)}: ${q(failures)}`;
-};
-
-/** Check the health of the node at `rpcAddr` over a connection of its own. */
-const probeAgoricRpc = async (
-  rpcAddr: string,
-  powers: AgoricRpcPowers,
-  criteria: AgoricRpcCriteria,
-) => {
-  const { rpc } = await connectHealthyAgoricRpc(rpcAddr, powers, criteria);
-  rpc.close();
-};
-
-/**
- * Resolve once the Agoric RPC node at `rpcAddr` has passed `healthyChecks`
- * consecutive health checks, one per `ticks` item.
- */
-export const waitForHealthyAgoricRpc = async (
-  rpcAddr: string,
-  ticks: AsyncIterable<unknown>,
-  powers: AgoricRpcPowers,
-  { healthyChecks, ...criteria }: AgoricRpcCriteria & { healthyChecks: number },
-) => {
-  await null;
-  let consecutive = 0;
-  for await (const _ of ticks) {
-    try {
-      await probeAgoricRpc(rpcAddr, powers, criteria);
-      consecutive += 1;
-      if (consecutive >= healthyChecks) return;
-    } catch {
-      consecutive = 0;
-    }
-  }
-  throw Fail`Stopped checking Agoric RPC ${q(rpcAddr)}`;
-};
-
-/**
- * Resolve once the Agoric RPC node at `rpcAddr` has failed `unhealthyChecks`
- * consecutive health checks, one per `ticks` item, while one of
- * `otherRpcAddrs` passes one. Resolves to the first such other address and the
- * latest failure of `rpcAddr`.
- */
-export const waitForBetterAgoricRpc = async (
-  rpcAddr: string,
-  otherRpcAddrs: readonly string[],
-  ticks: AsyncIterable<unknown>,
-  powers: AgoricRpcPowers & { log: (...args: unknown[]) => void },
-  {
-    unhealthyChecks,
-    ...criteria
-  }: AgoricRpcCriteria & { unhealthyChecks: number },
-) => {
-  await null;
-  let consecutive = 0;
-  for await (const _ of ticks) {
-    let failure: unknown;
-    try {
-      await probeAgoricRpc(rpcAddr, powers, criteria);
-      consecutive = 0;
-    } catch (err) {
-      consecutive += 1;
-      failure = err;
-      powers.log(
-        `Agoric RPC ${rpcAddr} failed health check (${consecutive} in a row):`,
-        err,
-      );
-    }
-    if (consecutive >= unhealthyChecks) {
-      for (const betterRpcAddr of otherRpcAddrs) {
-        try {
-          await probeAgoricRpc(betterRpcAddr, powers, criteria);
-          return { betterRpcAddr, failure };
-        } catch {
-          // Not better; stay unless another is.
-        }
-      }
-    }
-  }
-  throw Fail`Stopped checking Agoric RPC ${q(rpcAddr)}`;
 };

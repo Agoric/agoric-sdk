@@ -230,22 +230,19 @@ export const main = async (
     env: { AGORIC_NET: config.agoricNetworkSpec },
     fetch,
   });
-  // The preferred Agoric RPC is the one from AGORIC_NET; fall back to the
-  // configured others, in order, when it is unavailable.
-  const agoricRpcAddrs = [
-    ...new Set([networkConfig.rpcAddrs[0], ...config.agoricRpcFallbacks]),
-  ];
+  const agoricRpcAddrs = Array.from(
+    new Set([...networkConfig.rpcAddrs, ...config.agoricRpcFallbacks]),
+  );
   console.warn('Initializing planner:', networkConfig, { agoricRpcAddrs });
 
   const agoricRpcPowers = {
     makeRpcClient: (rpcAddr: string) =>
       new CosmosRPCClient(rpcAddr, {
-        WebSocket,
         heartbeats: generateInterval(6000),
-        // Detect a stalled node only when there is another to fall back to.
         maxMessageGapMs:
           agoricRpcAddrs.length > 1 ? AGORIC_MAX_MESSAGE_GAP_MS : undefined,
         now,
+        WebSocket,
       }),
     // Wall-clock time, for comparing with block times.
     now: Date.now,
@@ -260,17 +257,17 @@ export const main = async (
     status: agoricRpcStatus,
     failures: agoricRpcFailures,
   } = await connectFirstHealthyAgoricRpc(
-    agoricRpcAddrs,
-    { ...agoricRpcPowers, log: console.warn },
     agoricRpcCriteria,
+    { ...agoricRpcPowers, log: console.warn },
+    agoricRpcAddrs,
   );
   console.warn('Agoric chain status:', agoricRpcAddr, agoricRpcStatus);
-  if (agoricRpcIndex > 0) {
+  if (agoricRpcIndex)
     console.error(
       `🚨 Using fallback Agoric RPC ${agoricRpcAddr}; unavailable:`,
       agoricRpcFailures,
     );
-  }
+
   await logChainAppInfo(rpc, console.warn);
 
   // Use the selected RPC for everything: queries, vstorage, and broadcasts.
@@ -672,38 +669,36 @@ export const main = async (
       generateInterval(AGORIC_RPC_CHECK_INTERVAL_MS, undefined, {
         signal: stopRechecks.signal,
       });
-    const preferredRecoveredP =
-      agoricRpcIndex === 0
-        ? new Promise<never>(() => {})
-        : waitForHealthyAgoricRpc(
-            preferredRpcAddr,
-            makeRecheckTicks(),
-            agoricRpcPowers,
-            {
-              ...agoricRpcCriteria,
-              healthyChecks: PREFERRED_AGORIC_RPC_HEALTHY_CHECKS,
-            },
-          ).then(() => {
-            throw Fail`Preferred Agoric RPC ${q(preferredRpcAddr)} recovered; exiting to switch back to it from ${q(agoricRpcAddr)}`;
-          });
+    const preferredRecoveredP = !agoricRpcIndex
+      ? new Promise<never>(() => {})
+      : waitForHealthyAgoricRpc(
+          {
+            ...agoricRpcCriteria,
+            healthyChecks: PREFERRED_AGORIC_RPC_HEALTHY_CHECKS,
+          },
+          agoricRpcPowers,
+          preferredRpcAddr,
+          makeRecheckTicks(),
+        ).then(() => {
+          throw Fail`Preferred Agoric RPC ${q(preferredRpcAddr)} recovered; exiting to switch back to it from ${q(agoricRpcAddr)}`;
+        });
     // On any RPC, it is also once that one stays unhealthy (e.g., its queries
     // stall while its websocket still delivers blocks) and another is healthy.
     const otherRpcAddrs = agoricRpcAddrs.filter(addr => addr !== agoricRpcAddr);
-    const betterRpcP =
-      otherRpcAddrs.length === 0
-        ? new Promise<never>(() => {})
-        : waitForBetterAgoricRpc(
-            agoricRpcAddr,
-            otherRpcAddrs,
-            makeRecheckTicks(),
-            { ...agoricRpcPowers, log: console.warn },
-            {
-              ...agoricRpcCriteria,
-              unhealthyChecks: AGORIC_RPC_UNHEALTHY_CHECKS,
-            },
-          ).then(({ betterRpcAddr, failure }) => {
-            throw Fail`Agoric RPC ${q(agoricRpcAddr)} is unhealthy (${q(String(failure))}); exiting to switch to ${q(betterRpcAddr)}`;
-          });
+    const betterRpcP = !otherRpcAddrs.length
+      ? new Promise<never>(() => {})
+      : waitForBetterAgoricRpc(
+          {
+            ...agoricRpcCriteria,
+            unhealthyChecks: AGORIC_RPC_UNHEALTHY_CHECKS,
+          },
+          otherRpcAddrs,
+          { ...agoricRpcPowers, log: console.warn },
+          agoricRpcAddr,
+          makeRecheckTicks(),
+        ).then(({ betterRpcAddr, failure }) => {
+          throw Fail`Agoric RPC ${q(agoricRpcAddr)} is unhealthy (${q(String(failure))}); exiting to switch to ${q(betterRpcAddr)}`;
+        });
     await Promise.race([engineP, preferredRecoveredP, betterRpcP]).finally(
       () => {
         stopRechecks.abort();
