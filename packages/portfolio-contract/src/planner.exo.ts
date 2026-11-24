@@ -8,7 +8,6 @@ import {
   PortfolioDelegatedRebalanceParamsShape,
   type FlowKey,
   type FundsFlowPlan,
-  type PlanObservations,
   type PortfolioDelegatedClaimRewardsParams,
   type PortfolioDelegatedRebalanceParams,
 } from '@agoric/portfolio-api';
@@ -23,6 +22,7 @@ import {
   flowIdFromKey,
   FlowKeyShape,
   PlanObservationsShape,
+  type PlannerPlanObservations,
 } from './type-guards.ts';
 
 const trace = makeTracer('PPLN');
@@ -94,7 +94,7 @@ export const preparePlanner = (
         planOrSteps: FundsFlowPlan | MovementDesc[],
         policyVersion: number,
         rebalanceCount = 0,
-        observations?: PlanObservations,
+        observations?: PlannerPlanObservations,
       ) {
         const traceFlow = trace
           .sub(`portfolio${portfolioId}`)

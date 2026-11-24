@@ -355,9 +355,6 @@ jobs:
           echo "upgrade_submitted=true" >> "$GITHUB_OUTPUT"
 
   upgrade-confirm:
-    permissions:
-      contents: write
-    needs: [plan, pre-upgrade, upgrade-submit]
     # This job depends upon `plan` succeeding and `pre-upgrade` not failing.
     if: |
       (!cancelled()) &&
@@ -366,6 +363,13 @@ jobs:
       (needs.plan.outputs.need_upgrade_submit != 'true' || needs.upgrade-submit.outputs.upgrade_submitted == 'true') &&
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
       contains(fromJSON('["success","skipped","failure"]'), needs.upgrade-submit.result)
+    needs:
+      - plan
+      - pre-upgrade
+      - upgrade-submit
+    permissions:
+      contents: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -373,6 +377,15 @@ jobs:
           persist-credentials: false
 
       - uses: ./.github/actions/setup-agoric-sdk-build
+
+      - name: Auth to Google Cloud for upgrade logs
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: simulationlab
+          workload_identity_provider: projects/60745596728/locations/global/workloadIdentityPools/github/providers/agoric-sdk
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
 
       - name: Run upgrade confirm phase
         env:

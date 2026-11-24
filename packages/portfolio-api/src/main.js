@@ -3,6 +3,7 @@ export * from './instruments.js';
 export * from './network/prod-network.ts';
 export * from './portfolio-permissions.ts';
 export * from './resolver.js';
+export * from './reward-swaps.ts';
 export * from './target-balances.ts';
 export * from './type-guards.ts';
 
