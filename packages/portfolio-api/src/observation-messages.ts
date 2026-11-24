@@ -55,7 +55,9 @@ import type {
   SelectableObservations,
   TypedHoldingDetail,
   PortfolioSyncState,
+  RewardClaimProtocol,
 } from './types.ts';
+import type { YieldProtocol } from './constants.js';
 
 // A param to designate the portfolio by its `portfolioId`
 const PortfolioIdParam = {
@@ -442,28 +444,55 @@ const assertNonZeroAddress = (
 };
 
 /**
+ * For each reward claim protocol, the array of {@link SelectableObservations}
+ * holding its evidence, and for those whose evidence is attributed to an
+ * instrument, the yield protocol of the instruments it may name. Merkl
+ * evidence is account-scoped instead.
+ */
+export const rewardClaimProtocols = Object.freeze({
+  aave: Object.freeze({ evidenceKey: 'aaveClaims', yieldProtocol: 'Aave' }),
+  compound: Object.freeze({
+    evidenceKey: 'compoundClaims',
+    yieldProtocol: 'Compound',
+  }),
+  merkl: Object.freeze({ evidenceKey: 'merklClaims' }),
+} as const satisfies Record<
+  RewardClaimProtocol,
+  { evidenceKey: keyof SelectableObservations; yieldProtocol?: YieldProtocol }
+>);
+
+/** Reward claim protocols whose evidence is attributed to an instrument. */
+export type InstrumentClaimProtocol = {
+  [P in RewardClaimProtocol]: (typeof rewardClaimProtocols)[P] extends {
+    yieldProtocol: YieldProtocol;
+  }
+    ? P
+    : never;
+}[RewardClaimProtocol];
+
+/**
  * Validate instrument-attributed claims, whose instrument must be of the
  * claim's protocol, on an EVM chain.
  */
-const assertInstrumentClaims: <K extends 'aaveClaims' | 'compoundClaims'>(
-  claims: readonly SelectableObservationEIP712<K>[],
-  key: K,
-  protocol: 'Aave' | 'Compound',
-) => asserts claims is NonNullable<SelectableObservations[K]> = (
-  claims,
-  key,
-  protocol,
-) => {
+const assertInstrumentClaims: <P extends InstrumentClaimProtocol>(
+  claims: readonly SelectableObservationEIP712<
+    (typeof rewardClaimProtocols)[P]['evidenceKey']
+  >[],
+  protocol: P,
+) => asserts claims is NonNullable<
+  SelectableObservations[(typeof rewardClaimProtocols)[P]['evidenceKey']]
+> = (claims, protocol) => {
+  const { evidenceKey: key, yieldProtocol } = rewardClaimProtocols[protocol];
   const identities = new Set<string>();
   claims.forEach(({ instrumentId, tokenId }, i) => {
     const label = `${key}[${i}]`;
     if (
       !isInstrumentId(instrumentId) ||
-      !instrumentId.startsWith(`${protocol}_`) ||
+      !instrumentId.startsWith(`${yieldProtocol}_`) ||
       !isEvmChain(maybeChainOf(instrumentId))
     ) {
       throw TypeError(
-        `[${label}] invalid ${protocol} instrument ${JSON.stringify(instrumentId)}`,
+        `[${label}] invalid ${yieldProtocol} instrument ${JSON.stringify(instrumentId)}`,
       );
     }
     assertNonZeroAddress(tokenId, label, 'token');
@@ -562,10 +591,8 @@ const pickSelectableObservations = ({
   merklClaims,
   oneInchSwaps,
 }: SelectableObservationsEIP712): SelectableObservations => {
-  if (aaveClaims) assertInstrumentClaims(aaveClaims, 'aaveClaims', 'Aave');
-  if (compoundClaims) {
-    assertInstrumentClaims(compoundClaims, 'compoundClaims', 'Compound');
-  }
+  if (aaveClaims) assertInstrumentClaims(aaveClaims, 'aave');
+  if (compoundClaims) assertInstrumentClaims(compoundClaims, 'compound');
   if (merklClaims) assertMerklClaims(merklClaims);
   if (oneInchSwaps) assertOneInchSwaps(oneInchSwaps);
   return {
