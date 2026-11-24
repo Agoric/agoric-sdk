@@ -1,0 +1,74 @@
+=== DETAILED MUTATION ANALYSIS ===
+
+========================================
+FILE: packages/internal/src/ses-utils.js
+========================================
+
+--- Readonly array declarations ---
+197: * @param {readonly (T | PromiseLike<T>)[]} items
+
+--- Mutation operations ---
+249:    cleanupsLIFO.unshift(cleanup);
+279:      missing.push(key);
+329:      path.push(subKey);
+332:      path.pop();
+435:        rejections.push(settledResult.reason);
+438:        resolvers.push(settledResult.value.value);
+479:    queues.push(queue);
+
+========================================
+FILE: packages/internal/src/testing-utils.js
+========================================
+
+--- Readonly array declarations ---
+75: * @param {readonly TestStep<Input>[]} allSteps
+88:   * @param {readonly TestStep<Input>[]} steps
+113:   *   remainingSteps: readonly TestStep<Input>[];
+
+--- Mutation operations ---
+124:    pausedRuns.push({ runState, remainingSteps: allSteps.slice(i) });
+
+========================================
+FILE: packages/telemetry/src/make-slog-sender.js
+========================================
+
+--- Readonly array declarations ---
+19: * @param {readonly T[]} arr
+
+--- Mutation operations ---
+177:        sendErrors.push(err);
+185:        ...sendErrors.splice(0).map(err => Promise.reject(err)),
+
+========================================
+FILE: packages/fast-usdc-contract/src/utils/settlement-matcher.ts
+========================================
+
+--- Readonly array declarations ---
+39:  pending: readonly PendingTx[],
+
+--- Mutation operations ---
+71:      path.push(tx);
+73:      path.pop();
+
+========================================
+FILE: packages/portfolio-contract/src/evm-facade.ts
+========================================
+
+--- Readonly array declarations ---
+86:  > extends readonly unknown[]
+88:    : readonly unknown[];
+
+--- Mutation operations ---
+66:        calls.push({ target, args, functionSignature });
+181:        calls.push({ target, functionSignature: signature, args, abi: [item] });
+
+========================================
+FILE: packages/orchestration/src/utils/viem-utils/hashTypedData.ts
+========================================
+
+--- Readonly array declarations ---
+19:  types: Record<string, readonly MessageTypeProperty[]>;
+41:    types: Record<string, readonly MessageTypeProperty[]>;
+
+--- Mutation operations ---
+25:  const deps = [primaryType, ...Array.from(unsortedDeps).sort()];

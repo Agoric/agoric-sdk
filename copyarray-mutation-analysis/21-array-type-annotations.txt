@@ -1,0 +1,100 @@
+packages/vow/src/watch-utils.js:139:          /** @type {VowKit<any[]>} */
+packages/inter-protocol/test/psm/gov-replace-committee.js:32:/** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+packages/inter-protocol/test/psm/psm-storage-fixture.js:10: * @type {[key: string, value: string][]}
+packages/inter-protocol/test/psm/psm-storage-fixture.js:48: * @type {AnchorOptions[]}
+packages/inter-protocol/test/interest.test.js:440:  /** @type {[bigint, bigint, bigint, number, bigint, number][]} */
+packages/inter-protocol/src/proposals/upgrade-scaledPriceAuthorities.js:51:  /** @type {StartedInstanceKit<any>[]} */
+packages/inter-protocol/src/proposals/replaceElectorate.js:38:/** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+packages/inter-protocol/src/proposals/committee-proposal.js:13:/** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+packages/inter-protocol/src/vaultFactory/vaultManager.js:1053:  const noKits = /** @type {VaultManagerKit[]} */ (harden([]));
+packages/inter-protocol/src/vaultFactory/vault.js:82: * @type {{ [K in VaultPhase]: VaultPhase[] }}
+packages/inter-protocol/src/vaultFactory/vault.js:574:          /** @type {TransferPart[]} */
+packages/inter-protocol/src/vaultFactory/vaultDirector.js:235:      /** @type {TransferPart[]} */
+packages/SwingSet/misc-tools/classify-promises.js:179:    /** @type {any[]} */
+packages/SwingSet/misc-tools/replay-transcript.js:297:  /** @type {WorkerData[]} */
+packages/SwingSet/misc-tools/replay-transcript.js:302:    /** @type {Bundle[] | undefined} */
+packages/SwingSet/misc-tools/replay-transcript.js:346:  /** @type {Partial<Record<ReturnType<typeof getResultKind>, Map<string, number[]>>>} */
+packages/SwingSet/tools/vat.js:57:  const vatArgv = /** @type {string[]} */ ([...argv, ...extraArgs]);
+packages/SwingSet/test/vat-direct.js:34:  /** @type {KernelDeliveryObject[]} */
+packages/SwingSet/test/vat-direct.js:67:    /** @type {VatOneResolution[]} */
+packages/SwingSet/test/reap-all/reap-all.test.js:102:  /** @type {string[]} */
+packages/SwingSet/src/kernel/gc-actions.js:23: * @type {GCActionType[]}
+packages/SwingSet/src/kernel/gc-actions.js:148:  /** @type {TotalMap<VatID, TotalMap<GCActionType, GCActionString[]>>} */
+packages/SwingSet/src/kernel/vat-loader/manager-subprocess-xsnap.js:281:      /** @type {AsyncGenerator<Uint8Array, void, void>[]} */
+packages/SwingSet/src/kernel/vat-warehouse.js:214:  /** @type { string[] } */
+packages/SwingSet/src/kernel/vatTranslator.js:555:    /** @type { KernelOneResolution[] } */
+packages/SwingSet/src/kernel/kernel.js:211:    /** @type {string[]} */
+packages/SwingSet/src/kernel/kernel.js:681:    /** @type { KernelDeliveryOneNotify[] } */
+packages/SwingSet/src/kernel/state/kernelKeeper.js:184:/** @type {(s: string) => string[]} s */
+packages/SwingSet/src/kernel/state/kernelKeeper.js:709:    /** @type {[string, string?][]} */
+packages/SwingSet/src/controller/upgradeSwingset.js:132:  /** @type {RunQueueEvent[]} */
+packages/SwingSet/src/devices/timer/device-timer.js:158:    /** @type {bigint[]} */
+packages/network/src/router.js:58:        /** @type {[string, T][]} */
+packages/network/src/network.js:54:  /** @type {string[]} */
+packages/network/src/network.js:219:  /** @type {Remote<Required<ConnectionHandler>>[]} */
+packages/network/src/network.js:221:  /** @type {Endpoint[]} */
+packages/network/src/multiaddr.js:40:  /** @type {[string, string][]} */
+packages/builders/scripts/orchestration/get-chain-config.js:15:  /** @type {[name: string, conn: IBCConnectionID, chan: IBCChannelID, denom:string][]} */
+packages/wallet/api/src/lib-dehydrate.js:44:  /** @type {string[]} */
+packages/wallet/api/src/lib-dehydrate.js:50:  /** @type {MapStore<any, Path[]>} */
+packages/wallet/api/src/lib-wallet.js:258:  /** @type {NotifierRecord<OfferState[]>} */
+packages/wallet/api/src/lib-wallet.js:264:    /** @type {NotifierRecord<PursesFullState[]>} */
+packages/wallet/api/src/lib-wallet.js:266:    /** @type {NotifierRecord<PursesJSONState[]>} */
+packages/wallet/api/src/lib-wallet.js:995:    /** @type {NotifierRecord<DappRecord[]>} */ (makeNotifierKit([]));
+packages/wallet/api/src/lib-wallet.js:1211:    /** @type {{ depositedP?: Promise<any[]>, dappContext?: any }} */
+packages/wallet/api/src/lib-wallet.js:1290:    /** @type {NotifierRecord<PaymentRecord[]>} */ (makeNotifierKit([]));
+packages/cosmic-swingset/src/anylogger-agoric.js:59:  const levels = /** @type {LogLevel[]} */ (Object.keys(anylogger.levels));
+packages/cosmic-swingset/src/sim-params.js:82:/** @type {PowerFlagFeeSDKType[]} */
+packages/cosmic-swingset/src/chain-main.js:260:  /** @type {SavedChainSend[]} */
+packages/xsnap/test/xs-limits.test.js:79:    ] of /** @type { TestCase[] } */ ([
+packages/xsnap/src/xsnap.js:262:      /** @type {(Readable | Writable | undefined | null)[]} */ (
+packages/xsnap/src/avaXS.js:117:  /** @type { string[] } */
+packages/xsnap/src/avaXS.js:129:     * @type { TapMessage | { testNames: string[] } | { bundleSource: Parameters<BundleSource> } | Summary }
+packages/xsnap/src/avaXS.js:249:  /** @type {string[]} */
+packages/xsnap/src/avaAssertXS.js:106:  /** @type {((ot: { context: object }) => Promise<void>)[]} */
+packages/internal/test/utils.test.js:190:      .../** @type {Arbitrary<T>[]} */ (makeBad ? [badBase, base] : [base]),
+packages/internal/test/utils.test.js:674:  /** @type {Error[]} */
+packages/internal/test/utils.test.js:797:  const output = /** @type {number[]} */ ([]);
+packages/internal/test/utils.test.js:806:  const output1 = /** @type {number[]} */ ([]);
+packages/internal/test/utils.test.js:807:  const output2 = /** @type {number[]} */ ([]);
+packages/internal/test/utils.test.js:821:  const output1 = /** @type {number[]} */ ([]);
+packages/internal/test/utils.test.js:822:  const output2 = /** @type {number[]} */ ([]);
+packages/internal/test/utils.test.js:836:  const output1 = /** @type {number[]} */ ([]);
+packages/internal/test/utils.test.js:848:  const output1 = /** @type {number[]} */ ([]);
+packages/internal/test/utils.test.js:849:  const output2 = /** @type {number[]} */ ([]);
+packages/internal/test/callback.test.js:44:  const cbp2 = /** @type {SyncCallback<(...args: unknown[]) => any>} */ ({
+packages/internal/src/hex.js:7:/** @type {string[]} */
+packages/internal/src/batched-deliver.js:28:  /** @type {unknown[]} */
+packages/internal/src/metrics.js:118:      explicitBucketBoundaries: /** @type {number[]} */ ([
+packages/internal/src/metrics.js:144:  /** @type {[QueueMetricAspect, string, string][]} */
+packages/internal/src/metrics.js:312:/** @type {Omit<KernelMetricMeta, 'metricType'>[]} */
+packages/internal/src/metrics.js:396:/** @type {Omit<KernelMetricMeta, 'metricType'>[]} */
+packages/internal/src/metrics.js:459:/** @type {KernelMetricMeta[]} */
+packages/internal/src/js-utils.js:195:  }, /** @type {U[]} */ ([]));
+packages/internal/src/lib-nodejs/spawnSubprocessWorker.js:30:/** @type {IOType[]} */
+packages/internal/src/marshal/wrap-marshaller.js:209:    /** @type {(SlotWrapper<NonNullable<Slot>> | null | undefined)[]} */
+packages/internal/src/marshal/wrap-marshaller.js:211:    /** @type {(object | null | undefined)[]} */
+packages/internal/src/marshal/wrap-marshaller.js:238:      /** @type {(object | null | undefined)[]} */
+packages/internal/src/marshal/wrap-marshaller.js:277:    /** @type {(Slot | null | undefined)[]} */
+packages/internal/src/marshal/wrap-marshaller.js:279:    /** @type {(object | null | undefined)[]} */
+packages/internal/src/marshal/wrap-marshaller.js:307:        /** @type {(SlotWrapper<Slot> | null | undefined)[]} */
+packages/internal/src/marshal/wrap-marshaller.js:337:    return /** @type {Slot[]} */ (harden(locallyResolvedSlots));
+packages/internal/src/ses-utils.js:88: * @type {(errors: Error[], message?: string, options?: object) => Error}
+packages/internal/src/ses-utils.js:202:    const errors = /** @type {PromiseRejectedResult[]} */ (
+packages/internal/src/ses-utils.js:206:      return /** @type {PromiseFulfilledResult<T>[]} */ (results).map(
+packages/internal/src/ses-utils.js:245:  /** @type {((err?: unknown) => unknown)[]} */
+packages/internal/src/ses-utils.js:304:  /** @type {string[]} */
+packages/internal/src/ses-utils.js:391:/** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+packages/internal/src/ses-utils.js:423:  /** @type {AsyncQueue<QueuePayload>[]} */
+packages/internal/src/callback.js:21:  /** @type {<T extends PropertyKey>(obj: { [K in T]?: unknown }) => T[]} */ (
+packages/internal/src/method-tools.js:21:  /** @type {K[]} */ (realGetMethodNames(val));
+packages/internal/src/method-tools.js:32:  /** @type {string[]} */ (
+packages/internal/src/method-tools.js:73:            value: (/** @type {unknown[]} */ ...args) =>
+packages/internal/src/natural-sort.js:33: * @type {Map<string, string[]>}
+packages/internal/src/node/buffer-line-transform.js:47:    /** @type {Buffer[]} */
+packages/internal/src/storage-test-utils.js:104:  /** @type {T[]} */
+packages/internal/src/storage-test-utils.js:183:  /** @type {StorageMessage[]} */
+packages/internal/src/storage-test-utils.js:216:          /** @type {StorageEntry[]} */
+packages/internal/src/storage-test-utils.js:229:          /** @type {StorageEntry[]} */
+packages/portfolio-deploy/src/axelar-configs.js:422:  /** @type {[string, number, `0x${string}`][]} */ ([
+packages/portfolio-deploy/src/axelar-configs.js:558:  /** @type {[string, number, `0x${string}`][]} */ ([
