@@ -11,6 +11,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  vm-integration:
+    name: VM integration (${{ matrix.mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [embedded, split]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/restore-golang
+        with:
+          go-version: '1.24'
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: 'node-new'
+      - name: Build daemon and native adapter
+        run: bin/agd build
+      - name: Exercise real Go and JS VM lifecycle
+        env:
+          VM_TEST_ARTIFACTS: ${{ runner.temp }}/vm-${{ matrix.mode }}
+          VM_TEST_MODE: ${{ matrix.mode }}
+        run: node packages/cosmic-swingset/tools/test-vm-mode.js "$VM_TEST_MODE"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: vm-${{ matrix.mode }}-logs
+          path: ${{ runner.temp }}/vm-${{ matrix.mode }}/*.log
+
   gotest:
     runs-on: ubuntu-latest
     steps:

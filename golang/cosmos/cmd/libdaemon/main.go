@@ -31,13 +31,6 @@ const (
 	EX_SOFTWARE = 70 /* internal software error */
 )
 
-type goReturn = struct {
-	str string
-	err error
-}
-
-const SwingSetPort = 123
-
 var logger = log.NewLogger(os.Stderr).With("module", "cmd/libdaemon")
 
 var vmClientCodec *vm.ClientCodec
@@ -45,7 +38,7 @@ var agdServer *vm.AgdServer
 
 // ConnectVMClientCodec creates an RPC client codec and a sender to the
 // in-process implementation of the VM.
-func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, vm.Sender) {
+func ConnectVMClientCodec(ctx context.Context, sendFunc func(int, int, string)) (*vm.ClientCodec, vm.Sender) {
 	vmClientCodec = vm.NewClientCodec(ctx, sendFunc)
 	vmClient := rpc.NewClientWithCodec(vmClientCodec)
 
@@ -55,7 +48,7 @@ func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, 
 		}
 
 		msg := vm.Message{
-			Port:       nodePort,
+			Port:       1,
 			NeedsReply: needReply,
 			Data:       jsonRequest,
 		}
@@ -87,7 +80,7 @@ func handlePanic(caller string) {
 }
 
 //export RunAgCosmosDaemon
-func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) C.int {
+func RunAgCosmosDaemon(toNode C.sendFunc, cosmosArgs []*C.char) {
 	defer handlePanic("RunAgCosmosDaemon")
 
 	userHomeDir, err := os.UserHomeDir()
@@ -109,7 +102,6 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 
 	vmClientCodec, sendToNode = ConnectVMClientCodec(
 		context.Background(),
-		int(nodePort),
 		sendFunc,
 	)
 
@@ -118,34 +110,34 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 		args[i] = C.GoString(s)
 	}
 
-	// fmt.Fprintln(os.Stderr, "Starting Cosmos", args)
 	os.Args = args
 	go func() {
 		defer handlePanic("daemon.RunWithController")
 
 		// We run in the background, but exit when the job is over.
-		// swingset.SendToNode("hello from Initial Go!")
 		exitCode := 0
-		daemoncmd.OnStartHook = func(srv *vm.AgdServer, logger log.Logger, appOpts servertypes.AppOptions) error {
+		daemoncmd.OnAppHook = func(srv *vm.AgdServer, logger log.Logger, appOpts servertypes.AppOptions) error {
 			agdServer = srv
-			// We tried running start, which should never exit, so exit with non-zero
-			// code if we ever stop.
+			return nil
+		}
+		daemoncmd.OnStartHook = func(_ *vm.AgdServer, _ log.Logger, _ servertypes.AppOptions) error {
+			// start should not return without an explicit shutdown.
 			exitCode = 99
 			return nil
 		}
 		daemon.RunWithController(sendToNode)
-		// fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
-		os.Exit(exitCode)
+		// A c-shared Go runtime runs alongside Node's main thread. On Darwin,
+		// os.Exit uses libc exit, whose process-wide cleanup can race Node's
+		// teardown (observed as an inspector mutex abort after export). Match
+		// immediate process termination without running libc exit handlers here.
+		C._Exit(C.int(exitCode))
 	}()
-	// fmt.Fprintln(os.Stderr, "Done starting Cosmos")
-	return SwingSetPort
 }
 
 //export ReplyToGo
 func ReplyToGo(replyPort C.int, isError C.int, resp C.Body) C.int {
 	defer handlePanic("ReplyToGo")
 	respStr := C.GoString(resp)
-	// fmt.Printf("Reply to Go %d %s\n", replyPort, respStr)
 	if err := vmClientCodec.Receive(int(replyPort), int(isError) != 0, respStr); err != nil {
 		return C.int(1)
 	}
@@ -157,10 +149,9 @@ type errorWrapper struct {
 }
 
 //export SendToGo
-func SendToGo(port C.int, msg C.Body) C.Body {
+func SendToGo(port C.int, msg C.Body, isError *C.int) C.Body {
 	defer handlePanic("SendToGo")
 	msgStr := C.GoString(msg)
-	// fmt.Fprintln(os.Stderr, "Send to Go", msgStr)
 	var respStr string
 	message := &vm.Message{
 		Port:       int(port),
@@ -169,11 +160,12 @@ func SendToGo(port C.int, msg C.Body) C.Body {
 	}
 
 	err := agdServer.ReceiveMessage(message, &respStr)
+	*isError = 0
 	if err == nil {
 		return C.CString(respStr)
 	}
 
-	// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
+	*isError = 1
 	errResp := errorWrapper{
 		Error: err.Error(),
 	}

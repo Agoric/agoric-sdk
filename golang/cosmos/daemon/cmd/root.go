@@ -56,7 +56,12 @@ import (
 )
 
 var AppName = "agd"
+
+// OnStartHook runs only for the start command, after configuration validation.
 var OnStartHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
+
+// OnAppHook prepares the VM connection when a command opens the application.
+var OnAppHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 var OnExportHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 
 // CustomAppConfig extends the base config struct.
@@ -265,12 +270,23 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 				if _, err = swingset.SwingsetConfigFromViper(viper); err != nil {
 					return err
 				}
+				if OnStartHook != nil {
+					return OnStartHook(ac.agdServer, server.GetServerContextFromCmd(cmd).Logger, viper)
+				}
 				return nil
 			}
 			appendToPreRunE(command, preRunE)
 		case "export":
 			addAgoricVMFlags(command)
 			extendCosmosExportCommand(command)
+		case "rollback":
+			addAgoricVMFlags(command)
+		case "comet":
+			for _, subCommand := range command.Commands() {
+				if subCommand.Name() == "bootstrap-state" {
+					addAgoricVMFlags(subCommand)
+				}
+			}
 		case "snapshots":
 			for _, subCommand := range command.Commands() {
 				switch subCommand.Name() {
@@ -306,21 +322,27 @@ const (
 	// FlagSplitVm is the command-line flag for subcommands that can use a
 	// split-process Agoric VM.  The default is to use an embedded VM.
 	FlagSplitVm      = "split-vm"
+	FlagVMPath       = "vm-path"
 	EmbeddedVmEnvVar = "AGD_EMBEDDED_VM"
 )
 
 // hasVMController returns true if we have a VM (are running in split-vm mode,
 // or with an embedded VM).
 func hasVMController(serverCtx *server.Context) bool {
-	return serverCtx.Viper.GetString(FlagSplitVm) != "" ||
+	return serverCtx.Viper.GetBool(FlagSplitVm) ||
 		os.Getenv(EmbeddedVmEnvVar) != ""
 }
 
 func addAgoricVMFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().String(
+	cmd.PersistentFlags().Bool(
 		FlagSplitVm,
+		false,
+		"Run the Agoric VM in a separate process",
+	)
+	cmd.PersistentFlags().String(
+		FlagVMPath,
 		"",
-		"Specify the external Agoric VM program",
+		"Path to the Agoric VM program (empty uses automatic discovery)",
 	)
 }
 
@@ -389,8 +411,8 @@ func (ac appCreator) newApp(
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
-	if OnStartHook != nil {
-		if err := OnStartHook(ac.agdServer, logger, appOpts); err != nil {
+	if OnAppHook != nil {
+		if err := OnAppHook(ac.agdServer, logger, appOpts); err != nil {
 			panic(err)
 		}
 	}
