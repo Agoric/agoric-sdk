@@ -55,7 +55,7 @@ observations = {
   ],
   merklClaims: [
     { accountPlace: '@Base', distributor, tokenId: MORPHO,
-      cumulativeAmount: 3e18, claimedAmount: 1e18, proof: [/* … */] },
+      cumulativeAmount: 3e18, claimedAmount: 1e18, proofs: [/* … */] },
   ],
   oneInchSwaps: [
     { accountPlace: '@Base', tokenIn: MORPHO, tokenOut: USDC, amountIn: 2e18,

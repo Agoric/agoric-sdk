@@ -249,10 +249,10 @@ export type CompoundClaimEvidence = {
 
 /**
  * A Merkl entitlement of the account at `accountPlace`, claimable from
- * `distributor` with `proof`. Merkl entitlements are cumulative, so a claim
+ * `distributor` with `proofs`. Merkl entitlements are cumulative, so a claim
  * is expected to pay `cumulativeAmount - claimedAmount` (see
  * `getMerklClaimExpectedAmount`), but the distributor uses its own claimed
- * state when the claim executes, and a root update may invalidate `proof`.
+ * state when the claim executes, and a root update may invalidate `proofs`.
  */
 export type MerklClaimEvidence = {
   accountPlace: EvmAccountRef;
@@ -262,8 +262,11 @@ export type MerklClaimEvidence = {
   cumulativeAmount: bigint;
   /** amount already claimed, as observed (e.g. from the Merkl API) */
   claimedAmount: bigint;
-  /** Merkle proof of `cumulativeAmount` (32-byte hex nodes) */
-  proof: HexBytes[];
+  /**
+   * Merkle proof of `cumulativeAmount` (32-byte hex nodes), named as in
+   * the Merkl API
+   */
+  proofs: HexBytes[];
 };
 
 /**

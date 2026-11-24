@@ -122,7 +122,7 @@ export const MerklClaimEvidenceShape: CastedPattern<MerklClaimEvidence> =
       tokenId: M.string(),
       cumulativeAmount: M.nat(),
       claimedAmount: M.nat(),
-      proof: M.arrayOf(M.string()),
+      proofs: M.arrayOf(M.string()),
     },
     {},
     {},

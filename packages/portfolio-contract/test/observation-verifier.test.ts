@@ -172,7 +172,7 @@ test('verifies optional claim evidence and swap instructions', async t => {
           tokenId: rewardToken,
           cumulativeAmount: 3n * 10n ** 18n,
           claimedAmount: 10n ** 18n,
-          proof: [`0x${'12'.repeat(32)}`],
+          proofs: [`0x${'12'.repeat(32)}`],
         },
       ],
       oneInchSwaps: [

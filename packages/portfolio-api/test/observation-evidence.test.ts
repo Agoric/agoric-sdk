@@ -53,7 +53,7 @@ const merklClaim: MerklClaimEvidence = {
   tokenId: morphoToken,
   cumulativeAmount: 3n * 10n ** 18n,
   claimedAmount: 10n ** 18n,
-  proof: [`0x${'12'.repeat(32)}`, `0x${'34'.repeat(32)}`],
+  proofs: [`0x${'12'.repeat(32)}`, `0x${'34'.repeat(32)}`],
 };
 const oneInchSwap: OneInchSwapInstructions = {
   accountPlace: '@Base',
@@ -210,7 +210,7 @@ test('evidence uses the declared EIP-712 scalar types', t => {
     types[struct].find(f => f.name === name)?.type;
   t.is(typeOf('AaveClaim', 'tokenId'), 'address');
   t.is(typeOf('AaveClaim', 'expectedAmount'), 'uint256');
-  t.is(typeOf('MerklClaim', 'proof'), 'bytes32[]');
+  t.is(typeOf('MerklClaim', 'proofs'), 'bytes32[]');
   t.is(typeOf('OneInchSwap', 'slippageBps'), 'uint16');
   t.is(typeOf('OneInchSwap', 'expiresAt'), 'uint64');
   t.is(typeOf('OneInchSwap', 'data'), 'bytes');
@@ -252,7 +252,7 @@ test('every evidence field affects the signature digest', t => {
       { tokenId: addr('2') },
       { cumulativeAmount: 4n * 10n ** 18n },
       { claimedAmount: 0n },
-      { proof: [merklClaim.proof[0]] },
+      { proofs: [merklClaim.proofs[0]] },
     ],
     oneInchSwaps: [
       { accountPlace: '@Arbitrum' },
@@ -311,7 +311,7 @@ test('the EIP-712 layer rejects malformed evidence primitives', t => {
     ],
     [
       'short proof node',
-      { merklClaims: [{ ...merklClaim, proof: ['0x1234'] }] },
+      { merklClaims: [{ ...merklClaim, proofs: ['0x1234'] }] },
     ],
     [
       'fractional slippage',
@@ -597,7 +597,7 @@ test('evidence is usable without lockdown', async t => {
         tokenId: '0x${'b'.repeat(40)}',
         cumulativeAmount: 3n,
         claimedAmount: 1n,
-        proof: ['0x${'12'.repeat(32)}'],
+        proofs: ['0x${'12'.repeat(32)}'],
       }],
     };
     const message = m.ymaxObservationMessageKit.getStandaloneOperationData(

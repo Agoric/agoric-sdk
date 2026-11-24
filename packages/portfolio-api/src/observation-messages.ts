@@ -142,7 +142,7 @@ const ObservationSubTypes = {
     { name: 'tokenId', type: 'address' },
     { name: 'cumulativeAmount', type: 'uint256' },
     { name: 'claimedAmount', type: 'uint256' },
-    { name: 'proof', type: 'bytes32[]' },
+    { name: 'proofs', type: 'bytes32[]' },
   ],
   /** @see {@link OneInchSwapInstructions} */
   OneInchSwap: [
