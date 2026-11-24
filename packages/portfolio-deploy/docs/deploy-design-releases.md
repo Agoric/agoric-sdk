@@ -72,7 +72,8 @@ When an operator manually starts
   Allowed values, in increasing risk order:
   - `ymax0-devnet`
   - `ymax0-main`
-  - `ymax1-main`
+  - `ymax1-mainnet-contract` (uses the `ymax1-main` target for CLI commands
+    and release assets)
 - `releaseTag`
 - optional `privateArgsOverrides` JSON string
 - `signingKey`
@@ -88,8 +89,8 @@ When an operator manually starts
   Allowed values:
   - `up`
   - `down`
-  Required only when `target == "ymax1-main"`
-  Attests ymax1 planner state; must be `down` for `ymax1-main` upgrades.
+  Required only when `target == "ymax1-mainnet-contract"`
+  Attests ymax1 planner state and must be `down` for this target.
   The operator is responsible for actually stopping the planner.
 
 ### Tag Naming
@@ -347,7 +348,9 @@ Upgrade policy by target:
 - detached direct or `authz` operator signing can also be exercised on
   `ymax0-devnet` and `ymax0-main`
 - `ymax0-main` requires an approval gate before upgrade
-- `ymax1-main` requires protected-environment approval before upgrade
+- `ymax1-main` release submissions use `ymax1-mainnet-contract` and proceed
+  automatically when the upgrade is ready, the operator attests that the
+  planner is down, and `stopBeforeSubmit` is false
 - operator-held signing is the intended high-safety path on `ymax1-main`
 
 Install:
