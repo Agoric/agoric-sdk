@@ -16,6 +16,7 @@ import type { InstrumentId } from './instruments.js';
 import type {
   AssetPlaceRef,
   DepositFromChainRef,
+  EvmAccountRef,
   InterChainAccountRef,
   LocalChainAccountRef,
   PortfolioBalancePlaceRef,
@@ -404,6 +405,38 @@ const evmChains = deepFreeze({
 export const isEvmChain = (specimen: unknown): boolean =>
   typeof specimen === 'string' && Object.hasOwn(evmChains, specimen);
 deepFreeze(isEvmChain);
+
+/**
+ * Is the input a portfolio account on an opted-in EVM chain (e.g. `@Base`),
+ * rather than an instrument or a non-EVM account?
+ */
+export const isEvmAccountRef = (ref: unknown): ref is EvmAccountRef =>
+  typeof ref === 'string' &&
+  isInterChainAccountRef(ref) &&
+  isEvmChain(maybeChainOf(ref));
+deepFreeze(isEvmAccountRef);
+
+/**
+ * Assert {@link isEvmAccountRef}, throwing a TypeError prefixed by `label`,
+ * if any.
+ */
+export const assertEvmAccountRef: (
+  ref: unknown,
+  label?: string,
+) => asserts ref is EvmAccountRef = (ref, label) => {
+  if (!isEvmAccountRef(ref)) {
+    const prefix = label === undefined ? '' : `[${label}] `;
+    throw TypeError(
+      `${prefix}invalid EVM account place ${JSON.stringify(ref)}`,
+    );
+  }
+};
+deepFreeze(assertEvmAccountRef);
+
+/** The EVM chain of a portfolio account on it, e.g. `Base` for `@Base`. */
+export const evmChainOf = (ref: EvmAccountRef): AxelarChain =>
+  ref.slice(1) as AxelarChain;
+deepFreeze(evmChainOf);
 
 /**
  * Get a holding identity suitable for use as a PropertyKey.

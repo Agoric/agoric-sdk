@@ -40,6 +40,7 @@ import type { Address as EvmAddress } from 'abitype';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/evm-address.js';
 import {
+  assertEvmAccountRef,
   isEvmChain,
   isInterChainAccountRef,
   isInstrumentId,
@@ -48,7 +49,6 @@ import {
   getCanonicalHoldingKey,
 } from './places.ts';
 import type {
-  EvmAccountRef,
   MerklClaimEvidence,
   OneInchSwapInstructions,
   PlanObservations,
@@ -441,17 +441,6 @@ const assertNonZeroAddress = (
   }
 };
 
-const assertEvmAccountPlace: (
-  place: string,
-  label: string,
-) => asserts place is EvmAccountRef = (place, label) => {
-  if (!isInterChainAccountRef(place) || !isEvmChain(maybeChainOf(place))) {
-    throw TypeError(
-      `[${label}] invalid account place ${JSON.stringify(place)}`,
-    );
-  }
-};
-
 /**
  * Validate instrument-attributed claims, whose instrument must be of the
  * claim's protocol, on an EVM chain.
@@ -513,7 +502,7 @@ const assertMerklClaims: (
   claims.forEach((claim, i) => {
     const label = `merklClaims[${i}]`;
     const { accountPlace, distributor, tokenId } = claim;
-    assertEvmAccountPlace(accountPlace, label);
+    assertEvmAccountRef(accountPlace, label);
     assertNonZeroAddress(distributor, label, 'distributor');
     assertNonZeroAddress(tokenId, label, 'token');
     try {
@@ -543,7 +532,7 @@ const assertOneInchSwaps: (
   swaps.forEach((swap, i) => {
     const label = `oneInchSwaps[${i}]`;
     const { accountPlace, tokenIn, tokenOut, amountIn, slippageBps } = swap;
-    assertEvmAccountPlace(accountPlace, label);
+    assertEvmAccountRef(accountPlace, label);
     // The route's executor and srcReceiver may be the zero address,
     // but tokens may not be.
     assertNonZeroAddress(tokenIn, label, 'tokenIn');

@@ -391,12 +391,12 @@ const invalidCases: [
   [
     'Merkl claim at an instrument',
     { merklClaims: [{ ...merklClaim, accountPlace: 'Aave_Base' }] },
-    /\[merklClaims\[0\]\] invalid account place/,
+    /\[merklClaims\[0\]\] invalid EVM account place/,
   ],
   [
     'Merkl claim off EVM',
     { merklClaims: [{ ...merklClaim, accountPlace: '@noble' }] },
-    /\[merklClaims\[0\]\] invalid account place/,
+    /\[merklClaims\[0\]\] invalid EVM account place/,
   ],
   [
     'Merkl claim already over-claimed',
@@ -417,7 +417,7 @@ const invalidCases: [
   [
     'swap at an instrument',
     { oneInchSwaps: [{ ...oneInchSwap, accountPlace: 'Aave_Base' }] },
-    /\[oneInchSwaps\[0\]\] invalid account place/,
+    /\[oneInchSwaps\[0\]\] invalid EVM account place/,
   ],
   [
     'swap of a token for itself',
