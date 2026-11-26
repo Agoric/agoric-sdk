@@ -1,5 +1,5 @@
 import { JSONRPCClient, type JSONRPCResponse } from 'json-rpc-2.0';
-import type { CloseEvent, WebSocket } from 'ws';
+import type { CloseEvent } from 'ws';
 
 const MAX_SUBSCRIPTIONS = 5;
 
@@ -10,6 +10,34 @@ const hasOwnProperties = (obj: unknown) =>
 export type SubscriptionResponse = {
   type: string;
   value: Record<string, unknown>;
+};
+
+/** The parts of a WebSocket close event that CosmosRPCClient reports. */
+export type RpcCloseEvent = Pick<CloseEvent, 'code' | 'reason' | 'wasClean'>;
+
+/**
+ * The parts of `ws`'s WebSocket that CosmosRPCClient uses, narrower than a
+ * `Pick` of it so that a test can provide a fake.
+ */
+export type RpcWebSocket = {
+  send(data: string): void;
+  close(): void;
+  terminate(): void;
+  ping(): void;
+  on(event: 'pong', listener: () => void): unknown;
+  addEventListener(type: 'open', listener: () => void): void;
+  addEventListener(
+    type: 'close',
+    listener: (event: RpcCloseEvent) => void,
+  ): void;
+  addEventListener(
+    type: 'error',
+    listener: (event: { error?: { message?: string } }) => void,
+  ): void;
+  addEventListener(
+    type: 'message',
+    listener: (event: { data: { toString(encoding: 'utf8'): string } }) => void,
+  ): void;
 };
 
 export class CosmosRPCClient extends JSONRPCClient {
@@ -26,21 +54,30 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   #openedPK: PromiseWithResolvers<void>;
 
-  #closedPK: PromiseWithResolvers<CloseEvent>;
+  #closedPK: PromiseWithResolvers<RpcCloseEvent>;
 
   #isClosed = false;
 
   #lastSentId = -1;
 
-  #ws: WebSocket;
+  #notificationCount = 0;
 
+  #ws: RpcWebSocket;
+
+  /**
+   * @param url
+   * @param opts
+   * @param opts.WebSocket
+   * @param opts.heartbeats each item pings the server, failing the connection
+   *   if the previous ping got no pong
+   */
   constructor(
     url: string | URL,
     {
       WebSocket,
       heartbeats,
     }: {
-      WebSocket: typeof import('ws').WebSocket;
+      WebSocket: new (url: URL) => RpcWebSocket;
       heartbeats?: AsyncIterable<unknown>;
     },
   ) {
@@ -114,6 +151,7 @@ export class CosmosRPCClient extends JSONRPCClient {
       const response = JSON.parse(str);
       const sub = this.#subscriptions.get(response.id);
       if (sub) {
+        this.#notificationCount += 1;
         sub.notify(response);
       }
       this.receive(response);
@@ -145,6 +183,14 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   closed() {
     return this.#closedPK.promise;
+  }
+
+  /**
+   * How many messages have arrived for subscriptions, for telling whether they
+   * still deliver (e.g., a node that stops getting blocks goes quiet).
+   */
+  notificationCount() {
+    return this.#notificationCount;
   }
 
   subscribe(query: string) {
@@ -182,6 +228,8 @@ export class CosmosRPCClient extends JSONRPCClient {
       // console.log(`Subscribing to query ${JSON.stringify(query)} with ID ${subId}`);
       const unsubscribe = () => {
         this.#subscriptions.delete(subId);
+        // A closed socket has no subscription left to cancel.
+        if (this.#isClosed) return;
         void this.request('unsubscribe', { query });
       };
       const readyKit = {

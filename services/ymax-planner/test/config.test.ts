@@ -147,6 +147,29 @@ test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
   }
 });
 
+test('loadConfig defaults to no AGORIC_RPC_FALLBACKS', async t => {
+  for (const clusterName of ['local', 'testnet', 'mainnet']) {
+    const config = await callLoadConfig({ CLUSTER: clusterName });
+    t.deepEqual(config.agoricRpcFallbacks, [], `CLUSTER=${clusterName}`);
+  }
+});
+
+test('loadConfig parses AGORIC_RPC_FALLBACKS', async t => {
+  const config = await callLoadConfig({
+    CLUSTER: 'mainnet',
+    AGORIC_RPC_FALLBACKS: ' https://a.example:443 , https://b.example ,, ',
+  });
+  t.deepEqual(config.agoricRpcFallbacks, [
+    'https://a.example:443',
+    'https://b.example',
+  ]);
+
+  await t.throwsAsync(
+    callLoadConfig({ AGORIC_RPC_FALLBACKS: 'https://a.example,not a url' }),
+    { message: /AGORIC_RPC_FALLBACKS\[1\].* must be a valid URL/ },
+  );
+});
+
 test('loadConfig validates positive integers', async t => {
   await t.throwsAsync(() => callLoadConfig({ REQUEST_TIMEOUT: '0' }), {
     message: /"REQUEST_TIMEOUT" must be a positive integer/,

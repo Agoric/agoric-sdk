@@ -51,6 +51,12 @@ export interface YmaxPlannerConfig {
   readonly requestLimits: Partial<RequestLimits>;
   readonly spectrumBlockchainEndpoints: string[];
   readonly agoricNetworkSpec: string;
+  /**
+   * Agoric RPC endpoints to fall back to, in order, when the one from
+   * AGORIC_NET is unavailable. Must be archive nodes, because the planner reads
+   * vstorage history.
+   */
+  readonly agoricRpcFallbacks: readonly string[];
   readonly axelar: {
     readonly apiUrl: string;
     readonly chainIdMap: Record<AxelarChain, string>;
@@ -205,6 +211,14 @@ export const loadConfig = async (
     clusterName ||= 'testnet';
   }
 
+  const agoricRpcFallbacks = harden(
+    (env.AGORIC_RPC_FALLBACKS || '').split(',').flatMap((addr, i) => {
+      const label = `AGORIC_RPC_FALLBACKS[${i}]`;
+      const url = validateUrl({ [label]: addr }, label, undefined);
+      return url ? [url] : [];
+    }),
+  );
+
   const gcpProjectId = env.GCP_PROJECT_ID?.trim() || 'simulationlab';
   const gcpSecretName = env.GCP_SECRET_NAME?.trim() || 'YMAX_CONTROL_MNEMONIC';
   const mnemonic =
@@ -314,6 +328,7 @@ export const loadConfig = async (
     requestLimits: { timeout, maxRetries },
     spectrumBlockchainEndpoints,
     agoricNetworkSpec,
+    agoricRpcFallbacks,
     axelar: {
       apiUrl: axelarApiAddress,
       chainIdMap: axelarChainIdMap,
