@@ -31,19 +31,6 @@ export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
     mainnet: 'main',
   });
 
-/**
- * Agoric RPC endpoints to fall back to when the one from AGORIC_NET is
- * unavailable. Archive nodes, because the planner reads vstorage history.
- */
-export const defaultAgoricRpcFallbacksForCluster: Record<
-  ClusterName,
-  readonly string[]
-> = harden({
-  local: [],
-  testnet: [],
-  mainnet: ['https://main-a.rpc.agoric.net:443'],
-});
-
 /** `maxRetries` is a count; all other numbers are in milliseconds. */
 export type RequestLimits = {
   timeout: number;
@@ -64,7 +51,11 @@ export interface YmaxPlannerConfig {
   readonly requestLimits: Partial<RequestLimits>;
   readonly spectrumBlockchainEndpoints: string[];
   readonly agoricNetworkSpec: string;
-  /** Agoric RPC endpoints to use, in order, when AGORIC_NET's is unavailable. */
+  /**
+   * Agoric RPC endpoints to fall back to, in order, when the one from
+   * AGORIC_NET is unavailable. Must be archive nodes, because the planner reads
+   * vstorage history.
+   */
   readonly agoricRpcFallbacks: readonly string[];
   readonly axelar: {
     readonly apiUrl: string;
@@ -220,21 +211,12 @@ export const loadConfig = async (
     clusterName ||= 'testnet';
   }
 
-  // An empty AGORIC_RPC_FALLBACKS disables the default fallbacks.
   const agoricRpcFallbacks = harden(
-    env.AGORIC_RPC_FALLBACKS === undefined
-      ? defaultAgoricRpcFallbacksForCluster[clusterName]
-      : env.AGORIC_RPC_FALLBACKS.split(',')
-          .map(addr => addr.trim())
-          .filter(addr => addr !== '')
-          .map((addr, i) => {
-            try {
-              void new URL(addr);
-              return addr;
-            } catch {
-              throw Fail`AGORIC_RPC_FALLBACKS[${q(i)}] must be a valid URL, got: ${addr}`;
-            }
-          }),
+    (env.AGORIC_RPC_FALLBACKS || '').split(',').flatMap((addr, i) => {
+      const label = `AGORIC_RPC_FALLBACKS[${i}]`;
+      const url = validateUrl({ [label]: addr }, label, undefined);
+      return url ? [url] : [];
+    }),
   );
 
   const gcpProjectId = env.GCP_PROJECT_ID?.trim() || 'simulationlab';

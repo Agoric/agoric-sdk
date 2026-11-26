@@ -40,8 +40,7 @@ import {
 
 import {
   connectFirstHealthyAgoricRpc,
-  waitForBetterAgoricRpc,
-  waitForHealthyAgoricRpc,
+  waitForAgoricRpcSwitch,
 } from './agoric-rpc.ts';
 import { FETCH_HEADERS, loadConfig } from './config.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
@@ -132,17 +131,23 @@ type YdsTransactionSubmitBody = {
   ymaxInstance: 'ymax0' | 'ymax1';
 };
 
-/** Fail a websocket subscription that goes this long without a new block. */
-const AGORIC_MAX_MESSAGE_GAP_MS = 60_000;
-
 /**
- * How often to check the health of Agoric RPCs while running. The one in use is
- * abandoned for a healthy other after this many consecutive unhealthy checks.
- * While on a fallback, the preferred one needs this many consecutive healthy
- * checks before the planner switches back.
+ * How often to check the health of Agoric RPC targets while running. A target
+ * whose subscription gets no new block between two checks counts as stalled.
  */
 const AGORIC_RPC_CHECK_INTERVAL_MS = 60_000;
+
+/**
+ * How many consecutive RPC target health check failures before forcing
+ * termination (to restart and pick a better one).
+ */
 const AGORIC_RPC_UNHEALTHY_CHECKS = 3;
+
+/**
+ * While on a fallback RPC target, how many consecutive health check successes
+ * of a preferred RPC target before forcing termination (to restart and pick
+ * that one).
+ */
 const PREFERRED_AGORIC_RPC_HEALTHY_CHECKS = 5;
 
 const logChainAppInfo = async (
@@ -230,53 +235,60 @@ export const main = async (
     env: { AGORIC_NET: config.agoricNetworkSpec },
     fetch,
   });
-  const agoricRpcAddrs = Array.from(
-    new Set([...networkConfig.rpcAddrs, ...config.agoricRpcFallbacks]),
-  );
+  // The preferred Agoric RPC is the first one from AGORIC_NET (the only one,
+  // if AGORIC_NET gives it explicitly rather than by network config); fall
+  // back to the configured others, in order, when it is unavailable.
+  const agoricRpcAddrs = [
+    ...new Set([networkConfig.rpcAddrs[0], ...config.agoricRpcFallbacks]),
+  ];
   console.warn('Initializing planner:', networkConfig, { agoricRpcAddrs });
 
-  const agoricRpcPowers = {
+  const agoricRpcOptions = {
+    chainId: networkConfig.chainName,
+    log: console.warn,
     makeRpcClient: (rpcAddr: string) =>
       new CosmosRPCClient(rpcAddr, {
-        heartbeats: generateInterval(6000),
-        maxMessageGapMs:
-          agoricRpcAddrs.length > 1 ? AGORIC_MAX_MESSAGE_GAP_MS : undefined,
-        now,
         WebSocket,
+        heartbeats: generateInterval(6000),
       }),
     // Wall-clock time, for comparing with block times.
     now: Date.now,
     setTimeout,
     clearTimeout,
   };
-  const agoricRpcCriteria = { chainId: networkConfig.chainName };
   const {
     rpc,
     rpcAddr: agoricRpcAddr,
     index: agoricRpcIndex,
+    healthy: agoricRpcHealthy,
     status: agoricRpcStatus,
     failures: agoricRpcFailures,
-  } = await connectFirstHealthyAgoricRpc(
-    agoricRpcCriteria,
-    { ...agoricRpcPowers, log: console.warn },
-    agoricRpcAddrs,
-  );
+  } = await connectFirstHealthyAgoricRpc(agoricRpcAddrs, agoricRpcOptions);
   console.warn('Agoric chain status:', agoricRpcAddr, agoricRpcStatus);
-  if (agoricRpcIndex)
+  if (!agoricRpcHealthy) {
+    // E.g., a chain halt; stay until another becomes healthy.
+    console.error(
+      `🚨 No healthy Agoric RPC; using ${agoricRpcAddr} anyway:`,
+      agoricRpcFailures,
+    );
+  } else if (agoricRpcIndex > 0) {
     console.error(
       `🚨 Using fallback Agoric RPC ${agoricRpcAddr}; unavailable:`,
       agoricRpcFailures,
     );
-
+  }
   await logChainAppInfo(rpc, console.warn);
 
   // Use the selected RPC for everything: queries, vstorage, and broadcasts.
-  const agoricNetworkConfig = { ...networkConfig, rpcAddrs: [agoricRpcAddr] };
+  const singleRpcNetworkConfig = {
+    ...networkConfig,
+    rpcAddrs: [agoricRpcAddr],
+  };
   const stargateQueryClient = await StargateClient.connect(agoricRpcAddr);
 
   const walletUtils = await makeSmartWalletKit(
     simplePowers,
-    agoricNetworkConfig,
+    singleRpcNetworkConfig,
   );
   const signingSmartWalletKit =
     await (async (): Promise<SigningSmartWalletKit> => {
@@ -661,50 +673,24 @@ export const main = async (
       balanceCacheTtlMs: YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
     });
     // Switching RPCs takes a restart (with a fresh scan of vstorage), so stop
-    // when another RPC should be used. On a fallback, that is once the
-    // preferred one has recovered.
-    const preferredRpcAddr = agoricRpcAddrs[0];
+    // when another RPC should be used.
     const stopRechecks = makeAbortController();
-    const makeRecheckTicks = () =>
-      generateInterval(AGORIC_RPC_CHECK_INTERVAL_MS, undefined, {
-        signal: stopRechecks.signal,
-      });
-    const preferredRecoveredP = !agoricRpcIndex
-      ? new Promise<never>(() => {})
-      : waitForHealthyAgoricRpc(
-          {
-            ...agoricRpcCriteria,
-            healthyChecks: PREFERRED_AGORIC_RPC_HEALTHY_CHECKS,
-          },
-          agoricRpcPowers,
-          preferredRpcAddr,
-          makeRecheckTicks(),
-        ).then(() => {
-          throw Fail`Preferred Agoric RPC ${q(preferredRpcAddr)} recovered; exiting to switch back to it from ${q(agoricRpcAddr)}`;
-        });
-    // On any RPC, it is also once that one stays unhealthy (e.g., its queries
-    // stall while its websocket still delivers blocks) and another is healthy.
-    const otherRpcAddrs = agoricRpcAddrs.filter(addr => addr !== agoricRpcAddr);
-    const betterRpcP = !otherRpcAddrs.length
-      ? new Promise<never>(() => {})
-      : waitForBetterAgoricRpc(
-          {
-            ...agoricRpcCriteria,
-            unhealthyChecks: AGORIC_RPC_UNHEALTHY_CHECKS,
-          },
-          otherRpcAddrs,
-          { ...agoricRpcPowers, log: console.warn },
-          agoricRpcAddr,
-          makeRecheckTicks(),
-        ).then(({ betterRpcAddr, failure }) => {
-          throw Fail`Agoric RPC ${q(agoricRpcAddr)} is unhealthy (${q(String(failure))}); exiting to switch to ${q(betterRpcAddr)}`;
-        });
-    await Promise.race([engineP, preferredRecoveredP, betterRpcP]).finally(
-      () => {
-        stopRechecks.abort();
-        rpc.close();
-      },
-    );
+    const rpcSwitchP = waitForAgoricRpcSwitch(agoricRpcAddrs, agoricRpcAddr, {
+      ...agoricRpcOptions,
+      makeTicks: () =>
+        generateInterval(AGORIC_RPC_CHECK_INTERVAL_MS, undefined, {
+          signal: stopRechecks.signal,
+        }),
+      notificationCount: () => rpc.notificationCount(),
+      preferredHealthyCheckCount: PREFERRED_AGORIC_RPC_HEALTHY_CHECKS,
+      unhealthyCheckCount: AGORIC_RPC_UNHEALTHY_CHECKS,
+    }).then(reason => {
+      throw Error(`${reason}; exiting so that a restart can switch`);
+    });
+    await Promise.race([engineP, rpcSwitchP]).finally(() => {
+      stopRechecks.abort();
+      rpc.close();
+    });
   });
 };
 

@@ -162,20 +162,22 @@ Environment variables:
   "$subdomain,$chainId" or "$fqdn,$chainId" for sending cosmos-sdk RPC requests
   to $subdomain.rpc.agoric.net or $fqdn (respectively) and assuming the chain ID
   (default derived from `CLUSTER`, falling back to "local")
-- `AGORIC_RPC_FALLBACKS`: comma-separated Agoric RPC URLs to use, in order,
-  when the one from `AGORIC_NET` is unhealthy: unreachable, catching up,
-  without a recent block, or not answering a query within 15 seconds (default
-  "https://main-a.rpc.agoric.net:443" for "mainnet", none otherwise; set it
-  empty to disable). These should be archive nodes, since the planner reads
-  vstorage history. An RPC that serves another chain is a configuration error:
-  the planner fails to start instead of falling back. The planner picks one
-  RPC at startup and uses it for everything (block following, queries, and
-  transactions). It exits, so that a restart picks again, if that RPC's
-  websocket fails or stalls (no message for 60 seconds while there is a
-  fallback), or if that RPC fails 3 health checks in a row (one per minute)
-  while another RPC is healthy. While on a fallback, it logs a 🚨 error at
-  startup and exits once the preferred RPC has passed 5 health checks in a
-  row, to switch back to it.
+- `AGORIC_RPC_FALLBACKS`: comma-separated URLs to use, in order, when the one
+  from `AGORIC_NET` is unhealthy (unreachable, catching up, without a recent
+  block, or not responding promptly). These must serve the correct chain, and
+  should be archive nodes because the planner reads vstorage history. The
+  preferred target is the first RPC URL from `AGORIC_NET` (which, when it names
+  a subdomain without a chain ID, comes from a fetched network config that may
+  list several). The planner picks one target at startup and uses it for
+  everything (block following, queries, and transactions), exiting if that
+  target fails or (if there is a healthy alternative) if it stalls (no new
+  block between two minutely health checks) or fails 3 consecutive minutely
+  health checks. If no target is
+  healthy at startup (e.g., during a chain halt), it uses the first one that
+  serves the correct chain and waits. While on a fallback, a 🚨 error is
+  emitted at startup and the process exits once the preferred target passes 5
+  consecutive minutely health checks so a successor process will use it.
+  Defaults to empty (meaning no fallbacks).
 - `CONTRACT_INSTANCE`: Contract instance identifier, either "ymax0" (dev) or "ymax1" (prod) (required)
 - `ALCHEMY_API_KEY`: API key for accessing Alchemy's RPC endpoint (required, but not verified at startup)
   - **Important**: For all EVM chains in `AxelarChain` (see `packages/portfolio-api/src/constants.js`), ensure they are enabled in your Alchemy dashboard.
